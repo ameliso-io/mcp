@@ -9,6 +9,11 @@ Commands:
     report   [--json] [--summary]     Coverage report (latest status per TC)
     affected [--json] [--since <ref>] Test cases needing re-run after changes
              [--all]
+    search   <query>                  Search test cases by title/tag/text
+             [--tag <tag>]            Filter by tag
+             [--priority <p>]         Filter by priority
+             [--status <s>]           Filter by latest run status
+             [--json]
 
     help                              Show this message
 
@@ -43,6 +48,11 @@ def _dispatch(args: list[str]) -> int:
     if cmd == "affected":
         import affected as m
         sys.argv = ["affected.py"] + args[1:]
+        return m.main()
+
+    if cmd == "search":
+        import search as m
+        sys.argv = ["search.py"] + args[1:]
         return m.main()
 
     print(f"Unknown command {cmd!r}. Run 'python3 ameliso.py help' for usage.")

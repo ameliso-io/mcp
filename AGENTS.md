@@ -16,6 +16,18 @@ Ameliso is a **git-native manual testing management system**.
 
 ---
 
+## Discovery
+
+Find test cases without reading every file:
+
+```sh
+python3 ameliso.py search "login"                    # full-text
+python3 ameliso.py search --tag auth                 # by tag
+python3 ameliso.py search --priority high --json     # by priority, machine-readable
+python3 ameliso.py search --status never             # never-run test cases
+python3 ameliso.py search "reset" --tag auth --json  # combined filters
+```
+
 ## Orientation (run once per session)
 
 ```sh
