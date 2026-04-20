@@ -1,8 +1,7 @@
 ---
-id: TC-001
-title: Example - User Login
+title: User Login
 description: Verify a user can log in with valid credentials
-tags: [example, auth]
+tags: [auth, login]
 priority: high
 created_at: 2026-04-21
 updated_at: 2026-04-21
@@ -10,7 +9,7 @@ updated_at: 2026-04-21
 
 ## Prerequisites
 
-- A user account exists with known username and password.
+- A valid user account exists with known username and password.
 - The login page is accessible.
 
 ## Steps

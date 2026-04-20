@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package ameliso.v1;
+
+option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
+
+// A test case read from the controlled repository.
+// Identified by its path within cases/ (e.g. "auth/user-login").
+message Case {
+  string path = 1;
+  string title = 2;
+  string description = 3;
+  repeated string tags = 4;
+  string priority = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// A suite definition — an ordered collection of case paths.
+message Suite {
+  string slug = 1;
+  string name = 2;
+  string description = 3;
+  repeated string cases = 4;
+}
+
+// Metadata for a test run (stored in runs/{slug}/run.yaml).
+message RunMeta {
+  string id = 1;
+  string date = 2;
+  string tester = 3;
+  RunStatus status = 4;
+  string environment = 5;
+  string suite = 6;
+}
+
+// The result of executing a single case within a run.
+message CaseResult {
+  string case_path = 1;
+  ResultStatus status = 2;
+  string notes = 3;
+}
+
+// A run with its results loaded.
+message Run {
+  RunMeta meta = 1;
+  repeated CaseResult results = 2;
+}
+
+// A coverage entry: latest known status for a case across all runs.
+message CoverageEntry {
+  Case case = 1;
+  ResultStatus latest_status = 2;
+  string last_run_id = 3;
+  string last_run_date = 4;
+}
+
+// A case that may need re-running based on git history.
+message AffectedCase {
+  Case case = 1;
+  string reason = 2;
+}
+
+enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0;
+  RUN_STATUS_IN_PROGRESS = 1;
+  RUN_STATUS_COMPLETED = 2;
+  RUN_STATUS_ABORTED = 3;
+}
+
+enum ResultStatus {
+  RESULT_STATUS_UNSPECIFIED = 0;
+  RESULT_STATUS_PASSED = 1;
+  RESULT_STATUS_FAILED = 2;
+  RESULT_STATUS_BLOCKED = 3;
+  RESULT_STATUS_SKIPPED = 4;
+  RESULT_STATUS_NEVER = 5;
+}
+
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_LOW = 1;
+  PRIORITY_MEDIUM = 2;
+  PRIORITY_HIGH = 3;
+}
