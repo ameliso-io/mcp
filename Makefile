@@ -2,19 +2,19 @@
 
 install:
 	pnpm install
-	cd server && cargo fetch
+	cargo fetch
 
 build:
-	cd server && cargo build --release
+	cargo build --release
 
 test:
-	cd server && cargo test
+	cargo test
 
 fmt:
-	cd server && cargo fmt
+	cargo fmt --all
 
 lint:
-	cd server && cargo clippy -- -D warnings
+	cargo clippy --all -- -D warnings
 	cd server && buf lint
 
 spell:

@@ -443,7 +443,11 @@ impl AmelisoService for AmelisoServer {
         let case_map: std::collections::HashMap<String, &repo::LoadedCase> =
             cases.iter().map(|c| (c.case_path.clone(), c)).collect();
 
-        let since = if req.since_ref.is_empty() { None } else { Some(req.since_ref.as_str()) };
+        let since = if req.since_ref.is_empty() {
+            None
+        } else {
+            Some(req.since_ref.as_str())
+        };
         let result = git::find_affected(&repo, since, &known_paths).map_err(internal)?;
 
         let affected = result

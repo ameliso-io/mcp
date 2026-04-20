@@ -27,14 +27,7 @@ pub fn last_run_commit(repo: &Path) -> Option<String> {
 
 /// Return commit messages since `base` as one big string.
 fn commit_text_since(repo: &Path, base: &str) -> String {
-    git(
-        repo,
-        &[
-            "log",
-            &format!("{}..HEAD", base),
-            "--format=%s %b",
-        ],
-    )
+    git(repo, &["log", &format!("{}..HEAD", base), "--format=%s %b"])
 }
 
 /// Return changed file paths since `base`.
@@ -49,7 +42,15 @@ pub fn changed_files_since(repo: &Path, base: &str) -> Vec<String> {
 /// True if a changed file path is likely to affect test outcomes.
 /// Ignores documentation-only changes; treats source code changes as relevant.
 fn is_source_relevant(path: &str) -> bool {
-    let doc_extensions = [".md", ".txt", ".gitignore", ".json", ".yaml", ".yml", ".toml"];
+    let doc_extensions = [
+        ".md",
+        ".txt",
+        ".gitignore",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".toml",
+    ];
     let ext = Path::new(path)
         .extension()
         .and_then(|e| e.to_str())
@@ -149,5 +150,8 @@ pub fn find_affected(
         reasons.join("; ")
     };
 
-    Ok(AffectedResult { case_paths: affected, reason })
+    Ok(AffectedResult {
+        case_paths: affected,
+        reason,
+    })
 }

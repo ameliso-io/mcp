@@ -6,8 +6,7 @@ use std::net::SocketAddr;
 use std::path::Path;
 
 use ameliso_server::proto::ameliso_v1::{
-    self as pb,
-    ameliso_service_client::AmelisoServiceClient,
+    self as pb, ameliso_service_client::AmelisoServiceClient,
     ameliso_service_server::AmelisoServiceServer,
 };
 use ameliso_server::service::AmelisoServer;
@@ -330,9 +329,7 @@ async fn coverage_never_for_unrun_cases() {
     write_case(tmp.path(), "billing/invoice", "Invoice");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
-            repo_path: rp,
-        }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp }))
         .await
         .unwrap()
         .into_inner();
