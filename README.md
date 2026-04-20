@@ -12,7 +12,7 @@ python3 ameliso.py report                              # coverage table
 python3 ameliso.py affected                            # what needs re-running
 ```
 
-Requires Python 3.9+, no extra packages.
+Requires Python 3.9+, no extra packages. Agents: see [AGENTS.md](AGENTS.md).
 
 ## File Structure
 
