@@ -182,9 +182,11 @@ fn walk_md(dir: &Path) -> Vec<PathBuf> {
 
 /// Convert an absolute file path to a case_path (relative to cases/, no extension).
 fn to_case_path(cases_dir: &Path, file: &Path) -> Option<String> {
-    file.strip_prefix(cases_dir)
-        .ok()
-        .and_then(|rel| rel.with_extension("").to_str().map(|s| s.replace('\\', "/")))
+    file.strip_prefix(cases_dir).ok().and_then(|rel| {
+        rel.with_extension("")
+            .to_str()
+            .map(|s| s.replace('\\', "/"))
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -200,7 +202,11 @@ pub fn list_cases(repo: &Path) -> Result<Vec<LoadedCase>> {
         match parse_fm::<CaseFm>(&content) {
             Ok((fm, body)) => {
                 if let Some(case_path) = to_case_path(&dir, &file) {
-                    cases.push(LoadedCase { fm, body, case_path });
+                    cases.push(LoadedCase {
+                        fm,
+                        body,
+                        case_path,
+                    });
                 }
             }
             Err(_) => continue,
@@ -211,10 +217,14 @@ pub fn list_cases(repo: &Path) -> Result<Vec<LoadedCase>> {
 
 pub fn get_case(repo: &Path, case_path: &str) -> Result<LoadedCase> {
     let file = case_file_path(repo, case_path);
-    let content = std::fs::read_to_string(&file)
-        .with_context(|| format!("case not found: {}", case_path))?;
+    let content =
+        std::fs::read_to_string(&file).with_context(|| format!("case not found: {}", case_path))?;
     let (fm, body) = parse_fm::<CaseFm>(&content)?;
-    Ok(LoadedCase { fm, body, case_path: case_path.to_owned() })
+    Ok(LoadedCase {
+        fm,
+        body,
+        case_path: case_path.to_owned(),
+    })
 }
 
 pub fn create_case(
@@ -240,7 +250,11 @@ pub fn create_case(
     };
     let body = "## Prerequisites\n\n- \n\n## Steps\n\n1. \n\n## Expected Result\n\n\n";
     write_case_file(&file, &fm, body)?;
-    Ok(LoadedCase { fm, body: body.to_owned(), case_path: case_path.to_owned() })
+    Ok(LoadedCase {
+        fm,
+        body: body.to_owned(),
+        case_path: case_path.to_owned(),
+    })
 }
 
 pub fn update_case(
@@ -252,8 +266,8 @@ pub fn update_case(
     priority: &str,
 ) -> Result<LoadedCase> {
     let file = case_file_path(repo, case_path);
-    let content = std::fs::read_to_string(&file)
-        .with_context(|| format!("case not found: {}", case_path))?;
+    let content =
+        std::fs::read_to_string(&file).with_context(|| format!("case not found: {}", case_path))?;
     let (mut fm, body) = parse_fm::<CaseFm>(&content)?;
     fm.title = title.to_owned();
     fm.description = description.to_owned();
@@ -261,7 +275,11 @@ pub fn update_case(
     fm.priority = priority.to_owned();
     fm.updated_at = Local::now().format("%Y-%m-%d").to_string();
     write_case_file(&file, &fm, &body)?;
-    Ok(LoadedCase { fm, body, case_path: case_path.to_owned() })
+    Ok(LoadedCase {
+        fm,
+        body,
+        case_path: case_path.to_owned(),
+    })
 }
 
 pub fn list_runs(repo: &Path) -> Result<Vec<RunYaml>> {
@@ -275,7 +293,7 @@ pub fn list_runs(repo: &Path) -> Result<Vec<RunYaml>> {
         .filter(|e| e.path().is_dir())
         .collect();
     // newest first
-    entries.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+    entries.sort_by_key(|e| std::cmp::Reverse(e.file_name()));
     for entry in entries {
         let yaml_path = entry.path().join("run.yaml");
         if !yaml_path.exists() {
@@ -308,12 +326,20 @@ pub fn get_run(repo: &Path, run_id: &str) -> Result<LoadedRun> {
             .with_context(|| format!("reading {}", file.display()))?;
         if let Ok((fm, notes)) = parse_fm::<ResultFm>(&rc) {
             if let Some(case_path) = to_case_path(&results_dir, &file) {
-                results.push(LoadedResult { fm, notes, case_path });
+                results.push(LoadedResult {
+                    fm,
+                    notes,
+                    case_path,
+                });
             }
         }
     }
 
-    Ok(LoadedRun { meta, results, slug: run_id.to_owned() })
+    Ok(LoadedRun {
+        meta,
+        results,
+        slug: run_id.to_owned(),
+    })
 }
 
 pub fn create_run(
@@ -359,13 +385,19 @@ pub fn record_result(
     let content = std::fs::read_to_string(&yaml_path)?;
     let meta: RunYaml = serde_yaml::from_str(&content).context("parsing run.yaml")?;
     if matches!(meta.status.as_str(), "completed" | "aborted") {
-        bail!("run {} is {}; cannot record results in a closed run", run_id, meta.status);
+        bail!(
+            "run {} is {}; cannot record results in a closed run",
+            run_id,
+            meta.status
+        );
     }
 
     let result_file = result_file_path(repo, run_id, case_path);
     write_result_file(&result_file, status, notes)?;
     Ok(LoadedResult {
-        fm: ResultFm { status: status.to_owned() },
+        fm: ResultFm {
+            status: status.to_owned(),
+        },
         notes: notes.to_owned(),
         case_path: case_path.to_owned(),
     })
@@ -393,9 +425,7 @@ pub fn list_suites(repo: &Path) -> Result<Vec<(String, SuiteYaml)>> {
     let mut out = Vec::new();
     let mut entries: Vec<_> = std::fs::read_dir(&dir)?
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.path().extension().and_then(|x| x.to_str()) == Some("yaml")
-        })
+        .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("yaml"))
         .collect();
     entries.sort_by_key(|e| e.file_name());
     for entry in entries {
@@ -415,8 +445,8 @@ pub fn list_suites(repo: &Path) -> Result<Vec<(String, SuiteYaml)>> {
 
 pub fn get_suite(repo: &Path, slug: &str) -> Result<SuiteYaml> {
     let path = suites_dir(repo).join(format!("{}.yaml", slug));
-    let content = std::fs::read_to_string(&path)
-        .with_context(|| format!("suite not found: {}", slug))?;
+    let content =
+        std::fs::read_to_string(&path).with_context(|| format!("suite not found: {}", slug))?;
     serde_yaml::from_str(&content).context("parsing suite yaml")
 }
 
@@ -433,7 +463,11 @@ pub fn create_suite(
     if path.exists() {
         bail!("suite already exists: {}", slug);
     }
-    let suite = SuiteYaml { name: name.to_owned(), description, cases };
+    let suite = SuiteYaml {
+        name: name.to_owned(),
+        description,
+        cases,
+    };
     let yaml = serde_yaml::to_string(&suite).context("serializing suite")?;
     std::fs::write(path, yaml)?;
     Ok(suite)

@@ -1,0 +1,12 @@
+{
+  "name": "ameliso",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

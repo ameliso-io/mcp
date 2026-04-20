@@ -132,7 +132,9 @@ impl AmelisoService for AmelisoServer {
 
         if !req.tags.is_empty() {
             cases.retain(|c| {
-                req.tags.iter().all(|t| c.fm.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                req.tags
+                    .iter()
+                    .all(|t| c.fm.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
             });
         }
         if let Some(pri) = priority_from_i32(req.priority) {
@@ -159,7 +161,9 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
         let case = repo::get_case(&repo, &req.case_path).map_err(|_| not_found(&req.case_path))?;
-        Ok(Response::new(pb::GetCaseResponse { case: Some(case_to_pb(&case)) }))
+        Ok(Response::new(pb::GetCaseResponse {
+            case: Some(case_to_pb(&case)),
+        }))
     }
 
     async fn create_case(
@@ -175,14 +179,21 @@ impl AmelisoService for AmelisoServer {
         }
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
-        let case = repo::create_case(&repo, &req.case_path, &req.title, &req.description, req.tags, priority)
-            .map_err(|e| {
-                if e.to_string().contains("already exists") {
-                    already_exists(e.to_string())
-                } else {
-                    internal(e)
-                }
-            })?;
+        let case = repo::create_case(
+            &repo,
+            &req.case_path,
+            &req.title,
+            &req.description,
+            req.tags,
+            priority,
+        )
+        .map_err(|e| {
+            if e.to_string().contains("already exists") {
+                already_exists(e.to_string())
+            } else {
+                internal(e)
+            }
+        })?;
         let file_path = format!("cases/{}.md", req.case_path);
         Ok(Response::new(pb::CreateCaseResponse {
             case: Some(case_to_pb(&case)),
@@ -197,15 +208,24 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
-        let case = repo::update_case(&repo, &req.case_path, &req.title, &req.description, req.tags, priority)
-            .map_err(|e| {
-                if e.to_string().contains("not found") {
-                    not_found(e.to_string())
-                } else {
-                    internal(e)
-                }
-            })?;
-        Ok(Response::new(pb::UpdateCaseResponse { case: Some(case_to_pb(&case)) }))
+        let case = repo::update_case(
+            &repo,
+            &req.case_path,
+            &req.title,
+            &req.description,
+            req.tags,
+            priority,
+        )
+        .map_err(|e| {
+            if e.to_string().contains("not found") {
+                not_found(e.to_string())
+            } else {
+                internal(e)
+            }
+        })?;
+        Ok(Response::new(pb::UpdateCaseResponse {
+            case: Some(case_to_pb(&case)),
+        }))
     }
 
     async fn list_suites(
@@ -214,7 +234,10 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::ListSuitesResponse>, Status> {
         let repo = PathBuf::from(&request.into_inner().repo_path);
         let suites = repo::list_suites(&repo).map_err(internal)?;
-        let pb_suites = suites.iter().map(|(slug, s)| suite_to_pb(slug, s)).collect();
+        let pb_suites = suites
+            .iter()
+            .map(|(slug, s)| suite_to_pb(slug, s))
+            .collect();
         Ok(Response::new(pb::ListSuitesResponse { suites: pb_suites }))
     }
 
@@ -225,7 +248,9 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
         let suite = repo::get_suite(&repo, &req.slug).map_err(|_| not_found(&req.slug))?;
-        Ok(Response::new(pb::GetSuiteResponse { suite: Some(suite_to_pb(&req.slug, &suite)) }))
+        Ok(Response::new(pb::GetSuiteResponse {
+            suite: Some(suite_to_pb(&req.slug, &suite)),
+        }))
     }
 
     async fn create_suite(
@@ -234,14 +259,19 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::CreateSuiteResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let desc = if req.description.is_empty() { None } else { Some(req.description.clone()) };
-        let suite = repo::create_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(|e| {
-            if e.to_string().contains("already exists") {
-                already_exists(e.to_string())
-            } else {
-                internal(e)
-            }
-        })?;
+        let desc = if req.description.is_empty() {
+            None
+        } else {
+            Some(req.description.clone())
+        };
+        let suite =
+            repo::create_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(|e| {
+                if e.to_string().contains("already exists") {
+                    already_exists(e.to_string())
+                } else {
+                    internal(e)
+                }
+            })?;
         let file_path = format!("suites/{}.yaml", req.slug);
         Ok(Response::new(pb::CreateSuiteResponse {
             suite: Some(suite_to_pb(&req.slug, &suite)),
@@ -282,15 +312,23 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("slug is required"));
         }
         let repo = PathBuf::from(&req.repo_path);
-        let env = if req.environment.is_empty() { None } else { Some(req.environment) };
-        let suite = if req.suite.is_empty() { None } else { Some(req.suite) };
+        let env = if req.environment.is_empty() {
+            None
+        } else {
+            Some(req.environment)
+        };
+        let suite = if req.suite.is_empty() {
+            None
+        } else {
+            Some(req.suite)
+        };
         let tester = if req.tester.is_empty() {
             std::env::var("USER").unwrap_or_else(|_| "unknown".to_owned())
         } else {
             req.tester
         };
-        let (meta, dir_path) = repo::create_run(&repo, &req.slug, &tester, env, suite)
-            .map_err(|e| {
+        let (meta, dir_path) =
+            repo::create_run(&repo, &req.slug, &tester, env, suite).map_err(|e| {
                 if e.to_string().contains("already exists") {
                     already_exists(e.to_string())
                 } else {
@@ -323,7 +361,9 @@ impl AmelisoService for AmelisoServer {
                     internal(e)
                 }
             })?;
-        Ok(Response::new(pb::RecordResultResponse { result: Some(result_to_pb(&result)) }))
+        Ok(Response::new(pb::RecordResultResponse {
+            result: Some(result_to_pb(&result)),
+        }))
     }
 
     async fn finalize_run(
@@ -337,7 +377,9 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("status must be completed or aborted"));
         }
         let meta = repo::finalize_run(&repo, &req.run_id, status).map_err(internal)?;
-        Ok(Response::new(pb::FinalizeRunResponse { run: Some(run_meta_to_pb(&meta)) }))
+        Ok(Response::new(pb::FinalizeRunResponse {
+            run: Some(run_meta_to_pb(&meta)),
+        }))
     }
 
     async fn get_coverage_report(
@@ -356,7 +398,11 @@ impl AmelisoService for AmelisoServer {
             let run = repo::get_run(&repo, &run_meta.id).map_err(internal)?;
             for result in &run.results {
                 latest.entry(result.case_path.clone()).or_insert_with(|| {
-                    (result.fm.status.clone(), run_meta.id.clone(), run_meta.date.clone())
+                    (
+                        result.fm.status.clone(),
+                        run_meta.id.clone(),
+                        run_meta.date.clone(),
+                    )
                 });
             }
         }
@@ -387,6 +433,8 @@ impl AmelisoService for AmelisoServer {
         &self,
         _request: Request<pb::GetAffectedCasesRequest>,
     ) -> Result<Response<pb::GetAffectedCasesResponse>, Status> {
-        Err(Status::unimplemented("get_affected_cases not yet implemented"))
+        Err(Status::unimplemented(
+            "get_affected_cases not yet implemented",
+        ))
     }
 }
