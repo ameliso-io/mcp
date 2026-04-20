@@ -1,15 +1,9 @@
-mod git;
-mod proto;
-mod repo;
-mod service;
-
 use std::net::SocketAddr;
 
+use ameliso_server::proto::ameliso_v1::ameliso_service_server::AmelisoServiceServer;
+use ameliso_server::service::AmelisoServer;
 use anyhow::Result;
 use tonic::transport::Server;
-
-use crate::proto::ameliso_v1::ameliso_service_server::AmelisoServiceServer;
-use crate::service::AmelisoServer;
 
 #[tokio::main]
 async fn main() -> Result<()> {
