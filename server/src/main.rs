@@ -1,3 +1,4 @@
+mod git;
 mod proto;
 mod repo;
 mod service;

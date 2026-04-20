@@ -431,10 +431,33 @@ impl AmelisoService for AmelisoServer {
 
     async fn get_affected_cases(
         &self,
-        _request: Request<pb::GetAffectedCasesRequest>,
+        request: Request<pb::GetAffectedCasesRequest>,
     ) -> Result<Response<pb::GetAffectedCasesResponse>, Status> {
-        Err(Status::unimplemented(
-            "get_affected_cases not yet implemented",
-        ))
+        use crate::git;
+
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+
+        let cases = repo::list_cases(&repo).map_err(internal)?;
+        let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+        let case_map: std::collections::HashMap<String, &repo::LoadedCase> =
+            cases.iter().map(|c| (c.case_path.clone(), c)).collect();
+
+        let since = if req.since_ref.is_empty() { None } else { Some(req.since_ref.as_str()) };
+        let result = git::find_affected(&repo, since, &known_paths).map_err(internal)?;
+
+        let affected = result
+            .case_paths
+            .iter()
+            .map(|path| pb::AffectedCase {
+                case: case_map.get(path).map(|c| case_to_pb(c)),
+                reason: result.reason.clone(),
+            })
+            .collect();
+
+        Ok(Response::new(pb::GetAffectedCasesResponse {
+            cases: affected,
+            reason: result.reason,
+        }))
     }
 }
