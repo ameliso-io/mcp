@@ -12,6 +12,17 @@ Enable the pre-commit validator (one-time, per clone):
 git config core.hooksPath .githooks
 ```
 
+## Creating files
+
+Use `new.py` to create files with the next available ID:
+
+```sh
+python3 new.py tc "Title of test case"     # creates test-cases/TC-NNN-<slug>.md
+python3 new.py run [tester] [environment]  # creates test-runs/RUN-NNN-YYYY-MM-DD.md
+```
+
+Fill in the generated template, then commit. The pre-commit hook validates before the commit lands.
+
 ## Validation
 
 Run manually at any time:

@@ -131,7 +131,7 @@ def validate_test_run(path: Path) -> None:
             if l.startswith("|") and not re.search(r"-{3,}", l)
         ]
         # First row is header
-        data_rows = table_rows[1:] if len(table_rows) > 1 else table_rows
+        data_rows = table_rows[1:] if len(table_rows) > 1 else []
         total_in_table = len(data_rows)
 
         total_line = re.search(r"Total:\s*(\d+)", summary_match.group(1))
