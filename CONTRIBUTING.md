@@ -23,6 +23,21 @@ python3 new.py run [tester] [environment]  # creates test-runs/RUN-NNN-YYYY-MM-D
 
 Fill in the generated template, then commit. The pre-commit hook validates before the commit lands.
 
+## Affected test cases
+
+Find which test cases need re-running after code changes:
+
+```sh
+python3 affected.py                   # since last test-runs/ commit
+python3 affected.py --since <ref>     # since a specific commit/branch
+python3 affected.py --json            # machine-readable (for agents)
+python3 affected.py --all             # all test cases
+```
+
+Scans commit messages and changed file paths for `TC-NNN` references.
+Falls back to flagging all test cases when source files change without explicit references.
+Exits 1 when any test cases are flagged.
+
 ## Coverage report
 
 ```sh
