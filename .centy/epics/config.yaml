@@ -1,0 +1,15 @@
+# This file is managed by Centy. Use the Centy CLI to modify it.
+name: Epic
+icon: map
+identifier: uuid
+features:
+  displayNumber: true
+  priority: true
+  softDelete: true
+  assets: true
+  orgSync: true
+  move: true
+  duplicate: true
+priorityLevels: 3
+template: template.md
+listed: true
