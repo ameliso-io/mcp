@@ -2,6 +2,16 @@
 
 An intoitive manual testing mangament tool
 
+## File Structure
+
+```
+test-cases/   # TC-NNN-<slug>.md — one file per test case
+test-runs/    # RUN-NNN-YYYY-MM-DD.md — one file per run
+SCHEMA.md     # Full format spec for test cases and test runs
+```
+
+See [SCHEMA.md](SCHEMA.md) for the complete file format specification.
+
 ## Vocabulary
 
 ### Test Case
