@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git show *)",
+      "Skill(ralph-loop:ralph-loop)"
+    ]
+  }
+}
