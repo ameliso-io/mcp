@@ -1,0 +1,17 @@
+graph TD
+    CLI[CLI Tool]
+    MCP[MCP Server]
+    Web[Web Client]
+
+    CLI -->|gRPC| Server[gRPC Server]
+    MCP -->|gRPC| Server
+    Web -->|gRPC-web| Server
+
+    Agent[Coding Agent] --> MCP
+    Human[Tester] --> CLI
+    Human --> Web
+
+    Server --> GitProvider[Git Provider]
+    GitProvider --> Git[Git Repo<br/>GitHub / GitLab]
+    Git --> Tests[Test Cases]
+    Git --> Results[Test Results]
