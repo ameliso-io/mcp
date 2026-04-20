@@ -9,6 +9,8 @@ Commands:
     report   [--json] [--summary]     Coverage report (latest status per TC)
     affected [--json] [--since <ref>] Test cases needing re-run after changes
              [--all]
+    update-run <run-id> <tc-id> <status> [notes]
+                                      Record a result in an in-progress run
     search   <query>                  Search test cases by title/tag/text
              [--tag <tag>]            Filter by tag
              [--priority <p>]         Filter by priority
@@ -53,6 +55,11 @@ def _dispatch(args: list[str]) -> int:
     if cmd == "search":
         import search as m
         sys.argv = ["search.py"] + args[1:]
+        return m.main()
+
+    if cmd in ("update-run", "update_run"):
+        import update_run as m
+        sys.argv = ["update_run.py"] + args[1:]
         return m.main()
 
     print(f"Unknown command {cmd!r}. Run 'python3 ameliso.py help' for usage.")

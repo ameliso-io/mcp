@@ -103,6 +103,15 @@ Fix every error before committing. Common errors:
 - A feature or user-facing behaviour exists with no corresponding TC.
 - Identify the gap with: `python3 ameliso.py report --json | jq '.test_cases[] | select(.status == "never")'`
 
+### Recording results without hand-editing tables
+
+```sh
+python3 ameliso.py update-run RUN-001 TC-002 passed
+python3 ameliso.py update-run RUN-001 TC-003 failed "Button missing on mobile"
+```
+
+Atomically updates the Results table and recalculates Summary counts. Safe to call multiple times — re-running with a different status updates the existing row. Rejects writes to `completed` or `aborted` runs.
+
 ### When to create a test run
 - After manually executing (or simulating) one or more test cases.
 - Always reference specific TC IDs in the Results table — never leave it empty.
