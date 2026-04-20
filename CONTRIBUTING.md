@@ -23,6 +23,16 @@ python3 new.py run [tester] [environment]  # creates test-runs/RUN-NNN-YYYY-MM-D
 
 Fill in the generated template, then commit. The pre-commit hook validates before the commit lands.
 
+## Coverage report
+
+```sh
+python3 report.py           # human-readable table
+python3 report.py --json    # machine-readable (for agents)
+python3 report.py --summary # counts only
+```
+
+Exits 0 if all test cases passed in their latest run; exits 1 if any are failing, blocked, or never run.
+
 ## Validation
 
 Run manually at any time:
