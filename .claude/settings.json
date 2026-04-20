@@ -5,7 +5,9 @@
       "Bash(git push *)",
       "Bash(git add *)",
       "Bash(git show *)",
-      "Skill(ralph-loop:ralph-loop)"
+      "Skill(ralph-loop:ralph-loop)",
+      "Bash(git *)",
+      "Skill(centy:mcp-usage)"
     ]
   }
 }
