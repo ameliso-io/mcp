@@ -1,6 +1,18 @@
 # Ameliso
 
-An intoitive manual testing mangament tool
+An intuitive manual testing management tool — git-native, agent-friendly.
+
+## Quick start
+
+```sh
+python3 ameliso.py new tc "User can reset password"   # create test case
+python3 ameliso.py new run john.doe staging            # create test run
+python3 ameliso.py validate                            # check all files
+python3 ameliso.py report                              # coverage table
+python3 ameliso.py affected                            # what needs re-running
+```
+
+Requires Python 3.9+, no extra packages.
 
 ## File Structure
 

@@ -12,48 +12,26 @@ Enable the pre-commit validator (one-time, per clone):
 git config core.hooksPath .githooks
 ```
 
-## Creating files
+## CLI — `ameliso.py`
 
-Use `new.py` to create files with the next available ID:
-
-```sh
-python3 new.py tc "Title of test case"     # creates test-cases/TC-NNN-<slug>.md
-python3 new.py run [tester] [environment]  # creates test-runs/RUN-NNN-YYYY-MM-DD.md
-```
-
-Fill in the generated template, then commit. The pre-commit hook validates before the commit lands.
-
-## Affected test cases
-
-Find which test cases need re-running after code changes:
+All operations go through the unified CLI:
 
 ```sh
-python3 affected.py                   # since last test-runs/ commit
-python3 affected.py --since <ref>     # since a specific commit/branch
-python3 affected.py --json            # machine-readable (for agents)
-python3 affected.py --all             # all test cases
+python3 ameliso.py new tc  "Title"              # create test case (TC-NNN)
+python3 ameliso.py new run [tester] [env]       # create test run (RUN-NNN)
+python3 ameliso.py validate [paths...]          # validate schema
+python3 ameliso.py report  [--json|--summary]   # coverage table
+python3 ameliso.py affected [--json] [--since]  # what needs re-running
+python3 ameliso.py help                         # full usage
 ```
 
-Scans commit messages and changed file paths for `TC-NNN` references.
-Falls back to flagging all test cases when source files change without explicit references.
-Exits 1 when any test cases are flagged.
+Requires Python 3.9+, no extra packages. Individual scripts (`new.py`,
+`validate.py`, `report.py`, `affected.py`) remain callable directly.
 
-## Coverage report
+## Workflow
 
-```sh
-python3 report.py           # human-readable table
-python3 report.py --json    # machine-readable (for agents)
-python3 report.py --summary # counts only
-```
-
-Exits 0 if all test cases passed in their latest run; exits 1 if any are failing, blocked, or never run.
-
-## Validation
-
-Run manually at any time:
-
-```sh
-python3 validate.py
-```
-
-The validator requires only Python 3.9+ (no extra packages). It checks all files in `test-cases/` and `test-runs/` against the schema defined in `SCHEMA.md`.
+1. `python3 ameliso.py new tc "..."` — scaffold a test case, fill in steps.
+2. `python3 ameliso.py new run` — scaffold a run, fill in results table.
+3. `git add . && git commit` — pre-commit hook validates automatically.
+4. `python3 ameliso.py report` — check coverage.
+5. `python3 ameliso.py affected` — see what needs re-running after code changes.
