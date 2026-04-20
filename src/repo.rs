@@ -1,0 +1,440 @@
+/// File-system operations against a controlled repository.
+///
+/// A controlled repo has this layout (from REPO_STRUCTURE.md):
+///   cases/{category...}/{slug}.md   — test case files
+///   suites/{slug}.yaml              — suite definitions
+///   runs/{YYYY-MM-DD}-{slug}/
+///     run.yaml                      — run metadata
+///     results/{category...}/{slug}.md — per-case results
+use std::path::{Path, PathBuf};
+
+use anyhow::{bail, Context, Result};
+use chrono::Local;
+use serde::{Deserialize, Serialize};
+
+// ---------------------------------------------------------------------------
+// On-disk formats
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CaseFm {
+    pub title: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default = "default_priority")]
+    pub priority: String,
+    #[serde(default)]
+    pub created_at: String,
+    #[serde(default)]
+    pub updated_at: String,
+}
+
+fn default_priority() -> String {
+    "medium".to_owned()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResultFm {
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RunYaml {
+    pub id: String,
+    pub date: String,
+    pub tester: String,
+    pub status: String,
+    #[serde(default)]
+    pub environment: Option<String>,
+    #[serde(default)]
+    pub suite: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SuiteYaml {
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub cases: Vec<String>,
+}
+
+// ---------------------------------------------------------------------------
+// Loaded structures (with path context)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct LoadedCase {
+    pub fm: CaseFm,
+    pub body: String,
+    /// Path relative to cases/  e.g. "auth/user-login"
+    pub case_path: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct LoadedResult {
+    pub fm: ResultFm,
+    pub notes: String,
+    /// Matches LoadedCase::case_path
+    pub case_path: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct LoadedRun {
+    pub meta: RunYaml,
+    pub results: Vec<LoadedResult>,
+    #[allow(dead_code)]
+    pub slug: String,
+}
+
+// ---------------------------------------------------------------------------
+// Frontmatter helpers
+// ---------------------------------------------------------------------------
+
+fn split_fm(content: &str) -> Result<(&str, &str)> {
+    if !content.starts_with("---") {
+        bail!("file must start with '---' frontmatter delimiter");
+    }
+    let after = &content[3..];
+    let close = after
+        .find("\n---")
+        .context("missing closing '---' delimiter")?;
+    let yaml = after[..close].trim_start_matches('\n');
+    let body = after[close + 4..].trim_start_matches('\n');
+    Ok((yaml, body))
+}
+
+fn parse_fm<T: serde::de::DeserializeOwned>(content: &str) -> Result<(T, String)> {
+    let (yaml, body) = split_fm(content)?;
+    let fm: T = serde_yaml::from_str(yaml).context("invalid YAML frontmatter")?;
+    Ok((fm, body.to_owned()))
+}
+
+fn write_case_file(path: &Path, fm: &CaseFm, body: &str) -> Result<()> {
+    let yaml = serde_yaml::to_string(fm).context("serializing case frontmatter")?;
+    let content = format!("---\n{}---\n\n{}", yaml, body);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, content).with_context(|| format!("writing {}", path.display()))
+}
+
+fn write_result_file(path: &Path, status: &str, notes: &str) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let content = format!("---\nstatus: {}\n---\n\n{}", status, notes);
+    std::fs::write(path, content).with_context(|| format!("writing {}", path.display()))
+}
+
+// ---------------------------------------------------------------------------
+// Path helpers
+// ---------------------------------------------------------------------------
+
+pub fn cases_dir(repo: &Path) -> PathBuf {
+    repo.join("cases")
+}
+
+pub fn runs_dir(repo: &Path) -> PathBuf {
+    repo.join("runs")
+}
+
+pub fn suites_dir(repo: &Path) -> PathBuf {
+    repo.join("suites")
+}
+
+fn case_file_path(repo: &Path, case_path: &str) -> PathBuf {
+    repo.join("cases").join(format!("{}.md", case_path))
+}
+
+fn run_dir_path(repo: &Path, run_id: &str) -> PathBuf {
+    repo.join("runs").join(run_id)
+}
+
+fn result_file_path(repo: &Path, run_id: &str, case_path: &str) -> PathBuf {
+    repo.join("runs")
+        .join(run_id)
+        .join("results")
+        .join(format!("{}.md", case_path))
+}
+
+/// Walk a directory recursively, yielding all `.md` files.
+fn walk_md(dir: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    if !dir.exists() {
+        return out;
+    }
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        let mut paths: Vec<_> = entries.filter_map(|e| e.ok()).map(|e| e.path()).collect();
+        paths.sort();
+        for path in paths {
+            if path.is_dir() {
+                out.extend(walk_md(&path));
+            } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                out.push(path);
+            }
+        }
+    }
+    out
+}
+
+/// Convert an absolute file path to a case_path (relative to cases/, no extension).
+fn to_case_path(cases_dir: &Path, file: &Path) -> Option<String> {
+    file.strip_prefix(cases_dir)
+        .ok()
+        .and_then(|rel| rel.with_extension("").to_str().map(|s| s.replace('\\', "/")))
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+pub fn list_cases(repo: &Path) -> Result<Vec<LoadedCase>> {
+    let dir = cases_dir(repo);
+    let mut cases = Vec::new();
+    for file in walk_md(&dir) {
+        let content = std::fs::read_to_string(&file)
+            .with_context(|| format!("reading {}", file.display()))?;
+        match parse_fm::<CaseFm>(&content) {
+            Ok((fm, body)) => {
+                if let Some(case_path) = to_case_path(&dir, &file) {
+                    cases.push(LoadedCase { fm, body, case_path });
+                }
+            }
+            Err(_) => continue,
+        }
+    }
+    Ok(cases)
+}
+
+pub fn get_case(repo: &Path, case_path: &str) -> Result<LoadedCase> {
+    let file = case_file_path(repo, case_path);
+    let content = std::fs::read_to_string(&file)
+        .with_context(|| format!("case not found: {}", case_path))?;
+    let (fm, body) = parse_fm::<CaseFm>(&content)?;
+    Ok(LoadedCase { fm, body, case_path: case_path.to_owned() })
+}
+
+pub fn create_case(
+    repo: &Path,
+    case_path: &str,
+    title: &str,
+    description: &str,
+    tags: Vec<String>,
+    priority: &str,
+) -> Result<LoadedCase> {
+    let file = case_file_path(repo, case_path);
+    if file.exists() {
+        bail!("case already exists: {}", case_path);
+    }
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let fm = CaseFm {
+        title: title.to_owned(),
+        description: description.to_owned(),
+        tags,
+        priority: priority.to_owned(),
+        created_at: today.clone(),
+        updated_at: today,
+    };
+    let body = "## Prerequisites\n\n- \n\n## Steps\n\n1. \n\n## Expected Result\n\n\n";
+    write_case_file(&file, &fm, body)?;
+    Ok(LoadedCase { fm, body: body.to_owned(), case_path: case_path.to_owned() })
+}
+
+pub fn update_case(
+    repo: &Path,
+    case_path: &str,
+    title: &str,
+    description: &str,
+    tags: Vec<String>,
+    priority: &str,
+) -> Result<LoadedCase> {
+    let file = case_file_path(repo, case_path);
+    let content = std::fs::read_to_string(&file)
+        .with_context(|| format!("case not found: {}", case_path))?;
+    let (mut fm, body) = parse_fm::<CaseFm>(&content)?;
+    fm.title = title.to_owned();
+    fm.description = description.to_owned();
+    fm.tags = tags;
+    fm.priority = priority.to_owned();
+    fm.updated_at = Local::now().format("%Y-%m-%d").to_string();
+    write_case_file(&file, &fm, &body)?;
+    Ok(LoadedCase { fm, body, case_path: case_path.to_owned() })
+}
+
+pub fn list_runs(repo: &Path) -> Result<Vec<RunYaml>> {
+    let dir = runs_dir(repo);
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+    let mut runs = Vec::new();
+    let mut entries: Vec<_> = std::fs::read_dir(&dir)?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .collect();
+    // newest first
+    entries.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+    for entry in entries {
+        let yaml_path = entry.path().join("run.yaml");
+        if !yaml_path.exists() {
+            continue;
+        }
+        let content = std::fs::read_to_string(&yaml_path)
+            .with_context(|| format!("reading {}", yaml_path.display()))?;
+        match serde_yaml::from_str::<RunYaml>(&content) {
+            Ok(run) => runs.push(run),
+            Err(_) => continue,
+        }
+    }
+    Ok(runs)
+}
+
+pub fn get_run(repo: &Path, run_id: &str) -> Result<LoadedRun> {
+    let dir = run_dir_path(repo, run_id);
+    if !dir.exists() {
+        bail!("run not found: {}", run_id);
+    }
+    let yaml_path = dir.join("run.yaml");
+    let content = std::fs::read_to_string(&yaml_path)
+        .with_context(|| format!("reading run.yaml for {}", run_id))?;
+    let meta: RunYaml = serde_yaml::from_str(&content).context("parsing run.yaml")?;
+
+    let results_dir = dir.join("results");
+    let mut results = Vec::new();
+    for file in walk_md(&results_dir) {
+        let rc = std::fs::read_to_string(&file)
+            .with_context(|| format!("reading {}", file.display()))?;
+        if let Ok((fm, notes)) = parse_fm::<ResultFm>(&rc) {
+            if let Some(case_path) = to_case_path(&results_dir, &file) {
+                results.push(LoadedResult { fm, notes, case_path });
+            }
+        }
+    }
+
+    Ok(LoadedRun { meta, results, slug: run_id.to_owned() })
+}
+
+pub fn create_run(
+    repo: &Path,
+    slug: &str,
+    tester: &str,
+    environment: Option<String>,
+    suite: Option<String>,
+) -> Result<(RunYaml, String)> {
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let run_id = format!("{}-{}", today, slug);
+    let dir = run_dir_path(repo, &run_id);
+    if dir.exists() {
+        bail!("run already exists: {}", run_id);
+    }
+    std::fs::create_dir_all(&dir)?;
+    let meta = RunYaml {
+        id: run_id.clone(),
+        date: today,
+        tester: tester.to_owned(),
+        status: "in-progress".to_owned(),
+        environment,
+        suite,
+    };
+    let yaml = serde_yaml::to_string(&meta).context("serializing run.yaml")?;
+    std::fs::write(dir.join("run.yaml"), yaml)?;
+    let dir_path = format!("runs/{}", run_id);
+    Ok((meta, dir_path))
+}
+
+pub fn record_result(
+    repo: &Path,
+    run_id: &str,
+    case_path: &str,
+    status: &str,
+    notes: &str,
+) -> Result<LoadedResult> {
+    let run_dir = run_dir_path(repo, run_id);
+    if !run_dir.exists() {
+        bail!("run not found: {}", run_id);
+    }
+    let yaml_path = run_dir.join("run.yaml");
+    let content = std::fs::read_to_string(&yaml_path)?;
+    let meta: RunYaml = serde_yaml::from_str(&content).context("parsing run.yaml")?;
+    if matches!(meta.status.as_str(), "completed" | "aborted") {
+        bail!("run {} is {}; cannot record results in a closed run", run_id, meta.status);
+    }
+
+    let result_file = result_file_path(repo, run_id, case_path);
+    write_result_file(&result_file, status, notes)?;
+    Ok(LoadedResult {
+        fm: ResultFm { status: status.to_owned() },
+        notes: notes.to_owned(),
+        case_path: case_path.to_owned(),
+    })
+}
+
+pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> Result<RunYaml> {
+    let dir = run_dir_path(repo, run_id);
+    if !dir.exists() {
+        bail!("run not found: {}", run_id);
+    }
+    let yaml_path = dir.join("run.yaml");
+    let content = std::fs::read_to_string(&yaml_path)?;
+    let mut meta: RunYaml = serde_yaml::from_str(&content).context("parsing run.yaml")?;
+    meta.status = status.to_owned();
+    let yaml = serde_yaml::to_string(&meta).context("serializing run.yaml")?;
+    std::fs::write(yaml_path, yaml)?;
+    Ok(meta)
+}
+
+pub fn list_suites(repo: &Path) -> Result<Vec<(String, SuiteYaml)>> {
+    let dir = suites_dir(repo);
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+    let mut out = Vec::new();
+    let mut entries: Vec<_> = std::fs::read_dir(&dir)?
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.path().extension().and_then(|x| x.to_str()) == Some("yaml")
+        })
+        .collect();
+    entries.sort_by_key(|e| e.file_name());
+    for entry in entries {
+        let path = entry.path();
+        let slug = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_owned();
+        let content = std::fs::read_to_string(&path)?;
+        if let Ok(suite) = serde_yaml::from_str::<SuiteYaml>(&content) {
+            out.push((slug, suite));
+        }
+    }
+    Ok(out)
+}
+
+pub fn get_suite(repo: &Path, slug: &str) -> Result<SuiteYaml> {
+    let path = suites_dir(repo).join(format!("{}.yaml", slug));
+    let content = std::fs::read_to_string(&path)
+        .with_context(|| format!("suite not found: {}", slug))?;
+    serde_yaml::from_str(&content).context("parsing suite yaml")
+}
+
+pub fn create_suite(
+    repo: &Path,
+    slug: &str,
+    name: &str,
+    description: Option<String>,
+    cases: Vec<String>,
+) -> Result<SuiteYaml> {
+    let dir = suites_dir(repo);
+    std::fs::create_dir_all(&dir)?;
+    let path = dir.join(format!("{}.yaml", slug));
+    if path.exists() {
+        bail!("suite already exists: {}", slug);
+    }
+    let suite = SuiteYaml { name: name.to_owned(), description, cases };
+    let yaml = serde_yaml::to_string(&suite).context("serializing suite")?;
+    std::fs::write(path, yaml)?;
+    Ok(suite)
+}

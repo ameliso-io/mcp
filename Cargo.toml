@@ -18,3 +18,4 @@ tonic = "0.12"
 
 [build-dependencies]
 tonic-build = "0.12"
+prost-build = "0.13"
