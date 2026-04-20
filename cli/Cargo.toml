@@ -1,0 +1,13 @@
+[package]
+name = "ameliso"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ameliso"
+path = "src/main.rs"
+
+[dependencies]
+ameliso-server = { path = "../server" }
+clap = { version = "4", features = ["derive", "env"] }
+anyhow = "1"
