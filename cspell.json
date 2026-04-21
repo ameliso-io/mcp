@@ -70,7 +70,9 @@
     "invalidsig",
     "axum",
     "serde_yaml",
-    "upsert"
+    "upsert",
+    "upserts",
+    "notvalidhex"
   ],
   "flagWords": []
 }

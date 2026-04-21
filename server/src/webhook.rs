@@ -19,11 +19,13 @@ fn verify_signature(secret: &str, body: &[u8], sig_header: &str) -> bool {
         Some(s) => s,
         None => return false,
     };
+    let Ok(sig_bytes) = hex::decode(sig_hex) else {
+        return false;
+    };
     let mut mac =
         Hmac::<Sha256>::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
     mac.update(body);
-    let expected = hex::encode(mac.finalize().into_bytes());
-    expected == sig_hex
+    mac.verify_slice(&sig_bytes).is_ok()
 }
 
 #[derive(serde::Deserialize)]
@@ -204,6 +206,25 @@ mod tests {
     #[test]
     fn verify_signature_missing_prefix() {
         assert!(!verify_signature("secret", b"payload", "invalidsig"));
+    }
+
+    #[test]
+    fn verify_signature_invalid_hex() {
+        assert!(!verify_signature(
+            "secret",
+            b"payload",
+            "sha256=notvalidhex!!"
+        ));
+    }
+
+    // GitHub's documented test vector from:
+    // https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+    #[test]
+    fn verify_signature_github_test_vector() {
+        let secret = "It's a Secret to Everybody";
+        let payload = b"Hello, World!";
+        let sig = "sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17";
+        assert!(verify_signature(secret, payload, sig));
     }
 
     #[test]
