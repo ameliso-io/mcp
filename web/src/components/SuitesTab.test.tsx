@@ -401,9 +401,7 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
-    await waitFor(() =>
-      expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0)
-    );
+    await waitFor(() => expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0));
     resolve!({ cases: [] });
   });
 
@@ -421,5 +419,26 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("Save"));
     expect(screen.getByText("Saving…")).toBeInTheDocument();
     resolve!({ suite: mockSuite });
+  });
+
+  it("shows suite description in card view", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Critical path checks")).toBeInTheDocument());
+  });
+
+  it("shows case tags in expanded suite view", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("auth")).toBeInTheDocument());
+  });
+
+  it("closes create form when Cancel button clicked on toggle", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    expect(screen.getByRole("heading", { name: "Create Suite" })).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByRole("heading", { name: "Create Suite" })).not.toBeInTheDocument();
+    expect(screen.getByText("+ New Suite")).toBeInTheDocument();
   });
 });
