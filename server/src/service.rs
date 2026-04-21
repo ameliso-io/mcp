@@ -1704,6 +1704,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn delete_run_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .delete_run(Request::new(pb::DeleteRunRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_coverage_report_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+                repo_id: "".to_owned(),
+                status_filter: 0,
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
     async fn delete_run_rejects_empty_run_id() {
         let s = server();
         let err = s
