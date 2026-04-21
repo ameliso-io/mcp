@@ -386,9 +386,39 @@ export default function RunsTab({ repoPath }: Props) {
                   <div style={{ color: '#64748b', padding: '12px 0' }}>Loading…</div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
-                    <p style={{ margin: '0 0 12px', fontSize: '14px', color: '#64748b' }}>
-                      {recordedResults.length} result{recordedResults.length !== 1 ? 's' : ''} recorded
-                    </p>
+                    {recordedResults.length > 0 && (() => {
+                      const counts = {
+                        passed: recordedResults.filter(r => r.status === ResultStatus.PASSED).length,
+                        failed: recordedResults.filter(r => r.status === ResultStatus.FAILED).length,
+                        blocked: recordedResults.filter(r => r.status === ResultStatus.BLOCKED).length,
+                        skipped: recordedResults.filter(r => r.status === ResultStatus.SKIPPED).length,
+                      }
+                      return (
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Passed', count: counts.passed, color: '#16a34a', bg: '#f0fdf4' },
+                            { label: 'Failed', count: counts.failed, color: '#dc2626', bg: '#fef2f2' },
+                            { label: 'Blocked', count: counts.blocked, color: '#ea580c', bg: '#fff7ed' },
+                            { label: 'Skipped', count: counts.skipped, color: '#64748b', bg: '#f8fafc' },
+                          ].filter(s => s.count > 0).map(s => (
+                            <span
+                              key={s.label}
+                              style={{
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                color: s.color,
+                                background: s.bg,
+                                border: `1px solid ${s.color}30`,
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                              }}
+                            >
+                              {s.count} {s.label}
+                            </span>
+                          ))}
+                        </div>
+                      )
+                    })()}
                     {recordedResults.length === 0 ? (
                       <p style={{ color: '#64748b', fontSize: '14px' }}>No results recorded.</p>
                     ) : (
