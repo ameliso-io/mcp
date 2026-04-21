@@ -241,7 +241,10 @@ async fn create_and_list_run() {
     assert_eq!(meta.status, pb::RunStatus::InProgress as i32);
 
     let runs = c
-        .list_runs(Request::new(pb::ListRunsRequest { repo_path: rp, status: 0 }))
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp,
+            status: 0,
+        }))
         .await
         .unwrap()
         .into_inner()
@@ -753,4 +756,50 @@ async fn list_runs_filter_by_status() {
         .into_inner()
         .runs;
     assert_eq!(completed.len(), 2);
+}
+
+#[tokio::test]
+async fn record_result_rejects_invalid_status() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-alpha", "in-progress");
+
+    let err = c
+        .record_result(Request::new(pb::RecordResultRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-alpha".to_owned(),
+            case_path: "auth/login".to_owned(),
+            // 0 = Unspecified
+            status: 0,
+            notes: String::new(),
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn finalize_run_rejects_in_progress_status() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-alpha", "in-progress");
+
+    let err = c
+        .finalize_run(Request::new(pb::FinalizeRunRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-alpha".to_owned(),
+            // InProgress is not a valid finalize status
+            status: pb::RunStatus::InProgress as i32,
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
 }
