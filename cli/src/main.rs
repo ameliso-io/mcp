@@ -1,12 +1,92 @@
-use std::path::PathBuf;
-
-use ameliso_server::{git, repo};
-use anyhow::Result;
+use ameliso_server::proto::ameliso_v1 as pb;
+use ameliso_server::proto::ameliso_v1::ameliso_service_client::AmelisoServiceClient;
+use anyhow::{anyhow, Result};
 use clap::{Parser, Subcommand};
+use tonic::transport::Channel;
+
+// ---------------------------------------------------------------------------
+// Conversion helpers
+// ---------------------------------------------------------------------------
+
+fn priority_str_to_i32(s: &str) -> i32 {
+    match s.to_lowercase().as_str() {
+        "low" => pb::Priority::Low as i32,
+        "medium" => pb::Priority::Medium as i32,
+        "high" => pb::Priority::High as i32,
+        _ => pb::Priority::Unspecified as i32,
+    }
+}
+
+fn run_status_str_to_i32(s: &str) -> i32 {
+    match s.to_lowercase().replace('_', "-").as_str() {
+        "in-progress" => pb::RunStatus::InProgress as i32,
+        "completed" => pb::RunStatus::Completed as i32,
+        "aborted" => pb::RunStatus::Aborted as i32,
+        _ => pb::RunStatus::Unspecified as i32,
+    }
+}
+
+fn result_status_str_to_i32(s: &str) -> i32 {
+    match s.to_lowercase().as_str() {
+        "passed" => pb::ResultStatus::Passed as i32,
+        "failed" => pb::ResultStatus::Failed as i32,
+        "blocked" => pb::ResultStatus::Blocked as i32,
+        "skipped" => pb::ResultStatus::Skipped as i32,
+        _ => pb::ResultStatus::Unspecified as i32,
+    }
+}
+
+fn result_status_i32_to_str(v: i32) -> &'static str {
+    match v {
+        x if x == pb::ResultStatus::Passed as i32 => "passed",
+        x if x == pb::ResultStatus::Failed as i32 => "failed",
+        x if x == pb::ResultStatus::Blocked as i32 => "blocked",
+        x if x == pb::ResultStatus::Skipped as i32 => "skipped",
+        x if x == pb::ResultStatus::Never as i32 => "never",
+        _ => "unspecified",
+    }
+}
+
+fn run_status_i32_to_str(v: i32) -> &'static str {
+    match v {
+        x if x == pb::RunStatus::InProgress as i32 => "in-progress",
+        x if x == pb::RunStatus::Completed as i32 => "completed",
+        x if x == pb::RunStatus::Aborted as i32 => "aborted",
+        _ => "unspecified",
+    }
+}
+
+fn parse_tags(s: &str) -> Vec<String> {
+    s.split(',')
+        .map(|t| t.trim().to_owned())
+        .filter(|t| !t.is_empty())
+        .collect()
+}
+
+fn grpc_err(e: tonic::Status) -> anyhow::Error {
+    anyhow!("{}: {}", e.code(), e.message())
+}
+
+fn client(channel: Channel) -> AmelisoServiceClient<Channel> {
+    AmelisoServiceClient::new(channel)
+}
+
+// ---------------------------------------------------------------------------
+// CLI types
+// ---------------------------------------------------------------------------
 
 #[derive(Parser)]
 #[command(name = "ameliso", about = "Manual testing management CLI")]
 struct Cli {
+    #[arg(
+        long,
+        env = "AMELISO_SERVER_URL",
+        default_value = "http://[::1]:50052",
+        global = true,
+        help = "URL of the Ameliso gRPC server"
+    )]
+    server: String,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -21,8 +101,8 @@ enum Commands {
     Suites(SuitesCmd),
     #[command(about = "Show coverage report")]
     Coverage {
-        #[arg(long, env = "AMELISO_REPO", help = "Path to the test repository")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID", help = "Repository ID, e.g. owner/repo")]
+        repo_id: String,
         #[arg(
             long,
             help = "Filter by status: never | passed | failed | blocked | skipped"
@@ -31,15 +111,15 @@ enum Commands {
     },
     #[command(about = "Show which cases need re-running after recent code changes")]
     Affected {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
-        #[arg(long, help = "Git ref to compare from (default: last run commit)")]
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
+        #[arg(long, help = "Git ref to compare from (default: last completed run)")]
         since: Option<String>,
     },
     #[command(about = "Show a combined repo status snapshot: case counts, coverage, active runs")]
     Status {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
     },
 }
 
@@ -47,8 +127,8 @@ enum Commands {
 enum CasesCmd {
     #[command(about = "List test cases")]
     List {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         #[arg(long, help = "Comma-separated tags to filter by")]
         tags: Option<String>,
         #[arg(
@@ -63,14 +143,14 @@ enum CasesCmd {
     },
     #[command(about = "Show a single test case")]
     Get {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         case_path: String,
     },
     #[command(about = "Create a new test case")]
     Create {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         case_path: String,
         #[arg(long)]
         title: String,
@@ -85,8 +165,8 @@ enum CasesCmd {
     },
     #[command(about = "Update an existing test case")]
     Update {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         case_path: String,
         #[arg(long, help = "New title (omit to keep existing)")]
         title: Option<String>,
@@ -104,8 +184,8 @@ enum CasesCmd {
     },
     #[command(about = "Delete a test case")]
     Delete {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         case_path: String,
     },
 }
@@ -114,8 +194,8 @@ enum CasesCmd {
 enum RunsCmd {
     #[command(about = "List test runs")]
     List {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         #[arg(
             long,
             value_name = "STATUS",
@@ -125,14 +205,14 @@ enum RunsCmd {
     },
     #[command(about = "Show a single run with results")]
     Get {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         run_id: String,
     },
     #[command(about = "Create a new test run")]
     Create {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         slug: String,
         #[arg(long)]
         tester: Option<String>,
@@ -143,33 +223,33 @@ enum RunsCmd {
     },
     #[command(about = "Record a test result")]
     Record {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         run_id: String,
         case_path: String,
         #[arg(help = "passed | failed | blocked | skipped")]
         status: String,
-        #[arg(long)]
+        #[arg(long, help = "Notes (required when status is failed or blocked)")]
         notes: Option<String>,
     },
     #[command(about = "Finalize a test run")]
     Finalize {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         run_id: String,
         #[arg(help = "completed | aborted")]
         status: String,
     },
     #[command(about = "Show cases in a run's scope that have no result yet")]
     Pending {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         run_id: String,
     },
     #[command(about = "Delete a run directory entirely (removes all recorded results)")]
     Delete {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         run_id: String,
     },
 }
@@ -178,19 +258,19 @@ enum RunsCmd {
 enum SuitesCmd {
     #[command(about = "List test suites")]
     List {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
     },
     #[command(about = "Show a single suite")]
     Get {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         slug: String,
     },
     #[command(about = "Create a new suite")]
     Create {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         slug: String,
         #[arg(long)]
         name: String,
@@ -201,8 +281,8 @@ enum SuitesCmd {
     },
     #[command(about = "Update an existing suite")]
     Update {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         slug: String,
         #[arg(long, help = "New name (omit to keep existing)")]
         name: Option<String>,
@@ -216,93 +296,94 @@ enum SuitesCmd {
     },
     #[command(about = "Delete a suite")]
     Delete {
-        #[arg(long, env = "AMELISO_REPO")]
-        repo: PathBuf,
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
         slug: String,
     },
 }
 
-fn main() -> Result<()> {
+// ---------------------------------------------------------------------------
+// Entry point
+// ---------------------------------------------------------------------------
+
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
+    let channel = Channel::from_shared(cli.server.clone())
+        .map_err(|e| anyhow!("invalid server URL '{}': {e}", cli.server))?
+        .connect_lazy();
     match cli.command {
-        Commands::Cases(cmd) => run_cases(cmd),
-        Commands::Runs(cmd) => run_runs(cmd),
-        Commands::Suites(cmd) => run_suites(cmd),
-        Commands::Coverage { repo, status } => run_coverage(&repo, status.as_deref()),
-        Commands::Affected { repo, since } => run_affected(&repo, since.as_deref()),
-        Commands::Status { repo } => run_status(&repo),
+        Commands::Cases(cmd) => run_cases(channel, cmd).await,
+        Commands::Runs(cmd) => run_runs(channel, cmd).await,
+        Commands::Suites(cmd) => run_suites(channel, cmd).await,
+        Commands::Coverage { repo_id, status } => {
+            run_coverage(channel, &repo_id, status.as_deref()).await
+        }
+        Commands::Affected { repo_id, since } => {
+            run_affected(channel, &repo_id, since.as_deref()).await
+        }
+        Commands::Status { repo_id } => run_status(channel, &repo_id).await,
     }
 }
 
-fn run_cases(cmd: CasesCmd) -> Result<()> {
+// ---------------------------------------------------------------------------
+// Cases
+// ---------------------------------------------------------------------------
+
+async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
+    let mut c = client(channel);
     match cmd {
         CasesCmd::List {
-            repo,
+            repo_id,
             tags,
             query,
             priority,
             suite,
         } => {
-            let mut cases = repo::list_cases(&repo)?;
-            if let Some(t) = &tags {
-                let filter: Vec<&str> = t.split(',').map(|s| s.trim()).collect();
-                cases.retain(|c| {
-                    filter
-                        .iter()
-                        .all(|f| c.fm.tags.iter().any(|ct| ct.eq_ignore_ascii_case(f)))
-                });
-            }
-            if let Some(q) = &query {
-                let q = q.to_lowercase();
-                cases.retain(|c| {
-                    c.fm.title.to_lowercase().contains(&q)
-                        || c.fm.description.to_lowercase().contains(&q)
-                        || c.case_path.to_lowercase().contains(&q)
-                        || c.body.to_lowercase().contains(&q)
-                });
-            }
-            if let Some(p) = &priority {
-                cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(p));
-            }
-            if let Some(suite_slug) = &suite {
-                let s = repo::get_suite(&repo, suite_slug)?;
-                let suite_set: std::collections::HashSet<&str> =
-                    s.cases.iter().map(|p| p.as_str()).collect();
-                cases.retain(|c| suite_set.contains(c.case_path.as_str()));
-            }
+            let tag_vec = parse_tags(tags.as_deref().unwrap_or(""));
+            let pri = priority
+                .as_deref()
+                .map(priority_str_to_i32)
+                .unwrap_or(pb::Priority::Unspecified as i32);
+            let cases = c
+                .list_cases(pb::ListCasesRequest {
+                    repo_id,
+                    tags: tag_vec,
+                    priority: pri,
+                    query: query.unwrap_or_default(),
+                    suite: suite.unwrap_or_default(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .cases;
             if cases.is_empty() {
                 println!("No cases found.");
             } else {
-                let priority_rank = |p: &str| match p {
-                    "high" => 0u8,
-                    "medium" => 1,
-                    "low" => 2,
-                    _ => 3,
-                };
-                cases.sort_by(|a, b| {
-                    priority_rank(&a.fm.priority)
-                        .cmp(&priority_rank(&b.fm.priority))
-                        .then_with(|| a.case_path.cmp(&b.case_path))
-                });
-                for c in &cases {
-                    println!("{:40} {:6}  {}", c.case_path, c.fm.priority, c.fm.title);
+                for case in &cases {
+                    println!("{:40} {:6}  {}", case.path, case.priority, case.title);
                 }
                 println!("\n{} case(s)", cases.len());
             }
         }
-        CasesCmd::Get { repo, case_path } => {
-            let c = repo::get_case(&repo, &case_path)?;
-            println!("path:        {}", c.case_path);
-            println!("title:       {}", c.fm.title);
-            println!("description: {}", c.fm.description);
-            println!("tags:        {}", c.fm.tags.join(", "));
-            println!("priority:    {}", c.fm.priority);
-            println!("created_at:  {}", c.fm.created_at);
-            println!("updated_at:  {}", c.fm.updated_at);
-            println!("\n{}", c.body);
+        CasesCmd::Get { repo_id, case_path } => {
+            let resp = c
+                .get_case(pb::GetCaseRequest { repo_id, case_path })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            let case = resp.case.as_ref().unwrap();
+            println!("path:        {}", case.path);
+            println!("title:       {}", case.title);
+            println!("description: {}", case.description);
+            println!("tags:        {}", case.tags.join(", "));
+            println!("priority:    {}", case.priority);
+            println!("created_at:  {}", case.created_at);
+            println!("updated_at:  {}", case.updated_at);
+            println!("\n{}", resp.body);
         }
         CasesCmd::Create {
-            repo,
+            repo_id,
             case_path,
             title,
             description,
@@ -310,32 +391,35 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             priority,
             body,
         } => {
-            let tag_list = parse_tags(tags.as_deref());
-            let desc = description.as_deref().unwrap_or("");
-            let c = repo::create_case(
-                &repo,
-                &case_path,
-                &title,
-                desc,
-                tag_list,
-                &priority,
-                body.as_deref(),
-            )?;
-            println!("Created: cases/{}.md", c.case_path);
-            println!("title:       {}", c.fm.title);
-            println!("description: {}", c.fm.description);
-            println!("priority:    {}", c.fm.priority);
+            let resp = c
+                .create_case(pb::CreateCaseRequest {
+                    repo_id,
+                    case_path,
+                    title,
+                    description: description.unwrap_or_default(),
+                    tags: parse_tags(tags.as_deref().unwrap_or("")),
+                    priority: priority_str_to_i32(&priority),
+                    body: body.unwrap_or_default(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            let case = resp.case.as_ref().unwrap();
+            println!("Created: {}", resp.file_path);
+            println!("title:       {}", case.title);
+            println!("description: {}", case.description);
+            println!("priority:    {}", case.priority);
             println!(
                 "tags:        {}",
-                if c.fm.tags.is_empty() {
+                if case.tags.is_empty() {
                     "(none)".to_owned()
                 } else {
-                    c.fm.tags.join(", ")
+                    case.tags.join(", ")
                 }
             );
         }
         CasesCmd::Update {
-            repo,
+            repo_id,
             case_path,
             title,
             description,
@@ -343,116 +427,138 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             priority,
             body,
         } => {
-            let tag_list: Option<Vec<String>> = tags.as_deref().map(|s| {
-                s.split(',')
-                    .map(|t| t.trim().to_owned())
-                    .filter(|t| !t.is_empty())
-                    .collect()
-            });
-            let c = repo::update_case(
-                &repo,
-                &case_path,
-                title.as_deref(),
-                description.as_deref(),
-                tag_list,
-                priority.as_deref(),
-                body.as_deref(),
-            )?;
-            println!("Updated: cases/{}.md", c.case_path);
-            println!("title:       {}", c.fm.title);
-            println!("description: {}", c.fm.description);
-            println!("priority:    {}", c.fm.priority);
+            let tag_vec = parse_tags(tags.as_deref().unwrap_or(""));
+            let pri = priority
+                .as_deref()
+                .map(priority_str_to_i32)
+                .unwrap_or(pb::Priority::Unspecified as i32);
+            let resp = c
+                .update_case(pb::UpdateCaseRequest {
+                    repo_id,
+                    case_path,
+                    title: title.unwrap_or_default(),
+                    description: description.unwrap_or_default(),
+                    tags: tag_vec,
+                    priority: pri,
+                    body: body.unwrap_or_default(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            let case = resp.case.as_ref().unwrap();
+            println!("Updated: cases/{}.md", case.path);
+            println!("title:       {}", case.title);
+            println!("description: {}", case.description);
+            println!("priority:    {}", case.priority);
             println!(
                 "tags:        {}",
-                if c.fm.tags.is_empty() {
+                if case.tags.is_empty() {
                     "(none)".to_owned()
                 } else {
-                    c.fm.tags.join(", ")
+                    case.tags.join(", ")
                 }
             );
         }
-        CasesCmd::Delete { repo, case_path } => {
-            repo::delete_case(&repo, &case_path)?;
-            println!("Deleted: cases/{}.md", case_path);
+        CasesCmd::Delete { repo_id, case_path } => {
+            let resp = c
+                .delete_case(pb::DeleteCaseRequest { repo_id, case_path })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            println!("Deleted: {}", resp.file_path);
         }
     }
     Ok(())
 }
 
-fn run_runs(cmd: RunsCmd) -> Result<()> {
+// ---------------------------------------------------------------------------
+// Runs
+// ---------------------------------------------------------------------------
+
+async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
+    let mut c = client(channel);
     match cmd {
-        RunsCmd::List { repo, status } => {
-            let all_runs = repo::list_runs(&repo)?;
-            let runs: Vec<_> = if let Some(ref s) = status {
-                all_runs
-                    .into_iter()
-                    .filter(|r| r.status.eq_ignore_ascii_case(s))
-                    .collect()
-            } else {
-                all_runs
-            };
+        RunsCmd::List { repo_id, status } => {
+            let status_i32 = status
+                .as_deref()
+                .map(run_status_str_to_i32)
+                .unwrap_or(pb::RunStatus::Unspecified as i32);
+            let runs = c
+                .list_runs(pb::ListRunsRequest {
+                    repo_id,
+                    status: status_i32,
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .runs;
             if runs.is_empty() {
                 println!("No runs found.");
             } else {
                 for r in &runs {
-                    let suite_part = r
-                        .suite
-                        .as_deref()
-                        .filter(|s| !s.is_empty())
-                        .map(|s| format!(" [suite: {s}]"))
-                        .unwrap_or_default();
-                    let env_part = r
-                        .environment
-                        .as_deref()
-                        .filter(|s| !s.is_empty())
-                        .map(|s| format!(" [env: {s}]"))
-                        .unwrap_or_default();
+                    let suite_part = if r.suite.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" [suite: {}]", r.suite)
+                    };
+                    let env_part = if r.environment.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" [env: {}]", r.environment)
+                    };
                     println!(
                         "{:30} {:12} tester: {}{}{}",
-                        r.id, r.status, r.tester, suite_part, env_part
+                        r.id,
+                        run_status_i32_to_str(r.status),
+                        r.tester,
+                        suite_part,
+                        env_part
                     );
                 }
                 println!("\n{} run(s)", runs.len());
             }
         }
-        RunsCmd::Get { repo, run_id } => {
-            let run = repo::get_run(&repo, &run_id)?;
-            let case_titles: std::collections::HashMap<String, String> = repo::list_cases(&repo)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|c| (c.case_path, c.fm.title))
-                .collect();
-            println!("id:     {}", run.meta.id);
-            println!("date:   {}", run.meta.date);
-            println!("tester: {}", run.meta.tester);
-            println!("status: {}", run.meta.status);
-            if let Some(env) = &run.meta.environment {
-                println!("env:    {env}");
+        RunsCmd::Get { repo_id, run_id } => {
+            let run = c
+                .get_run(pb::GetRunRequest {
+                    repo_id: repo_id.clone(),
+                    run_id: run_id.clone(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .run
+                .unwrap();
+            let meta = run.meta.as_ref().unwrap();
+            println!("id:     {}", meta.id);
+            println!("date:   {}", meta.date);
+            println!("tester: {}", meta.tester);
+            println!("status: {}", run_status_i32_to_str(meta.status));
+            if !meta.environment.is_empty() {
+                println!("env:    {}", meta.environment);
             }
-            if let Some(ref suite) = run.meta.suite {
-                if !suite.is_empty() {
-                    println!("suite:  {suite}");
-                }
+            if !meta.suite.is_empty() {
+                println!("suite:  {}", meta.suite);
             }
             let passed = run
                 .results
                 .iter()
-                .filter(|r| r.fm.status == "passed")
+                .filter(|r| r.status == pb::ResultStatus::Passed as i32)
                 .count();
             let failed = run
                 .results
                 .iter()
-                .filter(|r| r.fm.status == "failed")
+                .filter(|r| r.status == pb::ResultStatus::Failed as i32)
                 .count();
             let blocked = run
                 .results
                 .iter()
-                .filter(|r| r.fm.status == "blocked")
+                .filter(|r| r.status == pb::ResultStatus::Blocked as i32)
                 .count();
             let skipped = run
                 .results
                 .iter()
-                .filter(|r| r.fm.status == "skipped")
+                .filter(|r| r.status == pb::ResultStatus::Skipped as i32)
                 .count();
             println!(
                 "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
@@ -464,18 +570,18 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             );
             println!("\nResults ({}):", run.results.len());
             for r in &run.results {
-                let title = case_titles
-                    .get(&r.case_path)
-                    .map(|t| format!(" — {t}"))
-                    .unwrap_or_default();
-                println!("  {:40} {:8}{}", r.case_path, r.fm.status, title);
+                println!(
+                    "  {:40} {}",
+                    r.case_path,
+                    result_status_i32_to_str(r.status)
+                );
                 if !r.notes.trim().is_empty() {
                     println!("    notes: {}", r.notes.trim());
                 }
             }
         }
         RunsCmd::Create {
-            repo,
+            repo_id,
             slug,
             tester,
             environment,
@@ -484,82 +590,130 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             let tester = tester
                 .filter(|s| !s.is_empty())
                 .unwrap_or_else(|| std::env::var("USER").unwrap_or_else(|_| "unknown".to_owned()));
-            let (meta, dir_path) = repo::create_run(&repo, &slug, &tester, environment, suite)?;
+            let resp = c
+                .create_run(pb::CreateRunRequest {
+                    repo_id: repo_id.clone(),
+                    slug,
+                    tester,
+                    environment: environment.unwrap_or_default(),
+                    suite: suite.unwrap_or_default(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            let meta = resp.run.as_ref().unwrap();
             println!("Created run: {}", meta.id);
-            println!("Directory:   {dir_path}");
-            if let Ok((pending, total)) = repo::get_pending_cases(&repo, &meta.id) {
-                println!("Scope:       {total} case(s) to test (in priority order):");
-                for c in &pending {
-                    let tags = if c.fm.tags.is_empty() {
+            println!("Directory:   {}", resp.dir_path);
+            if let Ok(pending_resp) = c
+                .get_pending_cases(pb::GetPendingCasesRequest {
+                    repo_id,
+                    run_id: meta.id.clone(),
+                })
+                .await
+            {
+                let p = pending_resp.into_inner();
+                println!("Scope:       {} case(s) to test:", p.total_in_scope);
+                for case in &p.cases {
+                    let tags = if case.tags.is_empty() {
                         String::new()
                     } else {
-                        format!(", tags: {}", c.fm.tags.join(", "))
+                        format!(", tags: {}", case.tags.join(", "))
                     };
                     println!(
                         "  {} — {} (priority: {}{})",
-                        c.case_path, c.fm.title, c.fm.priority, tags
+                        case.path, case.title, case.priority, tags
                     );
                 }
             }
         }
         RunsCmd::Record {
-            repo,
+            repo_id,
             run_id,
             case_path,
             status,
             notes,
         } => {
-            let (_, prev) = repo::record_result(
-                &repo,
-                &run_id,
-                &case_path,
-                &status,
-                notes.as_deref().unwrap_or(""),
-            )?;
-            if let Some(old) = prev {
-                println!("Updated: {case_path} = {status} in run {run_id} (was: {old})");
-            } else {
-                println!("Recorded: {case_path} = {status} in run {run_id}");
-            }
-            if let Ok((pending, total)) = repo::get_pending_cases(&repo, &run_id) {
-                if pending.is_empty() {
+            let status_i32 = result_status_str_to_i32(&status);
+            c.record_result(pb::RecordResultRequest {
+                repo_id: repo_id.clone(),
+                run_id: run_id.clone(),
+                case_path: case_path.clone(),
+                status: status_i32,
+                notes: notes.unwrap_or_default(),
+            })
+            .await
+            .map_err(grpc_err)?;
+            println!("Recorded: {case_path} = {status} in run {run_id}");
+            if let Ok(resp) = c
+                .get_pending_cases(pb::GetPendingCasesRequest {
+                    repo_id,
+                    run_id,
+                })
+                .await
+            {
+                let resp = resp.into_inner();
+                let total = resp.total_in_scope as usize;
+                let pending = resp.cases.len();
+                if pending == 0 {
                     println!("Progress: {total}/{total} done — all cases recorded");
                 } else {
                     println!(
                         "Progress: {}/{total} done, {} remaining",
-                        total - pending.len(),
-                        pending.len()
+                        total - pending,
+                        pending
                     );
                 }
             }
         }
         RunsCmd::Finalize {
-            repo,
+            repo_id,
             run_id,
             status,
         } => {
-            let meta = repo::finalize_run(&repo, &run_id, &status)?;
-            println!("Finalized run {} as {}", meta.id, meta.status);
-            if let Ok(run) = repo::get_run(&repo, &meta.id) {
+            let status_i32 = run_status_str_to_i32(&status);
+            let meta = c
+                .finalize_run(pb::FinalizeRunRequest {
+                    repo_id: repo_id.clone(),
+                    run_id: run_id.clone(),
+                    status: status_i32,
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .run
+                .unwrap();
+            println!(
+                "Finalized run {} as {}",
+                meta.id,
+                run_status_i32_to_str(meta.status)
+            );
+            if let Ok(run_resp) = c
+                .get_run(pb::GetRunRequest {
+                    repo_id,
+                    run_id: meta.id.clone(),
+                })
+                .await
+            {
+                let run = run_resp.into_inner().run.unwrap();
                 let passed = run
                     .results
                     .iter()
-                    .filter(|r| r.fm.status == "passed")
+                    .filter(|r| r.status == pb::ResultStatus::Passed as i32)
                     .count();
                 let failed = run
                     .results
                     .iter()
-                    .filter(|r| r.fm.status == "failed")
+                    .filter(|r| r.status == pb::ResultStatus::Failed as i32)
                     .count();
                 let blocked = run
                     .results
                     .iter()
-                    .filter(|r| r.fm.status == "blocked")
+                    .filter(|r| r.status == pb::ResultStatus::Blocked as i32)
                     .count();
                 let skipped = run
                     .results
                     .iter()
-                    .filter(|r| r.fm.status == "skipped")
+                    .filter(|r| r.status == pb::ResultStatus::Skipped as i32)
                     .count();
                 println!(
                     "Summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
@@ -571,78 +725,97 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                 );
             }
         }
-        RunsCmd::Pending { repo, run_id } => {
-            let (pending, total) = repo::get_pending_cases(&repo, &run_id)?;
+        RunsCmd::Pending { repo_id, run_id } => {
+            let resp = c
+                .get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            let total = resp.total_in_scope as usize;
+            let pending = &resp.cases;
             if pending.is_empty() {
-                println!("All {} case(s) in scope have results recorded.", total);
+                println!("All {total} case(s) in scope have results recorded.");
             } else {
                 println!(
                     "Pending ({}/{} cases still need results):",
                     pending.len(),
                     total
                 );
-                for c in &pending {
-                    let tags = if c.fm.tags.is_empty() {
+                for case in pending {
+                    let tags = if case.tags.is_empty() {
                         String::new()
                     } else {
-                        format!(", tags: {}", c.fm.tags.join(", "))
+                        format!(", tags: {}", case.tags.join(", "))
                     };
                     println!(
                         "  {} — {} (priority: {}{})",
-                        c.case_path, c.fm.title, c.fm.priority, tags
+                        case.path, case.title, case.priority, tags
                     );
                 }
             }
         }
-        RunsCmd::Delete { repo, run_id } => {
-            repo::delete_run(&repo, &run_id)?;
-            println!("Deleted: runs/{run_id}");
+        RunsCmd::Delete { repo_id, run_id } => {
+            let resp = c
+                .delete_run(pb::DeleteRunRequest { repo_id, run_id })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            println!("Deleted: {}", resp.dir_path);
         }
     }
     Ok(())
 }
 
-fn run_suites(cmd: SuitesCmd) -> Result<()> {
+// ---------------------------------------------------------------------------
+// Suites
+// ---------------------------------------------------------------------------
+
+async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
+    let mut c = client(channel);
     match cmd {
-        SuitesCmd::List { repo } => {
-            let suites = repo::list_suites(&repo)?;
+        SuitesCmd::List { repo_id } => {
+            let suites = c
+                .list_suites(pb::ListSuitesRequest { repo_id })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .suites;
             if suites.is_empty() {
                 println!("No suites found.");
             } else {
-                for (slug, s) in &suites {
-                    let desc = s
-                        .description
-                        .as_deref()
-                        .filter(|d| !d.is_empty())
-                        .map(|d| format!(" — {d}"))
-                        .unwrap_or_default();
-                    println!("{:20} {} ({} cases){}", slug, s.name, s.cases.len(), desc);
+                for s in &suites {
+                    let desc = if s.description.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" — {}", s.description)
+                    };
+                    println!("{:20} {} ({} cases){}", s.slug, s.name, s.cases.len(), desc);
                 }
             }
         }
-        SuitesCmd::Get { repo, slug } => {
-            let s = repo::get_suite(&repo, &slug)?;
-            let case_titles: std::collections::HashMap<String, String> = repo::list_cases(&repo)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|c| (c.case_path, c.fm.title))
-                .collect();
+        SuitesCmd::Get { repo_id, slug } => {
+            let suite = c
+                .get_suite(pb::GetSuiteRequest {
+                    repo_id,
+                    slug: slug.clone(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .suite
+                .unwrap();
             println!("slug:        {slug}");
-            println!("name:        {}", s.name);
-            if let Some(d) = &s.description {
-                println!("description: {d}");
+            println!("name:        {}", suite.name);
+            if !suite.description.is_empty() {
+                println!("description: {}", suite.description);
             }
-            println!("cases ({}):", s.cases.len());
-            for path in &s.cases {
-                let title = case_titles
-                    .get(path)
-                    .map(|t| format!(" — {t}"))
-                    .unwrap_or_default();
-                println!("  {path}{title}");
+            println!("cases ({}):", suite.cases.len());
+            for path in &suite.cases {
+                println!("  {path}");
             }
         }
         SuitesCmd::Create {
-            repo,
+            repo_id,
             slug,
             name,
             description,
@@ -653,72 +826,90 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
                 .map(|s| s.trim().to_owned())
                 .filter(|s| !s.is_empty())
                 .collect();
-            repo::create_suite(&repo, &slug, &name, description, case_list)?;
-            println!("Created: suites/{slug}.yaml");
+            let resp = c
+                .create_suite(pb::CreateSuiteRequest {
+                    repo_id,
+                    slug,
+                    name,
+                    description: description.unwrap_or_default(),
+                    cases: case_list,
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            println!("Created: {}", resp.file_path);
         }
         SuitesCmd::Update {
-            repo,
+            repo_id,
             slug,
             name,
             description,
             cases,
         } => {
-            let case_list = cases.as_deref().map(|raw| {
-                raw.split(',')
-                    .map(|s| s.trim().to_owned())
-                    .filter(|s| !s.is_empty())
-                    .collect::<Vec<_>>()
-            });
-            let desc = description.map(|d| if d.is_empty() { None } else { Some(d) });
-            repo::update_suite(&repo, &slug, name.as_deref(), desc, case_list)?;
+            let case_list: Vec<String> = parse_tags(cases.as_deref().unwrap_or(""));
+            c.update_suite(pb::UpdateSuiteRequest {
+                repo_id,
+                slug: slug.clone(),
+                name: name.unwrap_or_default(),
+                description: description.unwrap_or_default(),
+                cases: case_list,
+            })
+            .await
+            .map_err(grpc_err)?;
             println!("Updated: suites/{slug}.yaml");
         }
-        SuitesCmd::Delete { repo, slug } => {
-            repo::delete_suite(&repo, &slug)?;
-            println!("Deleted: suites/{slug}.yaml");
+        SuitesCmd::Delete { repo_id, slug } => {
+            let resp = c
+                .delete_suite(pb::DeleteSuiteRequest {
+                    repo_id,
+                    slug: slug.clone(),
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            println!("Deleted: {}", resp.file_path);
         }
     }
     Ok(())
 }
 
-fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<()> {
-    let cases = repo::list_cases(repo)?;
-    let runs = repo::list_runs(repo)?;
-    let mut latest: std::collections::HashMap<String, (String, String)> =
-        std::collections::HashMap::new();
-    for run_meta in &runs {
-        if let Ok(run) = repo::get_run(repo, &run_meta.id) {
-            for result in &run.results {
-                latest
-                    .entry(result.case_path.clone())
-                    .or_insert_with(|| (result.fm.status.clone(), run_meta.id.clone()));
-            }
-        }
+// ---------------------------------------------------------------------------
+// Coverage report
+// ---------------------------------------------------------------------------
+
+async fn run_coverage(channel: Channel, repo_id: &str, status_filter: Option<&str>) -> Result<()> {
+    let mut c = client(channel);
+    let status_i32 = status_filter
+        .map(result_status_str_to_i32)
+        .unwrap_or(pb::ResultStatus::Unspecified as i32);
+    let resp = c
+        .get_coverage_report(pb::GetCoverageReportRequest {
+            repo_id: repo_id.to_owned(),
+            status_filter: status_i32,
+        })
+        .await
+        .map_err(grpc_err)?
+        .into_inner();
+
+    let total = resp.entries.len();
+    let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    for e in &resp.entries {
+        *counts
+            .entry(result_status_i32_to_str(e.latest_status))
+            .or_insert(0) += 1;
     }
-    let mut passed = 0usize;
-    let mut failed = 0usize;
-    let mut blocked = 0usize;
-    let mut skipped = 0usize;
-    let mut never_count = 0usize;
-    for c in &cases {
-        match latest.get(&c.case_path).map(|(s, _)| s.as_str()) {
-            Some("passed") => passed += 1,
-            Some("failed") => failed += 1,
-            Some("blocked") => blocked += 1,
-            Some("skipped") => skipped += 1,
-            _ => never_count += 1,
-        }
-    }
+
     println!(
         "Coverage ({} run(s), {} total: {} passed, {} failed, {} blocked, {} skipped, {} never run)\n",
-        runs.len(),
-        cases.len(),
-        passed,
-        failed,
-        blocked,
-        skipped,
-        never_count,
+        resp.run_count,
+        total,
+        counts.get("passed").copied().unwrap_or(0),
+        counts.get("failed").copied().unwrap_or(0),
+        counts.get("blocked").copied().unwrap_or(0),
+        counts.get("skipped").copied().unwrap_or(0),
+        counts.get("never").copied().unwrap_or(0),
     );
+
     let status_rank = |s: &str| match s {
         "failed" => 0u8,
         "blocked" => 1,
@@ -733,139 +924,177 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
         "low" => 2,
         _ => 3,
     };
-    let mut rows: Vec<(&repo::LoadedCase, String, String)> = cases
-        .iter()
-        .map(|c| {
-            let (status, run_id) = latest
-                .get(&c.case_path)
-                .cloned()
-                .unwrap_or_else(|| ("never".to_owned(), String::new()));
-            (c, status, run_id)
-        })
-        .collect();
-    if let Some(f) = status_filter {
-        rows.retain(|(_, status, _)| status.eq_ignore_ascii_case(f));
-    }
-    rows.sort_by(|(a_c, a_s, _), (b_c, b_s, _)| {
+
+    let mut entries: Vec<_> = resp.entries.iter().collect();
+    entries.sort_by(|a, b| {
+        let a_s = result_status_i32_to_str(a.latest_status);
+        let b_s = result_status_i32_to_str(b.latest_status);
         status_rank(a_s)
             .cmp(&status_rank(b_s))
-            .then_with(|| priority_rank(&a_c.fm.priority).cmp(&priority_rank(&b_c.fm.priority)))
-            .then_with(|| a_c.case_path.cmp(&b_c.case_path))
+            .then_with(|| {
+                let ap = a.case.as_ref().map(|c| c.priority.as_str()).unwrap_or("");
+                let bp = b.case.as_ref().map(|c| c.priority.as_str()).unwrap_or("");
+                priority_rank(ap).cmp(&priority_rank(bp))
+            })
+            .then_with(|| {
+                let ap = a.case.as_ref().map(|c| c.path.as_str()).unwrap_or("");
+                let bp = b.case.as_ref().map(|c| c.path.as_str()).unwrap_or("");
+                ap.cmp(bp)
+            })
     });
+
     println!("{:40} {:8} LAST RUN", "CASE", "STATUS");
     println!("{}", "-".repeat(70));
-    for (c, status, run_id) in &rows {
+    for e in &entries {
+        let status = result_status_i32_to_str(e.latest_status);
+        let path = e.case.as_ref().map(|c| c.path.as_str()).unwrap_or("");
+        let title = e.case.as_ref().map(|c| c.title.as_str()).unwrap_or("");
         println!(
             "{:40} {:8} {} — {}",
-            c.case_path, status, run_id, c.fm.title
+            path, status, e.last_run_id, title
         );
     }
-    if never_count > 0 && status_filter.is_none() {
-        println!("\n{never_count} case(s) never run.");
+
+    let never = counts.get("never").copied().unwrap_or(0);
+    if never > 0 && status_filter.is_none() {
+        println!("\n{never} case(s) never run.");
     }
     Ok(())
 }
 
-fn run_affected(repo: &std::path::Path, since: Option<&str>) -> Result<()> {
-    let cases = repo::list_cases(repo)?;
-    let case_map: std::collections::HashMap<&str, &repo::LoadedCase> =
-        cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
-    let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
-    let result = git::find_affected(repo, since, &known_paths)?;
-    println!("Reason: {}", result.reason);
-    if result.case_paths.is_empty() {
+// ---------------------------------------------------------------------------
+// Affected cases
+// ---------------------------------------------------------------------------
+
+async fn run_affected(channel: Channel, repo_id: &str, since: Option<&str>) -> Result<()> {
+    let mut c = client(channel);
+    let resp = c
+        .get_affected_cases(pb::GetAffectedCasesRequest {
+            repo_id: repo_id.to_owned(),
+            since_ref: since.unwrap_or("").to_owned(),
+        })
+        .await
+        .map_err(grpc_err)?
+        .into_inner();
+
+    println!("Reason: {}", resp.reason);
+    if resp.cases.is_empty() {
         println!("No cases need re-running.");
     } else {
-        let mut sorted = result.case_paths.clone();
-        sorted.sort_by_key(
-            |p| match case_map.get(p.as_str()).map(|c| c.fm.priority.as_str()) {
-                Some("high") => 0u8,
-                Some("medium") => 1,
-                Some("low") => 2,
-                _ => 3,
-            },
-        );
-        println!("\nCases to re-run ({}, high priority first):", sorted.len());
-        for path in &sorted {
-            if let Some(c) = case_map.get(path.as_str()) {
-                let tags = if c.fm.tags.is_empty() {
+        println!("\nCases to re-run ({}, high priority first):", resp.cases.len());
+        for ac in &resp.cases {
+            if let Some(case) = &ac.case {
+                let tags = if case.tags.is_empty() {
                     String::new()
                 } else {
-                    format!(", tags: {}", c.fm.tags.join(", "))
+                    format!(", tags: {}", case.tags.join(", "))
                 };
                 println!(
                     "  {} — {} (priority: {}{})",
-                    path, c.fm.title, c.fm.priority, tags
+                    case.path, case.title, case.priority, tags
                 );
-            } else {
-                println!("  {path}");
             }
         }
     }
     Ok(())
 }
 
-fn run_status(repo: &std::path::Path) -> Result<()> {
-    let cases = repo::list_cases(repo).unwrap_or_default();
-    let runs = repo::list_runs(repo).unwrap_or_default();
-    let suites = repo::list_suites(repo).unwrap_or_default();
+// ---------------------------------------------------------------------------
+// Status
+// ---------------------------------------------------------------------------
 
-    let high = cases.iter().filter(|c| c.fm.priority == "high").count();
-    let medium = cases.iter().filter(|c| c.fm.priority == "medium").count();
-    let low = cases.iter().filter(|c| c.fm.priority == "low").count();
+async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
+    let mut c = client(channel.clone());
+    let cov = c
+        .get_coverage_report(pb::GetCoverageReportRequest {
+            repo_id: repo_id.to_owned(),
+            status_filter: pb::ResultStatus::Unspecified as i32,
+        })
+        .await
+        .map_err(grpc_err)?
+        .into_inner();
 
-    let mut latest: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-    for run_meta in &runs {
-        if let Ok(run) = repo::get_run(repo, &run_meta.id) {
-            for result in &run.results {
-                latest
-                    .entry(result.case_path.clone())
-                    .or_insert_with(|| result.fm.status.clone());
+    let mut c2 = client(channel.clone());
+    let suites = c2
+        .list_suites(pb::ListSuitesRequest {
+            repo_id: repo_id.to_owned(),
+        })
+        .await
+        .map_err(grpc_err)?
+        .into_inner()
+        .suites;
+
+    let mut c3 = client(channel.clone());
+    let runs = c3
+        .list_runs(pb::ListRunsRequest {
+            repo_id: repo_id.to_owned(),
+            status: pb::RunStatus::Unspecified as i32,
+        })
+        .await
+        .map_err(grpc_err)?
+        .into_inner()
+        .runs;
+
+    let total = cov.entries.len();
+    let mut high = 0usize;
+    let mut medium = 0usize;
+    let mut low = 0usize;
+    let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    for e in &cov.entries {
+        if let Some(case) = &e.case {
+            match case.priority.as_str() {
+                "high" => high += 1,
+                "medium" => medium += 1,
+                "low" => low += 1,
+                _ => {}
             }
         }
-    }
-
-    let mut passed = 0usize;
-    let mut failed = 0usize;
-    let mut blocked = 0usize;
-    let mut skipped = 0usize;
-    let mut never = 0usize;
-    for c in &cases {
-        match latest
-            .get(&c.case_path)
-            .map(|s| s.as_str())
-            .unwrap_or("never")
-        {
-            "passed" => passed += 1,
-            "failed" => failed += 1,
-            "blocked" => blocked += 1,
-            "skipped" => skipped += 1,
-            _ => never += 1,
-        }
+        *counts
+            .entry(result_status_i32_to_str(e.latest_status))
+            .or_insert(0) += 1;
     }
 
     println!(
         "Cases:    {} total  ({high} high, {medium} medium, {low} low)",
-        cases.len()
+        total
     );
-    println!("Coverage: {passed} passed, {failed} failed, {blocked} blocked, {skipped} skipped, {never} never run");
+    println!(
+        "Coverage: {} passed, {} failed, {} blocked, {} skipped, {} never run",
+        counts.get("passed").copied().unwrap_or(0),
+        counts.get("failed").copied().unwrap_or(0),
+        counts.get("blocked").copied().unwrap_or(0),
+        counts.get("skipped").copied().unwrap_or(0),
+        counts.get("never").copied().unwrap_or(0),
+    );
     println!("Suites:   {}", suites.len());
     println!("Runs:     {} total", runs.len());
 
-    let active: Vec<_> = runs.iter().filter(|r| r.status == "in-progress").collect();
+    let active: Vec<&pb::RunMeta> = runs
+        .iter()
+        .filter(|r| r.status == pb::RunStatus::InProgress as i32)
+        .collect();
     if active.is_empty() {
         println!("Active:   none");
     } else {
         println!("Active runs ({}):", active.len());
+        let mut c4 = client(channel);
         for r in &active {
-            let suite_part = r
-                .suite
-                .as_deref()
-                .filter(|s| !s.is_empty())
-                .map(|s| format!("  suite: {s}"))
-                .unwrap_or_default();
-            let pending_part = match repo::get_pending_cases(repo, &r.id) {
-                Ok((p, t)) => format!("  {}/{} pending", p.len(), t),
+            let suite_part = if r.suite.is_empty() {
+                String::new()
+            } else {
+                format!("  suite: {}", r.suite)
+            };
+            let pending_part = match c4
+                .get_pending_cases(pb::GetPendingCasesRequest {
+                    repo_id: repo_id.to_owned(),
+                    run_id: r.id.clone(),
+                })
+                .await
+            {
+                Ok(resp) => {
+                    let resp = resp.into_inner();
+                    format!("  {}/{} pending", resp.cases.len(), resp.total_in_scope)
+                }
                 Err(_) => String::new(),
             };
             println!(
@@ -875,12 +1104,4 @@ fn run_status(repo: &std::path::Path) -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn parse_tags(s: Option<&str>) -> Vec<String> {
-    s.unwrap_or("")
-        .split(',')
-        .map(|t| t.trim().to_owned())
-        .filter(|t| !t.is_empty())
-        .collect()
 }
