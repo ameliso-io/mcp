@@ -426,8 +426,19 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             let (meta, dir_path) = repo::create_run(&repo, &slug, &tester, environment, suite)?;
             println!("Created run: {}", meta.id);
             println!("Directory:   {dir_path}");
-            if let Ok((_, total)) = repo::get_pending_cases(&repo, &meta.id) {
-                println!("Scope:       {total} case(s) to test");
+            if let Ok((pending, total)) = repo::get_pending_cases(&repo, &meta.id) {
+                println!("Scope:       {total} case(s) to test (in priority order):");
+                for c in &pending {
+                    let tags = if c.fm.tags.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", tags: {}", c.fm.tags.join(", "))
+                    };
+                    println!(
+                        "  {} — {} (priority: {}{})",
+                        c.case_path, c.fm.title, c.fm.priority, tags
+                    );
+                }
             }
         }
         RunsCmd::Record {

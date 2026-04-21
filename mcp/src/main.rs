@@ -281,7 +281,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Get a coverage report showing the latest test status for every case. Optionally filter by status: never | passed | failed | blocked | skipped."
+        description = "Get a coverage report: latest test status for every case with title. Summary shows counts by status. Optionally filter by status: never | passed | failed | blocked | skipped."
     )]
     fn coverage_report(&self, Parameters(req): Parameters<CoverageReportRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -388,7 +388,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Create a new test run. If suite is provided it must already exist (validated). Returns the run ID and total scope size (number of cases to test)."
+        description = "Create a new test run. If suite is provided it must already exist (validated). Returns the run ID and the full list of cases to test sorted by priority — no need to call get_pending_cases afterward."
     )]
     fn create_run(&self, Parameters(req): Parameters<CreateRunRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -401,7 +401,22 @@ impl AmelisoMcp {
         match repo::create_run(&repo, &req.slug, &tester, env, suite) {
             Ok((meta, dir_path)) => {
                 let scope_msg = match repo::get_pending_cases(&repo, &meta.id) {
-                    Ok((_, total)) => format!("\nscope: {total} case(s) to test"),
+                    Ok((pending, total)) => {
+                        let mut lines =
+                            vec![format!("\nscope: {total} case(s) to test (in priority order):")];
+                        for c in &pending {
+                            let tags = if c.fm.tags.is_empty() {
+                                String::new()
+                            } else {
+                                format!(", tags: {}", c.fm.tags.join(", "))
+                            };
+                            lines.push(format!(
+                                "  {} — {} (priority: {}{})",
+                                c.case_path, c.fm.title, c.fm.priority, tags
+                            ));
+                        }
+                        lines.join("\n")
+                    }
                     Err(_) => String::new(),
                 };
                 format!("created run: {}\ndir: {}{}", meta.id, dir_path, scope_msg)
@@ -567,7 +582,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Get full details of a test run including all results and a summary of pass/fail counts."
+        description = "Get full details of a test run: metadata, pass/fail/blocked/skipped summary, and result list with case titles and notes."
     )]
     fn get_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -664,7 +679,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Get a suite by slug — shows name, description, and case list with titles.")]
+    #[tool(
+        description = "Get a suite by slug — shows name, description, and case list with titles."
+    )]
     fn get_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_suite(&repo, &req.slug) {
