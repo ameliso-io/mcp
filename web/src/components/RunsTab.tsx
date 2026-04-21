@@ -301,18 +301,17 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       return;
     setBulkPassing(true);
     try {
-      for (const c of pendingCases) {
-        await client.recordResult({
-          repoId,
-          runId,
+      const resp = await client.bulkRecordResults({
+        repoId,
+        runId,
+        results: pendingCases.map((c) => ({
           casePath: c.path,
           status: ResultStatus.PASSED,
           notes: "",
-        });
-      }
-      const pending = await client.getPendingCases({ repoId, runId });
-      setPendingCases(pending.cases);
-      setTotalInScope(pending.totalInScope);
+        })),
+      });
+      setPendingCases([]);
+      setTotalInScope(resp.totalInScope);
     } catch (e) {
       setError(errorMessage(e));
     } finally {

@@ -193,20 +193,26 @@ describe("RunsTab", () => {
     );
   });
 
-  it("calls recordResult for each pending case when All Passed clicked", async () => {
+  it("calls bulkRecordResults when All Passed clicked", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.bulkRecordResults).mockResolvedValue({
+      results: [],
+      pendingCount: 0,
+      totalInScope: 1,
+    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText(/All Passed/));
     await userEvent.click(screen.getByText(/All Passed/));
     await waitFor(() =>
-      expect(client.recordResult).toHaveBeenCalledWith(
+      expect(client.bulkRecordResults).toHaveBeenCalledWith(
         expect.objectContaining({
           runId: "2026-01-01-smoke",
-          casePath: "auth/login",
-          status: ResultStatus.PASSED,
+          results: expect.arrayContaining([
+            expect.objectContaining({ casePath: "auth/login", status: ResultStatus.PASSED }),
+          ]),
         })
       )
     );
@@ -333,7 +339,7 @@ describe("RunsTab", () => {
 
   it("shows error when handleBulkPass fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.recordResult).mockRejectedValue(new Error("bulk error"));
+    vi.mocked(client.bulkRecordResults).mockRejectedValue(new Error("bulk error"));
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
@@ -487,7 +493,7 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
   });
 
-  it("does not call recordResult when bulk pass confirm cancelled", async () => {
+  it("does not call bulkRecordResults when bulk pass confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
@@ -495,7 +501,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("All Passed (1)"));
     await userEvent.click(screen.getByText("All Passed (1)"));
-    expect(client.recordResult).not.toHaveBeenCalled();
+    expect(client.bulkRecordResults).not.toHaveBeenCalled();
   });
 
   it("uses plural in bulk pass confirm when multiple cases pending", async () => {

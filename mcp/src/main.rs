@@ -886,13 +886,21 @@ impl AmelisoMcp {
         {
             Ok(r) => {
                 let meta = r.into_inner().run.unwrap();
-                let summary = match client
-                    .get_run(pb::GetRunRequest {
+                let status_str = run_status_i32_to_str(meta.status);
+                // Fetch run details and pending count concurrently.
+                let mut c2 = self.client();
+                let mut c3 = self.client();
+                let (run_res, pending_res) = tokio::join!(
+                    c2.get_run(pb::GetRunRequest {
                         repo_id: repo_id.clone(),
                         run_id: run_id.clone(),
-                    })
-                    .await
-                {
+                    }),
+                    c3.get_pending_cases(pb::GetPendingCasesRequest {
+                        repo_id,
+                        run_id: run_id.clone(),
+                    }),
+                );
+                let summary = match run_res {
                     Ok(resp) => {
                         let run = resp.into_inner().run.unwrap();
                         let passed = run
@@ -926,15 +934,8 @@ impl AmelisoMcp {
                     }
                     Err(_) => String::new(),
                 };
-                let status_str = run_status_i32_to_str(meta.status);
                 let pending_warn = if status_str == "completed" {
-                    match client
-                        .get_pending_cases(pb::GetPendingCasesRequest {
-                            repo_id,
-                            run_id: run_id.clone(),
-                        })
-                        .await
-                    {
+                    match pending_res {
                         Ok(resp) => {
                             let resp = resp.into_inner();
                             let total = resp.total_in_scope as usize;
