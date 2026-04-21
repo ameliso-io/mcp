@@ -400,6 +400,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
               className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
               role="button"
               tabIndex={0}
+              aria-label={run.id}
               aria-expanded={selectedRunId === run.id}
               onClick={() => selectRun(run.id, run.status)}
               onKeyDown={(e) => {
@@ -423,6 +424,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                     e.stopPropagation();
                     handleDeleteRun(run.id);
                   }}
+                  aria-label={`Delete ${run.id}`}
                   className={styles.btnDangerSm}
                 >
                   Delete

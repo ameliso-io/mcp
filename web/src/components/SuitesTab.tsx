@@ -304,6 +304,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                           ev.stopPropagation();
                           onRunSuite(suite.slug);
                         }}
+                        aria-label={`Run ${suite.slug}`}
                         className={styles.btnGreenSm}
                       >
                         Run
@@ -314,6 +315,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                         ev.stopPropagation();
                         startEdit(suite);
                       }}
+                      aria-label={`Edit ${suite.slug}`}
                       className={styles.btnOutlineSm}
                     >
                       Edit
@@ -323,6 +325,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                         ev.stopPropagation();
                         handleDelete(suite.slug);
                       }}
+                      aria-label={`Delete ${suite.slug}`}
                       className={styles.btnDangerSm}
                     >
                       Delete
@@ -339,7 +342,11 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                       <div className={styles.caseList}>
                         {expandedCases.map((c) => (
                           <div key={c.path} className={styles.caseRow}>
-                            <span className={styles.caseDot} data-priority={c.priority} aria-hidden="true" />
+                            <span
+                              className={styles.caseDot}
+                              data-priority={c.priority}
+                              aria-hidden="true"
+                            />
                             <span className={styles.casePath}>{c.path}</span>
                             <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map((t) => (

@@ -500,6 +500,7 @@ export default function CasesTab({ repoId }: Props) {
                         e.stopPropagation();
                         startEdit(c);
                       }}
+                      aria-label={`Edit ${c.path}`}
                       className={styles.btnOutlineSm}
                     >
                       Edit
@@ -509,6 +510,7 @@ export default function CasesTab({ repoId }: Props) {
                         e.stopPropagation();
                         handleDelete(c.path);
                       }}
+                      aria-label={`Delete ${c.path}`}
                       className={styles.btnDangerSm}
                     >
                       Delete
