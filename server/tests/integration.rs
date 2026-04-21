@@ -373,6 +373,42 @@ async fn coverage_shows_latest_run_status() {
 // Tests — Suites
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Tests — Affected cases
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn affected_cases_no_git_returns_all() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+
+    // No git repo in tmp → last_run_commit returns None → all cases flagged.
+    let resp = c
+        .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+            repo_path: rp,
+            since_ref: String::new(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.cases.len(), 2);
+    assert!(
+        resp.reason.contains("no test runs found"),
+        "unexpected reason: {}",
+        resp.reason
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Tests — Suites
+// ---------------------------------------------------------------------------
+
 #[tokio::test]
 async fn list_suites_empty() {
     let addr = start_server().await;
