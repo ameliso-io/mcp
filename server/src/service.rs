@@ -418,6 +418,20 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn get_pending_cases(
+        &self,
+        request: Request<pb::GetPendingCasesRequest>,
+    ) -> Result<Response<pb::GetPendingCasesResponse>, Status> {
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+        let (pending, total) =
+            repo::get_pending_cases(&repo, &req.run_id).map_err(repo_err)?;
+        Ok(Response::new(pb::GetPendingCasesResponse {
+            case_paths: pending,
+            total_in_scope: total as i32,
+        }))
+    }
+
     async fn get_coverage_report(
         &self,
         request: Request<pb::GetCoverageReportRequest>,

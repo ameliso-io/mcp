@@ -150,6 +150,12 @@ enum RunsCmd {
         #[arg(help = "completed | aborted")]
         status: String,
     },
+    #[command(about = "Show cases in a run's scope that have no result yet")]
+    Pending {
+        #[arg(long, env = "AMELISO_REPO")]
+        repo: PathBuf,
+        run_id: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -334,10 +340,26 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             if let Some(env) = &run.meta.environment {
                 println!("env:    {env}");
             }
-            let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
-            let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
-            let blocked = run.results.iter().filter(|r| r.fm.status == "blocked").count();
-            let skipped = run.results.iter().filter(|r| r.fm.status == "skipped").count();
+            let passed = run
+                .results
+                .iter()
+                .filter(|r| r.fm.status == "passed")
+                .count();
+            let failed = run
+                .results
+                .iter()
+                .filter(|r| r.fm.status == "failed")
+                .count();
+            let blocked = run
+                .results
+                .iter()
+                .filter(|r| r.fm.status == "blocked")
+                .count();
+            let skipped = run
+                .results
+                .iter()
+                .filter(|r| r.fm.status == "skipped")
+                .count();
             println!(
                 "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
                 passed,
@@ -388,6 +410,17 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
         } => {
             let meta = repo::finalize_run(&repo, &run_id, &status)?;
             println!("Finalized run {} as {}", meta.id, meta.status);
+        }
+        RunsCmd::Pending { repo, run_id } => {
+            let (pending, total) = repo::get_pending_cases(&repo, &run_id)?;
+            if pending.is_empty() {
+                println!("All {} case(s) in scope have results recorded.", total);
+            } else {
+                println!("Pending ({}/{} cases still need results):", pending.len(), total);
+                for p in &pending {
+                    println!("  {p}");
+                }
+            }
         }
     }
     Ok(())

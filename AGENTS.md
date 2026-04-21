@@ -57,6 +57,7 @@ Available tools:
 | `update_suite` | Update a suite's name, description, or case list |
 | `delete_suite` | Delete a suite file |
 | `get_affected_cases` | Cases that may need re-running based on git changes |
+| `get_pending_cases` | Cases in a run's scope that have no result recorded yet |
 
 All tools accept `repo_path` — the absolute path to the controlled repository.
 
@@ -87,6 +88,7 @@ ameliso runs get 2026-04-21-smoke
 ameliso runs create smoke --tester alice --environment staging
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
 ameliso runs finalize 2026-04-21-smoke completed
+ameliso runs pending 2026-04-21-smoke
 
 # Suites
 ameliso suites list

@@ -501,6 +501,39 @@ pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml>
     Ok(meta)
 }
 
+/// Return (pending_case_paths, total_in_scope).
+/// Scope = suite cases if run has a suite set; otherwise all cases in repo.
+pub fn get_pending_cases(repo: &Path, run_id: &str) -> RResult<(Vec<String>, usize)> {
+    validate_slug_path(run_id, "run")?;
+    let run = get_run(repo, run_id)?;
+    let recorded: std::collections::HashSet<String> =
+        run.results.iter().map(|r| r.case_path.clone()).collect();
+
+    let scope: Vec<String> = if let Some(ref suite_slug) = run.meta.suite {
+        if suite_slug.is_empty() {
+            list_cases(repo)?.into_iter().map(|c| c.case_path).collect()
+        } else {
+            match get_suite(repo, suite_slug) {
+                Ok(s) => s.cases.clone(),
+                Err(RepoError::NotFound(_)) => {
+                    // Suite was deleted; fall back to all cases
+                    list_cases(repo)?.into_iter().map(|c| c.case_path).collect()
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    } else {
+        list_cases(repo)?.into_iter().map(|c| c.case_path).collect()
+    };
+
+    let total = scope.len();
+    let pending: Vec<String> = scope
+        .into_iter()
+        .filter(|p| !recorded.contains(p))
+        .collect();
+    Ok((pending, total))
+}
+
 pub fn list_suites(repo: &Path) -> RResult<Vec<(String, SuiteYaml)>> {
     let dir = suites_dir(repo);
     if !dir.exists() {

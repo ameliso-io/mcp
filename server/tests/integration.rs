@@ -900,3 +900,43 @@ async fn finalize_run_rejects_in_progress_status() {
 
     assert_eq!(err.code(), tonic::Code::InvalidArgument);
 }
+
+#[tokio::test]
+async fn get_pending_cases_returns_unrecorded() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+
+    // No results recorded yet — both cases pending
+    let resp = c
+        .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+            repo_path: rp.clone(),
+            run_id: "2026-01-01-smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(resp.total_in_scope, 2);
+    assert_eq!(resp.case_paths.len(), 2);
+
+    // Record one result
+    write_result(tmp.path(), "2026-01-01-smoke", "auth/login", "passed");
+
+    // Now only billing/invoice is pending
+    let resp2 = c
+        .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(resp2.total_in_scope, 2);
+    assert_eq!(resp2.case_paths.len(), 1);
+    assert_eq!(resp2.case_paths[0], "billing/invoice");
+}

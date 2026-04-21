@@ -366,6 +366,33 @@ impl AmelisoMcp {
     }
 
     #[tool(
+        description = "Return case paths in a run's scope that have no result recorded yet. \
+                       Scope = suite cases if the run references a suite; otherwise all repo cases. \
+                       Use this to know which cases still need record_result calls."
+    )]
+    fn get_pending_cases(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::get_pending_cases(&repo, &req.run_id) {
+            Ok((pending, total)) => {
+                if pending.is_empty() {
+                    format!("All {} case(s) in scope have results recorded.", total)
+                } else {
+                    let mut lines = vec![format!(
+                        "Pending ({}/{} cases still need results):",
+                        pending.len(),
+                        total
+                    )];
+                    for p in &pending {
+                        lines.push(format!("  {p}"));
+                    }
+                    lines.join("\n")
+                }
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
         description = "Update an existing test case's metadata and optionally replace its body."
     )]
     fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
