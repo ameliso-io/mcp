@@ -108,9 +108,7 @@ describe("CasesTab", () => {
     // Expand the case — MarkdownBody renders "## Steps" as an <h2>
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument());
     // Click Edit — expanded body panel hides (edit textarea replaces MarkdownBody rendering)
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -660,6 +658,13 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     expect(screen.queryByText("Verify login flow")).not.toBeInTheDocument();
+  });
+
+  it("does not show case count span when case list is empty", async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("No cases found.")).toBeInTheDocument());
+    expect(screen.queryByText(/\d+ cases?/)).not.toBeInTheDocument();
   });
 
   it("tag filter select is not shown when cases have no tags", async () => {
