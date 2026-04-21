@@ -7,8 +7,14 @@ use tonic::transport::Server;
 
 fn validate_env() {
     let required = [
-        ("GITHUB_APP_ID", "numeric GitHub App ID from the app settings page"),
-        ("GITHUB_APP_PRIVATE_KEY", "PEM-encoded RSA private key downloaded from the app settings page"),
+        (
+            "GITHUB_APP_ID",
+            "numeric GitHub App ID from the app settings page",
+        ),
+        (
+            "GITHUB_APP_PRIVATE_KEY",
+            "PEM-encoded RSA private key downloaded from the app settings page",
+        ),
     ];
     let mut missing = false;
     for (var, hint) in &required {
