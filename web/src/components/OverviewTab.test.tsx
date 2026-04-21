@@ -476,4 +476,19 @@ describe("OverviewTab", () => {
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Coverage \(5 runs\)/)).toBeInTheDocument());
   });
+
+  it("shows suite badge and tester in active runs panel", async () => {
+    const activeRun = {
+      id: "run-badge",
+      tester: "carol",
+      suite: "e2e",
+      date: "2026-02-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("e2e")).toBeInTheDocument());
+    expect(screen.getByText("carol")).toBeInTheDocument();
+    expect(screen.getByText("2026-02-01")).toBeInTheDocument();
+  });
 });
