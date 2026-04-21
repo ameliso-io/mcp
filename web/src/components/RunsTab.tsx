@@ -735,14 +735,17 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                                 </select>
                               </div>
                               <div style={{ flex: 1, minWidth: '160px' }}>
-                                <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>
-                                  Notes
+                                <label style={{ fontSize: '12px', color: recordStatus === ResultStatus.FAILED || recordStatus === ResultStatus.BLOCKED ? '#dc2626' : '#64748b', display: 'block', marginBottom: '4px' }}>
+                                  Notes{recordStatus === ResultStatus.FAILED || recordStatus === ResultStatus.BLOCKED ? ' *' : ''}
                                 </label>
                                 <input
                                   value={recordNotes}
                                   onChange={e => setRecordNotes(e.target.value)}
-                                  placeholder="Optional notes…"
-                                  style={inputStyle}
+                                  placeholder={recordStatus === ResultStatus.FAILED ? 'Describe what failed…' : recordStatus === ResultStatus.BLOCKED ? 'Describe what is blocking…' : 'Optional notes…'}
+                                  style={{
+                                    ...inputStyle,
+                                    borderColor: recordStatus === ResultStatus.FAILED || recordStatus === ResultStatus.BLOCKED ? '#fca5a5' : '#e2e8f0',
+                                  }}
                                 />
                               </div>
                               <button
