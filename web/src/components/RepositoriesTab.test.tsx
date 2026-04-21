@@ -117,4 +117,31 @@ describe('RepositoriesTab', () => {
     await userEvent.click(screen.getByRole('button', { name: '×' }))
     expect(screen.queryByText('network error')).not.toBeInTheDocument()
   })
+
+  it('calls handleGitHubCallback when installation_id present in URL', async () => {
+    window.history.pushState({}, '', '?installation_id=inst-42&setup_action=install')
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({ repositories: [makeRepo()] } as never)
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
+    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: 'inst-42' }))
+    window.history.replaceState({}, '', '/')
+  })
+
+  it('shows error when syncRepository fails', async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never)
+    vi.mocked(client.syncRepository).mockRejectedValue(new Error('sync failed'))
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
+    await waitFor(() => screen.getByText('Sync'))
+    await userEvent.click(screen.getByText('Sync'))
+    await waitFor(() => expect(screen.getByText('sync failed')).toBeInTheDocument())
+  })
+
+  it('shows error when removeRepository fails', async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never)
+    vi.mocked(client.removeRepository).mockRejectedValue(new Error('remove failed'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
+    await waitFor(() => screen.getByText('Remove'))
+    await userEvent.click(screen.getByText('Remove'))
+    await waitFor(() => expect(screen.getByText('remove failed')).toBeInTheDocument())
+  })
 })
