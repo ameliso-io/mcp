@@ -2516,6 +2516,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_suite_with_non_empty_cases_passes_validation() {
+        // replace_cases=false but cases non-empty hits the `!cases.is_empty()` branch → cases=Some.
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                cases: vec!["auth/login".to_owned()],
+                replace_cases: false,
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn get_coverage_report_passes_validation() {
         // Non-empty repo_id with default (Unspecified) filter passes validation → DB error.
         let s = server();
@@ -2967,6 +2984,13 @@ mod tests {
             "/auth/login-mobile\n/auth/login",
             "auth/login"
         ));
+    }
+
+    #[test]
+    fn text_references_case_dot_suffix() {
+        // '.' is a clean boundary — path followed by a file extension counts as a reference.
+        assert!(text_references_case("update auth/login.md", "auth/login"));
+        assert!(text_references_case("/auth/login.rs changed", "auth/login"));
     }
 
     #[test]
