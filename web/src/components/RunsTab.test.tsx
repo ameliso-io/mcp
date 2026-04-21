@@ -356,7 +356,7 @@ describe('RunsTab', () => {
   it('polling timer callback updates pending cases on success', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     let capturedCallback: (() => Promise<void>) | null = null
-    const spy = vi.spyOn(global, 'setInterval').mockImplementation((fn, delay) => {
+    const spy = vi.spyOn(globalThis, 'setInterval').mockImplementation((fn: TimerHandler, delay?: number) => {
       if (delay === 30_000) capturedCallback = fn as () => Promise<void>
       return 0 as unknown as ReturnType<typeof setInterval>
     })
@@ -378,7 +378,7 @@ describe('RunsTab', () => {
       .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
       .mockRejectedValueOnce(new Error('poll error'))
     let capturedCallback: (() => Promise<void>) | null = null
-    const spy = vi.spyOn(global, 'setInterval').mockImplementation((fn, delay) => {
+    const spy = vi.spyOn(globalThis, 'setInterval').mockImplementation((fn: TimerHandler, delay?: number) => {
       if (delay === 30_000) capturedCallback = fn as () => Promise<void>
       return 0 as unknown as ReturnType<typeof setInterval>
     })
