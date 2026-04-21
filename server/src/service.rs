@@ -1342,6 +1342,9 @@ mod tests {
 
     #[test]
     fn text_references_case_trailing_slash_in_path() {
-        assert!(text_references_case("cases/auth/login/step1.md", "auth/login"));
+        assert!(text_references_case(
+            "cases/auth/login/step1.md",
+            "auth/login"
+        ));
     }
 }

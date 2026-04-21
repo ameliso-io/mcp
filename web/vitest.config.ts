@@ -17,6 +17,7 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/__mocks__/**",
         "src/client.ts",
+        "src/test/**",
       ],
       thresholds: {
         statements: 100,
