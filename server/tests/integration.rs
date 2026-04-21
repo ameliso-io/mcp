@@ -994,3 +994,26 @@ async fn get_pending_cases_respects_suite_scope() {
     let pending_paths: Vec<&str> = resp.cases.iter().map(|c| c.path.as_str()).collect();
     assert!(!pending_paths.contains(&"payments/checkout"));
 }
+
+#[tokio::test]
+async fn record_result_rejects_nonexistent_case() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+    // Note: no write_case — auth/typo does not exist
+
+    let err = c
+        .record_result(Request::new(pb::RecordResultRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-smoke".to_owned(),
+            case_path: "auth/typo".to_owned(),
+            status: pb::ResultStatus::Passed as i32,
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}

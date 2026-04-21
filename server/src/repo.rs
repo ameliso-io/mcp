@@ -463,6 +463,10 @@ pub fn record_result(
         )));
     }
 
+    let case_file = case_file_path(repo, case_path);
+    if !case_file.exists() {
+        return Err(RepoError::NotFound(format!("case not found: {}", case_path)));
+    }
     let result_file = result_file_path(repo, run_id, case_path);
     write_result_file(&result_file, status, notes)?;
     Ok(LoadedResult {
