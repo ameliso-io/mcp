@@ -357,6 +357,11 @@ export default function CasesTab({ repoPath }: Props) {
             {allTags.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
+        {!loading && cases.length > 0 && (
+          <span style={{ fontSize: '13px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+            {cases.length} case{cases.length !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
       {error && (
