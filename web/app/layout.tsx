@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         <div className={styles.shell}>
           <NavBar />
-          <main id="main-content" className={styles.content}>
+          <main id="main-content" tabIndex={-1} className={styles.content}>
             {children}
           </main>
         </div>

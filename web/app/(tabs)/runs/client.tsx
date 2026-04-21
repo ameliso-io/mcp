@@ -15,7 +15,8 @@ function RunsInner() {
   function handleInitialSuiteConsumed() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
-    router.replace(`/runs?${params.toString()}`);
+    const qs = params.toString();
+    router.replace(qs ? `/runs?${qs}` : "/runs");
   }
 
   return (
