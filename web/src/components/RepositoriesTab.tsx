@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
+import { errorMessage } from '../errorMessage'
 import type { Repository } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
@@ -65,7 +66,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
       setInstallUrl(urlRes.url)
       setConfigured(urlRes.configured)
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -88,7 +89,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
             return [...prev.filter(r => !ids.has(r.id)), ...res.repositories]
           })
         })
-        .catch(e => setError(String(e)))
+        .catch(e => setError(errorMessage(e)))
         .finally(() => setLoading(false))
     }
   }, [])
@@ -106,19 +107,20 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
         setRepos(prev => prev.map(r => r.id === id ? res.repository! : r))
       }
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setSyncing(null)
     }
   }
 
   async function handleRemove(id: string) {
+    if (!confirm('Remove this repository connection? The local clone will not be deleted.')) return
     setError(null)
     try {
       await client.removeRepository({ id })
       setRepos(prev => prev.filter(r => r.id !== id))
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     }
   }
 
@@ -149,8 +151,9 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
       </div>
 
       {error && (
-        <div style={{ ...card, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
-          {error}
+        <div style={{ ...card, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <span>{error}</span>
+          <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 0 0 12px', flexShrink: 0 }}>×</button>
         </div>
       )}
 
