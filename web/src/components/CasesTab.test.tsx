@@ -161,4 +161,34 @@ describe('CasesTab', () => {
     await userEvent.click(screen.getByText('User Login'))
     await waitFor(() => expect(screen.getByText('No body.')).toBeInTheDocument())
   })
+
+  it('shows error when getCase fails on expand', async () => {
+    vi.mocked(client.getCase).mockRejectedValue(new Error('case fetch error'))
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    await userEvent.click(screen.getByText('User Login'))
+    await waitFor(() => expect(screen.getByText('case fetch error')).toBeInTheDocument())
+  })
+
+  it('shows error when createCase fails', async () => {
+    vi.mocked(client.createCase).mockRejectedValue(new Error('create case error'))
+    render(<CasesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Case'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'auth/new')
+    await userEvent.type(inputs[1], 'New Title')
+    await userEvent.click(screen.getByText('Create'))
+    await waitFor(() => expect(screen.getByText('create case error')).toBeInTheDocument())
+  })
+
+  it('handles fetchBody failure silently in edit form', async () => {
+    vi.mocked(client.getCase).mockRejectedValue(new Error('body unavailable'))
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => {
+      const titleInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'User Login')
+      expect(titleInput).toBeDefined()
+    })
+  })
 })

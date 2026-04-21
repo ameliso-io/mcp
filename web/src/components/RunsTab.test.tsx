@@ -295,4 +295,16 @@ describe('RunsTab', () => {
       expect.objectContaining({ runId: '2026-01-01-smoke' })
     ))
   })
+
+  it('closes record form when Cancel clicked', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('Record'))
+    await waitFor(() => screen.getByText('Save Result'))
+    await userEvent.click(screen.getByText('Cancel'))
+    await waitFor(() => expect(screen.queryByText('Save Result')).not.toBeInTheDocument())
+  })
 })
