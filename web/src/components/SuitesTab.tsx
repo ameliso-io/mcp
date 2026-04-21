@@ -338,29 +338,22 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
               <>
                 <div
                   className={expanded === suite.slug ? styles.suiteCardExpanded : styles.suiteCard}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={expanded === suite.slug}
-                  onClick={() => toggleExpand(suite.slug)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      toggleExpand(suite.slug);
-                    }
-                  }}
                 >
                   <div className={styles.suiteRow}>
-                    <span className={styles.suiteName}>{suite.name}</span>
-                    <span className={styles.suiteSlug}>{suite.slug}</span>
-                    <span className={styles.caseCount}>
-                      {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
-                    </span>
+                    <button
+                      className={styles.suiteExpandBtn}
+                      onClick={() => toggleExpand(suite.slug)}
+                      aria-expanded={expanded === suite.slug}
+                    >
+                      <span className={styles.suiteName}>{suite.name}</span>
+                      <span className={styles.suiteSlug}>{suite.slug}</span>
+                      <span className={styles.caseCount}>
+                        {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
+                      </span>
+                    </button>
                     {onRunSuite && (
                       <button
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          onRunSuite(suite.slug);
-                        }}
+                        onClick={() => onRunSuite(suite.slug)}
                         aria-label={`Run ${suite.slug}`}
                         className={styles.btnGreenSm}
                       >
@@ -368,10 +361,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                       </button>
                     )}
                     <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        startEdit(suite);
-                      }}
+                      onClick={() => startEdit(suite)}
                       aria-label={`Edit ${suite.slug}`}
                       className={styles.btnOutlineSm}
                     >
@@ -382,10 +372,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                         <span className={styles.confirmText}>Delete?</span>
                         <button
                           type="button"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            handleDelete(suite.slug);
-                          }}
+                          onClick={() => handleDelete(suite.slug)}
                           aria-label={`Confirm delete ${suite.slug}`}
                           className={styles.btnDangerSm}
                         >
@@ -393,10 +380,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                         </button>
                         <button
                           type="button"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            setConfirmingDelete(null);
-                          }}
+                          onClick={() => setConfirmingDelete(null)}
                           aria-label="Cancel delete"
                           className={styles.btnOutlineSm}
                         >
@@ -406,10 +390,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     ) : (
                       <button
                         type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setConfirmingDelete(suite.slug);
-                        }}
+                        onClick={() => setConfirmingDelete(suite.slug)}
                         aria-label={`Delete ${suite.slug}`}
                         className={styles.btnDangerSm}
                       >

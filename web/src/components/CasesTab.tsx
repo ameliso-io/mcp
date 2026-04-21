@@ -540,47 +540,38 @@ export default function CasesTab({ repoId }: Props) {
                     </div>
                   </form>
                 ) : (
-                  <div
-                    className={styles.caseRow}
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={expandedPath === c.path}
-                    onClick={() => toggleExpand(c.path)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleExpand(c.path);
-                      }
-                    }}
-                  >
-                    <span
-                      className={styles.priorityDot}
-                      data-priority={c.priority}
-                      aria-hidden="true"
-                    />
-                    <div className={styles.caseInfo}>
-                      <div className={styles.caseMeta}>
-                        <span className={styles.casePath}>{c.path}</span>
-                        <span className={styles.priorityBadge} data-priority={c.priority}>
-                          {priorityLabel(c.priority)}
-                        </span>
-                        {c.tags.map((t) => (
-                          <span key={t} className={styles.tag}>
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                      <p className={styles.caseTitle}>{c.title}</p>
-                      {c.description && <p className={styles.caseDesc}>{c.description}</p>}
-                    </div>
-                    <span className={styles.chevron} aria-hidden="true">
-                      {expandedPath === c.path ? "▲" : "▼"}
-                    </span>
+                  <div className={styles.caseRow}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEdit(c);
-                      }}
+                      className={styles.caseExpandBtn}
+                      onClick={() => toggleExpand(c.path)}
+                      aria-expanded={expandedPath === c.path}
+                    >
+                      <span
+                        className={styles.priorityDot}
+                        data-priority={c.priority}
+                        aria-hidden="true"
+                      />
+                      <div className={styles.caseInfo}>
+                        <div className={styles.caseMeta}>
+                          <span className={styles.casePath}>{c.path}</span>
+                          <span className={styles.priorityBadge} data-priority={c.priority}>
+                            {priorityLabel(c.priority)}
+                          </span>
+                          {c.tags.map((t) => (
+                            <span key={t} className={styles.tag}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <p className={styles.caseTitle}>{c.title}</p>
+                        {c.description && <p className={styles.caseDesc}>{c.description}</p>}
+                      </div>
+                      <span className={styles.chevron} aria-hidden="true">
+                        {expandedPath === c.path ? "▲" : "▼"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => startEdit(c)}
                       aria-label={`Edit ${c.path}`}
                       className={styles.btnOutlineSm}
                     >
@@ -591,10 +582,7 @@ export default function CasesTab({ repoId }: Props) {
                         <span className={styles.confirmText}>Delete?</span>
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(c.path);
-                          }}
+                          onClick={() => handleDelete(c.path)}
                           aria-label={`Confirm delete ${c.path}`}
                           className={styles.btnDangerSm}
                         >
@@ -602,10 +590,7 @@ export default function CasesTab({ repoId }: Props) {
                         </button>
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmingDelete(null);
-                          }}
+                          onClick={() => setConfirmingDelete(null)}
                           aria-label="Cancel delete"
                           className={styles.btnOutlineSm}
                         >
@@ -615,10 +600,7 @@ export default function CasesTab({ repoId }: Props) {
                     ) : (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmingDelete(c.path);
-                        }}
+                        onClick={() => setConfirmingDelete(c.path)}
                         aria-label={`Delete ${c.path}`}
                         className={styles.btnDangerSm}
                       >

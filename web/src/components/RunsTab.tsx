@@ -435,36 +435,31 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
           <div key={run.id}>
             <div
               className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
-              role="button"
-              tabIndex={0}
-              aria-label={run.id}
-              aria-expanded={selectedRunId === run.id}
-              onClick={() => selectRun(run.id, run.status)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  selectRun(run.id, run.status);
-                }
-              }}
             >
               <div className={styles.runRow}>
-                <span className={styles.runStatusBadge} data-status={RunStatus[run.status]}>
-                  {runStatusLabel(run.status)}
-                </span>
-                <span className={styles.runId}>{run.id}</span>
-                {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
-                {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
-                <time className={styles.runDate} dateTime={run.date}>{run.date}</time>
+                <button
+                  className={styles.runExpandBtn}
+                  onClick={() => selectRun(run.id, run.status)}
+                  aria-label={run.id}
+                  aria-expanded={selectedRunId === run.id}
+                >
+                  <span className={styles.runStatusBadge} data-status={RunStatus[run.status]}>
+                    {runStatusLabel(run.status)}
+                  </span>
+                  <span className={styles.runId}>{run.id}</span>
+                  {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
+                  {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                  {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
+                  <time className={styles.runDate} dateTime={run.date}>
+                    {run.date}
+                  </time>
+                </button>
                 {confirmingDeleteRun === run.id ? (
                   <>
                     <span className={styles.confirmText}>Delete?</span>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteRun(run.id);
-                      }}
+                      onClick={() => handleDeleteRun(run.id)}
                       aria-label={`Confirm delete ${run.id}`}
                       className={styles.btnDangerSm}
                     >
@@ -472,10 +467,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                     </button>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmingDeleteRun(null);
-                      }}
+                      onClick={() => setConfirmingDeleteRun(null)}
                       aria-label="Cancel delete"
                       className={styles.btnOutlineSm}
                     >
@@ -485,10 +477,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                 ) : (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmingDeleteRun(run.id);
-                    }}
+                    onClick={() => setConfirmingDeleteRun(run.id)}
                     aria-label={`Delete ${run.id}`}
                     className={styles.btnDangerSm}
                   >

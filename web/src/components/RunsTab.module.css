@@ -180,6 +180,22 @@
   gap: 12px;
 }
 
+.runExpandBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .runStatusBadge {
   font-size: 12px;
   font-weight: 700;

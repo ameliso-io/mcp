@@ -138,6 +138,22 @@
   gap: 12px;
 }
 
+.suiteExpandBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .suiteName {
   font-weight: 600;
   font-size: 15px;
