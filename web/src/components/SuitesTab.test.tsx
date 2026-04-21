@@ -77,9 +77,8 @@ describe("SuitesTab", () => {
   it("calls createSuite when create form submitted", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression Tests");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -97,19 +96,16 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     expect(screen.getByText("Edit: smoke")).toBeInTheDocument();
-    const nameInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Smoke Tests");
-    expect(nameInput).toBeDefined();
+    expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe(
+      "Smoke Tests"
+    );
   });
 
   it("calls updateSuite when edit form submitted", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
-    const nameInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Smoke Tests") as HTMLInputElement;
+    const nameInput = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Updated Smoke");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -149,9 +145,8 @@ describe("SuitesTab", () => {
     vi.mocked(client.createSuite).mockRejectedValue(new Error("create failed"));
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() => expect(screen.getByText("create failed")).toBeInTheDocument());
   });
@@ -219,10 +214,12 @@ describe("SuitesTab", () => {
   it("calls createSuite with parsed cases when cases field is filled", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression Tests");
-    await userEvent.type(inputs[3], "auth/login, auth/logout");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression Tests");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Cases (comma-separated paths)" }),
+      "auth/login, auth/logout"
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -236,12 +233,7 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const casesInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "auth/login, auth/logout");
-    if (casesInput) {
-      await userEvent.clear(casesInput);
-    }
+    await userEvent.clear(screen.getByRole("textbox", { name: "Cases (comma-separated paths)" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(client.updateSuite).toHaveBeenCalledWith(expect.objectContaining({ cases: [] }))
@@ -253,10 +245,10 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const casesInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).placeholder?.includes("auth/login"));
-    if (casesInput) await userEvent.type(casesInput, "auth/login, auth/logout");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Cases (comma-separated paths)" }),
+      "auth/login, auth/logout"
+    );
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled());
   });
@@ -288,10 +280,9 @@ describe("SuitesTab", () => {
   it("fills description in create form", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "e2e");
-    await userEvent.type(inputs[1], "E2E Tests");
-    await userEvent.type(inputs[2], "End to end regression suite");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "e2e");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "E2E Tests");
+    await userEvent.type(screen.getByRole("textbox", { name: "Description" }), "End to end regression suite");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -305,9 +296,7 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const descInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Critical path checks") as HTMLInputElement;
+    const descInput = screen.getByRole("textbox", { name: "Description" }) as HTMLInputElement;
     await userEvent.clear(descInput);
     await userEvent.type(descInput, "Updated description");
     await userEvent.click(screen.getByText("Save"));
