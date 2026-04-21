@@ -437,6 +437,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
             <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>
                 <button
+                  type="button"
                   className={styles.runExpandBtn}
                   onClick={() => selectRun(run.id, run.status)}
                   aria-label={`${runStatusLabel(run.status)} run ${run.id}`}

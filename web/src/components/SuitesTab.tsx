@@ -343,6 +343,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 >
                   <div className={styles.suiteRow}>
                     <button
+                      type="button"
                       className={styles.suiteExpandBtn}
                       onClick={() => toggleExpand(suite.slug)}
                       aria-expanded={expanded === suite.slug}

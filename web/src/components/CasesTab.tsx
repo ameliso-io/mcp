@@ -548,6 +548,7 @@ export default function CasesTab({ repoId }: Props) {
                 ) : (
                   <div className={styles.caseRow}>
                     <button
+                      type="button"
                       className={styles.caseExpandBtn}
                       onClick={() => toggleExpand(c.path)}
                       aria-expanded={expandedPath === c.path}

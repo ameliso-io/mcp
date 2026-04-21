@@ -145,7 +145,12 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <h2 className={styles.title}>Repositories</h2>
         <div className={styles.headerActions}>
           {repos.length > 0 && (
-            <button onClick={handleRefreshAll} disabled={refreshing} className={styles.btnOutline}>
+            <button
+              onClick={handleRefreshAll}
+              disabled={refreshing}
+              aria-label="Refresh All"
+              className={styles.btnOutline}
+            >
               {refreshing ? "Refreshing…" : "↻ Refresh All"}
             </button>
           )}
