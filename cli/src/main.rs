@@ -676,8 +676,15 @@ fn run_affected(repo: &std::path::Path, since: Option<&str>) -> Result<()> {
     if result.case_paths.is_empty() {
         println!("No cases need re-running.");
     } else {
-        println!("\nCases to re-run ({}):", result.case_paths.len());
-        for path in &result.case_paths {
+        let mut sorted = result.case_paths.clone();
+        sorted.sort_by_key(|p| match case_map.get(p.as_str()).map(|c| c.fm.priority.as_str()) {
+            Some("high") => 0u8,
+            Some("medium") => 1,
+            Some("low") => 2,
+            _ => 3,
+        });
+        println!("\nCases to re-run ({}, high priority first):", sorted.len());
+        for path in &sorted {
             if let Some(c) = case_map.get(path.as_str()) {
                 let tags = if c.fm.tags.is_empty() {
                     String::new()

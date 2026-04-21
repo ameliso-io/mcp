@@ -80,7 +80,9 @@ struct CreateRunRequest {
     tester: Option<String>,
     #[schemars(description = "Environment being tested, e.g. staging or production (optional)")]
     environment: Option<String>,
-    #[schemars(description = "Suite slug to scope this run to a subset of cases (optional; must exist)")]
+    #[schemars(
+        description = "Suite slug to scope this run to a subset of cases (optional; must exist)"
+    )]
     suite: Option<String>,
 }
 
@@ -91,7 +93,9 @@ struct RecordResultRequest {
     case_path: String,
     #[schemars(description = "passed | failed | blocked | skipped")]
     status: String,
-    #[schemars(description = "Freeform notes, e.g. failure details, environment observations (optional)")]
+    #[schemars(
+        description = "Freeform notes, e.g. failure details, environment observations (optional)"
+    )]
     notes: Option<String>,
 }
 
@@ -728,7 +732,11 @@ impl AmelisoMcp {
             .collect();
         let desc = req.description.filter(|s| !s.is_empty());
         match repo::create_suite(&repo, &req.slug, &req.name, desc, case_list) {
-            Ok(s) => format!("created: suites/{}.yaml ({} cases)", req.slug, s.cases.len()),
+            Ok(s) => format!(
+                "created: suites/{}.yaml ({} cases)",
+                req.slug,
+                s.cases.len()
+            ),
             Err(e) => format!("error: {e}"),
         }
     }
@@ -748,7 +756,11 @@ impl AmelisoMcp {
             .description
             .map(|d| if d.is_empty() { None } else { Some(d) });
         match repo::update_suite(&repo, &req.slug, req.name.as_deref(), desc, cases) {
-            Ok(s) => format!("updated: suites/{}.yaml ({} cases)", req.slug, s.cases.len()),
+            Ok(s) => format!(
+                "updated: suites/{}.yaml ({} cases)",
+                req.slug,
+                s.cases.len()
+            ),
             Err(e) => format!("error: {e}"),
         }
     }
@@ -780,8 +792,22 @@ impl AmelisoMcp {
                 if result.case_paths.is_empty() {
                     format!("No cases need re-running.\nReason: {}", result.reason)
                 } else {
-                    let lines: Vec<String> = result
-                        .case_paths
+                    fn priority_rank(p: &str) -> u8 {
+                        match p {
+                            "high" => 0,
+                            "medium" => 1,
+                            "low" => 2,
+                            _ => 3,
+                        }
+                    }
+                    let mut sorted_paths = result.case_paths.clone();
+                    sorted_paths.sort_by_key(|p| {
+                        case_map
+                            .get(p)
+                            .map(|c| priority_rank(&c.fm.priority))
+                            .unwrap_or(3)
+                    });
+                    let lines: Vec<String> = sorted_paths
                         .iter()
                         .map(|p| {
                             if let Some(c) = case_map.get(p) {
@@ -800,8 +826,8 @@ impl AmelisoMcp {
                         })
                         .collect();
                     format!(
-                        "Cases to re-run ({}):\n{}\n\nReason: {}",
-                        result.case_paths.len(),
+                        "Cases to re-run ({}, high priority first):\n{}\n\nReason: {}",
+                        sorted_paths.len(),
                         lines.join("\n"),
                         result.reason
                     )
