@@ -5,6 +5,14 @@ use ameliso_server::service::AmelisoServer;
 use anyhow::Result;
 use tonic::transport::Server;
 
+fn load_env() {
+    match dotenvy::dotenv() {
+        Ok(path) => eprintln!("loaded env from {}", path.display()),
+        Err(dotenvy::Error::Io(_)) => {}
+        Err(e) => eprintln!("warning: .env error: {e}"),
+    }
+}
+
 fn validate_env() {
     let required = [
         (
@@ -30,6 +38,7 @@ fn validate_env() {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    load_env();
     validate_env();
 
     let addr: SocketAddr = "[::1]:50051".parse()?;
