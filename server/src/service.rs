@@ -2428,6 +2428,22 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_suite_minimal_passes_validation() {
+        // No description (empty → None), no cases — both take the None/empty branch.
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                name: "Smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn create_suite_with_description_passes_validation() {
         // Non-empty description takes the Some(desc) branch — passes validation → DB error.
         let s = server();
@@ -3071,9 +3087,28 @@ mod tests {
     }
 
     #[test]
+    fn text_references_case_exact_match_start_of_string_empty_suffix() {
+        // text IS exactly the case_path — empty suffix satisfies ends_cleanly via is_empty().
+        assert!(text_references_case("auth/login", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_starts_with_path_space_suffix() {
+        // starts_with branch: path at position 0, clean boundary via ' '.
+        assert!(text_references_case("auth/login is fixed", "auth/login"));
+    }
+
+    #[test]
     fn is_doc_file_no_extension_not_doc() {
         assert!(!is_doc_file("Makefile"));
         assert!(!is_doc_file("README"));
+    }
+
+    #[test]
+    fn is_doc_file_toml_not_doc() {
+        // .toml is NOT in doc_exts, so it counts as a source file for source_changed logic.
+        assert!(!is_doc_file("Cargo.toml"));
+        assert!(!is_doc_file("config/settings.toml"));
     }
 
     // ── is_doc_file ───────────────────────────────────────────────────────────
