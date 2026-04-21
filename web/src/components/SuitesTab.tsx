@@ -180,6 +180,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Suite</h3>
           <form
+            aria-label="Create Suite"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
@@ -275,6 +276,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
               <div className={styles.card}>
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
                 <form
+                  aria-label={`Edit suite ${suite.slug}`}
                   onSubmit={handleUpdate}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
@@ -405,7 +407,9 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 {expanded === suite.slug && (
                   <div className={styles.expandedPanel}>
                     {expandedCasesLoading ? (
-                      <p className={styles.expandedLoading} role="status">Loading…</p>
+                      <p className={styles.expandedLoading} role="status">
+                        Loading…
+                      </p>
                     ) : expandedCases.length > 0 ? (
                       <ul className={styles.caseList} role="list">
                         {expandedCases.map((c) => (

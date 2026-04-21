@@ -236,7 +236,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
       {repoId && (
         <div className={styles.card}>
           <p className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</p>
-          <form onSubmit={handleAffected} className={styles.affectedForm}>
+          <form aria-label="Check affected cases by git diff" onSubmit={handleAffected} className={styles.affectedForm}>
             <input
               type="text"
               aria-label="Git ref to compare from (leave empty to use last run commit)"

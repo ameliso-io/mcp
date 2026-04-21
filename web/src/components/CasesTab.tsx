@@ -269,6 +269,7 @@ export default function CasesTab({ repoId }: Props) {
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Case</h3>
           <form
+            aria-label="Create Case"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
@@ -460,6 +461,7 @@ export default function CasesTab({ repoId }: Props) {
               >
                 {editingPath === c.path ? (
                   <form
+                    aria-label={`Edit case ${c.path}`}
                     onSubmit={handleUpdate}
                     onKeyDown={(e) => {
                       if (e.key === "Escape") {
@@ -619,7 +621,9 @@ export default function CasesTab({ repoId }: Props) {
               {expandedPath === c.path && editingPath !== c.path && (
                 <div className={styles.expandedPanel}>
                   {bodyLoading ? (
-                    <p className={styles.expandedLoading} role="status">Loading…</p>
+                    <p className={styles.expandedLoading} role="status">
+                      Loading…
+                    </p>
                   ) : expandedBody ? (
                     <MarkdownBody body={expandedBody} />
                   ) : (

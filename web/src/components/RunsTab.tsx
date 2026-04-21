@@ -346,6 +346,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Run</h3>
           <form
+            aria-label="Create Run"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
@@ -757,6 +758,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                 </div>
                               )}
                               <form
+                                aria-label={`Record result for ${recordingCase}`}
                                 onSubmit={handleRecord}
                                 onKeyDown={(e) => {
                                   if (e.key === "Escape") {
