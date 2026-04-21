@@ -6,7 +6,7 @@ const coreWebVitals = require("eslint-config-next/core-web-vitals");
 const typescript = require("eslint-config-next/typescript");
 
 const config = [
-  { ignores: ["src/gen/**"] },
+  { ignores: ["src/gen/**", "coverage/**"] },
   ...coreWebVitals,
   ...typescript,
   {
