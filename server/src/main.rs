@@ -12,10 +12,7 @@ fn load_env() {
     ];
     for path in &candidates {
         match dotenvy::from_path(path) {
-            Ok(()) => {
-                eprintln!("loaded env from {}", path.display());
-                return;
-            }
+            Ok(()) => eprintln!("loaded env from {}", path.display()),
             Err(dotenvy::Error::Io(_)) => {}
             Err(e) => eprintln!("warning: .env error ({}): {e}", path.display()),
         }
