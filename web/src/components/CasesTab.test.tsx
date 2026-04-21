@@ -726,7 +726,9 @@ describe("CasesTab", () => {
     const prioritySelect = screen.getByDisplayValue("All priorities");
     await userEvent.selectOptions(prioritySelect, "High");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: expect.any(Number) }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: expect.any(Number) })
+      )
     );
     await userEvent.selectOptions(prioritySelect, "All priorities");
     await waitFor(() =>
