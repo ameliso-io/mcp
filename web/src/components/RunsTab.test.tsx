@@ -340,4 +340,5 @@ describe('RunsTab', () => {
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('select error')).toBeInTheDocument())
   })
+
 })
