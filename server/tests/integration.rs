@@ -940,3 +940,55 @@ async fn get_pending_cases_returns_unrecorded() {
     assert_eq!(resp2.case_paths.len(), 1);
     assert_eq!(resp2.case_paths[0], "billing/invoice");
 }
+
+#[tokio::test]
+async fn get_pending_cases_respects_suite_scope() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+    write_case(tmp.path(), "payments/checkout", "Checkout");
+
+    // Create a suite with only 2 of the 3 cases
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        cases: vec!["auth/login".to_owned(), "billing/invoice".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    // Create a run referencing the suite
+    let meta = c
+        .create_run(Request::new(pb::CreateRunRequest {
+            repo_path: rp.clone(),
+            slug: "smoke".to_owned(),
+            tester: "alice".to_owned(),
+            suite: "smoke".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .run
+        .unwrap();
+
+    // All 2 suite cases pending
+    let resp = c
+        .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+            repo_path: rp.clone(),
+            run_id: meta.id.clone(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(resp.total_in_scope, 2);
+    assert_eq!(resp.case_paths.len(), 2);
+    // payments/checkout NOT in scope (not in suite)
+    assert!(!resp.case_paths.contains(&"payments/checkout".to_owned()));
+}
