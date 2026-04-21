@@ -195,7 +195,10 @@ enum SuitesCmd {
         name: Option<String>,
         #[arg(long, help = "New description (omit to keep existing)")]
         description: Option<String>,
-        #[arg(long, help = "Comma-separated case paths — replaces full list (omit to keep existing)")]
+        #[arg(
+            long,
+            help = "Comma-separated case paths — replaces full list (omit to keep existing)"
+        )]
         cases: Option<String>,
     },
     #[command(about = "Delete a suite")]
@@ -641,7 +644,10 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
                 continue;
             }
         }
-        println!("{:40} {:8} {}", c.case_path, status, run_id);
+        println!(
+            "{:40} {:8} {} — {}",
+            c.case_path, status, run_id, c.fm.title
+        );
     }
     if never_count > 0 && status_filter.is_none() {
         println!("\n{never_count} case(s) never run.");

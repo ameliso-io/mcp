@@ -147,7 +147,9 @@ struct UpdateSuiteRequest {
     name: Option<String>,
     #[schemars(description = "New description. Omit to keep existing.")]
     description: Option<String>,
-    #[schemars(description = "Comma-separated case paths (full replacement). Omit to keep existing list.")]
+    #[schemars(
+        description = "Comma-separated case paths (full replacement). Omit to keep existing list."
+    )]
     cases: Option<String>,
 }
 
@@ -321,7 +323,10 @@ impl AmelisoMcp {
             } else {
                 format!(" [{}]", run_id)
             };
-            entry_lines.push(format!("  {:40} {:8}{}", c.case_path, status, run_ref));
+            entry_lines.push(format!(
+                "  {:40} {:8}{} — {}",
+                c.case_path, status, run_ref, c.fm.title
+            ));
         }
         let total = cases.len();
         let never = counts.get("never").copied().unwrap_or(0);
