@@ -69,6 +69,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   const [runs, setRuns] = useState<RunMeta[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<RunStatus>(RunStatus.UNSPECIFIED)
 
   // Create run form
   const [showCreate, setShowCreate] = useState(false)
@@ -127,14 +128,14 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     setLoading(true)
     setError(null)
     try {
-      const res = await client.listRuns({ repoPath })
+      const res = await client.listRuns({ repoPath, status: statusFilter })
       setRuns(res.runs)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
-  }, [repoPath])
+  }, [repoPath, statusFilter])
 
   useEffect(() => { load() }, [load])
 
@@ -272,8 +273,33 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '700' }}>Runs</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '700' }}>Runs</h2>
+          {([
+            { label: 'All', value: RunStatus.UNSPECIFIED },
+            { label: 'In Progress', value: RunStatus.IN_PROGRESS },
+            { label: 'Completed', value: RunStatus.COMPLETED },
+            { label: 'Aborted', value: RunStatus.ABORTED },
+          ] as { label: string; value: RunStatus }[]).map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setStatusFilter(opt.value)}
+              style={{
+                padding: '4px 10px',
+                background: statusFilter === opt.value ? '#1e293b' : 'transparent',
+                color: statusFilter === opt.value ? 'white' : '#64748b',
+                border: `1px solid ${statusFilter === opt.value ? '#1e293b' : '#e2e8f0'}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '500',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
           style={{
