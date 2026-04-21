@@ -66,4 +66,9 @@ describe("NavBar", () => {
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
   });
+
+  it('has aria-label="Main navigation" on nav element', () => {
+    render(<NavBar />);
+    expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
+  });
 });
