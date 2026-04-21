@@ -339,7 +339,11 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
           <div key={run.id}>
             <div
               className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
+              role="button"
+              tabIndex={0}
+              aria-expanded={selectedRunId === run.id}
               onClick={() => selectRun(run.id, run.status)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectRun(run.id, run.status) } }}
             >
               <div className={styles.runRow}>
                 <span

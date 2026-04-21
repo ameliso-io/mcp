@@ -209,7 +209,11 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
               <>
                 <div
                   className={expanded === suite.slug ? styles.suiteCardExpanded : styles.suiteCard}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expanded === suite.slug}
                   onClick={() => toggleExpand(suite.slug)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(suite.slug) } }}
                 >
                   <div className={styles.suiteRow}>
                     <span className={styles.suiteName}>{suite.name}</span>

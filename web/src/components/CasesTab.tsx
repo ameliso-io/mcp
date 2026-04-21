@@ -350,7 +350,14 @@ export default function CasesTab({ repoPath }: Props) {
                   </div>
                 </form>
               ) : (
-                <div className={styles.caseRow} onClick={() => toggleExpand(c.path)}>
+                <div
+                  className={styles.caseRow}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expandedPath === c.path}
+                  onClick={() => toggleExpand(c.path)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(c.path) } }}
+                >
                   <div className={styles.priorityDot} data-priority={c.priority} />
                   <div className={styles.caseInfo}>
                     <div className={styles.caseMeta}>
