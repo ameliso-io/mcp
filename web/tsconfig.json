@@ -27,7 +27,9 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "verbatimModuleSyntax": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false
   },
   "include": [
     "next-env.d.ts",
