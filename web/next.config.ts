@@ -37,6 +37,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   typedRoutes: true,
   output: "standalone",
+  // Trace deps from monorepo root so standalone captures shared packages
+  outputFileTracingRoot: path.resolve(__dirname, ".."),
   turbopack: {
     root: path.resolve(__dirname, ".."),
   },
