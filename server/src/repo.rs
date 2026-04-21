@@ -1150,4 +1150,74 @@ mod tests {
             .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
+
+    // -----------------------------------------------------------------------
+    // create_suite / update_suite / delete_suite / get_run / create_run /
+    // delete_run pre-DB slug validation
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn create_suite_invalid_slug_returns_invalid_arg() {
+        let err = create_suite(&lazy_pool(), "owner/repo", "bad slug!", "Name", None, vec![])
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_suite_invalid_slug_returns_invalid_arg() {
+        let err = update_suite(&lazy_pool(), "owner/repo", "../escape", None, None, None)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn delete_suite_invalid_slug_returns_invalid_arg() {
+        let err = delete_suite(&lazy_pool(), "owner/repo", "bad slug!")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_run_invalid_run_id_returns_invalid_arg() {
+        let result = get_run(&lazy_pool(), "owner/repo", "bad run!").await;
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(matches!(err, RepoError::InvalidArg(_)));
+        }
+    }
+
+    #[tokio::test]
+    async fn create_run_invalid_slug_returns_invalid_arg() {
+        let err = create_run(&lazy_pool(), "owner/repo", "bad slug!", "tester", None, None)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_run_invalid_suite_slug_returns_invalid_arg() {
+        // Valid run slug but invalid suite slug — validate_slug_path fires before DB.
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            Some("bad suite!".to_owned()),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn delete_run_invalid_run_id_returns_invalid_arg() {
+        let err = delete_run(&lazy_pool(), "owner/repo", "bad run!")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
 }
