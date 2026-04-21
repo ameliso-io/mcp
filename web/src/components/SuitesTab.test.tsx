@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import SuitesTab from './SuitesTab'
 import { client } from '../client'
-import type { Suite, Case } from '../gen/ameliso/v1/types_pb'
+import type { Suite } from '../gen/ameliso/v1/types_pb'
+import type { Case } from '../gen/ameliso/v1/types_pb'
 
 vi.mock('../client')
 
@@ -103,6 +104,31 @@ describe('SuitesTab', () => {
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalledWith(
       expect.objectContaining({ repoPath: '/repo', slug: 'smoke', name: 'Updated Smoke' })
     ))
+  })
+
+  it('shows error banner when listSuites fails', async () => {
+    vi.mocked(client.listSuites).mockRejectedValue(new Error('load failed'))
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('load failed')).toBeInTheDocument())
+  })
+
+  it('shows raw case paths when listCases returns empty', async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => expect(screen.getByText('auth/login')).toBeInTheDocument())
+    expect(screen.getByText('auth/logout')).toBeInTheDocument()
+  })
+
+  it('shows "No cases in this suite" for suite with no cases', async () => {
+    const emptySuite = { ...mockSuite, cases: [] } as unknown as Suite
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [emptySuite] } as never)
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => expect(screen.getByText('No cases in this suite.')).toBeInTheDocument())
   })
 
   it('collapses expanded suite when clicked again', async () => {
