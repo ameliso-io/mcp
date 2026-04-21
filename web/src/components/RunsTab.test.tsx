@@ -648,6 +648,25 @@ describe("RunsTab", () => {
     expect(screen.getByText(/Notes \*/)).toBeInTheDocument();
   });
 
+  it("notes label is red for Failed and gray for Passed", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    const statusSelect = screen.getByDisplayValue("Passed");
+
+    await userEvent.selectOptions(statusSelect, "Failed");
+    const redLabel = screen.getByText(/Notes \*/);
+    expect(redLabel).toHaveStyle({ color: "#dc2626" });
+
+    await userEvent.selectOptions(statusSelect, "Passed");
+    const grayLabel = screen.getByText("Notes");
+    expect(grayLabel).toHaveStyle({ color: "#64748b" });
+  });
+
   it("polling timer callback updates pending cases on success", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     let capturedCallback: (() => Promise<void>) | null = null;
@@ -1157,8 +1176,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => expect(screen.getByText("Passed")).toBeInTheDocument());
     // The notes conditional `{r.notes && ...}` must not render any italic span when notes is "".
-    const italicSpans = document
-      .querySelectorAll("span[style*='italic']");
+    const italicSpans = document.querySelectorAll("span[style*='italic']");
     expect(italicSpans).toHaveLength(0);
   });
 
