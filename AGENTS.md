@@ -25,8 +25,8 @@ runs/{YYYY-MM-DD}-{slug}/
 ### This repository's structure
 
 ```
-server/   # gRPC server (Rust + tonic); exposes AmelisoService (17 RPCs)
-mcp/      # MCP server (Rust + rmcp); stdio transport; 17 tools
+server/   # gRPC server (Rust + tonic); exposes AmelisoService (18 RPCs)
+mcp/      # MCP server (Rust + rmcp); stdio transport; 18 tools
 cli/      # CLI (Rust + clap); calls repo logic directly
 proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
 ```
@@ -43,7 +43,7 @@ Available tools:
 | `list_cases` | List cases; filter by tags, priority, or full-text query |
 | `get_case` | Get full case details including steps and body |
 | `create_case` | Create a new case file; priority must be low\|medium\|high |
-| `update_case` | Update case metadata and optionally replace body |
+| `update_case` | Patch-style update: all fields optional — omit any to keep existing value |
 | `delete_case` | Delete a case file |
 | `coverage_report` | Latest status per case; filter by status |
 | `list_runs` | List test runs; filter by status; shows suite scope |
@@ -54,7 +54,7 @@ Available tools:
 | `list_suites` | List all suites |
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
-| `update_suite` | Update a suite's name, description, or case list |
+| `update_suite` | Patch-style update: all fields optional — omit any to keep existing value |
 | `delete_suite` | Delete a suite file |
 | `get_affected_cases` | Cases that may need re-running based on git changes; shows title/priority/tags |
 | `get_pending_cases` | Cases in a run's scope with no result yet; sorted high→medium→low priority |
@@ -78,7 +78,8 @@ ameliso cases get auth/login
 ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
 ameliso cases create auth/login --title "User Login" --description "..." \
     --body "## Steps\n\n1. Navigate to /login\n"
-ameliso cases update auth/login --title "User Login Flow" --description "..."
+ameliso cases update auth/login --priority high              # patch: change only priority
+ameliso cases update auth/login --title "User Login Flow"   # patch: change only title
 ameliso cases delete auth/login
 
 # Runs
@@ -94,7 +95,7 @@ ameliso runs pending 2026-04-21-smoke
 ameliso suites list
 ameliso suites get smoke
 ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/checkout
-ameliso suites update smoke --name "Smoke Suite" --cases auth/login,billing/checkout,payments/refund
+ameliso suites update smoke --cases auth/login,billing/checkout,payments/refund  # patch: change only cases
 
 # Reports
 ameliso coverage
