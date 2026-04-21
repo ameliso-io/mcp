@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useId, useTransition } from 'react'
+import { useState, useEffect, useCallback, useRef, useId, useTransition, useDeferredValue } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
@@ -38,6 +38,7 @@ function runStatusLabel(s: RunStatus): string {
 
 export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([])
+  const deferredRuns = useDeferredValue(runs)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<RunStatus>(RunStatus.UNSPECIFIED)
@@ -337,7 +338,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
       )}
 
       <div className={styles.list}>
-        {runs.map(run => (
+        {deferredRuns.map(run => (
           <div key={run.id}>
             <div
               className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
