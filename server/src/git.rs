@@ -51,10 +51,9 @@ fn is_source_relevant(path: &str) -> bool {
         ".md",
         ".txt",
         ".gitignore",
-        ".json",
+        // test-data files in the controlled repo (runs/, suites/) use yaml
         ".yaml",
         ".yml",
-        ".toml",
     ];
     let ext = Path::new(path)
         .extension()

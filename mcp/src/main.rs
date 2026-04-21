@@ -6,6 +6,16 @@ use rmcp::transport::stdio;
 use rmcp::{handler::server::wrapper::Parameters, tool, tool_router, ServiceExt};
 use serde::Deserialize;
 
+/// Normalize run status strings: lowercase and map underscore variants.
+fn normalize_run_status(s: &str) -> String {
+    match s.to_lowercase().replace('_', "-").as_str() {
+        "in-progress" => "in-progress".to_owned(),
+        "completed" => "completed".to_owned(),
+        "aborted" => "aborted".to_owned(),
+        other => other.to_owned(),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Request types
 // ---------------------------------------------------------------------------
@@ -16,8 +26,14 @@ struct ListCasesRequest {
     repo_path: String,
     #[schemars(description = "Comma-separated tag filter (optional)")]
     tags: Option<String>,
-    #[schemars(description = "Full-text query (optional)")]
+    #[schemars(
+        description = "Full-text query against title, description, body, and path (optional)"
+    )]
     query: Option<String>,
+    #[schemars(description = "Filter by priority: low | medium | high (optional)")]
+    priority: Option<String>,
+    #[schemars(description = "Suite slug to restrict results to cases in that suite (optional)")]
+    suite: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -32,11 +48,16 @@ struct CreateCaseRequest {
     repo_path: String,
     case_path: String,
     title: String,
-    description: String,
+    #[schemars(description = "One-line description (optional)")]
+    description: Option<String>,
     #[schemars(description = "Comma-separated tags (optional)")]
     tags: Option<String>,
     #[schemars(description = "low | medium | high (default: medium)")]
     priority: Option<String>,
+    #[schemars(
+        description = "Full markdown body (steps, expected results). Defaults to a template."
+    )]
+    body: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -45,12 +66,26 @@ struct RepoPathRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct ListRunsRequest {
+    repo_path: String,
+    #[schemars(
+        description = "Optional status filter: in-progress | completed | aborted. Omit to return all."
+    )]
+    status: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct CreateRunRequest {
     repo_path: String,
     #[schemars(description = "Short slug, e.g. smoke or regression")]
     slug: String,
+    #[schemars(description = "Who is running the tests (defaults to $USER)")]
     tester: Option<String>,
+    #[schemars(description = "Environment being tested, e.g. staging or production (optional)")]
     environment: Option<String>,
+    #[schemars(
+        description = "Suite slug to scope this run to a subset of cases (optional; must exist)"
+    )]
     suite: Option<String>,
 }
 
@@ -61,6 +96,9 @@ struct RecordResultRequest {
     case_path: String,
     #[schemars(description = "passed | failed | blocked | skipped")]
     status: String,
+    #[schemars(
+        description = "Freeform notes, e.g. failure details, environment observations (optional)"
+    )]
     notes: Option<String>,
 }
 
@@ -76,12 +114,18 @@ struct FinalizeRunRequest {
 struct UpdateCaseRequest {
     repo_path: String,
     case_path: String,
-    title: String,
-    description: String,
-    #[schemars(description = "Comma-separated tags (optional)")]
+    #[schemars(description = "New title. Omit to keep existing.")]
+    title: Option<String>,
+    #[schemars(description = "New one-line description. Omit to keep existing.")]
+    description: Option<String>,
+    #[schemars(
+        description = "Comma-separated tags. Omit to keep existing; pass empty string to clear."
+    )]
     tags: Option<String>,
-    #[schemars(description = "low | medium | high (default: medium)")]
+    #[schemars(description = "low | medium | high. Omit to keep existing.")]
     priority: Option<String>,
+    #[schemars(description = "Replace the full markdown body. Omit to keep existing.")]
+    body: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -107,10 +151,33 @@ struct CreateSuiteRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct UpdateSuiteRequest {
+    repo_path: String,
+    slug: String,
+    #[schemars(description = "New name. Omit to keep existing.")]
+    name: Option<String>,
+    #[schemars(description = "New description. Omit to keep existing.")]
+    description: Option<String>,
+    #[schemars(
+        description = "Comma-separated case paths (full replacement). Omit to keep existing list."
+    )]
+    cases: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct AffectedRequest {
     repo_path: String,
     #[schemars(description = "Git ref to compare from (default: last run commit)")]
     since_ref: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct CoverageReportRequest {
+    repo_path: String,
+    #[schemars(
+        description = "Optional status filter: never | passed | failed | blocked | skipped. Omit to return all."
+    )]
+    status_filter: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +190,83 @@ struct AmelisoMcp;
 #[tool_router(server_handler)]
 impl AmelisoMcp {
     #[tool(
-        description = "List test cases in a repo. Filter by comma-separated tags or full-text query."
+        description = "Get an overview of the test repo: total cases by priority, coverage stats (never/passed/failed/blocked/skipped), active in-progress runs, and suites. Use this first to understand the testing state before diving into details."
+    )]
+    fn repo_status(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let cases = repo::list_cases(&repo).unwrap_or_default();
+        let runs = repo::list_runs(&repo).unwrap_or_default();
+        let suites = repo::list_suites(&repo).unwrap_or_default();
+
+        let total = cases.len();
+        let high = cases.iter().filter(|c| c.fm.priority == "high").count();
+        let medium = cases.iter().filter(|c| c.fm.priority == "medium").count();
+        let low = cases.iter().filter(|c| c.fm.priority == "low").count();
+
+        let mut latest: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+        for run_meta in &runs {
+            if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
+                for result in &run.results {
+                    latest
+                        .entry(result.case_path.clone())
+                        .or_insert_with(|| result.fm.status.clone());
+                }
+            }
+        }
+
+        let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+        for c in &cases {
+            let status = latest
+                .get(&c.case_path)
+                .map(|s| s.as_str())
+                .unwrap_or("never");
+            *counts.entry(status).or_insert(0) += 1;
+        }
+
+        let active_runs: Vec<_> = runs.iter().filter(|r| r.status == "in-progress").collect();
+
+        let mut lines = vec![
+            format!("Cases: {total} total ({high} high, {medium} medium, {low} low priority)"),
+            format!(
+                "Coverage: {} passed, {} failed, {} blocked, {} skipped, {} never run",
+                counts.get("passed").copied().unwrap_or(0),
+                counts.get("failed").copied().unwrap_or(0),
+                counts.get("blocked").copied().unwrap_or(0),
+                counts.get("skipped").copied().unwrap_or(0),
+                counts.get("never").copied().unwrap_or(0),
+            ),
+            format!("Suites: {}", suites.len()),
+            format!("Runs: {} total", runs.len()),
+        ];
+
+        if active_runs.is_empty() {
+            lines.push("Active runs: none".to_owned());
+        } else {
+            lines.push(format!("Active runs ({}):", active_runs.len()));
+            for r in &active_runs {
+                let suite_part = r
+                    .suite
+                    .as_deref()
+                    .filter(|s| !s.is_empty())
+                    .map(|s| format!(" suite: {s}"))
+                    .unwrap_or_default();
+                let pending_part = match repo::get_pending_cases(&repo, &r.id) {
+                    Ok((pending, total)) => format!(" ({}/{} pending)", pending.len(), total),
+                    Err(_) => String::new(),
+                };
+                lines.push(format!(
+                    "  [{}] tester: {}{}{}",
+                    r.id, r.tester, suite_part, pending_part
+                ));
+            }
+        }
+
+        lines.join("\n")
+    }
+
+    #[tool(
+        description = "List test cases in a repo. Filter by tags, priority, full-text query, or suite slug. Results sorted high→medium→low priority."
     )]
     fn list_cases(&self, Parameters(req): Parameters<ListCasesRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -144,18 +287,51 @@ impl AmelisoMcp {
             cases.retain(|c| {
                 c.fm.title.to_lowercase().contains(&q)
                     || c.fm.description.to_lowercase().contains(&q)
+                    || c.body.to_lowercase().contains(&q)
                     || c.case_path.to_lowercase().contains(&q)
             });
+        }
+        if let Some(p) = &req.priority {
+            cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(p));
+        }
+        if let Some(suite_slug) = &req.suite {
+            match repo::get_suite(&repo, suite_slug) {
+                Ok(suite) => {
+                    let suite_set: std::collections::HashSet<&str> =
+                        suite.cases.iter().map(|p| p.as_str()).collect();
+                    cases.retain(|c| suite_set.contains(c.case_path.as_str()));
+                }
+                Err(e) => return format!("error loading suite '{suite_slug}': {e}"),
+            }
         }
         if cases.is_empty() {
             return "No cases found.".to_owned();
         }
+        let priority_rank = |p: &str| match p {
+            "high" => 0u8,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        };
+        cases.sort_by(|a, b| {
+            priority_rank(&a.fm.priority)
+                .cmp(&priority_rank(&b.fm.priority))
+                .then_with(|| a.case_path.cmp(&b.case_path))
+        });
         cases
             .iter()
             .map(|c| {
                 format!(
-                    "[{}] {} — {} (priority: {})",
-                    c.case_path, c.fm.title, c.fm.description, c.fm.priority
+                    "[{}] {} — {} (priority: {}{})",
+                    c.case_path,
+                    c.fm.title,
+                    c.fm.description,
+                    c.fm.priority,
+                    if c.fm.tags.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", tags: {}", c.fm.tags.join(", "))
+                    }
                 )
             })
             .collect::<Vec<_>>()
@@ -184,7 +360,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Create a new test case. case_path uses slash-separated identifiers, e.g. auth/login."
+        description = "Create a new test case. case_path is slash-separated (e.g. auth/login); each segment must be [a-z0-9-_] only — no spaces, uppercase, or special chars. priority must be low|medium|high (default: medium)."
     )]
     fn create_case(&self, Parameters(req): Parameters<CreateCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -197,21 +373,29 @@ impl AmelisoMcp {
             .filter(|s| !s.is_empty())
             .collect();
         let pri = req.priority.as_deref().unwrap_or("medium");
-        match repo::create_case(
-            &repo,
-            &req.case_path,
-            &req.title,
-            &req.description,
-            tag_list,
-            pri,
-        ) {
-            Ok(c) => format!("created: cases/{}.md\ntitle: {}", c.case_path, c.fm.title),
+        let desc = req.description.as_deref().unwrap_or("");
+        let body = req.body.as_deref();
+        match repo::create_case(&repo, &req.case_path, &req.title, desc, tag_list, pri, body) {
+            Ok(c) => format!(
+                "created: cases/{}.md\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
+                c.case_path,
+                c.fm.title,
+                c.fm.description,
+                c.fm.priority,
+                if c.fm.tags.is_empty() {
+                    "(none)".to_owned()
+                } else {
+                    c.fm.tags.join(", ")
+                }
+            ),
             Err(e) => format!("error: {e}"),
         }
     }
 
-    #[tool(description = "Get a coverage report showing the latest test status for every case.")]
-    fn coverage_report(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+    #[tool(
+        description = "Get a coverage report: latest test status for every case with title. Results sorted by actionability: failed → blocked → never → skipped → passed, then by priority. Optionally filter by status: never | passed | failed | blocked | skipped."
+    )]
+    fn coverage_report(&self, Parameters(req): Parameters<CoverageReportRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let cases = match repo::list_cases(&repo) {
             Ok(c) => c,
@@ -232,35 +416,114 @@ impl AmelisoMcp {
                 }
             }
         }
-        let mut lines = vec![format!("Coverage report ({} run(s))", runs.len())];
-        for c in &cases {
-            let (status, run_id) = latest
-                .get(&c.case_path)
-                .cloned()
-                .unwrap_or_else(|| ("never".to_owned(), String::new()));
-            let run_ref = if run_id.is_empty() {
-                String::new()
-            } else {
-                format!(" [{}]", run_id)
-            };
-            lines.push(format!("  {:40} {:8}{}", c.case_path, status, run_ref));
+        let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let status_rank = |s: &str| match s {
+            "failed" => 0u8,
+            "blocked" => 1,
+            "never" => 2,
+            "skipped" => 3,
+            "passed" => 4,
+            _ => 5,
+        };
+        let priority_rank = |p: &str| match p {
+            "high" => 0u8,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        };
+        let mut enriched: Vec<(&repo::LoadedCase, String, String)> = cases
+            .iter()
+            .map(|c| {
+                let (status, run_id) = latest
+                    .get(&c.case_path)
+                    .cloned()
+                    .unwrap_or_else(|| ("never".to_owned(), String::new()));
+                (c, status, run_id)
+            })
+            .collect();
+        for (_, ref status, _) in &enriched {
+            *counts.entry(status.clone()).or_insert(0) += 1;
         }
+        if let Some(ref f) = req.status_filter {
+            let normalized_filter = f.to_lowercase();
+            enriched.retain(|(_, status, _)| *status == normalized_filter);
+        }
+        enriched.sort_by(|(a_c, a_s, _), (b_c, b_s, _)| {
+            status_rank(a_s)
+                .cmp(&status_rank(b_s))
+                .then_with(|| priority_rank(&a_c.fm.priority).cmp(&priority_rank(&b_c.fm.priority)))
+                .then_with(|| a_c.case_path.cmp(&b_c.case_path))
+        });
+        let entry_lines: Vec<String> = enriched
+            .into_iter()
+            .map(|(c, status, run_id)| {
+                let run_ref = if run_id.is_empty() {
+                    String::new()
+                } else {
+                    format!(" [{}]", run_id)
+                };
+                format!(
+                    "  {:40} {:8}{} — {}",
+                    c.case_path, status, run_ref, c.fm.title
+                )
+            })
+            .collect();
+        let total = cases.len();
+        let never = counts.get("never").copied().unwrap_or(0);
+        let passed = counts.get("passed").copied().unwrap_or(0);
+        let failed = counts.get("failed").copied().unwrap_or(0);
+        let blocked = counts.get("blocked").copied().unwrap_or(0);
+        let skipped = counts.get("skipped").copied().unwrap_or(0);
+        let summary = format!(
+            "Coverage report ({} run(s), {} total: {} passed, {} failed, {} blocked, {} skipped, {} never run)",
+            runs.len(),
+            total,
+            passed,
+            failed,
+            blocked,
+            skipped,
+            never
+        );
+        let mut lines = vec![summary];
+        lines.extend(entry_lines);
         lines.join("\n")
     }
 
-    #[tool(description = "List all test runs in the repository.")]
-    fn list_runs(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+    #[tool(
+        description = "List all test runs in the repository. Optionally filter by status: in-progress | completed | aborted."
+    )]
+    fn list_runs(&self, Parameters(req): Parameters<ListRunsRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::list_runs(&repo) {
             Ok(runs) => {
+                let runs: Vec<_> = if let Some(ref s) = req.status {
+                    let normalized = normalize_run_status(s);
+                    runs.into_iter()
+                        .filter(|r| r.status == normalized)
+                        .collect()
+                } else {
+                    runs
+                };
                 if runs.is_empty() {
                     return "No runs found.".to_owned();
                 }
                 runs.iter()
                     .map(|r| {
+                        let suite_part = r
+                            .suite
+                            .as_deref()
+                            .filter(|s| !s.is_empty())
+                            .map(|s| format!(" suite: {s}"))
+                            .unwrap_or_default();
+                        let env_part = r
+                            .environment
+                            .as_deref()
+                            .filter(|s| !s.is_empty())
+                            .map(|s| format!(" env: {s}"))
+                            .unwrap_or_default();
                         format!(
-                            "[{}] {} — tester: {} status: {}",
-                            r.id, r.date, r.tester, r.status
+                            "[{}] {} — tester: {} status: {}{}{}",
+                            r.id, r.date, r.tester, r.status, suite_part, env_part
                         )
                     })
                     .collect::<Vec<_>>()
@@ -270,7 +533,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Create a new test run. Returns the run ID and directory path.")]
+    #[tool(
+        description = "Create a new test run. If suite is provided it must already exist (validated). Returns the run ID and the full list of cases to test sorted by priority — no need to call get_pending_cases afterward."
+    )]
     fn create_run(&self, Parameters(req): Parameters<CreateRunRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let tester = req
@@ -280,56 +545,230 @@ impl AmelisoMcp {
         let env = req.environment.filter(|s| !s.is_empty());
         let suite = req.suite.filter(|s| !s.is_empty());
         match repo::create_run(&repo, &req.slug, &tester, env, suite) {
-            Ok((meta, dir_path)) => format!("created run: {}\ndir: {}", meta.id, dir_path),
+            Ok((meta, dir_path)) => {
+                let scope_msg = match repo::get_pending_cases(&repo, &meta.id) {
+                    Ok((pending, total)) => {
+                        let mut lines = vec![format!(
+                            "\nscope: {total} case(s) to test (in priority order):"
+                        )];
+                        for c in &pending {
+                            let tags = if c.fm.tags.is_empty() {
+                                String::new()
+                            } else {
+                                format!(", tags: {}", c.fm.tags.join(", "))
+                            };
+                            lines.push(format!(
+                                "  {} — {} (priority: {}{})",
+                                c.case_path, c.fm.title, c.fm.priority, tags
+                            ));
+                        }
+                        lines.join("\n")
+                    }
+                    Err(_) => String::new(),
+                };
+                format!("created run: {}\ndir: {}{}", meta.id, dir_path, scope_msg)
+            }
             Err(e) => format!("error: {e}"),
         }
     }
 
-    #[tool(description = "Record a test result for a case within a run.")]
+    #[tool(
+        description = "Record a test result (passed|failed|blocked|skipped) for a case in a run. Case must exist and run must be in-progress. Add notes to explain failures. Returns confirmation; shows previous status if overwriting."
+    )]
     fn record_result(&self, Parameters(req): Parameters<RecordResultRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let notes = req.notes.as_deref().unwrap_or("");
         match repo::record_result(&repo, &req.run_id, &req.case_path, &req.status, notes) {
-            Ok(_) => format!(
-                "recorded: {} = {} in run {}",
-                req.case_path, req.status, req.run_id
+            Ok((_, prev)) => {
+                let base = if let Some(old) = prev {
+                    format!(
+                        "updated: {} = {} in run {} (was: {})",
+                        req.case_path, req.status, req.run_id, old
+                    )
+                } else {
+                    format!(
+                        "recorded: {} = {} in run {}",
+                        req.case_path, req.status, req.run_id
+                    )
+                };
+                let progress = repo::get_pending_cases(&repo, &req.run_id)
+                    .ok()
+                    .map(|(pending, total)| {
+                        if pending.is_empty() {
+                            format!("\nprogress: {total}/{total} done — all cases recorded; ready to finalize")
+                        } else {
+                            format!(
+                                "\nprogress: {}/{total} done, {} remaining",
+                                total - pending.len(),
+                                pending.len()
+                            )
+                        }
+                    })
+                    .unwrap_or_default();
+                format!("{base}{progress}")
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Mark a test run completed or aborted. Returns a pass/fail/blocked/skipped summary. Warns if cases in scope have no result recorded (pending cases remain)."
+    )]
+    fn finalize_run(&self, Parameters(req): Parameters<FinalizeRunRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::finalize_run(&repo, &req.run_id, &req.status) {
+            Ok(meta) => {
+                let summary = repo::get_run(&repo, &meta.id)
+                    .map(|run| {
+                        let passed = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "passed")
+                            .count();
+                        let failed = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "failed")
+                            .count();
+                        let blocked = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "blocked")
+                            .count();
+                        let skipped = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "skipped")
+                            .count();
+                        format!(
+                            "\nsummary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                            passed,
+                            failed,
+                            blocked,
+                            skipped,
+                            run.results.len()
+                        )
+                    })
+                    .unwrap_or_default();
+                let pending_warn = if meta.status == "completed" {
+                    repo::get_pending_cases(&repo, &meta.id)
+                        .ok()
+                        .filter(|(p, _)| !p.is_empty())
+                        .map(|(p, total)| {
+                            let paths: Vec<&str> = p.iter().map(|c| c.case_path.as_str()).collect();
+                            format!(
+                                "\nwarning: {}/{} case(s) have no result recorded: {}",
+                                p.len(),
+                                total,
+                                paths.join(", ")
+                            )
+                        })
+                        .unwrap_or_default()
+                } else {
+                    String::new()
+                };
+                format!(
+                    "finalized run {} as {}{}{}",
+                    meta.id, meta.status, summary, pending_warn
+                )
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Return cases in a run's scope that have no result recorded yet, sorted high→medium→low priority. \
+                       Scope = suite cases if the run references a suite; otherwise all repo cases. \
+                       Returns case path, title, priority, and tags for each pending case."
+    )]
+    fn get_pending_cases(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::get_pending_cases(&repo, &req.run_id) {
+            Ok((pending, total)) => {
+                if pending.is_empty() {
+                    format!("All {} case(s) in scope have results recorded.", total)
+                } else {
+                    let mut lines = vec![format!(
+                        "Pending ({}/{} cases still need results):",
+                        pending.len(),
+                        total
+                    )];
+                    for c in &pending {
+                        let tags = if c.fm.tags.is_empty() {
+                            String::new()
+                        } else {
+                            format!(", tags: {}", c.fm.tags.join(", "))
+                        };
+                        lines.push(format!(
+                            "  {} — {} (priority: {}{})",
+                            c.case_path, c.fm.title, c.fm.priority, tags
+                        ));
+                    }
+                    lines.join("\n")
+                }
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Update an existing test case. All fields are optional — omit any field to preserve its current value. Useful for changing just priority or tags without re-specifying title/description."
+    )]
+    fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let tags = req.tags.as_deref().map(|raw| {
+            raw.split(',')
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+        });
+        match repo::update_case(
+            &repo,
+            &req.case_path,
+            req.title.as_deref(),
+            req.description.as_deref(),
+            tags,
+            req.priority.as_deref(),
+            req.body.as_deref(),
+        ) {
+            Ok(c) => format!(
+                "updated: cases/{}.md\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
+                c.case_path,
+                c.fm.title,
+                c.fm.description,
+                c.fm.priority,
+                if c.fm.tags.is_empty() {
+                    "(none)".to_owned()
+                } else {
+                    c.fm.tags.join(", ")
+                }
             ),
             Err(e) => format!("error: {e}"),
         }
     }
 
-    #[tool(description = "Finalize a test run, marking it completed or aborted.")]
-    fn finalize_run(&self, Parameters(req): Parameters<FinalizeRunRequest>) -> String {
+    #[tool(description = "Delete a test case file. Returns the deleted file path.")]
+    fn delete_case(&self, Parameters(req): Parameters<GetCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
-        match repo::finalize_run(&repo, &req.run_id, &req.status) {
-            Ok(meta) => format!("finalized run {} as {}", meta.id, meta.status),
+        match repo::delete_case(&repo, &req.case_path) {
+            Ok(()) => format!("deleted: cases/{}.md", req.case_path),
             Err(e) => format!("error: {e}"),
         }
     }
 
-    #[tool(description = "Update an existing test case's metadata.")]
-    fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
-        let repo = PathBuf::from(&req.repo_path);
-        let tag_list: Vec<String> = req
-            .tags
-            .as_deref()
-            .unwrap_or("")
-            .split(',')
-            .map(|s| s.trim().to_owned())
-            .filter(|s| !s.is_empty())
-            .collect();
-        let pri = req.priority.as_deref().unwrap_or("medium");
-        match repo::update_case(&repo, &req.case_path, &req.title, &req.description, tag_list, pri) {
-            Ok(c) => format!("updated: cases/{}.md", c.case_path),
-            Err(e) => format!("error: {e}"),
-        }
-    }
-
-    #[tool(description = "Get full details of a test run including all results.")]
+    #[tool(
+        description = "Get full details of a test run: metadata, pass/fail/blocked/skipped summary, result list with case titles and notes. For in-progress runs, also shows how many cases are still pending."
+    )]
     fn get_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_run(&repo, &req.run_id) {
             Ok(run) => {
+                let case_titles: std::collections::HashMap<String, String> =
+                    repo::list_cases(&repo)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|c| (c.case_path, c.fm.title))
+                        .collect();
                 let mut lines = vec![
                     format!("id:     {}", run.meta.id),
                     format!("date:   {}", run.meta.date),
@@ -339,9 +778,58 @@ impl AmelisoMcp {
                 if let Some(env) = &run.meta.environment {
                     lines.push(format!("env:    {env}"));
                 }
+                if let Some(ref suite) = run.meta.suite {
+                    if !suite.is_empty() {
+                        lines.push(format!("suite:  {suite}"));
+                    }
+                }
+                let passed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "passed")
+                    .count();
+                let failed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "failed")
+                    .count();
+                let blocked = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "blocked")
+                    .count();
+                let skipped = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "skipped")
+                    .count();
+                lines.push(format!(
+                    "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                    passed,
+                    failed,
+                    blocked,
+                    skipped,
+                    run.results.len()
+                ));
+                if run.meta.status == "in-progress" {
+                    if let Ok((pending, total)) = repo::get_pending_cases(&repo, &run.meta.id) {
+                        lines.push(format!(
+                            "pending: {}/{} cases still need results",
+                            pending.len(),
+                            total
+                        ));
+                    }
+                }
                 lines.push(format!("\nResults ({}):", run.results.len()));
                 for r in &run.results {
-                    lines.push(format!("  {:40} {}", r.case_path, r.fm.status));
+                    let title = case_titles
+                        .get(&r.case_path)
+                        .map(|t| format!(" — {t}"))
+                        .unwrap_or_default();
+                    lines.push(format!("  {:40} {:8}{}", r.case_path, r.fm.status, title));
+                    if !r.notes.trim().is_empty() {
+                        lines.push(format!("    notes: {}", r.notes.trim()));
+                    }
                 }
                 lines.join("\n")
             }
@@ -349,7 +837,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "List all test suites.")]
+    #[tool(description = "List all test suites with their case counts and descriptions.")]
     fn list_suites(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::list_suites(&repo) {
@@ -359,7 +847,15 @@ impl AmelisoMcp {
                 }
                 suites
                     .iter()
-                    .map(|(slug, s)| format!("[{}] {} ({} cases)", slug, s.name, s.cases.len()))
+                    .map(|(slug, s)| {
+                        let desc = s
+                            .description
+                            .as_deref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| format!(" — {d}"))
+                            .unwrap_or_default();
+                        format!("[{}] {} ({} cases){}", slug, s.name, s.cases.len(), desc)
+                    })
                     .collect::<Vec<_>>()
                     .join("\n")
             }
@@ -367,26 +863,40 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Get details of a test suite by slug.")]
+    #[tool(
+        description = "Get a suite by slug — shows name, description, and case list with titles."
+    )]
     fn get_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_suite(&repo, &req.slug) {
             Ok(s) => {
-                let mut lines = vec![
-                    format!("slug: {}", req.slug),
-                    format!("name: {}", s.name),
-                ];
+                let case_titles: std::collections::HashMap<String, String> =
+                    repo::list_cases(&repo)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|c| (c.case_path, c.fm.title))
+                        .collect();
+                let mut lines = vec![format!("slug: {}", req.slug), format!("name: {}", s.name)];
                 if let Some(d) = &s.description {
                     lines.push(format!("description: {d}"));
                 }
-                lines.push(format!("cases ({}): {}", s.cases.len(), s.cases.join(", ")));
+                lines.push(format!("\ncases ({}):", s.cases.len()));
+                for path in &s.cases {
+                    let title = case_titles
+                        .get(path)
+                        .map(|t| format!(" — {t}"))
+                        .unwrap_or_default();
+                    lines.push(format!("  {path}{title}"));
+                }
                 lines.join("\n")
             }
             Err(e) => format!("error: {e}"),
         }
     }
 
-    #[tool(description = "Create a new test suite grouping related cases.")]
+    #[tool(
+        description = "Create a test suite grouping existing cases. All case paths in cases must already exist (validated). cases is comma-separated."
+    )]
     fn create_suite(&self, Parameters(req): Parameters<CreateSuiteRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let case_list: Vec<String> = req
@@ -397,12 +907,62 @@ impl AmelisoMcp {
             .collect();
         let desc = req.description.filter(|s| !s.is_empty());
         match repo::create_suite(&repo, &req.slug, &req.name, desc, case_list) {
-            Ok(_) => format!("created: suites/{}.yaml", req.slug),
+            Ok(s) => format!(
+                "created: suites/{}.yaml ({} cases)",
+                req.slug,
+                s.cases.len()
+            ),
             Err(e) => format!("error: {e}"),
         }
     }
 
-    #[tool(description = "Show which test cases need re-running after recent code changes.")]
+    #[tool(
+        description = "Update an existing test suite. All fields optional — omit any to preserve current value. To replace the full case list, pass comma-separated case paths in cases. Cases must already exist."
+    )]
+    fn update_suite(&self, Parameters(req): Parameters<UpdateSuiteRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let cases = req.cases.as_deref().map(|raw| {
+            raw.split(',')
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+        });
+        let desc = req
+            .description
+            .map(|d| if d.is_empty() { None } else { Some(d) });
+        match repo::update_suite(&repo, &req.slug, req.name.as_deref(), desc, cases) {
+            Ok(s) => format!(
+                "updated: suites/{}.yaml ({} cases)",
+                req.slug,
+                s.cases.len()
+            ),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Delete a run directory entirely. Use to clean up accidentally-created runs. Removes all recorded results. Returns the deleted directory path."
+    )]
+    fn delete_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::delete_run(&repo, &req.run_id) {
+            Ok(()) => format!("deleted: runs/{}", req.run_id),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Delete a test suite file. Returns the deleted file path.")]
+    fn delete_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::delete_suite(&repo, &req.slug) {
+            Ok(()) => format!("deleted: suites/{}.yaml", req.slug),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Show test cases that may need re-running given recent git changes. Compares against the last completed run commit by default; override with since_ref. Returns cases with title, priority, and tags."
+    )]
     fn get_affected_cases(&self, Parameters(req): Parameters<AffectedRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let cases = match repo::list_cases(&repo) {
@@ -411,15 +971,50 @@ impl AmelisoMcp {
         };
         let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
         let since = req.since_ref.as_deref().filter(|s| !s.is_empty());
+        let case_map: std::collections::HashMap<String, &repo::LoadedCase> =
+            cases.iter().map(|c| (c.case_path.clone(), c)).collect();
         match git::find_affected(&repo, since, &known_paths) {
             Ok(result) => {
                 if result.case_paths.is_empty() {
                     format!("No cases need re-running.\nReason: {}", result.reason)
                 } else {
+                    fn priority_rank(p: &str) -> u8 {
+                        match p {
+                            "high" => 0,
+                            "medium" => 1,
+                            "low" => 2,
+                            _ => 3,
+                        }
+                    }
+                    let mut sorted_paths = result.case_paths.clone();
+                    sorted_paths.sort_by_key(|p| {
+                        case_map
+                            .get(p)
+                            .map(|c| priority_rank(&c.fm.priority))
+                            .unwrap_or(3)
+                    });
+                    let lines: Vec<String> = sorted_paths
+                        .iter()
+                        .map(|p| {
+                            if let Some(c) = case_map.get(p) {
+                                let tags = if c.fm.tags.is_empty() {
+                                    String::new()
+                                } else {
+                                    format!(", tags: {}", c.fm.tags.join(", "))
+                                };
+                                format!(
+                                    "  {} — {} (priority: {}{})",
+                                    p, c.fm.title, c.fm.priority, tags
+                                )
+                            } else {
+                                format!("  {p}")
+                            }
+                        })
+                        .collect();
                     format!(
-                        "Cases to re-run ({}):\n{}\n\nReason: {}",
-                        result.case_paths.len(),
-                        result.case_paths.join("\n"),
+                        "Cases to re-run ({}, high priority first):\n{}\n\nReason: {}",
+                        sorted_paths.len(),
+                        lines.join("\n"),
                         result.reason
                     )
                 }

@@ -241,7 +241,10 @@ async fn create_and_list_run() {
     assert_eq!(meta.status, pb::RunStatus::InProgress as i32);
 
     let runs = c
-        .list_runs(Request::new(pb::ListRunsRequest { repo_path: rp }))
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp,
+            status: 0,
+        }))
         .await
         .unwrap()
         .into_inner()
@@ -314,6 +317,35 @@ async fn record_result_on_closed_run_fails() {
     assert_eq!(err.code(), tonic::Code::FailedPrecondition);
 }
 
+#[tokio::test]
+async fn finalize_run_twice_fails() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+
+    c.finalize_run(Request::new(pb::FinalizeRunRequest {
+        repo_path: rp.clone(),
+        run_id: "2026-01-01-smoke".to_owned(),
+        status: pb::RunStatus::Completed as i32,
+    }))
+    .await
+    .unwrap();
+
+    let err = c
+        .finalize_run(Request::new(pb::FinalizeRunRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-smoke".to_owned(),
+            status: pb::RunStatus::Completed as i32,
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::FailedPrecondition);
+}
+
 // ---------------------------------------------------------------------------
 // Tests — Coverage report
 // ---------------------------------------------------------------------------
@@ -329,7 +361,10 @@ async fn coverage_never_for_unrun_cases() {
     write_case(tmp.path(), "billing/invoice", "Invoice");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp,
+            status_filter: 0,
+        }))
         .await
         .unwrap()
         .into_inner();
@@ -358,7 +393,10 @@ async fn coverage_shows_latest_run_status() {
     write_result(tmp.path(), "2026-01-02-run2", "auth/login", "failed");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp,
+            status_filter: 0,
+        }))
         .await
         .unwrap()
         .into_inner();
@@ -372,6 +410,58 @@ async fn coverage_shows_latest_run_status() {
 // ---------------------------------------------------------------------------
 // Tests — Suites
 // ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn coverage_report_status_filter() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+    write_run(tmp.path(), "2026-01-01-r1", "completed");
+    write_result(tmp.path(), "2026-01-01-r1", "auth/login", "passed");
+    // billing/invoice has no result → "never"
+
+    // No filter — both entries
+    let all = c
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp.clone(),
+            status_filter: 0,
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(all.entries.len(), 2);
+
+    // Filter: never — only invoice
+    let never = c
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp.clone(),
+            status_filter: pb::ResultStatus::Never as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(never.entries.len(), 1);
+    assert_eq!(
+        never.entries[0].case.as_ref().unwrap().path,
+        "billing/invoice"
+    );
+
+    // Filter: passed — only login
+    let passed = c
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp,
+            status_filter: pb::ResultStatus::Passed as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(passed.entries.len(), 1);
+    assert_eq!(passed.entries[0].case.as_ref().unwrap().path, "auth/login");
+}
 
 // ---------------------------------------------------------------------------
 // Tests — Affected cases
@@ -434,6 +524,8 @@ async fn create_and_get_suite() {
     let tmp = TempDir::new().unwrap();
     let rp = repo_path(&tmp);
 
+    write_case(tmp.path(), "auth/login", "Login");
+
     c.create_suite(Request::new(pb::CreateSuiteRequest {
         repo_path: rp.clone(),
         slug: "smoke".to_owned(),
@@ -457,4 +549,707 @@ async fn create_and_get_suite() {
 
     assert_eq!(suite.name, "Smoke Test");
     assert_eq!(suite.cases, vec!["auth/login"]);
+}
+
+#[tokio::test]
+async fn get_case_returns_body() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "User Login");
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "auth/login".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    let case = resp.case.unwrap();
+    assert_eq!(case.path, "auth/login");
+    assert_eq!(case.title, "User Login");
+    assert!(
+        resp.body.contains("Steps"),
+        "body should contain Steps section"
+    );
+}
+
+#[tokio::test]
+async fn create_case_with_custom_body() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let custom_body = "## Steps\n\n1. Open the app\n\n## Expected Result\n\nApp opens\n";
+    c.create_case(Request::new(pb::CreateCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "smoke/open".to_owned(),
+        title: "Open App".to_owned(),
+        description: "Basic smoke test".to_owned(),
+        body: custom_body.to_owned(),
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "smoke/open".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert!(resp.body.contains("Open the app"), "custom body preserved");
+}
+
+#[tokio::test]
+async fn delete_case_removes_file() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "User Login");
+    assert!(tmp.path().join("cases/auth/login.md").exists());
+
+    c.delete_case(Request::new(pb::DeleteCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "auth/login".to_owned(),
+    }))
+    .await
+    .unwrap();
+
+    assert!(!tmp.path().join("cases/auth/login.md").exists());
+
+    let err = c
+        .delete_case(Request::new(pb::DeleteCaseRequest {
+            repo_path: rp,
+            case_path: "auth/login".to_owned(),
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn update_case_preserves_body_when_omitted() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "User Login");
+
+    c.update_case(Request::new(pb::UpdateCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "auth/login".to_owned(),
+        title: "Updated Title".to_owned(),
+        description: "new desc".to_owned(),
+        body: String::new(), // empty = preserve
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "auth/login".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.case.unwrap().title, "Updated Title");
+    assert!(
+        resp.body.contains("Steps"),
+        "original body preserved after update"
+    );
+}
+
+#[tokio::test]
+async fn update_case_partial_preserves_unchanged_fields() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "billing/invoice", "Invoice Check");
+
+    // Update only priority; title/description/tags left empty (preserve)
+    c.update_case(Request::new(pb::UpdateCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "billing/invoice".to_owned(),
+        priority: ameliso_server::proto::ameliso_v1::Priority::High as i32,
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "billing/invoice".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    let case = resp.case.unwrap();
+    assert_eq!(
+        case.title, "Invoice Check",
+        "title preserved after partial update"
+    );
+    assert_eq!(case.priority, "high");
+}
+
+#[tokio::test]
+async fn update_suite_changes_cases() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/checkout", "Checkout");
+
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        description: String::new(),
+        cases: vec!["auth/login".to_owned()],
+    }))
+    .await
+    .unwrap();
+
+    c.update_suite(Request::new(pb::UpdateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke Suite".to_owned(),
+        description: String::new(),
+        cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+    }))
+    .await
+    .unwrap();
+
+    let suite = c
+        .get_suite(Request::new(pb::GetSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .suite
+        .unwrap();
+
+    assert_eq!(suite.name, "Smoke Suite");
+    assert_eq!(suite.cases.len(), 2);
+    assert!(suite.cases.contains(&"billing/checkout".to_owned()));
+}
+
+#[tokio::test]
+async fn update_suite_partial_preserves_unchanged_fields() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke Tests".to_owned(),
+        cases: vec!["auth/login".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    // Update only description; name and cases left empty (preserve)
+    c.update_suite(Request::new(pb::UpdateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        description: "Basic smoke coverage".to_owned(),
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let suite = c
+        .get_suite(Request::new(pb::GetSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .suite
+        .unwrap();
+
+    assert_eq!(
+        suite.name, "Smoke Tests",
+        "name preserved after partial update"
+    );
+    assert_eq!(suite.description, "Basic smoke coverage");
+    assert_eq!(suite.cases.len(), 1, "cases preserved after partial update");
+}
+
+#[tokio::test]
+async fn delete_suite_removes_file() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        cases: vec!["auth/login".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    assert!(tmp.path().join("suites/smoke.yaml").exists());
+
+    c.delete_suite(Request::new(pb::DeleteSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+    }))
+    .await
+    .unwrap();
+
+    assert!(!tmp.path().join("suites/smoke.yaml").exists());
+
+    // Second delete → NotFound
+    let err = c
+        .delete_suite(Request::new(pb::DeleteSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn list_cases_filter_by_priority() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    std::fs::create_dir_all(tmp.path().join("cases/auth")).unwrap();
+    std::fs::write(
+        tmp.path().join("cases/auth/login.md"),
+        "---\ntitle: Login\ndescription: d\ntags: []\npriority: high\n\
+         created_at: 2026-01-01\nupdated_at: 2026-01-01\n---\n\n## Steps\n\n1.\n",
+    )
+    .unwrap();
+    write_case(tmp.path(), "billing/invoice", "Invoice"); // priority: medium
+
+    let cases = c
+        .list_cases(Request::new(pb::ListCasesRequest {
+            repo_path: rp,
+            priority: pb::Priority::High as i32,
+            ..Default::default()
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .cases;
+
+    assert_eq!(cases.len(), 1);
+    assert_eq!(cases[0].path, "auth/login");
+}
+
+#[tokio::test]
+async fn create_case_rejects_path_traversal() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let err = c
+        .create_case(Request::new(pb::CreateCaseRequest {
+            repo_path: rp,
+            case_path: "../../../etc/passwd".to_owned(),
+            title: "Malicious".to_owned(),
+            description: String::new(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn create_case_rejects_invalid_slug_chars() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    for bad_path in &["auth/My Login", "auth/login!", "AUTH/LOGIN", "auth/log in"] {
+        let err = c
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_path: rp.clone(),
+                case_path: bad_path.to_string(),
+                title: "Test".to_owned(),
+                description: String::new(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(
+            err.code(),
+            tonic::Code::InvalidArgument,
+            "expected InvalidArgument for path: {bad_path}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn list_runs_filter_by_status() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-alpha", "in-progress");
+    write_run(tmp.path(), "2026-01-02-beta", "completed");
+    write_run(tmp.path(), "2026-01-03-gamma", "completed");
+
+    // No filter — returns all 3
+    let all = c
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp.clone(),
+            status: pb::RunStatus::Unspecified as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .runs;
+    assert_eq!(all.len(), 3);
+
+    // Filter: in-progress — returns 1
+    let in_progress = c
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp.clone(),
+            status: pb::RunStatus::InProgress as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .runs;
+    assert_eq!(in_progress.len(), 1);
+    assert_eq!(in_progress[0].id, "2026-01-01-alpha");
+
+    // Filter: completed — returns 2
+    let completed = c
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp,
+            status: pb::RunStatus::Completed as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .runs;
+    assert_eq!(completed.len(), 2);
+}
+
+#[tokio::test]
+async fn record_result_rejects_invalid_status() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-alpha", "in-progress");
+
+    let err = c
+        .record_result(Request::new(pb::RecordResultRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-alpha".to_owned(),
+            case_path: "auth/login".to_owned(),
+            // 0 = Unspecified
+            status: 0,
+            notes: String::new(),
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn finalize_run_rejects_in_progress_status() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-alpha", "in-progress");
+
+    let err = c
+        .finalize_run(Request::new(pb::FinalizeRunRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-alpha".to_owned(),
+            // InProgress is not a valid finalize status
+            status: pb::RunStatus::InProgress as i32,
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn get_pending_cases_returns_unrecorded() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+
+    // No results recorded yet — both cases pending
+    let resp = c
+        .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+            repo_path: rp.clone(),
+            run_id: "2026-01-01-smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(resp.total_in_scope, 2);
+    assert_eq!(resp.cases.len(), 2);
+
+    // Record one result
+    write_result(tmp.path(), "2026-01-01-smoke", "auth/login", "passed");
+
+    // Now only billing/invoice is pending
+    let resp2 = c
+        .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(resp2.total_in_scope, 2);
+    assert_eq!(resp2.cases.len(), 1);
+    assert_eq!(resp2.cases[0].path, "billing/invoice");
+    assert_eq!(resp2.cases[0].title, "Invoice");
+}
+
+#[tokio::test]
+async fn get_pending_cases_respects_suite_scope() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+    write_case(tmp.path(), "payments/checkout", "Checkout");
+
+    // Create a suite with only 2 of the 3 cases
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        cases: vec!["auth/login".to_owned(), "billing/invoice".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    // Create a run referencing the suite
+    let meta = c
+        .create_run(Request::new(pb::CreateRunRequest {
+            repo_path: rp.clone(),
+            slug: "smoke".to_owned(),
+            tester: "alice".to_owned(),
+            suite: "smoke".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .run
+        .unwrap();
+
+    // All 2 suite cases pending
+    let resp = c
+        .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+            repo_path: rp.clone(),
+            run_id: meta.id.clone(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(resp.total_in_scope, 2);
+    assert_eq!(resp.cases.len(), 2);
+    // payments/checkout NOT in scope (not in suite)
+    let pending_paths: Vec<&str> = resp.cases.iter().map(|c| c.path.as_str()).collect();
+    assert!(!pending_paths.contains(&"payments/checkout"));
+}
+
+#[tokio::test]
+async fn record_result_rejects_nonexistent_case() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+    // Note: no write_case — auth/typo does not exist
+
+    let err = c
+        .record_result(Request::new(pb::RecordResultRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-smoke".to_owned(),
+            case_path: "auth/typo".to_owned(),
+            status: pb::ResultStatus::Passed as i32,
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn create_run_rejects_nonexistent_suite() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let err = c
+        .create_run(Request::new(pb::CreateRunRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+            tester: "alice".to_owned(),
+            suite: "ghost-suite".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn create_suite_rejects_nonexistent_case() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    // "auth/typo" does not exist
+
+    let err = c
+        .create_suite(Request::new(pb::CreateSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+            name: "Smoke".to_owned(),
+            cases: vec!["auth/login".to_owned(), "auth/typo".to_owned()],
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn delete_run_removes_directory() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+    assert!(tmp.path().join("runs/2026-01-01-smoke").exists());
+
+    c.delete_run(Request::new(pb::DeleteRunRequest {
+        repo_path: rp.clone(),
+        run_id: "2026-01-01-smoke".to_owned(),
+    }))
+    .await
+    .unwrap();
+
+    assert!(!tmp.path().join("runs/2026-01-01-smoke").exists());
+}
+
+#[tokio::test]
+async fn delete_run_rejects_nonexistent() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let err = c
+        .delete_run(Request::new(pb::DeleteRunRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-ghost".to_owned(),
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn list_cases_filter_by_suite() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "auth/signup", "Signup");
+    write_case(tmp.path(), "billing/checkout", "Checkout");
+
+    // Create a suite with only auth/login and billing/checkout
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .list_cases(Request::new(pb::ListCasesRequest {
+            repo_path: rp.clone(),
+            suite: "smoke".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.cases.len(), 2);
+    let paths: Vec<&str> = resp.cases.iter().map(|c| c.path.as_str()).collect();
+    assert!(paths.contains(&"auth/login"));
+    assert!(paths.contains(&"billing/checkout"));
+    assert!(!paths.contains(&"auth/signup"));
 }

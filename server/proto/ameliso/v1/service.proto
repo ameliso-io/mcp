@@ -23,6 +23,9 @@ service AmelisoService {
   // Update an existing case's metadata. Bumps updated_at automatically.
   rpc UpdateCase(UpdateCaseRequest) returns (UpdateCaseResponse);
 
+  // Delete a case file from the repository.
+  rpc DeleteCase(DeleteCaseRequest) returns (DeleteCaseResponse);
+
   // --- Suites ---
 
   // List all suites.
@@ -33,6 +36,12 @@ service AmelisoService {
 
   // Create a new suite.
   rpc CreateSuite(CreateSuiteRequest) returns (CreateSuiteResponse);
+
+  // Update an existing suite's name, description, or case list.
+  rpc UpdateSuite(UpdateSuiteRequest) returns (UpdateSuiteResponse);
+
+  // Delete a suite file from the repository.
+  rpc DeleteSuite(DeleteSuiteRequest) returns (DeleteSuiteResponse);
 
   // --- Runs ---
 
@@ -51,6 +60,13 @@ service AmelisoService {
 
   // Mark a run as completed or aborted. Validates all expected cases have results.
   rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
+
+  // Delete a run directory entirely. Useful for cleaning up accidentally-created runs.
+  rpc DeleteRun(DeleteRunRequest) returns (DeleteRunResponse);
+
+  // Return case paths in a run's scope that have no result recorded yet.
+  // If the run references a suite, scope = suite cases; otherwise scope = all cases in repo.
+  rpc GetPendingCases(GetPendingCasesRequest) returns (GetPendingCasesResponse);
 
   // --- Reports ---
 
@@ -71,6 +87,8 @@ message ListCasesRequest {
   Priority priority = 3;
   // Optional: full-text query against title and description
   string query = 4;
+  // Optional: restrict to cases in this suite slug
+  string suite = 5;
 }
 
 message ListCasesResponse {
@@ -84,6 +102,8 @@ message GetCaseRequest {
 
 message GetCaseResponse {
   Case case = 1;
+  // Full markdown body (everything after the frontmatter delimiter)
+  string body = 2;
 }
 
 message CreateCaseRequest {
@@ -94,6 +114,8 @@ message CreateCaseRequest {
   string description = 4;
   repeated string tags = 5;
   Priority priority = 6;
+  // Optional: full markdown body (steps, expected results, etc.). Defaults to a template.
+  string body = 7;
 }
 
 message CreateCaseResponse {
@@ -109,10 +131,22 @@ message UpdateCaseRequest {
   string description = 4;
   repeated string tags = 5;
   Priority priority = 6;
+  // Optional: replace the full markdown body. If empty, existing body is preserved.
+  string body = 7;
 }
 
 message UpdateCaseResponse {
   Case case = 1;
+}
+
+message DeleteCaseRequest {
+  string repo_path = 1;
+  string case_path = 2;
+}
+
+message DeleteCaseResponse {
+  // Path of the deleted file relative to repo root
+  string file_path = 1;
 }
 
 // --- Suites ---
@@ -147,10 +181,33 @@ message CreateSuiteResponse {
   string file_path = 2;
 }
 
+message UpdateSuiteRequest {
+  string repo_path = 1;
+  string slug = 2;
+  string name = 3;
+  string description = 4;
+  repeated string cases = 5;
+}
+
+message UpdateSuiteResponse {
+  Suite suite = 1;
+}
+
+message DeleteSuiteRequest {
+  string repo_path = 1;
+  string slug = 2;
+}
+
+message DeleteSuiteResponse {
+  string file_path = 1;
+}
+
 // --- Runs ---
 
 message ListRunsRequest {
   string repo_path = 1;
+  // Optional: filter by run status. Unspecified = return all.
+  RunStatus status = 2;
 }
 
 message ListRunsResponse {
@@ -203,10 +260,34 @@ message FinalizeRunResponse {
   RunMeta run = 1;
 }
 
+message DeleteRunRequest {
+  string repo_path = 1;
+  string run_id = 2;
+}
+
+message DeleteRunResponse {
+  // Path of the deleted run directory relative to repo root (e.g. runs/2026-04-21-smoke)
+  string dir_path = 1;
+}
+
+message GetPendingCasesRequest {
+  string repo_path = 1;
+  string run_id = 2;
+}
+
+message GetPendingCasesResponse {
+  // Cases in scope that have no result recorded yet (includes metadata).
+  repeated Case cases = 1;
+  // Total scope size (suite or all cases).
+  int32 total_in_scope = 2;
+}
+
 // --- Reports ---
 
 message GetCoverageReportRequest {
   string repo_path = 1;
+  // Optional: return only entries with this latest status. Unspecified = return all.
+  ResultStatus status_filter = 2;
 }
 
 message GetCoverageReportResponse {
