@@ -188,10 +188,18 @@
   color: white;
 }
 
+.btnPrimary:hover {
+  background: var(--color-ink-hover);
+}
+
 .btnSecondary {
   composes: btn;
   background: var(--color-surface-alt);
   color: #475569;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: var(--color-border);
 }
 
 .btnDanger {
@@ -201,9 +209,17 @@
   border: 1px solid var(--color-danger-border);
 }
 
+.btnDanger:hover {
+  background: #fecaca;
+}
+
 .btnOutline {
   composes: btn;
   background: white;
   color: var(--color-ink);
   border: 1px solid var(--color-border);
+}
+
+.btnOutline:hover {
+  background: var(--color-surface);
 }

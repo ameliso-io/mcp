@@ -14,6 +14,14 @@
   --color-primary: #3b82f6;
   --color-primary-bg: #eff6ff;
   --color-primary-border: #bfdbfe;
+  --color-success-hover: #15803d;
+  --color-danger-hover: #dc2626;
+  --color-primary-hover: #2563eb;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 * {

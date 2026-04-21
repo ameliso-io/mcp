@@ -249,6 +249,10 @@
   font-size: 14px;
 }
 
+.btn:hover {
+  background: var(--color-ink-hover);
+}
+
 .btnGreen {
   padding: 8px 20px;
   background: var(--color-success);
@@ -257,6 +261,10 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+}
+
+.btnGreen:hover:not(:disabled) {
+  background: var(--color-success-hover);
 }
 
 .btnSaveSm {
@@ -269,6 +277,10 @@
   font-size: 13px;
 }
 
+.btnSaveSm:hover:not(:disabled) {
+  background: var(--color-success-hover);
+}
+
 .btnCancelSm {
   padding: 6px 16px;
   background: none;
@@ -276,6 +288,10 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
+}
+
+.btnCancelSm:hover {
+  background: var(--color-surface);
 }
 
 .btnOutlineSm {
@@ -289,6 +305,10 @@
   flex-shrink: 0;
 }
 
+.btnOutlineSm:hover {
+  background: var(--color-surface);
+}
+
 .btnDangerSm {
   background: none;
   border: 1px solid var(--color-danger-border);
@@ -298,6 +318,10 @@
   cursor: pointer;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.btnDangerSm:hover {
+  background: var(--color-danger-bg);
 }
 
 .priorityBadge {
