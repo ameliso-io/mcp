@@ -352,4 +352,26 @@ describe("RepositoriesTab", () => {
     await waitFor(() => expect(screen.getByText("callback failed")).toBeInTheDocument());
     window.history.replaceState({}, "", "/");
   });
+
+  it("does not call handleGitHubCallback when setup_action is an unknown value", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-xyz&setup_action=delete");
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(client.listRepositories).toHaveBeenCalled());
+    expect(client.handleGitHubCallback).not.toHaveBeenCalled();
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("search filters repos by html url", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [
+        makeRepo({ id: "org/alpha", name: "alpha", fullName: "org/alpha", htmlUrl: "https://github.com/org/alpha" }),
+        makeRepo({ id: "org/beta", name: "beta", fullName: "org/beta", htmlUrl: "https://github.com/org/beta" }),
+      ],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("org/alpha"));
+    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "beta");
+    expect(screen.queryByText("org/alpha")).not.toBeInTheDocument();
+    expect(screen.getByText("org/beta")).toBeInTheDocument();
+  });
 });

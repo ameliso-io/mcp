@@ -2352,6 +2352,12 @@ mod tests {
     }
 
     #[test]
+    fn text_references_case_starts_with_path_dirty_suffix_no_match() {
+        // text begins directly with case_path but is followed by '-' which is not a clean boundary
+        assert!(!text_references_case("auth/login-mobile", "auth/login"));
+    }
+
+    #[test]
     fn is_doc_file_no_extension_not_doc() {
         assert!(!is_doc_file("Makefile"));
         assert!(!is_doc_file("README"));
