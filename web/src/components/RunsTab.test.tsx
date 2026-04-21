@@ -309,6 +309,16 @@ describe('RunsTab', () => {
     await waitFor(() => expect(screen.queryByText('Save Result')).not.toBeInTheDocument())
   })
 
+  it('collapses expanded run when clicked again', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(screen.queryByText('Record')).not.toBeInTheDocument())
+  })
+
   it('shows error when recordResult fails in record form', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.recordResult).mockRejectedValue(new Error('record error'))
