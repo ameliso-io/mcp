@@ -1143,6 +1143,163 @@ mod tests {
     // ── handler required-field validation ─────────────────────────────────────
 
     #[tokio::test]
+    async fn list_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .list_cases(Request::new(pb::ListCasesRequest {
+                repo_id: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_case_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_case(Request::new(pb::GetCaseRequest {
+                repo_id: "".to_owned(),
+                case_path: "auth/login".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn create_case_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn delete_case_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .delete_case(Request::new(pb::DeleteCaseRequest {
+                repo_id: "".to_owned(),
+                case_path: "auth/login".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn list_suites_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .list_suites(Request::new(pb::ListSuitesRequest {
+                repo_id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_suite_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_suite(Request::new(pb::GetSuiteRequest {
+                repo_id: "".to_owned(),
+                slug: "smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn create_suite_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "".to_owned(),
+                slug: "smoke".to_owned(),
+                name: "Smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn delete_suite_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .delete_suite(Request::new(pb::DeleteSuiteRequest {
+                repo_id: "".to_owned(),
+                slug: "smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn list_runs_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .list_runs(Request::new(pb::ListRunsRequest {
+                repo_id: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_run_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_run(Request::new(pb::GetRunRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_affected_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "".to_owned(),
+                since_ref: "HEAD~1".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
     async fn update_case_rejects_empty_case_path() {
         let s = server();
         let err = s
