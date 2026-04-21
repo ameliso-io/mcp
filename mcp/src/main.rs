@@ -187,6 +187,73 @@ struct AmelisoMcp;
 #[tool_router(server_handler)]
 impl AmelisoMcp {
     #[tool(
+        description = "Get an overview of the test repo: total cases by priority, coverage stats (never/passed/failed/blocked/skipped), active in-progress runs, and suites. Use this first to understand the testing state before diving into details."
+    )]
+    fn repo_status(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let cases = repo::list_cases(&repo).unwrap_or_default();
+        let runs = repo::list_runs(&repo).unwrap_or_default();
+        let suites = repo::list_suites(&repo).unwrap_or_default();
+
+        let total = cases.len();
+        let high = cases.iter().filter(|c| c.fm.priority == "high").count();
+        let medium = cases.iter().filter(|c| c.fm.priority == "medium").count();
+        let low = cases.iter().filter(|c| c.fm.priority == "low").count();
+
+        let mut latest: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+        for run_meta in &runs {
+            if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
+                for result in &run.results {
+                    latest
+                        .entry(result.case_path.clone())
+                        .or_insert_with(|| result.fm.status.clone());
+                }
+            }
+        }
+
+        let mut counts: std::collections::HashMap<&str, usize> =
+            std::collections::HashMap::new();
+        for c in &cases {
+            let status = latest.get(&c.case_path).map(|s| s.as_str()).unwrap_or("never");
+            *counts.entry(status).or_insert(0) += 1;
+        }
+
+        let active_runs: Vec<_> = runs.iter().filter(|r| r.status == "in-progress").collect();
+
+        let mut lines = vec![
+            format!("Cases: {total} total ({high} high, {medium} medium, {low} low priority)"),
+            format!(
+                "Coverage: {} passed, {} failed, {} blocked, {} skipped, {} never run",
+                counts.get("passed").copied().unwrap_or(0),
+                counts.get("failed").copied().unwrap_or(0),
+                counts.get("blocked").copied().unwrap_or(0),
+                counts.get("skipped").copied().unwrap_or(0),
+                counts.get("never").copied().unwrap_or(total - latest.len()),
+            ),
+            format!("Suites: {}", suites.len()),
+            format!("Runs: {} total", runs.len()),
+        ];
+
+        if active_runs.is_empty() {
+            lines.push("Active runs: none".to_owned());
+        } else {
+            lines.push(format!("Active runs ({}):", active_runs.len()));
+            for r in &active_runs {
+                let suite_part = r
+                    .suite
+                    .as_deref()
+                    .filter(|s| !s.is_empty())
+                    .map(|s| format!(" suite: {s}"))
+                    .unwrap_or_default();
+                lines.push(format!("  [{}] tester: {}{}", r.id, r.tester, suite_part));
+            }
+        }
+
+        lines.join("\n")
+    }
+
+    #[tool(
         description = "List test cases in a repo. Filter by tags, priority, or full-text query."
     )]
     fn list_cases(&self, Parameters(req): Parameters<ListCasesRequest>) -> String {

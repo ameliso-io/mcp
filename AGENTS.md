@@ -26,7 +26,7 @@ runs/{YYYY-MM-DD}-{slug}/
 
 ```
 server/   # gRPC server (Rust + tonic); exposes AmelisoService (18 RPCs)
-mcp/      # MCP server (Rust + rmcp); stdio transport; 18 tools
+mcp/      # MCP server (Rust + rmcp); stdio transport; 19 tools
 cli/      # CLI (Rust + clap); calls repo logic directly
 proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
 ```
@@ -40,6 +40,7 @@ Available tools:
 
 | Tool | Description |
 |------|-------------|
+| `repo_status` | **Start here**: overview of cases by priority, coverage stats, active runs, and suites in one call |
 | `list_cases` | List cases; filter by tags, priority, or full-text query |
 | `get_case` | Get full case details including steps and body |
 | `create_case` | Create a new case file; priority must be low\|medium\|high |
