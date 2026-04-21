@@ -15,12 +15,14 @@ const mockSuite = {
 } as unknown as Suite
 
 beforeEach(() => {
+  vi.clearAllMocks()
   vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite] } as never)
   vi.mocked(client.listCases).mockResolvedValue({ cases: [
     { path: 'auth/login', title: 'User Login', description: '', tags: ['auth'], priority: 'high', createdAt: '', updatedAt: '' },
     { path: 'auth/logout', title: 'User Logout', description: '', tags: [], priority: 'low', createdAt: '', updatedAt: '' },
   ] as unknown as Case[] } as never)
   vi.mocked(client.createSuite).mockResolvedValue({ suite: mockSuite, filePath: 'suites/smoke.yaml' } as never)
+  vi.mocked(client.updateSuite).mockResolvedValue({ suite: mockSuite } as never)
   vi.mocked(client.deleteSuite).mockResolvedValue({ filePath: 'suites/smoke.yaml' } as never)
 })
 
@@ -67,5 +69,48 @@ describe('SuitesTab', () => {
     await waitFor(() => expect(client.deleteSuite).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'smoke' })
     ))
+  })
+
+  it('calls createSuite when create form submitted', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Suite'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'regression')
+    await userEvent.type(inputs[1], 'Regression Tests')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Suite' }))
+    await waitFor(() => expect(client.createSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ repoPath: '/repo', slug: 'regression', name: 'Regression Tests' })
+    ))
+  })
+
+  it('opens edit form with pre-filled values when Edit clicked', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    expect(screen.getByText('Edit: smoke')).toBeInTheDocument()
+    const nameInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'Smoke Tests')
+    expect(nameInput).toBeDefined()
+  })
+
+  it('calls updateSuite when edit form submitted', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    const nameInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'Smoke Tests') as HTMLInputElement
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'Updated Smoke')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(client.updateSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ repoPath: '/repo', slug: 'smoke', name: 'Updated Smoke' })
+    ))
+  })
+
+  it('collapses expanded suite when clicked again', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => expect(screen.queryByText('User Login')).not.toBeInTheDocument())
   })
 })
