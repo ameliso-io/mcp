@@ -138,7 +138,7 @@ All steps completed. Verified on Chrome 124.
 A browser UI for human testers. Talks gRPC-Web to `ameliso-server`.
 
 ```sh
-pnpm dev        # starts both gRPC server + Next.js dev server (http://localhost:3000)
+pnpm dev        # starts both gRPC server + Next.js dev server (http://localhost:5173)
 ```
 
 Tabs: **Overview** (coverage stats, affected cases by git diff), **Cases** (list/create/edit/delete), **Suites** (list/create/edit/delete), **Runs** (create/record results/finalize).
@@ -163,4 +163,4 @@ Git hooks run automatically after `pnpm install`.
 cargo install cargo-llvm-cov
 ```
 
-Thresholds: **60% line coverage** for `ameliso-server` (target: 80%), **80% statement/branch/function/line coverage** for the web frontend.
+Thresholds: **60% line coverage** for `ameliso-server` (target: 80%), **99% statement/line, 85% branch, 75% function coverage** for the web frontend.

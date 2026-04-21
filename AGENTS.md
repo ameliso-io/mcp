@@ -29,7 +29,7 @@ server/          # gRPC server (Rust + tonic); exposes AmelisoService (24 RPCs)
 server/proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
 mcp/             # MCP server (Rust + rmcp); stdio transport; 21 tools
 cli/             # CLI (Rust + clap); calls repo logic directly
-web/             # React browser client (Vite + TypeScript); talks gRPC-Web to server
+web/             # React browser client (Next.js + TypeScript); talks gRPC-Web to server
 ```
 
 ---
