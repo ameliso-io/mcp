@@ -185,7 +185,10 @@ describe("SuitesTab", () => {
   });
 
   it('shows singular "case" label when suite has exactly one case', async () => {
-    const singleCaseSuite = makeSuite({ description: "Critical path checks", cases: ["auth/login"] });
+    const singleCaseSuite = makeSuite({
+      description: "Critical path checks",
+      cases: ["auth/login"],
+    });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [singleCaseSuite] } as never);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());

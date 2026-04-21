@@ -346,7 +346,9 @@ export default function CasesTab({ repoId }: Props) {
           <option value="path">Sort: Path</option>
         </select>
         {!loading && deferredCases.length > 0 && (
-          <span className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}>
+          <span
+            className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}
+          >
             {deferredCases.length} case{deferredCases.length !== 1 ? "s" : ""}
           </span>
         )}

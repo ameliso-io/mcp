@@ -352,7 +352,11 @@ describe("CasesTab", () => {
   });
 
   it("shows medium priority label and opens edit for medium priority case", async () => {
-    const mediumCase = makeCase({ priority: "medium", path: "auth/reset", title: "Reset Password" });
+    const mediumCase = makeCase({
+      priority: "medium",
+      path: "auth/reset",
+      title: "Reset Password",
+    });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mediumCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Reset Password")).toBeInTheDocument());

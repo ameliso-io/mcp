@@ -320,9 +320,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                       Delete
                     </button>
                   </div>
-                  {suite.description && (
-                    <p className={styles.suiteDesc}>{suite.description}</p>
-                  )}
+                  {suite.description && <p className={styles.suiteDesc}>{suite.description}</p>}
                 </div>
 
                 {expanded === suite.slug && (

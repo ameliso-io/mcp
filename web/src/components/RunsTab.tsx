@@ -432,18 +432,24 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             .length,
                           failed: recordedResults.filter((r) => r.status === ResultStatus.FAILED)
                             .length,
-                          blocked: recordedResults.filter(
-                            (r) => r.status === ResultStatus.BLOCKED
-                          ).length,
-                          skipped: recordedResults.filter(
-                            (r) => r.status === ResultStatus.SKIPPED
-                          ).length,
+                          blocked: recordedResults.filter((r) => r.status === ResultStatus.BLOCKED)
+                            .length,
+                          skipped: recordedResults.filter((r) => r.status === ResultStatus.SKIPPED)
+                            .length,
                         };
                         return (
                           <div className={styles.resultFilters}>
                             {[
-                              { label: "Passed", count: counts.passed, status: ResultStatus.PASSED },
-                              { label: "Failed", count: counts.failed, status: ResultStatus.FAILED },
+                              {
+                                label: "Passed",
+                                count: counts.passed,
+                                status: ResultStatus.PASSED,
+                              },
+                              {
+                                label: "Failed",
+                                count: counts.failed,
+                                status: ResultStatus.FAILED,
+                              },
                               {
                                 label: "Blocked",
                                 count: counts.blocked,
