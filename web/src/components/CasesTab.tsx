@@ -3,8 +3,10 @@ import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { Case } from '../gen/ameliso/v1/types_pb'
 import { Priority } from '../gen/ameliso/v1/types_pb'
-import MarkdownBody from './MarkdownBody'
+import dynamic from 'next/dynamic'
 import styles from './CasesTab.module.css'
+
+const MarkdownBody = dynamic(() => import('./MarkdownBody'), { ssr: false })
 
 interface Props {
   repoPath: string

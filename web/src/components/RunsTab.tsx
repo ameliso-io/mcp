@@ -3,8 +3,10 @@ import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
 import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
-import MarkdownBody from './MarkdownBody'
+import dynamic from 'next/dynamic'
 import styles from './RunsTab.module.css'
+
+const MarkdownBody = dynamic(() => import('./MarkdownBody'), { ssr: false })
 
 interface Props {
   repoPath: string
