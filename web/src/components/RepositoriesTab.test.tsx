@@ -286,4 +286,16 @@ describe("RepositoriesTab", () => {
       expect(screen.getByRole("status")).toHaveTextContent("Repository deselected")
     );
   });
+
+  it("announces sync completion via live region", async () => {
+    const synced = makeRepo({ fullName: "owner/repo" });
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.syncRepository).mockResolvedValue({ repository: synced } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("Sync"));
+    await userEvent.click(screen.getByText("Sync"));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Sync completed for owner/repo")
+    );
+  });
 });
