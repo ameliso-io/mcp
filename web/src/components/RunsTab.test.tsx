@@ -829,6 +829,18 @@ describe("RunsTab", () => {
     await waitFor(() => expect(onConsumed).toHaveBeenCalledTimes(1));
   });
 
+  it("shows loading state while fetching runs", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listRuns).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ runs: [] });
+  });
+
   it("resets recordStatus to PASSED after recording a result", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
