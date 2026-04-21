@@ -8,6 +8,7 @@ import { makeCase, makeSuite } from "../test/factories";
 
 vi.mock("../client");
 vi.mock("next/link", () => ({
+  useLinkStatus: () => ({ pending: false }),
   default: ({
     href,
     children,

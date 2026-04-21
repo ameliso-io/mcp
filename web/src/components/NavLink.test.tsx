@@ -2,8 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import NavLink from "./NavLink";
 
-const { mockUsePathname } = vi.hoisted(() => ({
+const { mockUsePathname, mockUseLinkStatus } = vi.hoisted(() => ({
   mockUsePathname: vi.fn(() => "/overview"),
+  mockUseLinkStatus: vi.fn(() => ({ pending: false })),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -11,6 +12,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
+  useLinkStatus: mockUseLinkStatus,
   default: ({
     href,
     children,
@@ -31,6 +33,7 @@ vi.mock("next/link", () => ({
 describe("NavLink", () => {
   beforeEach(() => {
     mockUsePathname.mockReturnValue("/overview");
+    mockUseLinkStatus.mockReturnValue({ pending: false });
   });
 
   it("renders an anchor with correct href and label", () => {
@@ -60,5 +63,18 @@ describe("NavLink", () => {
     mockUsePathname.mockReturnValue("/");
     render(<NavLink href="/cases" label="Cases" />);
     expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("sets data-pending on label span when navigation is pending", () => {
+    mockUseLinkStatus.mockReturnValue({ pending: true });
+    render(<NavLink href="/cases" label="Cases" />);
+    const span = screen.getByText("Cases");
+    expect(span).toHaveAttribute("data-pending", "true");
+  });
+
+  it("does not set data-pending when navigation is not pending", () => {
+    render(<NavLink href="/cases" label="Cases" />);
+    const span = screen.getByText("Cases");
+    expect(span).not.toHaveAttribute("data-pending");
   });
 });

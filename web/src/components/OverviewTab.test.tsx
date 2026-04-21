@@ -9,6 +9,7 @@ import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factor
 vi.mock("../client");
 
 vi.mock("next/link", () => ({
+  useLinkStatus: () => ({ pending: false }),
   default: ({
     href,
     children,
