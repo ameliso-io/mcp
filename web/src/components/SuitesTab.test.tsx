@@ -355,4 +355,10 @@ describe("SuitesTab", () => {
     expect(screen.queryByText("Save")).not.toBeInTheDocument();
     expect(screen.getByText("Edit")).toBeInTheDocument();
   });
+
+  it('shows "No suites found." when suites list is empty', async () => {
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [] } as never);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("No suites found.")).toBeInTheDocument());
+  });
 });
