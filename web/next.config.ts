@@ -39,6 +39,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Trace deps from monorepo root so standalone captures shared packages
   outputFileTracingRoot: path.resolve(__dirname, ".."),
+  experimental: {
+    // Tree-shake barrel-exporting packages to reduce client bundle size
+    optimizePackageImports: ["@bufbuild/protobuf", "@connectrpc/connect", "@connectrpc/connect-web"],
+  },
   turbopack: {
     root: path.resolve(__dirname, ".."),
   },
