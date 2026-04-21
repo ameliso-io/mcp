@@ -14,11 +14,7 @@ interface Props {
   onExpandedChange?: (slug: string | null) => void;
 }
 
-export default function SuitesTab({
-  repoId,
-  initialExpanded,
-  onExpandedChange,
-}: Props) {
+export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +32,7 @@ export default function SuitesTab({
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
-  const initialExpandedRef = useRef(initialExpanded);
+  const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
   const toggleExpandRef = useRef<(slug: string) => void>(() => {});
   useEffect(() => {
