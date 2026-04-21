@@ -156,6 +156,111 @@ struct ChangedFile {
     filename: String,
 }
 
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Serialize env-var tests so parallel test threads don't stomp each other.
+    use std::sync::Mutex;
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    // RSA-2048 test private key (PKCS#1 PEM) — not used in production.
+    const TEST_RSA_KEY: &str = "-----BEGIN RSA PRIVATE KEY-----\n\
+MIIEpAIBAAKCAQEAw2wv7U6rRzygvVk2OyQRdZQTQbXtlA0HeouzaH8r9kDxUhy4\n\
+wsI7FbxDhgC2o7jJa9SA8K8sapGPsCXv4ve9gjV8JOUdKSGobutcqdnBB9fhS+CZ\n\
+Kp77IUMaCDGx2cA/CPpOOpsgMho8c+vzxdQIsQjK4h/8Pb7MHCt9AlOJeWj6ljQv\n\
+fTV6HI9+ljFkyBbW9VqCKiMmytqDI59d39Dy5t4+z7s7rCiNTKFF5AM/wIXoVE5q\n\
+pA29cyWG+V1Ou1jqUsFQ7lOWn6ZNphswQI0AYhMXKRr6uO+HXbi2U1FLOwzFg8gv\n\
+m5A76WLypoP5bCVo1Db+BLsYm5hzJnqTYIRE+wIDAQABAoIBAAN+p8zCn2WCvA0m\n\
+z0V3e6hyoXWHX1xKb1vNq8Ouooag2q/xO4ygFJZq63o2AQ4ke9Wl0zh6qXyuZbds\n\
+tkGE1KrDchjm0AKwS2bQZrPS5RTS04Cb36FXfn41yP1khh2yxm3OrB94Lrc2qOYZ\n\
+zh43kIA5/AbXM5eXFedbD70+6TJ2miH3SlPP2PHxzc9dFdM6zqDfmI7JgWBiE0hL\n\
+ekISqJhDdyvug8nS0qY7lV0ERC08P/tLpNDrnMHw+T+s7PAcjs292oG2T/YWLjKr\n\
+pD6/N42V2dr6glczy3YCyDyNGugasOnDQLgLx9qnJJ9Xn5oWoFp81973CKMlUQk/\n\
+UgRXuEECgYEA62RoQRBexbBpi3WKAxUH5ud2K0kDy0vRumdfgQbsOajO940GOlv/\n\
+ARTY75S2RVdVcYNnY1pZzRDYis9UrgePcjH1KAgk44f6nQegyML1Ye22Lrvcv6Dj\n\
+UXEmrYZexZQ4Ru0XKm5GB5pJ84a61oLeULwQUdMQq4qBHX6rQHra8WkCgYEA1If7\n\
+7AAFuGZOMcfGk27FI6xsU7zZbI7hii76R/nlA757vjfaouChJONq7/QT7PoiOAHp\n\
+oBDRR2qo5w2ZiAL4A2vLO1eWTocJ/VIQDBobDF42lh2nqa68HtAfFg1PQTzCzEAo\n\
+LYVtLMmjM+DS+ligjc2fmsLxSMSmlcAyNwL9EsMCgYBXRMVmAdSxBANNQcll9SEV\n\
+2RA1Yf93Gmfp7LM6mb9wbQY2PuFlN4Al/X2j7QVaVdOGnwnwiqmqXil55P3m+0SS\n\
+OLVEHyjV9i7SkuZoJ+djZAbb8qgXn2VHZ2TIhn2SUK5AlVu2TmXGIcxy7atNJf2X\n\
+/vEp9M9EWbgeoDyLTkDnqQKBgQDG8lRcYtj3+KyR5NR6BmL8Nddhu5I8ELQHyln3\n\
+LnG2w4TKVzaO6X9vLINaAzzzxGJr0z6C27tMAwgA4bYqn7zSVwFzl1XYRIiRXVQw\n\
+P++58Cdg9nmQWUU4AtJWrjbWdq5SzGvP0OqV1lqzoW1dc8E3fJg/IuUCnTLjU3qu\n\
+DFoiSQKBgQC+6WUAq6YpaxGmD/QwJlYu6KVZWy58hwLyIwB18PuFR3bwwmYo6iM+\n\
+ZxGHjlrdx5cq2mEfhNzgFSuQfPuRO6BNmcIUIRH8zj/kUVr2c0h43UxKVirl0pdU\n\
+jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
+-----END RSA PRIVATE KEY-----";
+
+    #[test]
+    fn config_returns_none_when_env_vars_absent() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+        }
+        assert!(config().is_none());
+    }
+
+    #[test]
+    fn config_returns_some_when_env_vars_present() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::set_var("GITHUB_APP_ID", "my-app");
+            std::env::set_var("GITHUB_APP_PRIVATE_KEY", "my-key");
+            std::env::remove_var("GITHUB_APP_INSTALLATION_URL");
+            std::env::remove_var("GITHUB_APP_NAME");
+        }
+        let cfg = config().expect("config should be Some");
+        assert_eq!(cfg.app_id, "my-app");
+        assert_eq!(cfg.private_key, "my-key");
+        assert!(cfg.installation_url.contains("ameliso"));
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+        }
+    }
+
+    #[test]
+    fn config_uses_custom_installation_url() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::set_var("GITHUB_APP_ID", "my-app");
+            std::env::set_var("GITHUB_APP_PRIVATE_KEY", "my-key");
+            std::env::set_var("GITHUB_APP_INSTALLATION_URL", "https://example.com/install");
+        }
+        let cfg = config().expect("config should be Some");
+        assert_eq!(cfg.installation_url, "https://example.com/install");
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+            std::env::remove_var("GITHUB_APP_INSTALLATION_URL");
+        }
+    }
+
+    #[test]
+    fn generate_jwt_returns_err_for_invalid_key() {
+        let result = generate_jwt("app-id", "not-a-valid-pem");
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("invalid RSA private key"));
+    }
+
+    #[test]
+    fn generate_jwt_returns_ok_for_valid_key() {
+        let token = generate_jwt("test-app", TEST_RSA_KEY);
+        assert!(token.is_ok(), "expected Ok, got: {:?}", token.err());
+        let t = token.unwrap();
+        // JWT has 3 dot-separated parts
+        assert_eq!(t.split('.').count(), 3);
+    }
+}
+
 pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result<CompareResult> {
     let client = reqwest::Client::new();
     let resp: CompareResponse = client

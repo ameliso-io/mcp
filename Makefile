@@ -8,14 +8,19 @@ dev: install build
 
 install:
 	pnpm install
-	cd web && pnpm install
 	cargo fetch
 
 build:
 	cargo build --release
+	pnpm --filter ameliso-web build
 
 test:
 	cargo test
+	pnpm --filter ameliso-web test
+
+coverage-check:
+	cargo llvm-cov -p ameliso-server --fail-under-lines 60
+	pnpm --filter ameliso-web test:coverage
 
 fmt:
 	cargo fmt --all
@@ -26,10 +31,6 @@ lint:
 
 spell:
 	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
-
-coverage-check:
-	cargo llvm-cov -p ameliso-server --fail-under-lines 60
-	cd web && pnpm run coverage
 
 # --- Git hooks (called by Husky) ---
 

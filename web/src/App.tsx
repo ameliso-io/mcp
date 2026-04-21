@@ -51,6 +51,8 @@ const styles = {
   },
 }
 
+const REPO_PATH_KEY = 'ameliso:repoPath'
+
 const TAB_LABELS: Record<Tab, string> = {
   repositories: 'Repositories',
   overview: 'Overview',
@@ -67,7 +69,18 @@ const initialTab = (): Tab => {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>(initialTab)
-  const [repoPath, setRepoPath] = useState('')
+  const [repoPath, setRepoPath] = useState(() => localStorage.getItem(REPO_PATH_KEY) ?? '')
+  const [runSuiteSlug, setRunSuiteSlug] = useState<string | undefined>(undefined)
+
+  function handleRepoPathChange(p: string) {
+    setRepoPath(p)
+    localStorage.setItem(REPO_PATH_KEY, p)
+  }
+
+  function handleRepoSelect(path: string) {
+    handleRepoPathChange(path)
+    setTab('overview')
+  }
 
   return (
     <div style={styles.app}>
@@ -89,15 +102,30 @@ export default function App() {
         {tab === 'repositories' && (
           <RepositoriesTab
             activeRepoPath={repoPath}
-            onRepoSelect={(path) => { setRepoPath(path); setTab('overview') }}
+            onRepoSelect={handleRepoSelect}
           />
         )}
         {tab === 'overview' && (
-          <OverviewTab repoPath={repoPath} onRepoPathChange={setRepoPath} />
+          <OverviewTab
+            repoPath={repoPath}
+            onRepoPathChange={handleRepoPathChange}
+            onGoToRuns={() => setTab('runs')}
+          />
         )}
         {tab === 'cases' && <CasesTab repoPath={repoPath} />}
-        {tab === 'suites' && <SuitesTab repoPath={repoPath} />}
-        {tab === 'runs' && <RunsTab repoPath={repoPath} />}
+        {tab === 'suites' && (
+          <SuitesTab
+            repoPath={repoPath}
+            onRunSuite={slug => { setRunSuiteSlug(slug); setTab('runs') }}
+          />
+        )}
+        {tab === 'runs' && (
+          <RunsTab
+            repoPath={repoPath}
+            initialSuite={runSuiteSlug}
+            onInitialSuiteConsumed={() => setRunSuiteSlug(undefined)}
+          />
+        )}
       </main>
     </div>
   )

@@ -103,6 +103,23 @@ struct RecordResultRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct BulkResultEntry {
+    case_path: String,
+    #[schemars(description = "passed | failed | blocked | skipped")]
+    status: String,
+    #[schemars(description = "Optional notes for this result")]
+    notes: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct BulkRecordResultsRequest {
+    repo_path: String,
+    run_id: String,
+    #[schemars(description = "List of results to record")]
+    results: Vec<BulkResultEntry>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct FinalizeRunRequest {
     repo_path: String,
     run_id: String,
@@ -609,6 +626,50 @@ impl AmelisoMcp {
             }
             Err(e) => format!("error: {e}"),
         }
+    }
+
+    #[tool(
+        description = "Record multiple test results in one call. More efficient than N sequential record_result calls. Returns summary of recorded results and pending count."
+    )]
+    fn bulk_record_results(&self, Parameters(req): Parameters<BulkRecordResultsRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let mut lines: Vec<String> = Vec::new();
+        let mut had_error = false;
+        for entry in &req.results {
+            let notes = entry.notes.as_deref().unwrap_or("");
+            match repo::record_result(&repo, &req.run_id, &entry.case_path, &entry.status, notes) {
+                Ok((_, prev)) => {
+                    if let Some(old) = prev {
+                        lines.push(format!(
+                            "updated: {} = {} (was: {})",
+                            entry.case_path, entry.status, old
+                        ));
+                    } else {
+                        lines.push(format!("recorded: {} = {}", entry.case_path, entry.status));
+                    }
+                }
+                Err(e) => {
+                    lines.push(format!("error for {}: {e}", entry.case_path));
+                    had_error = true;
+                }
+            }
+        }
+        if !had_error {
+            if let Ok((pending, total)) = repo::get_pending_cases(&repo, &req.run_id) {
+                if pending.is_empty() {
+                    lines.push(format!(
+                        "\nprogress: {total}/{total} done — all cases recorded; ready to finalize"
+                    ));
+                } else {
+                    lines.push(format!(
+                        "\nprogress: {}/{total} done, {} remaining",
+                        total - pending.len(),
+                        pending.len()
+                    ));
+                }
+            }
+        }
+        lines.join("\n")
     }
 
     #[tool(

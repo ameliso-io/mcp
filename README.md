@@ -86,13 +86,13 @@ Add to your Claude Code / MCP host configuration (`.mcp.json` is pre-configured 
 }
 ```
 
-Available tools: `repo_status`, `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `delete_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
+Available tools (21): `repo_status`, `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `bulk_record_results`, `finalize_run`, `delete_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
 
 See [AGENTS.md](AGENTS.md) for full agent usage guide.
 
 ### gRPC server
 
-The gRPC server exposes all 19 RPCs defined in `server/proto/ameliso/v1/service.proto`.
+The gRPC server exposes all 24 RPCs defined in `server/proto/ameliso/v1/service.proto`.
 
 ```sh
 ameliso-server         # listens on [::1]:50051
@@ -133,10 +133,20 @@ status: passed
 All steps completed. Verified on Chrome 124.
 ```
 
+### Web client
+
+A browser UI for human testers. Talks gRPC-Web to `ameliso-server`.
+
+```sh
+pnpm dev        # starts both gRPC server + Vite dev server (http://localhost:5173)
+```
+
+Tabs: **Overview** (coverage stats, affected cases by git diff), **Cases** (list/create/edit/delete), **Suites** (list/create/edit/delete), **Runs** (create/record results/finalize).
+
 ## Development
 
 ```sh
-pnpm install          # install git hooks (Husky)
+pnpm install          # install git hooks (Husky) and workspace packages
 cargo test            # run all tests
 make pre-commit       # fmt + lint
 make pre-push         # build + test + coverage check

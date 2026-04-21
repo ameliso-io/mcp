@@ -36,6 +36,11 @@ enum Commands {
         #[arg(long, help = "Git ref to compare from (default: last run commit)")]
         since: Option<String>,
     },
+    #[command(about = "Show a combined repo status snapshot: case counts, coverage, active runs")]
+    Status {
+        #[arg(long, env = "AMELISO_REPO")]
+        repo: PathBuf,
+    },
 }
 
 #[derive(Subcommand)]
@@ -225,6 +230,7 @@ fn main() -> Result<()> {
         Commands::Suites(cmd) => run_suites(cmd),
         Commands::Coverage { repo, status } => run_coverage(&repo, status.as_deref()),
         Commands::Affected { repo, since } => run_affected(&repo, since.as_deref()),
+        Commands::Status { repo } => run_status(&repo),
     }
 }
 
@@ -794,6 +800,78 @@ fn run_affected(repo: &std::path::Path, since: Option<&str>) -> Result<()> {
             } else {
                 println!("  {path}");
             }
+        }
+    }
+    Ok(())
+}
+
+fn run_status(repo: &std::path::Path) -> Result<()> {
+    let cases = repo::list_cases(repo).unwrap_or_default();
+    let runs = repo::list_runs(repo).unwrap_or_default();
+    let suites = repo::list_suites(repo).unwrap_or_default();
+
+    let high = cases.iter().filter(|c| c.fm.priority == "high").count();
+    let medium = cases.iter().filter(|c| c.fm.priority == "medium").count();
+    let low = cases.iter().filter(|c| c.fm.priority == "low").count();
+
+    let mut latest: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    for run_meta in &runs {
+        if let Ok(run) = repo::get_run(repo, &run_meta.id) {
+            for result in &run.results {
+                latest
+                    .entry(result.case_path.clone())
+                    .or_insert_with(|| result.fm.status.clone());
+            }
+        }
+    }
+
+    let mut passed = 0usize;
+    let mut failed = 0usize;
+    let mut blocked = 0usize;
+    let mut skipped = 0usize;
+    let mut never = 0usize;
+    for c in &cases {
+        match latest
+            .get(&c.case_path)
+            .map(|s| s.as_str())
+            .unwrap_or("never")
+        {
+            "passed" => passed += 1,
+            "failed" => failed += 1,
+            "blocked" => blocked += 1,
+            "skipped" => skipped += 1,
+            _ => never += 1,
+        }
+    }
+
+    println!(
+        "Cases:    {} total  ({high} high, {medium} medium, {low} low)",
+        cases.len()
+    );
+    println!("Coverage: {passed} passed, {failed} failed, {blocked} blocked, {skipped} skipped, {never} never run");
+    println!("Suites:   {}", suites.len());
+    println!("Runs:     {} total", runs.len());
+
+    let active: Vec<_> = runs.iter().filter(|r| r.status == "in-progress").collect();
+    if active.is_empty() {
+        println!("Active:   none");
+    } else {
+        println!("Active runs ({}):", active.len());
+        for r in &active {
+            let suite_part = r
+                .suite
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .map(|s| format!("  suite: {s}"))
+                .unwrap_or_default();
+            let pending_part = match repo::get_pending_cases(repo, &r.id) {
+                Ok((p, t)) => format!("  {}/{} pending", p.len(), t),
+                Err(_) => String::new(),
+            };
+            println!(
+                "  [{}]  tester: {}{}{}",
+                r.id, r.tester, suite_part, pending_part
+            );
         }
     }
     Ok(())
