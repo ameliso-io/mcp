@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useId } from 'react'
+import { useState, useEffect, useCallback, useRef, useId, useTransition } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
@@ -42,6 +42,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<RunStatus>(RunStatus.UNSPECIFIED)
 
+  const [, startFilterTransition] = useTransition()
   const createFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
@@ -280,7 +281,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
           ] as { label: string; value: RunStatus }[]).map(opt => (
             <button
               key={opt.value}
-              onClick={() => setStatusFilter(opt.value)}
+              onClick={() => startFilterTransition(() => setStatusFilter(opt.value))}
               className={statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive}
             >
               {opt.label}

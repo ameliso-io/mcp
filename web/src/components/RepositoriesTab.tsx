@@ -89,7 +89,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath, installa
       <div className={styles.header}>
         <h2 className={styles.title}>Repositories</h2>
         {configured && installUrl ? (
-          <a href={installUrl} className={styles.connectBtn}>
+          <a href={installUrl} className={styles.connectBtn} target="_blank" rel="noopener noreferrer">
             + Connect GitHub Repo
           </a>
         ) : (
