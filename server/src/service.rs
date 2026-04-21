@@ -1754,6 +1754,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn bulk_record_skipped_without_notes_passes_validation() {
+        // "skipped" must NOT require notes; validation should pass and produce a DB error.
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Skipped as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn bulk_record_rejects_invalid_status() {
         let s = server();
         let err = s
