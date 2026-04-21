@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
       if (setupAction) params.set("setup_action", setupAction);
       return NextResponse.redirect(new URL(`/repositories?${params}`, request.url));
     }
-    return NextResponse.redirect(new URL("/overview", request.url));
+    return NextResponse.redirect(new URL("/overview", request.url), { status: 308 });
   }
   return NextResponse.next();
 }
