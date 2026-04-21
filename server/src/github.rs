@@ -3,6 +3,11 @@ use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+fn github_api_base() -> String {
+    std::env::var("AMELISO_GITHUB_API")
+        .unwrap_or_else(|_| "https://api.github.com".to_owned())
+}
+
 pub struct GitHubConfig {
     pub app_id: String,
     pub private_key: String,
@@ -52,9 +57,10 @@ struct InstallationTokenResponse {
 
 pub async fn get_installation_token(installation_id: &str, jwt: &str) -> Result<String> {
     let client = reqwest::Client::new();
+    let base = github_api_base();
     let raw = client
         .post(format!(
-            "https://api.github.com/app/installations/{installation_id}/access_tokens"
+            "{base}/app/installations/{installation_id}/access_tokens"
         ))
         .header("Authorization", format!("Bearer {jwt}"))
         .header("Accept", "application/vnd.github.v3+json")
@@ -92,11 +98,12 @@ struct RepoListResponse {
 
 pub async fn list_installation_repos(token: &str) -> Result<Vec<GitHubRepo>> {
     let client = reqwest::Client::new();
+    let base = github_api_base();
     let mut all: Vec<GitHubRepo> = Vec::new();
     let mut page = 1u32;
     loop {
         let resp: RepoListResponse = client
-            .get("https://api.github.com/installation/repositories")
+            .get(format!("{base}/installation/repositories"))
             .query(&[("per_page", "100"), ("page", &page.to_string())])
             .header("Authorization", format!("token {token}"))
             .header("Accept", "application/vnd.github.v3+json")
@@ -122,8 +129,9 @@ pub async fn list_installation_repos(token: &str) -> Result<Vec<GitHubRepo>> {
 
 pub async fn get_repo(full_name: &str, token: &str) -> Result<GitHubRepo> {
     let client = reqwest::Client::new();
+    let base = github_api_base();
     let repo: GitHubRepo = client
-        .get(format!("https://api.github.com/repos/{full_name}"))
+        .get(format!("{base}/repos/{full_name}"))
         .header("Authorization", format!("token {token}"))
         .header("Accept", "application/vnd.github.v3+json")
         .header("User-Agent", "ameliso/1.0")
@@ -149,8 +157,9 @@ pub struct AppInstallation {
 
 pub async fn list_app_installations(jwt: &str) -> Result<Vec<AppInstallation>> {
     let client = reqwest::Client::new();
+    let base = github_api_base();
     let installations: Vec<AppInstallation> = client
-        .get("https://api.github.com/app/installations")
+        .get(format!("{base}/app/installations"))
         .header("Authorization", format!("Bearer {jwt}"))
         .header("Accept", "application/vnd.github.v3+json")
         .header("User-Agent", "ameliso/1.0")
@@ -299,13 +308,216 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
         // JWT has 3 dot-separated parts
         assert_eq!(t.split('.').count(), 3);
     }
+
+    // -----------------------------------------------------------------------
+    // HTTP client tests (wiremock)
+    // -----------------------------------------------------------------------
+
+    use wiremock::matchers::{method, path, query_param};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn fake_repo_json(name: &str) -> serde_json::Value {
+        serde_json::json!({
+            "id": 1,
+            "name": name,
+            "full_name": format!("owner/{name}"),
+            "html_url": format!("https://github.com/owner/{name}"),
+            "clone_url": format!("https://github.com/owner/{name}.git"),
+            "private": false
+        })
+    }
+
+    #[tokio::test]
+    async fn get_installation_token_returns_token_on_success() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("POST"))
+            .and(path("/app/installations/42/access_tokens"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!({"token": "ghs_test_token"})),
+            )
+            .mount(&server)
+            .await;
+
+        let result = get_installation_token("42", "my-jwt").await;
+        assert_eq!(result.unwrap(), "ghs_test_token");
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn get_installation_token_errors_on_http_failure() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("POST"))
+            .and(path("/app/installations/99/access_tokens"))
+            .respond_with(ResponseTemplate::new(401).set_body_string("Unauthorized"))
+            .mount(&server)
+            .await;
+
+        let result = get_installation_token("99", "bad-jwt").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("HTTP 401"));
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn list_installation_repos_returns_repos() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/installation/repositories"))
+            .and(query_param("page", "1"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "total_count": 1,
+                "repositories": [fake_repo_json("my-repo")]
+            })))
+            .mount(&server)
+            .await;
+
+        let result = list_installation_repos("tok").await;
+        let repos = result.unwrap();
+        assert_eq!(repos.len(), 1);
+        assert_eq!(repos[0].name, "my-repo");
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn list_installation_repos_paginates() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        // First page: 100 repos (triggers pagination)
+        let page1: Vec<_> = (0..100).map(|i| fake_repo_json(&format!("repo-{i}"))).collect();
+        Mock::given(method("GET"))
+            .and(path("/installation/repositories"))
+            .and(query_param("page", "1"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "total_count": 101,
+                "repositories": page1
+            })))
+            .mount(&server)
+            .await;
+        // Second page: 1 repo
+        Mock::given(method("GET"))
+            .and(path("/installation/repositories"))
+            .and(query_param("page", "2"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "total_count": 101,
+                "repositories": [fake_repo_json("repo-100")]
+            })))
+            .mount(&server)
+            .await;
+
+        let result = list_installation_repos("tok").await;
+        assert_eq!(result.unwrap().len(), 101);
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn get_repo_returns_repo() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/my-repo"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(fake_repo_json("my-repo")),
+            )
+            .mount(&server)
+            .await;
+
+        let result = get_repo("owner/my-repo", "tok").await;
+        assert_eq!(result.unwrap().name, "my-repo");
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn list_app_installations_returns_installations() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/app/installations"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!([{"id": 7}, {"id": 8}])),
+            )
+            .mount(&server)
+            .await;
+
+        let result = list_app_installations("my-jwt").await;
+        let installs = result.unwrap();
+        assert_eq!(installs.len(), 2);
+        assert_eq!(installs[0].id, 7);
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn compare_returns_commits_and_files() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/compare/abc123...HEAD"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "commits": [
+                    {"commit": {"message": "fix: bug"}},
+                    {"commit": {"message": "feat: thing"}}
+                ],
+                "files": [
+                    {"filename": "src/main.rs"},
+                    {"filename": "README.md"}
+                ]
+            })))
+            .mount(&server)
+            .await;
+
+        let result = compare("owner", "repo", "abc123", "tok").await;
+        let cr = result.unwrap();
+        assert_eq!(cr.commit_messages, vec!["fix: bug", "feat: thing"]);
+        assert_eq!(cr.changed_files, vec!["src/main.rs", "README.md"]);
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
 }
 
 pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result<CompareResult> {
     let client = reqwest::Client::new();
+    let api = github_api_base();
     let resp: CompareResponse = client
         .get(format!(
-            "https://api.github.com/repos/{owner}/{repo}/compare/{base}...HEAD"
+            "{api}/repos/{owner}/{repo}/compare/{base}...HEAD"
         ))
         .header("Authorization", format!("token {token}"))
         .header("Accept", "application/vnd.github.v3+json")
