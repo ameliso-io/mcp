@@ -26,6 +26,23 @@ describe("MarkdownBody", () => {
     expect(container.firstChild).toBeInTheDocument();
   });
 
+  it("renders inline code", () => {
+    const { container } = render(<MarkdownBody body="Use `foo()` here" />);
+    expect(container.querySelector("code")).toHaveTextContent("foo()");
+  });
+
+  it("renders bold and italic", () => {
+    const { container } = render(<MarkdownBody body="**bold** and *italic*" />);
+    expect(container.querySelector("strong")).toHaveTextContent("bold");
+    expect(container.querySelector("em")).toHaveTextContent("italic");
+  });
+
+  it("applies body CSS module class", () => {
+    const { container } = render(<MarkdownBody body="text" />);
+    expect(container.firstChild).toHaveClass(styles["body"]!);
+
+  });
+
   it("sets --md-max-height CSS variable when maxHeight provided", () => {
     const { container } = render(<MarkdownBody body="text" maxHeight="200px" />);
     const el = container.firstChild as HTMLElement;
