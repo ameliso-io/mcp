@@ -278,12 +278,15 @@ impl AmelisoMcp {
                 }
             }
         }
-        let mut lines = vec![format!("Coverage report ({} run(s))", runs.len())];
+        let mut entry_lines = Vec::new();
+        let mut counts: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         for c in &cases {
             let (status, run_id) = latest
                 .get(&c.case_path)
                 .cloned()
                 .unwrap_or_else(|| ("never".to_owned(), String::new()));
+            *counts.entry(status.clone()).or_insert(0) += 1;
             if let Some(ref f) = req.status_filter {
                 if status != *f {
                     continue;
@@ -294,8 +297,22 @@ impl AmelisoMcp {
             } else {
                 format!(" [{}]", run_id)
             };
-            lines.push(format!("  {:40} {:8}{}", c.case_path, status, run_ref));
+            entry_lines.push(format!("  {:40} {:8}{}", c.case_path, status, run_ref));
         }
+        let total = cases.len();
+        let never = counts.get("never").copied().unwrap_or(0);
+        let passed = counts.get("passed").copied().unwrap_or(0);
+        let failed = counts.get("failed").copied().unwrap_or(0);
+        let summary = format!(
+            "Coverage report ({} run(s), {} total: {} passed, {} failed, {} never run)",
+            runs.len(),
+            total,
+            passed,
+            failed,
+            never
+        );
+        let mut lines = vec![summary];
+        lines.extend(entry_lines);
         lines.join("\n")
     }
 
