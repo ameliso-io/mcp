@@ -28,6 +28,17 @@ const label = {
   marginBottom: '6px',
 }
 
+function statusSortOrder(s: ResultStatus): number {
+  switch (s) {
+    case ResultStatus.FAILED: return 0
+    case ResultStatus.BLOCKED: return 1
+    case ResultStatus.NEVER: return 2
+    case ResultStatus.SKIPPED: return 3
+    case ResultStatus.PASSED: return 4
+    default: return 5
+  }
+}
+
 function statusColor(s: ResultStatus): string {
   switch (s) {
     case ResultStatus.PASSED: return '#22c55e'
@@ -280,7 +291,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
           <div style={card}>
             <p style={{ ...label, marginBottom: '12px' }}>Coverage ({runCount} run{runCount !== 1 ? 's' : ''})</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {entries.map(entry => (
+              {[...entries].sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)).map(entry => (
                 <div
                   key={entry.case?.path}
                   style={{
