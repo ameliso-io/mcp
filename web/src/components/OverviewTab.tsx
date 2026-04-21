@@ -82,7 +82,6 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
   useEffect(() => {
     if (repoId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       load(repoId);
     }
   }, [repoId, load]);

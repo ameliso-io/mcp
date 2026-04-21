@@ -63,7 +63,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     } finally {
       setRefreshing(false);
     }
-  }, [repos]);
+  }, [repos, announce]);
 
   // Handle GitHub callback: ?installation_id=... in URL
   useEffect(() => {
@@ -76,7 +76,6 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     ) {
       // Clear the URL params so we don't reprocess on re-render
       window.history.replaceState({}, "", window.location.pathname);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       setError(null);
       client
@@ -93,7 +92,6 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -106,7 +104,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     } else {
       announce("Repository deselected");
     }
-  }, [activeRepoId, repos]);
+  }, [activeRepoId, repos, announce]);
 
   async function handleSync(id: string) {
     setSyncing(id);
