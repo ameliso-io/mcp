@@ -107,23 +107,26 @@ export default function OverviewTab({ repoId }: Props) {
     };
   }, [repoId, activeRuns.length, load]);
 
-  async function handleAffected(e: React.FormEvent) {
-    e.preventDefault();
-    /* v8 ignore next 2 — component returns early rendering when repoId is empty */
-    if (!repoId) return;
-    setAffectedLoading(true);
-    setAffectedError(null);
-    try {
-      const res = await client.getAffectedCases({ repoId, sinceRef });
-      setAffected(res.cases);
-      const n = res.cases.length;
-      announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
-    } catch (err) {
-      setAffectedError(errorMessage(err));
-    } finally {
-      setAffectedLoading(false);
-    }
-  }
+  const handleAffected = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — component returns early rendering when repoId is empty */
+      if (!repoId) return;
+      setAffectedLoading(true);
+      setAffectedError(null);
+      try {
+        const res = await client.getAffectedCases({ repoId, sinceRef });
+        setAffected(res.cases);
+        const n = res.cases.length;
+        announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
+      } catch (err) {
+        setAffectedError(errorMessage(err));
+      } finally {
+        setAffectedLoading(false);
+      }
+    },
+    [repoId, sinceRef, announce]
+  );
 
   const statCases = entries.length;
   const statPassed = entries.filter((e) => e.latestStatus === ResultStatus.PASSED).length;
