@@ -450,9 +450,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                       (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3)
                     );
                   })
-                  .map((ac) => (
+                  .map((ac, idx) => (
                     <div
-                      key={ac.case?.path}
+                      key={ac.case?.path ?? idx}
                       style={{
                         display: "flex",
                         alignItems: "center",

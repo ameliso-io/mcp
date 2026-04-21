@@ -1,9 +1,13 @@
 import { render, screen } from "@testing-library/react";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import NavBar from "./NavBar";
 
+const { mockUsePathname } = vi.hoisted(() => ({
+  mockUsePathname: vi.fn(() => "/overview"),
+}));
+
 vi.mock("next/navigation", () => ({
-  usePathname: vi.fn(() => "/overview"),
+  usePathname: mockUsePathname,
 }));
 
 vi.mock("next/link", () => ({
@@ -25,6 +29,10 @@ vi.mock("next/link", () => ({
 }));
 
 describe("NavBar", () => {
+  beforeEach(() => {
+    mockUsePathname.mockReturnValue("/overview");
+  });
+
   it("renders all nav links", () => {
     render(<NavBar />);
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
@@ -50,5 +58,12 @@ describe("NavBar", () => {
       "href",
       "/repositories"
     );
+  });
+
+  it('marks Overview as active when pathname is "/"', () => {
+    mockUsePathname.mockReturnValue("/");
+    render(<NavBar />);
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
   });
 });
