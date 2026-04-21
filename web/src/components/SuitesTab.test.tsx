@@ -320,6 +320,23 @@ describe("SuitesTab", () => {
     expect(screen.getByText("Edit")).toBeInTheDocument();
   });
 
+  it("pressing Escape in create form cancels it", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    expect(screen.getByRole("heading", { name: "Create Suite" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("heading", { name: "Create Suite" })).not.toBeInTheDocument();
+  });
+
+  it("pressing Escape in edit form cancels it", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    expect(screen.getByText("Edit: smoke")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Edit: smoke")).not.toBeInTheDocument();
+  });
+
   it("expands suite on Enter key", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));

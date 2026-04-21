@@ -327,7 +327,16 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       {showCreate && (
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Run</h3>
-          <form onSubmit={handleCreate} className={styles.formGrid}>
+          <form
+            onSubmit={handleCreate}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+              }
+            }}
+            className={styles.formGrid}
+          >
             <div>
               <label className={styles.label}>
                 Slug
@@ -335,6 +344,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                   value={newSlug}
                   onChange={(e) => setNewSlug(e.target.value)}
                   required
+                  autoFocus
                   className={styles.input}
                 />
               </label>
@@ -635,7 +645,17 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                   )}
                                 </div>
                               )}
-                              <form onSubmit={handleRecord} className={styles.recordForm}>
+                              <form
+                                onSubmit={handleRecord}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    setRecordingCase(null);
+                                    setCaseBody(null);
+                                  }
+                                }}
+                                className={styles.recordForm}
+                              >
                                 <div>
                                   <label className={styles.labelSm}>
                                     Status
@@ -644,6 +664,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                       onChange={(e) =>
                                         setRecordStatus(Number(e.target.value) as ResultStatus)
                                       }
+                                      autoFocus
                                       className={styles.inputAuto}
                                     >
                                       <option value={ResultStatus.PASSED}>Passed</option>

@@ -161,7 +161,16 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       {showCreate && (
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Suite</h3>
-          <form onSubmit={handleCreate} className={styles.formGrid}>
+          <form
+            onSubmit={handleCreate}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+              }
+            }}
+            className={styles.formGrid}
+          >
             <div>
               <label className={styles.label}>
                 Slug
@@ -169,6 +178,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                   value={newSlug}
                   onChange={(e) => setNewSlug(e.target.value)}
                   required
+                  autoFocus
                   className={styles.input}
                   placeholder="e.g. smoke"
                 />
@@ -245,7 +255,16 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
             {editingSlug === suite.slug ? (
               <div className={styles.card}>
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
-                <form onSubmit={handleUpdate} className={styles.formGridSm}>
+                <form
+                  onSubmit={handleUpdate}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setEditingSlug(null);
+                    }
+                  }}
+                  className={styles.formGridSm}
+                >
                   <div>
                     <label className={styles.label}>
                       Name
@@ -253,6 +272,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         required
+                        autoFocus
                         className={styles.input}
                       />
                     </label>

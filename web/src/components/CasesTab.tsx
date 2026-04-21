@@ -237,7 +237,16 @@ export default function CasesTab({ repoId }: Props) {
       {showCreate && (
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Case</h3>
-          <form onSubmit={handleCreate} className={styles.formGrid}>
+          <form
+            onSubmit={handleCreate}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+              }
+            }}
+            className={styles.formGrid}
+          >
             <div>
               <label className={styles.label}>
                 Path (e.g. auth/login)
@@ -245,6 +254,7 @@ export default function CasesTab({ repoId }: Props) {
                   value={newPath}
                   onChange={(e) => setNewPath(e.target.value)}
                   required
+                  autoFocus
                   className={styles.input}
                 />
               </label>
@@ -410,11 +420,21 @@ export default function CasesTab({ repoId }: Props) {
                 }
               >
                 {editingPath === c.path ? (
-                  <form onSubmit={handleUpdate} className={styles.formGridSm}>
+                  <form
+                    onSubmit={handleUpdate}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditingPath(null);
+                      }
+                    }}
+                    className={styles.formGridSm}
+                  >
                     <div>
                       <label className={styles.labelSm}>
                         Title
                         <input
+                          autoFocus
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
                           required

@@ -709,6 +709,26 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
 
+  it("pressing Escape in create form cancels it", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("heading", { name: "Create Run" })).not.toBeInTheDocument();
+  });
+
+  it("pressing Escape in record form closes it", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Save Result")).not.toBeInTheDocument();
+  });
+
   it("expands run on Enter key", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);

@@ -497,6 +497,23 @@ describe("CasesTab", () => {
     );
   });
 
+  it("pressing Escape in create form cancels it", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    expect(screen.getByText("Create Case")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Create Case")).not.toBeInTheDocument();
+  });
+
+  it("pressing Escape in edit form cancels it", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Save")).not.toBeInTheDocument();
+  });
+
   it("expands case on Enter key", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
