@@ -115,6 +115,45 @@ describe("RunsTab", () => {
     );
   });
 
+  it("filters runs by Completed status", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Completed"));
+    await userEvent.click(screen.getByText("Completed"));
+    await waitFor(() =>
+      expect(client.listRuns).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: RunStatus.COMPLETED })
+      )
+    );
+  });
+
+  it("filters runs by Aborted status", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Aborted"));
+    await userEvent.click(screen.getByText("Aborted"));
+    await waitFor(() =>
+      expect(client.listRuns).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: RunStatus.ABORTED })
+      )
+    );
+  });
+
+  it("switches back to All filter after selecting In Progress", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("In Progress"));
+    await userEvent.click(screen.getByText("In Progress"));
+    await waitFor(() =>
+      expect(client.listRuns).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: RunStatus.IN_PROGRESS })
+      )
+    );
+    await userEvent.click(screen.getByText("All"));
+    await waitFor(() =>
+      expect(client.listRuns).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: RunStatus.UNSPECIFIED })
+      )
+    );
+  });
+
   it("expands in-progress run and shows pending cases", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
