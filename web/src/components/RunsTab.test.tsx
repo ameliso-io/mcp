@@ -747,7 +747,7 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
-    const runRow = screen.getByRole("button", { name: "2026-01-01-smoke" });
+    const runRow = screen.getByRole("button", { name: "In Progress run 2026-01-01-smoke" });
     await userEvent.type(runRow, "{Enter}");
     await waitFor(() =>
       expect(client.getPendingCases).toHaveBeenCalledWith(
@@ -760,7 +760,7 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
-    const runRow = screen.getByRole("button", { name: "2026-01-01-smoke" });
+    const runRow = screen.getByRole("button", { name: "In Progress run 2026-01-01-smoke" });
     runRow.focus();
     await userEvent.keyboard(" ");
     await waitFor(() =>
