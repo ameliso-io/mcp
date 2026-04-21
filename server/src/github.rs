@@ -86,25 +86,38 @@ pub struct GitHubRepo {
 
 #[derive(Deserialize)]
 struct RepoListResponse {
+    total_count: usize,
     repositories: Vec<GitHubRepo>,
 }
 
 pub async fn list_installation_repos(token: &str) -> Result<Vec<GitHubRepo>> {
     let client = reqwest::Client::new();
-    let resp: RepoListResponse = client
-        .get("https://api.github.com/installation/repositories")
-        .header("Authorization", format!("token {token}"))
-        .header("Accept", "application/vnd.github.v3+json")
-        .header("User-Agent", "ameliso/1.0")
-        .send()
-        .await
-        .context("request failed")?
-        .error_for_status()
-        .context("list installation repos: bad status")?
-        .json()
-        .await
-        .context("list installation repos: parse error")?;
-    Ok(resp.repositories)
+    let mut all: Vec<GitHubRepo> = Vec::new();
+    let mut page = 1u32;
+    loop {
+        let resp: RepoListResponse = client
+            .get("https://api.github.com/installation/repositories")
+            .query(&[("per_page", "100"), ("page", &page.to_string())])
+            .header("Authorization", format!("token {token}"))
+            .header("Accept", "application/vnd.github.v3+json")
+            .header("User-Agent", "ameliso/1.0")
+            .send()
+            .await
+            .context("request failed")?
+            .error_for_status()
+            .context("list installation repos: bad status")?
+            .json()
+            .await
+            .context("list installation repos: parse error")?;
+        let done = resp.repositories.len() < 100
+            || all.len() + resp.repositories.len() >= resp.total_count;
+        all.extend(resp.repositories);
+        if done {
+            break;
+        }
+        page += 1;
+    }
+    Ok(all)
 }
 
 pub async fn get_repo(full_name: &str, token: &str) -> Result<GitHubRepo> {
@@ -123,6 +136,33 @@ pub async fn get_repo(full_name: &str, token: &str) -> Result<GitHubRepo> {
         .await
         .context("get repo: parse error")?;
     Ok(repo)
+}
+
+// ---------------------------------------------------------------------------
+// App installations
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct AppInstallation {
+    pub id: u64,
+}
+
+pub async fn list_app_installations(jwt: &str) -> Result<Vec<AppInstallation>> {
+    let client = reqwest::Client::new();
+    let installations: Vec<AppInstallation> = client
+        .get("https://api.github.com/app/installations")
+        .header("Authorization", format!("Bearer {jwt}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .send()
+        .await
+        .context("request failed")?
+        .error_for_status()
+        .context("list app installations: bad status")?
+        .json()
+        .await
+        .context("list app installations: parse error")?;
+    Ok(installations)
 }
 
 // ---------------------------------------------------------------------------

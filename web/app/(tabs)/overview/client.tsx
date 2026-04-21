@@ -1,18 +1,12 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import OverviewTab from '@/components/OverviewTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+import { useRouter } from "next/navigation";
+import OverviewTab from "@/components/OverviewTab";
+import { useRepoId } from "@/hooks/useRepoId";
 
 export default function OverviewPageClient() {
-  const router = useRouter()
-  const [repoPath, setRepoPath] = useRepoPath()
+  const router = useRouter();
+  const [repoId] = useRepoId();
 
-  return (
-    <OverviewTab
-      repoPath={repoPath}
-      onRepoPathChange={setRepoPath}
-      onGoToRuns={() => router.push('/runs')}
-    />
-  )
+  return <OverviewTab repoId={repoId} onGoToRuns={() => router.push("/runs")} />;
 }

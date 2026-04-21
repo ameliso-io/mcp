@@ -189,9 +189,18 @@
   color: var(--color-run-status-default);
   background: color-mix(in srgb, var(--color-run-status-default) 10%, transparent);
 }
-.runStatusBadge[data-status="IN_PROGRESS"] { color: var(--color-run-status-in-progress); background: color-mix(in srgb, var(--color-run-status-in-progress) 10%, transparent); }
-.runStatusBadge[data-status="COMPLETED"] { color: var(--color-run-status-completed); background: color-mix(in srgb, var(--color-run-status-completed) 10%, transparent); }
-.runStatusBadge[data-status="ABORTED"] { color: var(--color-run-status-aborted); background: color-mix(in srgb, var(--color-run-status-aborted) 10%, transparent); }
+.runStatusBadge[data-status="IN_PROGRESS"] {
+  color: var(--color-run-status-in-progress);
+  background: color-mix(in srgb, var(--color-run-status-in-progress) 10%, transparent);
+}
+.runStatusBadge[data-status="COMPLETED"] {
+  color: var(--color-run-status-completed);
+  background: color-mix(in srgb, var(--color-run-status-completed) 10%, transparent);
+}
+.runStatusBadge[data-status="ABORTED"] {
+  color: var(--color-run-status-aborted);
+  background: color-mix(in srgb, var(--color-run-status-aborted) 10%, transparent);
+}
 
 .resultStatusBadge {
   font-size: 11px;
@@ -202,9 +211,18 @@
   color: var(--color-result-skipped);
   background: color-mix(in srgb, var(--color-result-skipped) 10%, transparent);
 }
-.resultStatusBadge[data-status="PASSED"] { color: var(--color-result-passed); background: color-mix(in srgb, var(--color-result-passed) 10%, transparent); }
-.resultStatusBadge[data-status="FAILED"] { color: var(--color-result-failed); background: color-mix(in srgb, var(--color-result-failed) 10%, transparent); }
-.resultStatusBadge[data-status="BLOCKED"] { color: var(--color-result-blocked); background: color-mix(in srgb, var(--color-result-blocked) 10%, transparent); }
+.resultStatusBadge[data-status="PASSED"] {
+  color: var(--color-result-passed);
+  background: color-mix(in srgb, var(--color-result-passed) 10%, transparent);
+}
+.resultStatusBadge[data-status="FAILED"] {
+  color: var(--color-result-failed);
+  background: color-mix(in srgb, var(--color-result-failed) 10%, transparent);
+}
+.resultStatusBadge[data-status="BLOCKED"] {
+  color: var(--color-result-blocked);
+  background: color-mix(in srgb, var(--color-result-blocked) 10%, transparent);
+}
 
 .runId {
   font-weight: 600;
@@ -270,10 +288,18 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.resultFilterBtn[data-status="PASSED"] { --_c: var(--color-result-passed); }
-.resultFilterBtn[data-status="FAILED"] { --_c: var(--color-result-failed); }
-.resultFilterBtn[data-status="BLOCKED"] { --_c: var(--color-result-blocked); }
-.resultFilterBtn[data-status="SKIPPED"] { --_c: var(--color-result-skipped); }
+.resultFilterBtn[data-status="PASSED"] {
+  --_c: var(--color-result-passed);
+}
+.resultFilterBtn[data-status="FAILED"] {
+  --_c: var(--color-result-failed);
+}
+.resultFilterBtn[data-status="BLOCKED"] {
+  --_c: var(--color-result-blocked);
+}
+.resultFilterBtn[data-status="SKIPPED"] {
+  --_c: var(--color-result-skipped);
+}
 
 .resultFilterBtnActive {
   background: color-mix(in srgb, var(--_c) 20%, transparent);

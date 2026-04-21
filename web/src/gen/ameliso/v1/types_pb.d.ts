@@ -11,9 +11,6 @@ import type { Message } from "@bufbuild/protobuf";
 export declare const file_ameliso_v1_types: GenFile;
 
 /**
- * A test case read from the controlled repository.
- * Identified by its path within cases/ (e.g. "auth/user-login").
- *
  * @generated from message ameliso.v1.Case
  */
 export declare type Case = Message<"ameliso.v1.Case"> & {
@@ -60,8 +57,6 @@ export declare type Case = Message<"ameliso.v1.Case"> & {
 export declare const CaseSchema: GenMessage<Case>;
 
 /**
- * A suite definition — an ordered collection of case paths.
- *
  * @generated from message ameliso.v1.Suite
  */
 export declare type Suite = Message<"ameliso.v1.Suite"> & {
@@ -93,8 +88,6 @@ export declare type Suite = Message<"ameliso.v1.Suite"> & {
 export declare const SuiteSchema: GenMessage<Suite>;
 
 /**
- * Metadata for a test run (stored in runs/{slug}/run.yaml).
- *
  * @generated from message ameliso.v1.RunMeta
  */
 export declare type RunMeta = Message<"ameliso.v1.RunMeta"> & {
@@ -136,8 +129,6 @@ export declare type RunMeta = Message<"ameliso.v1.RunMeta"> & {
 export declare const RunMetaSchema: GenMessage<RunMeta>;
 
 /**
- * The result of executing a single case within a run.
- *
  * @generated from message ameliso.v1.CaseResult
  */
 export declare type CaseResult = Message<"ameliso.v1.CaseResult"> & {
@@ -164,8 +155,6 @@ export declare type CaseResult = Message<"ameliso.v1.CaseResult"> & {
 export declare const CaseResultSchema: GenMessage<CaseResult>;
 
 /**
- * A run with its results loaded.
- *
  * @generated from message ameliso.v1.Run
  */
 export declare type Run = Message<"ameliso.v1.Run"> & {
@@ -187,8 +176,6 @@ export declare type Run = Message<"ameliso.v1.Run"> & {
 export declare const RunSchema: GenMessage<Run>;
 
 /**
- * A coverage entry: latest known status for a case across all runs.
- *
  * @generated from message ameliso.v1.CoverageEntry
  */
 export declare type CoverageEntry = Message<"ameliso.v1.CoverageEntry"> & {
@@ -220,8 +207,6 @@ export declare type CoverageEntry = Message<"ameliso.v1.CoverageEntry"> & {
 export declare const CoverageEntrySchema: GenMessage<CoverageEntry>;
 
 /**
- * A case that may need re-running based on git history.
- *
  * @generated from message ameliso.v1.AffectedCase
  */
 export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
@@ -277,21 +262,9 @@ export declare type Repository = Message<"ameliso.v1.Repository"> & {
   htmlUrl: string;
 
   /**
-   * absolute path to local clone
-   *
-   * @generated from field: string local_path = 5;
-   */
-  localPath: string;
-
-  /**
    * @generated from field: string installation_id = 6;
    */
   installationId: string;
-
-  /**
-   * @generated from field: bool cloned = 7;
-   */
-  cloned: boolean;
 
   /**
    * @generated from field: string added_at = 8;
@@ -404,4 +377,3 @@ export enum Priority {
  * Describes the enum ameliso.v1.Priority.
  */
 export declare const PrioritySchema: GenEnum<Priority>;
-

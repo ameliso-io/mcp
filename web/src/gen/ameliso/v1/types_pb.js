@@ -7,98 +7,86 @@ import { enumDesc, fileDesc, messageDesc, tsEnum } from "@bufbuild/protobuf/code
 /**
  * Describes the file ameliso/v1/types.proto.
  */
-export const file_ameliso_v1_types = /*@__PURE__*/
-  fileDesc("ChZhbWVsaXNvL3YxL3R5cGVzLnByb3RvEgphbWVsaXNvLnYxIoABCgRDYXNlEgwKBHBhdGgYASABKAkSDQoFdGl0bGUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSDAoEdGFncxgEIAMoCRIQCghwcmlvcml0eRgFIAEoCRISCgpjcmVhdGVkX2F0GAYgASgJEhIKCnVwZGF0ZWRfYXQYByABKAkiRwoFU3VpdGUSDAoEc2x1ZxgBIAEoCRIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEg0KBWNhc2VzGAQgAygJIn4KB1J1bk1ldGESCgoCaWQYASABKAkSDAoEZGF0ZRgCIAEoCRIOCgZ0ZXN0ZXIYAyABKAkSJQoGc3RhdHVzGAQgASgOMhUuYW1lbGlzby52MS5SdW5TdGF0dXMSEwoLZW52aXJvbm1lbnQYBSABKAkSDQoFc3VpdGUYBiABKAkiWAoKQ2FzZVJlc3VsdBIRCgljYXNlX3BhdGgYASABKAkSKAoGc3RhdHVzGAIgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMSDQoFbm90ZXMYAyABKAkiUQoDUnVuEiEKBG1ldGEYASABKAsyEy5hbWVsaXNvLnYxLlJ1bk1ldGESJwoHcmVzdWx0cxgCIAMoCzIWLmFtZWxpc28udjEuQ2FzZVJlc3VsdCKMAQoNQ292ZXJhZ2VFbnRyeRIeCgRjYXNlGAEgASgLMhAuYW1lbGlzby52MS5DYXNlEi8KDWxhdGVzdF9zdGF0dXMYAiABKA4yGC5hbWVsaXNvLnYxLlJlc3VsdFN0YXR1cxITCgtsYXN0X3J1bl9pZBgDIAEoCRIVCg1sYXN0X3J1bl9kYXRlGAQgASgJIj4KDEFmZmVjdGVkQ2FzZRIeCgRjYXNlGAEgASgLMhAuYW1lbGlzby52MS5DYXNlEg4KBnJlYXNvbhgCIAEoCSKaAQoKUmVwb3NpdG9yeRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhEKCWZ1bGxfbmFtZRgDIAEoCRIQCghodG1sX3VybBgEIAEoCRISCgpsb2NhbF9wYXRoGAUgASgJEhcKD2luc3RhbGxhdGlvbl9pZBgGIAEoCRIOCgZjbG9uZWQYByABKAgSEAoIYWRkZWRfYXQYCCABKAkqdQoJUnVuU3RhdHVzEhoKFlJVTl9TVEFUVVNfVU5TUEVDSUZJRUQQABIaChZSVU5fU1RBVFVTX0lOX1BST0dSRVNTEAESGAoUUlVOX1NUQVRVU19DT01QTEVURUQQAhIWChJSVU5fU1RBVFVTX0FCT1JURUQQAyqwAQoMUmVzdWx0U3RhdHVzEh0KGVJFU1VMVF9TVEFUVVNfVU5TUEVDSUZJRUQQABIYChRSRVNVTFRfU1RBVFVTX1BBU1NFRBABEhgKFFJFU1VMVF9TVEFUVVNfRkFJTEVEEAISGQoVUkVTVUxUX1NUQVRVU19CTE9DS0VEEAMSGQoVUkVTVUxUX1NUQVRVU19TS0lQUEVEEAQSFwoTUkVTVUxUX1NUQVRVU19ORVZFUhAFKl4KCFByaW9yaXR5EhgKFFBSSU9SSVRZX1VOU1BFQ0lGSUVEEAASEAoMUFJJT1JJVFlfTE9XEAESEwoPUFJJT1JJVFlfTUVESVVNEAISEQoNUFJJT1JJVFlfSElHSBADQjBaLmdpdGh1Yi5jb20vdHVwZTEyMzM0L2FtZWxpc28vZ2VuZXJhdGVkO2FtZWxpc29iBnByb3RvMw");
+export const file_ameliso_v1_types =
+  /*@__PURE__*/
+  fileDesc(
+    "ChZhbWVsaXNvL3YxL3R5cGVzLnByb3RvEgphbWVsaXNvLnYxIoABCgRDYXNlEgwKBHBhdGgYASABKAkSDQoFdGl0bGUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSDAoEdGFncxgEIAMoCRIQCghwcmlvcml0eRgFIAEoCRISCgpjcmVhdGVkX2F0GAYgASgJEhIKCnVwZGF0ZWRfYXQYByABKAkiRwoFU3VpdGUSDAoEc2x1ZxgBIAEoCRIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEg0KBWNhc2VzGAQgAygJIn4KB1J1bk1ldGESCgoCaWQYASABKAkSDAoEZGF0ZRgCIAEoCRIOCgZ0ZXN0ZXIYAyABKAkSJQoGc3RhdHVzGAQgASgOMhUuYW1lbGlzby52MS5SdW5TdGF0dXMSEwoLZW52aXJvbm1lbnQYBSABKAkSDQoFc3VpdGUYBiABKAkiWAoKQ2FzZVJlc3VsdBIRCgljYXNlX3BhdGgYASABKAkSKAoGc3RhdHVzGAIgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMSDQoFbm90ZXMYAyABKAkiUQoDUnVuEiEKBG1ldGEYASABKAsyEy5hbWVsaXNvLnYxLlJ1bk1ldGESJwoHcmVzdWx0cxgCIAMoCzIWLmFtZWxpc28udjEuQ2FzZVJlc3VsdCKMAQoNQ292ZXJhZ2VFbnRyeRIeCgRjYXNlGAEgASgLMhAuYW1lbGlzby52MS5DYXNlEi8KDWxhdGVzdF9zdGF0dXMYAiABKA4yGC5hbWVsaXNvLnYxLlJlc3VsdFN0YXR1cxITCgtsYXN0X3J1bl9pZBgDIAEoCRIVCg1sYXN0X3J1bl9kYXRlGAQgASgJIj4KDEFmZmVjdGVkQ2FzZRIeCgRjYXNlGAEgASgLMhAuYW1lbGlzby52MS5DYXNlEg4KBnJlYXNvbhgCIAEoCSKWAQoKUmVwb3NpdG9yeRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhEKCWZ1bGxfbmFtZRgDIAEoCRIQCghodG1sX3VybBgEIAEoCRIXCg9pbnN0YWxsYXRpb25faWQYBiABKAkSEAoIYWRkZWRfYXQYCCABKAlKBAgFEAZKBAgHEAhSCmxvY2FsX3BhdGhSBmNsb25lZCp1CglSdW5TdGF0dXMSGgoWUlVOX1NUQVRVU19VTlNQRUNJRklFRBAAEhoKFlJVTl9TVEFUVVNfSU5fUFJPR1JFU1MQARIYChRSVU5fU1RBVFVTX0NPTVBMRVRFRBACEhYKElJVTl9TVEFUVVNfQUJPUlRFRBADKrABCgxSZXN1bHRTdGF0dXMSHQoZUkVTVUxUX1NUQVRVU19VTlNQRUNJRklFRBAAEhgKFFJFU1VMVF9TVEFUVVNfUEFTU0VEEAESGAoUUkVTVUxUX1NUQVRVU19GQUlMRUQQAhIZChVSRVNVTFRfU1RBVFVTX0JMT0NLRUQQAxIZChVSRVNVTFRfU1RBVFVTX1NLSVBQRUQQBBIXChNSRVNVTFRfU1RBVFVTX05FVkVSEAUqXgoIUHJpb3JpdHkSGAoUUFJJT1JJVFlfVU5TUEVDSUZJRUQQABIQCgxQUklPUklUWV9MT1cQARITCg9QUklPUklUWV9NRURJVU0QAhIRCg1QUklPUklUWV9ISUdIEANCMFouZ2l0aHViLmNvbS90dXBlMTIzMzQvYW1lbGlzby9nZW5lcmF0ZWQ7YW1lbGlzb2IGcHJvdG8z"
+  );
 
 /**
  * Describes the message ameliso.v1.Case.
  * Use `create(CaseSchema)` to create a new message.
  */
-export const CaseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 0);
+export const CaseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 0);
 
 /**
  * Describes the message ameliso.v1.Suite.
  * Use `create(SuiteSchema)` to create a new message.
  */
-export const SuiteSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 1);
+export const SuiteSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 1);
 
 /**
  * Describes the message ameliso.v1.RunMeta.
  * Use `create(RunMetaSchema)` to create a new message.
  */
-export const RunMetaSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 2);
+export const RunMetaSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 2);
 
 /**
  * Describes the message ameliso.v1.CaseResult.
  * Use `create(CaseResultSchema)` to create a new message.
  */
-export const CaseResultSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 3);
+export const CaseResultSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 3);
 
 /**
  * Describes the message ameliso.v1.Run.
  * Use `create(RunSchema)` to create a new message.
  */
-export const RunSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 4);
+export const RunSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 4);
 
 /**
  * Describes the message ameliso.v1.CoverageEntry.
  * Use `create(CoverageEntrySchema)` to create a new message.
  */
-export const CoverageEntrySchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 5);
+export const CoverageEntrySchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 5);
 
 /**
  * Describes the message ameliso.v1.AffectedCase.
  * Use `create(AffectedCaseSchema)` to create a new message.
  */
-export const AffectedCaseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 6);
+export const AffectedCaseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 6);
 
 /**
  * Describes the message ameliso.v1.Repository.
  * Use `create(RepositorySchema)` to create a new message.
  */
-export const RepositorySchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_types, 7);
+export const RepositorySchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_types, 7);
 
 /**
  * Describes the enum ameliso.v1.RunStatus.
  */
-export const RunStatusSchema = /*@__PURE__*/
-  enumDesc(file_ameliso_v1_types, 0);
+export const RunStatusSchema = /*@__PURE__*/ enumDesc(file_ameliso_v1_types, 0);
 
 /**
  * @generated from enum ameliso.v1.RunStatus
  */
-export const RunStatus = /*@__PURE__*/
-  tsEnum(RunStatusSchema);
+export const RunStatus = /*@__PURE__*/ tsEnum(RunStatusSchema);
 
 /**
  * Describes the enum ameliso.v1.ResultStatus.
  */
-export const ResultStatusSchema = /*@__PURE__*/
-  enumDesc(file_ameliso_v1_types, 1);
+export const ResultStatusSchema = /*@__PURE__*/ enumDesc(file_ameliso_v1_types, 1);
 
 /**
  * @generated from enum ameliso.v1.ResultStatus
  */
-export const ResultStatus = /*@__PURE__*/
-  tsEnum(ResultStatusSchema);
+export const ResultStatus = /*@__PURE__*/ tsEnum(ResultStatusSchema);
 
 /**
  * Describes the enum ameliso.v1.Priority.
  */
-export const PrioritySchema = /*@__PURE__*/
-  enumDesc(file_ameliso_v1_types, 2);
+export const PrioritySchema = /*@__PURE__*/ enumDesc(file_ameliso_v1_types, 2);
 
 /**
  * @generated from enum ameliso.v1.Priority
  */
-export const Priority = /*@__PURE__*/
-  tsEnum(PrioritySchema);
-
+export const Priority = /*@__PURE__*/ tsEnum(PrioritySchema);

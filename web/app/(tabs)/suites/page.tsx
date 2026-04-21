@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
-import SuitesPageClient from './client'
+import type { Metadata } from "next";
+import SuitesPageClient from "./client";
 
 export const metadata: Metadata = {
-  title: 'Suites',
-}
+  title: "Suites",
+};
 
 export default function SuitesPage() {
-  return <SuitesPageClient />
+  return <SuitesPageClient />;
 }

@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
-import CasesPageClient from './client'
+import type { Metadata } from "next";
+import CasesPageClient from "./client";
 
 export const metadata: Metadata = {
-  title: 'Cases',
-}
+  title: "Cases",
+};
 
 export default function CasesPage() {
-  return <CasesPageClient />
+  return <CasesPageClient />;
 }

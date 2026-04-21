@@ -1,29 +1,29 @@
-import type { Metadata, Viewport } from 'next'
-import type { ReactNode } from 'react'
-import { Inter } from 'next/font/google'
-import NavBar from '@/components/NavBar'
-import './globals.css'
+import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
+import { Inter } from "next/font/google";
+import NavBar from "@/components/NavBar";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
-}
+};
 
 export const metadata: Metadata = {
   title: {
-    default: 'Ameliso',
-    template: '%s | Ameliso',
+    default: "Ameliso",
+    template: "%s | Ameliso",
   },
-  description: 'Test coverage and quality management',
+  description: "Test coverage and quality management",
   openGraph: {
-    title: 'Ameliso',
-    description: 'Test coverage and quality management',
-    type: 'website',
-    siteName: 'Ameliso',
+    title: "Ameliso",
+    description: "Test coverage and quality management",
+    type: "website",
+    siteName: "Ameliso",
   },
-}
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -35,5 +35,5 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </div>
       </body>
     </html>
-  )
+  );
 }

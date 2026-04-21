@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import CasesTab from '@/components/CasesTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+import CasesTab from "@/components/CasesTab";
+import { useRepoId } from "@/hooks/useRepoId";
 
 export default function CasesPageClient() {
-  const [repoPath] = useRepoPath()
-  return <CasesTab repoPath={repoPath} />
+  const [repoId] = useRepoId();
+  return <CasesTab repoId={repoId} />;
 }

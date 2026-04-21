@@ -146,9 +146,15 @@
   font-weight: 700;
   color: var(--color-ink);
 }
-.statValue[data-stat="Passed"] { color: var(--color-success); }
-.statValue[data-stat="Failed"] { color: var(--color-danger-hover); }
-.statValue[data-stat="Never Run"] { color: var(--color-subtle); }
+.statValue[data-stat="Passed"] {
+  color: var(--color-success);
+}
+.statValue[data-stat="Failed"] {
+  color: var(--color-danger-hover);
+}
+.statValue[data-stat="Never Run"] {
+  color: var(--color-subtle);
+}
 
 .activeRunsCard {
   composes: card;
@@ -254,10 +260,18 @@
   flex-shrink: 0;
   background: var(--color-border);
 }
-.statusDot[data-status="PASSED"] { background: var(--color-result-passed); }
-.statusDot[data-status="FAILED"] { background: var(--color-result-failed); }
-.statusDot[data-status="BLOCKED"] { background: var(--color-result-blocked); }
-.statusDot[data-status="SKIPPED"] { background: var(--color-result-skipped); }
+.statusDot[data-status="PASSED"] {
+  background: var(--color-result-passed);
+}
+.statusDot[data-status="FAILED"] {
+  background: var(--color-result-failed);
+}
+.statusDot[data-status="BLOCKED"] {
+  background: var(--color-result-blocked);
+}
+.statusDot[data-status="SKIPPED"] {
+  background: var(--color-result-skipped);
+}
 
 .coveragePath {
   flex: 1;
@@ -280,9 +294,15 @@
   font-weight: 600;
   color: var(--color-subtle);
 }
-.coverageStatus[data-status="PASSED"] { color: var(--color-result-passed); }
-.coverageStatus[data-status="FAILED"] { color: var(--color-result-failed); }
-.coverageStatus[data-status="BLOCKED"] { color: var(--color-result-blocked); }
+.coverageStatus[data-status="PASSED"] {
+  color: var(--color-result-passed);
+}
+.coverageStatus[data-status="FAILED"] {
+  color: var(--color-result-failed);
+}
+.coverageStatus[data-status="BLOCKED"] {
+  color: var(--color-result-blocked);
+}
 
 .affectedForm {
   display: flex;
@@ -312,8 +332,12 @@
   flex-shrink: 0;
   background: var(--color-priority-low);
 }
-.priorityDot[data-priority="high"] { background: var(--color-priority-high); }
-.priorityDot[data-priority="medium"] { background: var(--color-priority-medium); }
+.priorityDot[data-priority="high"] {
+  background: var(--color-priority-high);
+}
+.priorityDot[data-priority="medium"] {
+  background: var(--color-priority-medium);
+}
 
 .affectedPath {
   flex: 1;

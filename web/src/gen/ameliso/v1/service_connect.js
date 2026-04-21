@@ -3,14 +3,61 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
+import {
+  CreateCaseRequest,
+  CreateCaseResponse,
+  CreateRunRequest,
+  CreateRunResponse,
+  CreateSuiteRequest,
+  CreateSuiteResponse,
+  DeleteCaseRequest,
+  DeleteCaseResponse,
+  DeleteRunRequest,
+  DeleteRunResponse,
+  DeleteSuiteRequest,
+  DeleteSuiteResponse,
+  FinalizeRunRequest,
+  FinalizeRunResponse,
+  GetAffectedCasesRequest,
+  GetAffectedCasesResponse,
+  GetCaseRequest,
+  GetCaseResponse,
+  GetCoverageReportRequest,
+  GetCoverageReportResponse,
+  GetGitHubInstallUrlRequest,
+  GetGitHubInstallUrlResponse,
+  GetPendingCasesRequest,
+  GetPendingCasesResponse,
+  GetRunRequest,
+  GetRunResponse,
+  GetSuiteRequest,
+  GetSuiteResponse,
+  HandleGitHubCallbackRequest,
+  HandleGitHubCallbackResponse,
+  ListCasesRequest,
+  ListCasesResponse,
+  ListRepositoriesRequest,
+  ListRepositoriesResponse,
+  ListRunsRequest,
+  ListRunsResponse,
+  ListSuitesRequest,
+  ListSuitesResponse,
+  RecordResultRequest,
+  RecordResultResponse,
+  RemoveRepositoryRequest,
+  RemoveRepositoryResponse,
+  SyncRepositoryRequest,
+  SyncRepositoryResponse,
+  UpdateCaseRequest,
+  UpdateCaseResponse,
+  UpdateSuiteRequest,
+  UpdateSuiteResponse,
+} from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
- * AmelisoService manages test cases and runs in a git-native controlled repository.
- * All operations accept a repo_path that points to the root of the controlled repository.
- *
- * --- Cases ---
+ * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
+ * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
  * @generated from service ameliso.v1.AmelisoService
  */
@@ -18,7 +65,7 @@ export const AmelisoService = {
   typeName: "ameliso.v1.AmelisoService",
   methods: {
     /**
-     * List all cases in the controlled repository, optionally filtered.
+     * --- Cases ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.ListCases
      */
@@ -29,8 +76,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Get a single case by its path (e.g. "auth/user-login").
-     *
      * @generated from rpc ameliso.v1.AmelisoService.GetCase
      */
     getCase: {
@@ -40,8 +85,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Create a new case file. Fails if the path already exists.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.CreateCase
      */
     createCase: {
@@ -51,8 +94,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Update an existing case's metadata. Bumps updated_at automatically.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.UpdateCase
      */
     updateCase: {
@@ -62,8 +103,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Delete a case file from the repository.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
      */
     deleteCase: {
@@ -73,7 +112,7 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * List all suites.
+     * --- Suites ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.ListSuites
      */
@@ -84,8 +123,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Get a suite by slug.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.GetSuite
      */
     getSuite: {
@@ -95,8 +132,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Create a new suite.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.CreateSuite
      */
     createSuite: {
@@ -106,8 +141,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Update an existing suite's name, description, or case list.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.UpdateSuite
      */
     updateSuite: {
@@ -117,8 +150,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Delete a suite file from the repository.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.DeleteSuite
      */
     deleteSuite: {
@@ -128,7 +159,7 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * List all runs, newest first.
+     * --- Runs ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.ListRuns
      */
@@ -139,8 +170,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Get a run with all its results.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.GetRun
      */
     getRun: {
@@ -150,8 +179,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Create a new in-progress run.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.CreateRun
      */
     createRun: {
@@ -161,9 +188,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Record or update a single case result within a run.
-     * Idempotent: calling again with a different status overwrites the previous result.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.RecordResult
      */
     recordResult: {
@@ -173,8 +197,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Mark a run as completed or aborted. Validates all expected cases have results.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
      */
     finalizeRun: {
@@ -184,8 +206,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Delete a run directory entirely. Useful for cleaning up accidentally-created runs.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.DeleteRun
      */
     deleteRun: {
@@ -195,9 +215,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Return case paths in a run's scope that have no result recorded yet.
-     * If the run references a suite, scope = suite cases; otherwise scope = all cases in repo.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.GetPendingCases
      */
     getPendingCases: {
@@ -207,7 +224,7 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Return the latest known status for every case.
+     * --- Reports ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
      */
@@ -218,7 +235,7 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Return cases that may need re-running based on git changes since the last run.
+     * Return cases affected by source changes since since_ref (uses GitHub compare API).
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetAffectedCases
      */
@@ -229,7 +246,7 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
+     * --- GitHub App ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetGitHubInstallUrl
      */
@@ -240,9 +257,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Called after GitHub redirects back with an installation_id.
-     * Fetches repos for the installation, clones them, and persists the connection.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
      */
     handleGitHubCallback: {
@@ -252,8 +266,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * List all connected repositories.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
      */
     listRepositories: {
@@ -263,8 +275,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Pull latest changes for a connected repository.
-     *
      * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
      */
     syncRepository: {
@@ -274,8 +284,6 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Remove a connected repository from the store (does not delete the local clone).
-     *
      * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
      */
     removeRepository: {
@@ -284,6 +292,5 @@ export const AmelisoService = {
       O: RemoveRepositoryResponse,
       kind: MethodKind.Unary,
     },
-  }
+  },
 };
-

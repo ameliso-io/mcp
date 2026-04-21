@@ -185,9 +185,15 @@
   flex-shrink: 0;
   background: var(--color-subtle);
 }
-.priorityDot[data-priority="high"] { background: var(--color-priority-high); }
-.priorityDot[data-priority="medium"] { background: var(--color-priority-medium); }
-.priorityDot[data-priority="low"] { background: var(--color-priority-low); }
+.priorityDot[data-priority="high"] {
+  background: var(--color-priority-high);
+}
+.priorityDot[data-priority="medium"] {
+  background: var(--color-priority-medium);
+}
+.priorityDot[data-priority="low"] {
+  background: var(--color-priority-low);
+}
 
 .caseInfo {
   flex: 1;
@@ -352,6 +358,12 @@
   font-weight: 600;
   color: var(--color-subtle);
 }
-.priorityBadge[data-priority="high"] { color: var(--color-priority-high); }
-.priorityBadge[data-priority="medium"] { color: var(--color-priority-medium); }
-.priorityBadge[data-priority="low"] { color: var(--color-priority-low); }
+.priorityBadge[data-priority="high"] {
+  color: var(--color-priority-high);
+}
+.priorityBadge[data-priority="medium"] {
+  color: var(--color-priority-medium);
+}
+.priorityBadge[data-priority="low"] {
+  color: var(--color-priority-low);
+}

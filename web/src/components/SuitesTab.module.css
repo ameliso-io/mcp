@@ -113,7 +113,9 @@
   composes: card;
   margin-bottom: 0;
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .suiteCard:hover {
@@ -125,7 +127,9 @@
   margin-bottom: 0;
   cursor: pointer;
   border-color: var(--color-primary);
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .suiteRow {
@@ -201,8 +205,12 @@
   flex-shrink: 0;
   background: var(--color-priority-low);
 }
-.caseDot[data-priority="high"] { background: var(--color-priority-high); }
-.caseDot[data-priority="medium"] { background: var(--color-priority-medium); }
+.caseDot[data-priority="high"] {
+  background: var(--color-priority-high);
+}
+.caseDot[data-priority="medium"] {
+  background: var(--color-priority-medium);
+}
 
 .casePath {
   font-size: 13px;

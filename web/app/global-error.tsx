@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import styles from './app.module.css'
+import styles from "./app.module.css";
 
 export default function GlobalError({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   return (
     <html lang="en">
@@ -21,5 +21,5 @@ export default function GlobalError({
         </div>
       </body>
     </html>
-  )
+  );
 }

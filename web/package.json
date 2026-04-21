@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 5173",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
@@ -12,7 +12,9 @@
     "test:coverage": "vitest run --coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check ."
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
@@ -36,6 +38,7 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
     "jsdom": "^29.0.2",
+    "prettier": "^3.8.3",
     "typescript": "^5.5.3",
     "vite": "^5.4.2",
     "vitest": "^2.0.0"

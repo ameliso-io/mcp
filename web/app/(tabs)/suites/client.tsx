@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import SuitesTab from '@/components/SuitesTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+import { useRouter } from "next/navigation";
+import SuitesTab from "@/components/SuitesTab";
+import { useRepoId } from "@/hooks/useRepoId";
 
 export default function SuitesPageClient() {
-  const router = useRouter()
-  const [repoPath] = useRepoPath()
+  const router = useRouter();
+  const [repoId] = useRepoId();
 
   return (
     <SuitesTab
-      repoPath={repoPath}
+      repoId={repoId}
       onRunSuite={(slug) => router.push(`/runs?suite=${encodeURIComponent(slug)}`)}
     />
-  )
+  );
 }

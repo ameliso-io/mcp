@@ -65,7 +65,11 @@ button:disabled {
 }
 
 body {
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
   background-color: var(--color-page-bg);
   color: var(--color-body);
   -webkit-font-smoothing: antialiased;
@@ -83,5 +87,7 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -785,3 +785,157 @@ pub async fn get_coverage_report(pool: &PgPool, repo_id: &str) -> RResult<(Vec<C
 
     Ok((entries, run_count))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -----------------------------------------------------------------------
+    // validate_slug_path
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn slug_path_valid_single_segment() {
+        assert!(validate_slug_path("auth", "case").is_ok());
+    }
+
+    #[test]
+    fn slug_path_valid_multi_segment() {
+        assert!(validate_slug_path("auth/login", "case").is_ok());
+    }
+
+    #[test]
+    fn slug_path_valid_with_hyphen_digit_underscore() {
+        assert!(validate_slug_path("auth/login-flow_2", "case").is_ok());
+    }
+
+    #[test]
+    fn slug_path_empty_returns_invalid_arg() {
+        let err = validate_slug_path("", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("case path is empty"));
+    }
+
+    #[test]
+    fn slug_path_dot_dot_returns_invalid_arg() {
+        let err = validate_slug_path("auth/../etc", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[test]
+    fn slug_path_leading_slash_returns_invalid_arg() {
+        let err = validate_slug_path("/auth/login", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[test]
+    fn slug_path_leading_backslash_returns_invalid_arg() {
+        let err = validate_slug_path("\\auth", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[test]
+    fn slug_path_double_slash_empty_segment_returns_invalid_arg() {
+        let err = validate_slug_path("auth//login", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("empty segment"));
+    }
+
+    #[test]
+    fn slug_path_uppercase_returns_invalid_arg() {
+        let err = validate_slug_path("Auth/Login", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("a-z, 0-9"));
+    }
+
+    #[test]
+    fn slug_path_space_returns_invalid_arg() {
+        let err = validate_slug_path("auth/lo in", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    // -----------------------------------------------------------------------
+    // validate_priority
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn priority_low_is_valid() {
+        assert!(validate_priority("low").is_ok());
+    }
+
+    #[test]
+    fn priority_medium_is_valid() {
+        assert!(validate_priority("medium").is_ok());
+    }
+
+    #[test]
+    fn priority_high_is_valid() {
+        assert!(validate_priority("high").is_ok());
+    }
+
+    #[test]
+    fn priority_invalid_returns_invalid_arg() {
+        let err = validate_priority("critical").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("critical"));
+    }
+
+    #[test]
+    fn priority_empty_returns_invalid_arg() {
+        assert!(matches!(
+            validate_priority("").unwrap_err(),
+            RepoError::InvalidArg(_)
+        ));
+    }
+
+    #[test]
+    fn priority_uppercase_returns_invalid_arg() {
+        assert!(matches!(
+            validate_priority("High").unwrap_err(),
+            RepoError::InvalidArg(_)
+        ));
+    }
+
+    // -----------------------------------------------------------------------
+    // RepoError display
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn error_not_found_display() {
+        assert_eq!(
+            RepoError::NotFound("case not found: x".to_owned()).to_string(),
+            "not found: case not found: x"
+        );
+    }
+
+    #[test]
+    fn error_already_exists_display() {
+        assert_eq!(
+            RepoError::AlreadyExists("case already exists: x".to_owned()).to_string(),
+            "already exists: case already exists: x"
+        );
+    }
+
+    #[test]
+    fn error_closed_run_display() {
+        assert_eq!(
+            RepoError::ClosedRun("run x is closed".to_owned()).to_string(),
+            "closed run: run x is closed"
+        );
+    }
+
+    #[test]
+    fn error_invalid_arg_display() {
+        assert_eq!(
+            RepoError::InvalidArg("bad input".to_owned()).to_string(),
+            "invalid argument: bad input"
+        );
+    }
+
+    #[test]
+    fn error_other_wraps_anyhow() {
+        let inner = anyhow::anyhow!("something broke");
+        let err = RepoError::Other(inner);
+        assert!(err.to_string().contains("something broke"));
+    }
+}
