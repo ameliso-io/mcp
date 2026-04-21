@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Suite, Case } from "../gen/ameliso/v1/types_pb";
@@ -26,6 +26,8 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   const [newDesc, setNewDesc] = useState("");
   const [newCases, setNewCases] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const lastFocusRef = useRef<HTMLElement | null>(null);
 
   // Edit suite state
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
@@ -54,6 +56,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }
 
   function startEdit(suite: Suite) {
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingSlug(suite.slug);
     setEditName(suite.name);
     setEditDesc(suite.description);
@@ -153,7 +156,13 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
     <div>
       <div className={styles.header}>
         <h2 className={styles.title}>Suites</h2>
-        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
+        <button
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
+          }}
+          className={styles.btn}
+        >
           {showCreate ? "Cancel" : "+ New Suite"}
         </button>
       </div>
@@ -167,6 +176,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
               if (e.key === "Escape") {
                 e.preventDefault();
                 setShowCreate(false);
+                lastFocusRef.current?.focus();
               }
             }}
             className={styles.formGrid}
@@ -261,6 +271,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     if (e.key === "Escape") {
                       e.preventDefault();
                       setEditingSlug(null);
+                      lastFocusRef.current?.focus();
                     }
                   }}
                   className={styles.formGridSm}
@@ -303,7 +314,10 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditingSlug(null)}
+                      onClick={() => {
+                        setEditingSlug(null);
+                        lastFocusRef.current?.focus();
+                      }}
                       className={styles.btnCancelSm}
                     >
                       Cancel

@@ -52,6 +52,7 @@ export default function CasesTab({ repoId }: Props) {
   const [sortBy, setSortBy] = useState<"path" | "priority">("priority");
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
@@ -102,6 +103,7 @@ export default function CasesTab({ repoId }: Props) {
   }
 
   async function startEdit(c: Case) {
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingPath(c.path);
     setEditTitle(c.title);
     setEditDesc(c.description);
@@ -229,7 +231,13 @@ export default function CasesTab({ repoId }: Props) {
     <div>
       <div className={styles.header}>
         <h2 className={styles.title}>Cases</h2>
-        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
+        <button
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
+          }}
+          className={styles.btn}
+        >
           {showCreate ? "Cancel" : "+ New Case"}
         </button>
       </div>
@@ -243,6 +251,7 @@ export default function CasesTab({ repoId }: Props) {
               if (e.key === "Escape") {
                 e.preventDefault();
                 setShowCreate(false);
+                lastFocusRef.current?.focus();
               }
             }}
             className={styles.formGrid}
@@ -426,6 +435,7 @@ export default function CasesTab({ repoId }: Props) {
                       if (e.key === "Escape") {
                         e.preventDefault();
                         setEditingPath(null);
+                        lastFocusRef.current?.focus();
                       }
                     }}
                     className={styles.formGridSm}
@@ -493,7 +503,10 @@ export default function CasesTab({ repoId }: Props) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingPath(null)}
+                        onClick={() => {
+                          setEditingPath(null);
+                          lastFocusRef.current?.focus();
+                        }}
                         className={styles.btnCancelSm}
                       >
                         Cancel

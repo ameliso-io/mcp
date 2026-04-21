@@ -76,6 +76,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   const [caseBodyLoading, setCaseBodyLoading] = useState(false);
   const [bulkPassing, setBulkPassing] = useState(false);
 
+  const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
@@ -219,6 +220,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setCaseBody(null);
       return;
     }
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setRecordingCase(casePath);
     setCaseBody(null);
     setCaseBodyLoading(true);
@@ -319,7 +321,13 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
             ))}
           </div>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
+        <button
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
+          }}
+          className={styles.btn}
+        >
           {showCreate ? "Cancel" : "+ New Run"}
         </button>
       </div>
@@ -333,6 +341,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
               if (e.key === "Escape") {
                 e.preventDefault();
                 setShowCreate(false);
+                lastFocusRef.current?.focus();
               }
             }}
             className={styles.formGrid}
@@ -652,6 +661,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                     e.preventDefault();
                                     setRecordingCase(null);
                                     setCaseBody(null);
+                                    lastFocusRef.current?.focus();
                                   }
                                 }}
                                 className={styles.recordForm}
