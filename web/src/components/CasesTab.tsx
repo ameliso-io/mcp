@@ -228,6 +228,7 @@ export default function CasesTab({ repoId }: Props) {
         body: editBody,
       });
       setEditingPath(null);
+      lastFocusRef.current?.focus();
       announceAction("Case updated");
       load();
     } catch (e) {

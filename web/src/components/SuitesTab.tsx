@@ -145,6 +145,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
           : [],
       });
       setEditingSlug(null);
+      lastFocusRef.current?.focus();
       announce("Suite updated");
       load();
     } catch (e) {
