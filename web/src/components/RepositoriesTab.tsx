@@ -230,80 +230,84 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       )}
 
       <div aria-busy={loading}>
-      {filteredRepos.map((repo) => {
-        const isActive = activeRepoId === repo.id;
-        return (
-          <div key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
-            <div className={styles.repoRow}>
-              <div className={styles.repoInfo}>
-                <div className={styles.repoNameRow}>
-                  <span className={styles.repoName}>{repo.fullName}</span>
-                  {isActive && <span className={styles.badgeActive}>Active</span>}
+        {filteredRepos.map((repo) => {
+          const isActive = activeRepoId === repo.id;
+          return (
+            <div key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
+              <div className={styles.repoRow}>
+                <div className={styles.repoInfo}>
+                  <div className={styles.repoNameRow}>
+                    <span className={styles.repoName}>{repo.fullName}</span>
+                    {isActive && <span className={styles.badgeActive}>Active</span>}
+                  </div>
+                  <div className={styles.repoUrl}>
+                    <a
+                      href={repo.htmlUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.repoUrlLink}
+                    >
+                      {repo.htmlUrl}
+                    </a>
+                  </div>
                 </div>
-                <div className={styles.repoUrl}>
-                  <a
-                    href={repo.htmlUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.repoUrlLink}
+                <div className={styles.repoActions}>
+                  {!isActive ? (
+                    <button className={styles.btnPrimary} onClick={() => onRepoSelect(repo.id)}>
+                      Use
+                    </button>
+                  ) : (
+                    <button className={styles.btnOutline} onClick={() => onRepoSelect("")}>
+                      Deselect
+                    </button>
+                  )}
+                  <button
+                    className={styles.btnSecondary}
+                    disabled={syncing === repo.id}
+                    onClick={() => handleSync(repo.id)}
                   >
-                    {repo.htmlUrl}
-                  </a>
-                </div>
-              </div>
-              <div className={styles.repoActions}>
-                {!isActive ? (
-                  <button className={styles.btnPrimary} onClick={() => onRepoSelect(repo.id)}>
-                    Use
+                    {syncing === repo.id ? "Syncing…" : "Sync"}
                   </button>
-                ) : (
-                  <button className={styles.btnOutline} onClick={() => onRepoSelect("")}>
-                    Deselect
-                  </button>
-                )}
-                <button
-                  className={styles.btnSecondary}
-                  disabled={syncing === repo.id}
-                  onClick={() => handleSync(repo.id)}
-                >
-                  {syncing === repo.id ? "Syncing…" : "Sync"}
-                </button>
-                {confirmingRemove === repo.id ? (
-                  <>
-                    <span className={styles.confirmText}>Remove?</span>
+                  {confirmingRemove === repo.id ? (
+                    <>
+                      <span className={styles.confirmText}>Remove?</span>
+                      <button
+                        type="button"
+                        className={styles.btnDanger}
+                        onClick={() => handleRemove(repo.id)}
+                        aria-label={`Confirm remove ${repo.fullName}`}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnOutline}
+                        onClick={() => setConfirmingRemove(null)}
+                        aria-label="Cancel remove"
+                      >
+                        No
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
                       className={styles.btnDanger}
-                      onClick={() => handleRemove(repo.id)}
-                      aria-label={`Confirm remove ${repo.fullName}`}
+                      onClick={() => setConfirmingRemove(repo.id)}
+                      aria-label={`Remove ${repo.fullName}`}
                     >
-                      Yes
+                      Remove
                     </button>
-                    <button
-                      type="button"
-                      className={styles.btnOutline}
-                      onClick={() => setConfirmingRemove(null)}
-                      aria-label="Cancel remove"
-                    >
-                      No
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.btnDanger}
-                    onClick={() => setConfirmingRemove(repo.id)}
-                    aria-label={`Remove ${repo.fullName}`}
-                  >
-                    Remove
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
+              {repo.addedAt && (
+                <div className={styles.label}>
+                  Added <time dateTime={repo.addedAt}>{repo.addedAt}</time>
+                </div>
+              )}
             </div>
-            {repo.addedAt && <div className={styles.label}>Added {repo.addedAt}</div>}
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
     </div>
   );

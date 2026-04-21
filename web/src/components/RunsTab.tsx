@@ -455,7 +455,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                 {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
                 {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                 {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
-                <span className={styles.runDate}>{run.date}</span>
+                <time className={styles.runDate} dateTime={run.date}>{run.date}</time>
                 {confirmingDeleteRun === run.id ? (
                   <>
                     <span className={styles.confirmText}>Delete?</span>

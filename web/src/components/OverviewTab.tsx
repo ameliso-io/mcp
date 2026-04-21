@@ -186,7 +186,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     <span className={styles.runId}>{run.id}</span>
                     {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
                     {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                    <span className={styles.runDate}>{run.date}</span>
+                    <time className={styles.runDate} dateTime={run.date}>{run.date}</time>
                   </div>
                 ))}
               </div>
@@ -210,7 +210,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     <span className={styles.coveragePath}>{entry.case?.path}</span>
                     <span className={styles.coverageTitle}>{entry.case?.title}</span>
                     {entry.lastRunDate && (
-                      <span className={styles.coverageDate}>{entry.lastRunDate}</span>
+                      <time className={styles.coverageDate} dateTime={entry.lastRunDate}>{entry.lastRunDate}</time>
                     )}
                     <span
                       className={styles.coverageStatus}
