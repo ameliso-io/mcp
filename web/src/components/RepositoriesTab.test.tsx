@@ -264,9 +264,7 @@ describe("RepositoriesTab", () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(
-      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-55" />
-    );
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-55" />);
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-55" })
     );

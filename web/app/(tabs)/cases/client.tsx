@@ -32,12 +32,7 @@ function CasesInner() {
   const initialSortBy: "path" | "priority" = rawSort === "path" ? "path" : "priority";
 
   const handleFiltersChange = useCallback(
-    (filters: {
-      search: string;
-      priority: Priority;
-      tag: string;
-      sort: "path" | "priority";
-    }) => {
+    (filters: { search: string; priority: Priority; tag: string; sort: "path" | "priority" }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (filters.search) {
         params.set("q", filters.search);
