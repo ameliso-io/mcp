@@ -157,6 +157,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
               .map((c) => c.trim())
               .filter(Boolean)
           : [],
+        replaceCases: true,
       });
       setEditingSlug(null);
       load();

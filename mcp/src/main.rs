@@ -1201,6 +1201,7 @@ impl AmelisoMcp {
     )]
     async fn update_suite(&self, Parameters(req): Parameters<UpdateSuiteRequest>) -> String {
         let mut client = self.client();
+        let replace_cases = req.cases.is_some();
         let cases: Vec<String> = req
             .cases
             .as_deref()
@@ -1218,6 +1219,7 @@ impl AmelisoMcp {
                 name: req.name.unwrap_or_default(),
                 description: req.description.unwrap_or_default(),
                 cases,
+                replace_cases,
             })
             .await
         {

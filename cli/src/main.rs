@@ -907,6 +907,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
             description,
             cases,
         } => {
+            let replace_cases = cases.is_some();
             let case_list: Vec<String> = parse_tags(cases.as_deref().unwrap_or(""));
             c.update_suite(pb::UpdateSuiteRequest {
                 repo_id,
@@ -914,6 +915,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 name: name.unwrap_or_default(),
                 description: description.unwrap_or_default(),
                 cases: case_list,
+                replace_cases,
             })
             .await
             .map_err(grpc_err)?;

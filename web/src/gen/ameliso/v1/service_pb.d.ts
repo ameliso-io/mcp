@@ -425,6 +425,13 @@ export declare type UpdateSuiteRequest = Message<"ameliso.v1.UpdateSuiteRequest"
    * @generated from field: repeated string cases = 5;
    */
   cases: string[];
+
+  /**
+   * When true, replace the case list with `cases` (even if empty). When false (default), `cases` is ignored.
+   *
+   * @generated from field: bool replace_cases = 6;
+   */
+  replaceCases: boolean;
 };
 
 /**

@@ -456,10 +456,10 @@ impl AmelisoService for AmelisoServer {
         } else {
             Some(Some(req.description.clone()))
         };
-        let cases = if req.cases.is_empty() {
-            None
-        } else {
+        let cases = if req.replace_cases || !req.cases.is_empty() {
             Some(req.cases)
+        } else {
+            None
         };
         let suite = repo::update_suite(
             &self.pool,
@@ -1133,6 +1133,21 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("slug is required"));
+    }
+
+    #[tokio::test]
+    async fn update_suite_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "".to_owned(),
+                slug: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
     }
 
     #[tokio::test]
