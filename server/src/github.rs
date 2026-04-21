@@ -397,6 +397,34 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
     }
 
     #[tokio::test]
+    async fn list_installation_repos_stops_when_total_count_reached() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        // 100 repos returned and total_count == 100: second condition true → stops without page 2
+        let page1: Vec<_> = (0..100)
+            .map(|i| fake_repo_json(&format!("repo-{i}")))
+            .collect();
+        Mock::given(method("GET"))
+            .and(path("/installation/repositories"))
+            .and(query_param("page", "1"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "total_count": 100,
+                "repositories": page1
+            })))
+            .mount(&server)
+            .await;
+
+        let result = list_installation_repos("tok").await;
+        assert_eq!(result.unwrap().len(), 100);
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
     async fn list_installation_repos_paginates() {
         let _g = ENV_LOCK.lock().unwrap();
         let server = MockServer::start().await;
