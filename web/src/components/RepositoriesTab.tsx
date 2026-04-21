@@ -42,7 +42,6 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath, installa
   useEffect(() => {
     if (!installationId) return
     onCallbackHandled?.()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
     client.handleGitHubCallback({ installationId })
@@ -57,7 +56,6 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath, installa
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [installationId])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleSync(id: string) {

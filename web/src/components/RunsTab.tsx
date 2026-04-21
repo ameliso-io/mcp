@@ -113,7 +113,6 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     }
   }, [repoPath, statusFilter])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleCreate(e: React.FormEvent) {

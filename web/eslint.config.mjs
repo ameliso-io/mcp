@@ -9,6 +9,12 @@ const config = [
   { ignores: ['src/gen/**'] },
   ...coreWebVitals,
   ...typescript,
+  {
+    rules: {
+      // False positive: useEffect(() => { load() }, [load]) is idiomatic
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ]
 
 export default config
