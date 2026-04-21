@@ -1044,6 +1044,9 @@ mod tests {
     use super::*;
     use crate::repo::RepoError;
     use anyhow::anyhow;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     /// Returns a lazy pool that never actually connects.
     /// Safe to use in tests where validation fires before any DB access.
@@ -1055,6 +1058,48 @@ mod tests {
 
     fn server() -> AmelisoServer {
         AmelisoServer { pool: lazy_pool() }
+    }
+
+    // ── get_git_hub_install_url ───────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn get_git_hub_install_url_returns_not_configured_when_env_absent() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+        }
+        let s = server();
+        let res = s
+            .get_git_hub_install_url(Request::new(pb::GetGitHubInstallUrlRequest {}))
+            .await
+            .unwrap()
+            .into_inner();
+        assert!(!res.configured);
+        assert_eq!(res.url, "");
+    }
+
+    #[tokio::test]
+    async fn get_git_hub_install_url_returns_configured_when_env_present() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::set_var("GITHUB_APP_ID", "test-app");
+            std::env::set_var("GITHUB_APP_PRIVATE_KEY", "test-key");
+            std::env::remove_var("GITHUB_APP_INSTALLATION_URL");
+            std::env::remove_var("GITHUB_APP_NAME");
+        }
+        let s = server();
+        let res = s
+            .get_git_hub_install_url(Request::new(pb::GetGitHubInstallUrlRequest {}))
+            .await
+            .unwrap()
+            .into_inner();
+        assert!(res.configured);
+        assert!(res.url.contains("ameliso"));
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+        }
     }
 
     // ── record_result handler validation ─────────────────────────────────────
