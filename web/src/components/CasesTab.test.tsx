@@ -333,4 +333,106 @@ describe('CasesTab', () => {
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => screen.getByText('Save'))
   })
+
+  it('dismisses error when X button clicked', async () => {
+    vi.mocked(client.listCases).mockRejectedValue(new Error('server down'))
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('server down')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('×'))
+    expect(screen.queryByText('server down')).not.toBeInTheDocument()
+  })
+
+  it('fills description and body textarea in create form', async () => {
+    vi.mocked(client.createCase).mockResolvedValue({ case: mockCase, filePath: 'cases/auth/new.md' } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Case'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'auth/new')
+    await userEvent.type(inputs[1], 'New Title')
+    await userEvent.type(inputs[2], 'Some description')
+    const textarea = screen.getByPlaceholderText(/## Steps/)
+    await userEvent.type(textarea, '## Steps')
+    await userEvent.click(screen.getByText('Create'))
+    await waitFor(() => expect(client.createCase).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'Some description' })
+    ))
+  })
+
+  it('changes priority select in create form', async () => {
+    vi.mocked(client.createCase).mockResolvedValue({ case: mockCase, filePath: 'cases/auth/new.md' } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Case'))
+    const prioritySelect = screen.getByDisplayValue('Medium')
+    await userEvent.selectOptions(prioritySelect, 'High')
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'auth/new')
+    await userEvent.type(inputs[1], 'New Title')
+    await userEvent.click(screen.getByText('Create'))
+    await waitFor(() => expect(client.createCase).toHaveBeenCalled())
+  })
+
+  it('changes description in edit form', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const descInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'Verify login flow') as HTMLInputElement
+    await userEvent.clear(descInput)
+    await userEvent.type(descInput, 'Updated description')
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'Updated description' })
+    ))
+  })
+
+  it('changes priority select in edit form', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const prioritySelect = screen.getByDisplayValue('High')
+    await userEvent.selectOptions(prioritySelect, 'Low')
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ repoPath: '/repo', casePath: 'auth/login' })
+    ))
+  })
+
+  it('changes body textarea in edit form', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const bodyTextarea = screen.getAllByRole('textbox').find(i => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement
+    await userEvent.clear(bodyTextarea)
+    await userEvent.type(bodyTextarea, '## New Steps')
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ body: '## New Steps' })
+    ))
+  })
+
+  it('changes title in edit form', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const titleInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'User Login') as HTMLInputElement
+    await userEvent.clear(titleInput)
+    await userEvent.type(titleInput, 'Updated Login')
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Updated Login' })
+    ))
+  })
+
+  it('cancels edit form when Cancel button clicked', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    await userEvent.click(screen.getByText('Cancel'))
+    expect(screen.queryByText('Save')).not.toBeInTheDocument()
+    expect(screen.getByText('Edit')).toBeInTheDocument()
+  })
 })

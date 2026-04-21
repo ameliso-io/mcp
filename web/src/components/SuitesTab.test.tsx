@@ -252,4 +252,49 @@ describe('SuitesTab', () => {
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('auth/login')).toBeInTheDocument())
   })
+
+  it('dismisses error banner when X button clicked', async () => {
+    vi.mocked(client.listSuites).mockRejectedValue(new Error('load failed'))
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('load failed')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('×'))
+    expect(screen.queryByText('load failed')).not.toBeInTheDocument()
+  })
+
+  it('fills description in create form', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Suite'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'e2e')
+    await userEvent.type(inputs[1], 'E2E Tests')
+    await userEvent.type(inputs[2], 'End to end regression suite')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Suite' }))
+    await waitFor(() => expect(client.createSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'End to end regression suite' })
+    ))
+  })
+
+  it('changes description in edit form', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const descInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'Critical path checks') as HTMLInputElement
+    await userEvent.clear(descInput)
+    await userEvent.type(descInput, 'Updated description')
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'Updated description' })
+    ))
+  })
+
+  it('cancels edit form when Cancel button clicked', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    await userEvent.click(screen.getByText('Cancel'))
+    expect(screen.queryByText('Save')).not.toBeInTheDocument()
+    expect(screen.getByText('Edit')).toBeInTheDocument()
+  })
 })

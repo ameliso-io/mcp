@@ -497,4 +497,43 @@ describe('RunsTab', () => {
     spy.mockRestore()
   })
 
+  it('dismisses error when X button clicked', async () => {
+    vi.mocked(client.listRuns).mockRejectedValue(new Error('load error'))
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('load error')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('×'))
+    expect(screen.queryByText('load error')).not.toBeInTheDocument()
+  })
+
+  it('fills tester, environment, and suite fields in create form', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Run'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'smoke-2')
+    await userEvent.type(inputs[1], 'bob')
+    await userEvent.type(inputs[2], 'prod')
+    await userEvent.type(inputs[3], 'regression')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Run' }))
+    await waitFor(() => expect(client.createRun).toHaveBeenCalledWith(
+      expect.objectContaining({ tester: 'bob', environment: 'prod', suite: 'regression' })
+    ))
+  })
+
+  it('types in notes field when recording result', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('Record'))
+    await waitFor(() => screen.getByPlaceholderText('Optional notes…'))
+    const notesInput = screen.getByPlaceholderText('Optional notes…')
+    await userEvent.type(notesInput, 'Test passed successfully')
+    await userEvent.click(screen.getByText('Save Result'))
+    await waitFor(() => expect(client.recordResult).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: 'Test passed successfully' })
+    ))
+  })
+
 })
