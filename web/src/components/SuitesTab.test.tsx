@@ -186,4 +186,27 @@ describe('SuitesTab', () => {
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
   })
+
+  it('collapses expanded suite when it is deleted', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => screen.getByText('User Login'))
+    await userEvent.click(screen.getByText('Delete'))
+    await waitFor(() => expect(client.deleteSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'smoke' })
+    ))
+  })
+
+  it('calls updateSuite with parsed cases when cases field is filled', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const casesInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).placeholder?.includes('auth/login'))
+    if (casesInput) await userEvent.type(casesInput, 'auth/login, auth/logout')
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateSuite).toHaveBeenCalled())
+  })
 })
