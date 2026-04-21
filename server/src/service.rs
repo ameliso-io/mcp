@@ -289,6 +289,9 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
+        if req.case_path.is_empty() {
+            return Err(invalid("case_path is required"));
+        }
         let priority = priority_from_i32(req.priority);
         let title = if req.title.is_empty() {
             None
@@ -370,6 +373,9 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
+        if req.slug.is_empty() {
+            return Err(invalid("slug is required"));
+        }
         let suite = repo::get_suite(&self.pool, &req.repo_id, &req.slug)
             .await
             .map_err(repo_err)?;
@@ -417,6 +423,9 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
+        }
+        if req.slug.is_empty() {
+            return Err(invalid("slug is required"));
         }
         let name = if req.name.is_empty() {
             None
@@ -498,6 +507,9 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
+        }
         let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
@@ -552,6 +564,12 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
+        }
+        if req.case_path.is_empty() {
+            return Err(invalid("case_path is required"));
+        }
         let status = result_status_from_i32(req.status);
         if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
             return Err(invalid(
@@ -580,6 +598,9 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
+        }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
         }
         let status = run_status_from_i32(req.status);
         if !matches!(status, "completed" | "aborted") {
@@ -618,6 +639,9 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
+        }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
         }
         let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
             .await
