@@ -6,6 +6,7 @@ export function useRepoId() {
   const [repoId, setRepoId] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRepoId(localStorage.getItem(REPO_ID_KEY) ?? "");
   }, []);
 

@@ -491,6 +491,24 @@ describe("RunsTab", () => {
     expect(client.recordResult).not.toHaveBeenCalled();
   });
 
+  it("uses plural in bulk pass confirm when multiple cases pending", async () => {
+    const mockCase2 = { ...mockCase, path: "auth/signup", title: "User Signup" } as unknown as typeof mockCase;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase, mockCase2],
+      totalInScope: 2,
+    } as never);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("All Passed (2)"));
+    await userEvent.click(screen.getByText("All Passed (2)"));
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Mark all 2 pending cases as Passed?"
+    );
+  });
+
   it("does not delete run when confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.spyOn(window, "confirm").mockReturnValue(false);

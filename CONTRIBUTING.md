@@ -17,8 +17,8 @@ cargo build       # build all crates
 ```
 
 Git hooks activate automatically after `pnpm install`:
-- `pre-commit`: `cargo fmt` + `cargo clippy`
-- `pre-push`: `cargo build --release` + `cargo test`
+- `pre-commit`: `make pre-commit` — fmt (Rust + web), clippy, buf lint, web ESLint, cspell
+- `pre-push`: `make pre-push` — fmt-check, build, test, coverage check
 
 ## Project structure
 
@@ -35,8 +35,9 @@ Git hooks activate automatically after `pnpm install`:
 - **Language**: Rust for all backend logic. TypeScript only for UI (`web/`).
 - **Service communication**: gRPC only. No REST or WebSocket between services.
 - **Package manager**: `pnpm` only. Never `npm install` or `yarn`.
-- **No logic duplication**: repo logic lives in `server/src/repo.rs` and is
-  imported by both `mcp/` and `cli/` via the `ameliso-server` lib crate.
+- **No logic duplication**: repo logic lives in `server/src/repo.rs`. The `mcp/`
+  and `cli/` crates currently call the gRPC server directly (they are not in the
+  Cargo workspace while the migration from file-based to gRPC-backed is in progress).
 - **No panics**: use `anyhow::Result` and `?`. No `unwrap()` or `expect()` in
   production code paths.
 

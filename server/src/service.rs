@@ -4,6 +4,36 @@ use tonic::{Request, Response, Status};
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
 use crate::repo::{self, RepoError};
 
+/// Returns true when `text` contains `case_path` as whole path segments.
+/// Prevents `auth/log` from matching inside `auth/login`.
+fn text_references_case(text: &str, case_path: &str) -> bool {
+    // After the path, only these chars indicate a clean boundary (not mid-segment)
+    let ends_cleanly = |s: &str| {
+        s.is_empty()
+            || s.starts_with('/')
+            || s.starts_with('.')
+            || s.starts_with(' ')
+            || s.starts_with('\t')
+            || s.starts_with('\n')
+            || s.starts_with('"')
+            || s.starts_with('\'')
+            || s.starts_with(')')
+    };
+    if text.starts_with(case_path) && ends_cleanly(&text[case_path.len()..]) {
+        return true;
+    }
+    // Match after any path separator or whitespace character
+    for prefix in ['/', ' ', '\t', '\n', '"', '\'', '('] {
+        let needle = format!("{prefix}{case_path}");
+        if let Some(idx) = text.find(&needle) {
+            if ends_cleanly(&text[idx + needle.len()..]) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn repo_err(e: RepoError) -> Status {
     match e {
         RepoError::NotFound(msg) => Status::not_found(msg),
@@ -146,6 +176,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListCasesRequest>,
     ) -> Result<Response<pb::ListCasesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let mut cases = repo::list_cases(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
@@ -196,6 +229,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCaseRequest>,
     ) -> Result<Response<pb::GetCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let case = repo::get_case(&self.pool, &req.repo_id, &req.case_path)
             .await
             .map_err(repo_err)?;
@@ -211,6 +247,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateCaseRequest>,
     ) -> Result<Response<pb::CreateCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
@@ -260,6 +299,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::UpdateCaseRequest>,
     ) -> Result<Response<pb::UpdateCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let priority = priority_from_i32(req.priority);
         let title = if req.title.is_empty() {
             None
@@ -316,6 +358,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::DeleteCaseRequest>,
     ) -> Result<Response<pb::DeleteCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
@@ -347,6 +392,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListSuitesRequest>,
     ) -> Result<Response<pb::ListSuitesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let suites = repo::list_suites(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
@@ -360,6 +408,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetSuiteRequest>,
     ) -> Result<Response<pb::GetSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let suite = repo::get_suite(&self.pool, &req.repo_id, &req.slug)
             .await
             .map_err(repo_err)?;
@@ -373,6 +424,12 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateSuiteRequest>,
     ) -> Result<Response<pb::CreateSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.name.is_empty() {
+            return Err(invalid("name is required"));
+        }
         let desc = if req.description.is_empty() {
             None
         } else {
@@ -399,6 +456,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::UpdateSuiteRequest>,
     ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let name = if req.name.is_empty() {
             None
         } else {
@@ -434,6 +494,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::DeleteSuiteRequest>,
     ) -> Result<Response<pb::DeleteSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
@@ -450,6 +513,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListRunsRequest>,
     ) -> Result<Response<pb::ListRunsResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status_filter = req.status;
         let runs = repo::list_runs(&self.pool, &req.repo_id)
             .await
@@ -470,6 +536,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetRunRequest>,
     ) -> Result<Response<pb::GetRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
@@ -485,6 +554,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateRunRequest>,
     ) -> Result<Response<pb::CreateRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
@@ -518,6 +590,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::RecordResultRequest>,
     ) -> Result<Response<pb::RecordResultResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status = result_status_from_i32(req.status);
         if status == "unspecified" {
             return Err(invalid("status is required"));
@@ -542,6 +617,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::FinalizeRunRequest>,
     ) -> Result<Response<pb::FinalizeRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status = run_status_from_i32(req.status);
         if status == "unspecified" {
             return Err(invalid("status must be completed or aborted"));
@@ -559,6 +637,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::DeleteRunRequest>,
     ) -> Result<Response<pb::DeleteRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
@@ -574,6 +655,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetPendingCasesRequest>,
     ) -> Result<Response<pb::GetPendingCasesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
@@ -588,6 +672,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCoverageReportRequest>,
     ) -> Result<Response<pb::GetCoverageReportResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status_filter = req.status_filter;
         let (entries, run_count) = repo::get_coverage_report(&self.pool, &req.repo_id)
             .await
@@ -631,6 +718,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetAffectedCasesRequest>,
     ) -> Result<Response<pb::GetAffectedCasesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
 
         let cases = repo::list_cases(&self.pool, &req.repo_id)
             .await
@@ -683,7 +773,7 @@ impl AmelisoService for AmelisoServer {
 
         let all_text = compare.commit_messages.join("\n");
         for path in &known_paths {
-            if all_text.contains(path.as_str()) {
+            if text_references_case(&all_text, path) {
                 reasons.push(format!("commit messages reference: {}", path));
                 if !affected.contains(path) {
                     affected.push(path.clone());
@@ -693,7 +783,7 @@ impl AmelisoService for AmelisoServer {
 
         for file in &compare.changed_files {
             for path in &known_paths {
-                if file.contains(path.as_str()) {
+                if text_references_case(file, path) {
                     reasons.push(format!("file {} references {}", file, path));
                     if !affected.contains(path) {
                         affected.push(path.clone());
@@ -895,6 +985,15 @@ mod tests {
     use super::*;
     use crate::repo::RepoError;
     use anyhow::anyhow;
+
+    // ── invalid helper ────────────────────────────────────────────────────────
+
+    #[test]
+    fn invalid_helper_returns_invalid_argument_status() {
+        let s = invalid("repo_id is required");
+        assert_eq!(s.code(), tonic::Code::InvalidArgument);
+        assert_eq!(s.message(), "repo_id is required");
+    }
 
     // ── repo_err mapping ──────────────────────────────────────────────────────
 
@@ -1199,5 +1298,50 @@ mod tests {
         assert_eq!(pb.html_url, "https://github.com/owner/repo");
         assert_eq!(pb.installation_id, "inst-1");
         assert_eq!(pb.added_at, "2026-01-01");
+    }
+
+    // ── text_references_case ──────────────────────────────────────────────────
+
+    #[test]
+    fn text_references_case_exact_match() {
+        assert!(text_references_case("cases/auth/login.md", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_false_positive_suffix() {
+        assert!(!text_references_case(
+            "cases/auth/login-mobile.md",
+            "auth/login"
+        ));
+    }
+
+    #[test]
+    fn text_references_case_commit_message_match() {
+        assert!(text_references_case("fix auth/login flow", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_false_positive_in_commit() {
+        assert!(!text_references_case("fix auth/login flow", "auth/log"));
+    }
+
+    #[test]
+    fn text_references_case_start_of_string() {
+        assert!(text_references_case("auth/login.ts", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_subdirectory() {
+        assert!(text_references_case("src/auth/login/form.ts", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_match() {
+        assert!(!text_references_case("src/auth/signup.md", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_trailing_slash_in_path() {
+        assert!(text_references_case("cases/auth/login/step1.md", "auth/login"));
     }
 }

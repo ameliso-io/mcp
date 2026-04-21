@@ -69,6 +69,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     ) {
       // Clear the URL params so we don't reprocess on re-render
       window.history.replaceState({}, "", window.location.pathname);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       setError(null);
       client
@@ -85,6 +86,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 

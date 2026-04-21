@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "fmt": "prettier --write .",
-    "fmt:check": "prettier --check ."
+    "fmt:check": "prettier --check .",
+    "lint": "npx eslint src/"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
