@@ -27,7 +27,7 @@ runs/{YYYY-MM-DD}-{slug}/
 ```
 server/          # gRPC server (Rust + tonic); exposes AmelisoService (26 RPCs)
 server/proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
-mcp/             # MCP server (Rust + rmcp); stdio transport; 22 tools
+mcp/             # MCP server (Rust + rmcp); stdio transport; 21 tools
 cli/             # CLI (Rust + clap); calls repo logic directly
 web/             # React browser client (Vite + TypeScript); talks gRPC-Web to server
 ```

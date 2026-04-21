@@ -86,7 +86,7 @@ Add to your Claude Code / MCP host configuration (`.mcp.json` is pre-configured 
 }
 ```
 
-Available tools (22): `repo_status`, `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `bulk_record_results`, `finalize_run`, `delete_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`, `get_repo_status`.
+Available tools (21): `repo_status`, `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `bulk_record_results`, `finalize_run`, `delete_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
 
 See [AGENTS.md](AGENTS.md) for full agent usage guide.
 

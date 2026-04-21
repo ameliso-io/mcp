@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { AffectedCase, CoverageEntry } from '../gen/ameliso/v1/types_pb'
@@ -92,12 +92,23 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     }
   }, [])
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     if (repoPath) {
       setInputPath(repoPath)
       load(repoPath)
     }
   }, [repoPath, load])
+
+  // Auto-refresh every 30s while there are active runs
+  useEffect(() => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    if (repoPath && activeRuns.length > 0) {
+      pollRef.current = setInterval(() => load(repoPath), 30_000)
+    }
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [repoPath, activeRuns.length, load])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -201,6 +212,9 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <p style={{ ...label, color: '#3b82f6', margin: 0 }}>
                   Active Runs ({activeRuns.length})
+                  <span style={{ marginLeft: '8px', fontSize: '10px', fontWeight: '400', color: '#93c5fd' }}>
+                    auto-refresh 30s
+                  </span>
                 </p>
                 {onGoToRuns && (
                   <button
