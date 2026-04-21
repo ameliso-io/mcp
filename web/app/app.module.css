@@ -14,7 +14,7 @@
 .heading {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .message {
@@ -24,7 +24,7 @@
 
 .errorMessage {
   font-size: 14px;
-  color: #dc2626;
+  color: var(--color-danger-hover);
 }
 
 .btn {
