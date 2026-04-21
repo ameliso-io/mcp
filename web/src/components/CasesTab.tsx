@@ -61,6 +61,7 @@ export default function CasesTab({ repoPath }: Props) {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState<Priority>(Priority.UNSPECIFIED)
   const [tagFilter, setTagFilter] = useState('')
+  const [sortBy, setSortBy] = useState<'path' | 'priority'>('priority')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Create case form
@@ -357,6 +358,14 @@ export default function CasesTab({ repoPath }: Props) {
             {allTags.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as 'path' | 'priority')}
+          style={{ ...inputStyle, width: 'auto' }}
+        >
+          <option value="priority">Sort: Priority</option>
+          <option value="path">Sort: Path</option>
+        </select>
         {!loading && cases.length > 0 && (
           <span style={{ fontSize: '13px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
             {cases.length} case{cases.length !== 1 ? 's' : ''}
@@ -382,7 +391,14 @@ export default function CasesTab({ repoPath }: Props) {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {cases.map(c => (
+        {[...cases].sort((a, b) => {
+          if (sortBy === 'priority') {
+            const ord = { high: 0, medium: 1, low: 2 } as Record<string, number>
+            const diff = (ord[a.priority] ?? 3) - (ord[b.priority] ?? 3)
+            return diff !== 0 ? diff : a.path.localeCompare(b.path)
+          }
+          return a.path.localeCompare(b.path)
+        }).map(c => (
           <div key={c.path}>
             <div
               style={{
