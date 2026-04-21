@@ -40,24 +40,24 @@ Available tools:
 
 | Tool | Description |
 |------|-------------|
-| `list_cases` | List cases; filter by tags or query |
+| `list_cases` | List cases; filter by tags, priority, or full-text query |
 | `get_case` | Get full case details including steps and body |
-| `create_case` | Create a new case file; optionally supply body |
+| `create_case` | Create a new case file; priority must be low\|medium\|high |
 | `update_case` | Update case metadata and optionally replace body |
 | `delete_case` | Delete a case file |
-| `coverage_report` | Latest status per case across all runs |
-| `list_runs` | List test runs |
-| `get_run` | Get a run with all its results |
-| `create_run` | Start a new test run |
-| `record_result` | Record a case result (passed/failed/blocked/skipped) |
+| `coverage_report` | Latest status per case; filter by status |
+| `list_runs` | List test runs; filter by status; shows suite scope |
+| `get_run` | Get a run with pass/fail/blocked/skipped summary and results |
+| `create_run` | Start a new test run; returns run ID and scope size; suite must exist |
+| `record_result` | Record a case result; case must exist; rejects closed runs |
 | `finalize_run` | Mark a run completed or aborted |
 | `list_suites` | List all suites |
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
 | `update_suite` | Update a suite's name, description, or case list |
 | `delete_suite` | Delete a suite file |
-| `get_affected_cases` | Cases that may need re-running based on git changes |
-| `get_pending_cases` | Cases in a run's scope that have no result recorded yet |
+| `get_affected_cases` | Cases that may need re-running based on git changes; shows title/priority/tags |
+| `get_pending_cases` | Cases in a run's scope with no result yet; sorted high→medium→low priority |
 
 All tools accept `repo_path` — the absolute path to the controlled repository.
 
@@ -151,10 +151,13 @@ Notes go here (optional).
 ### When to create a test run
 - After executing one or more cases manually or in a controlled environment.
 - Never fabricate results — a run represents a real execution.
+- If using `--suite`, the suite must already exist (`create_run` validates this).
+- `create_run` immediately reports the scope size (number of cases to test).
 
 ### Recording results
 Use `record_result` (MCP) or `ameliso runs record` (CLI).
 Both reject writes to a `completed` or `aborted` run.
+Both reject results for case paths that don't exist (use exact paths from `get_pending_cases`).
 
 ### Tracking progress in an active run
 Use `get_pending_cases` (MCP) or `ameliso runs pending <run_id>` (CLI) to see
