@@ -13,7 +13,7 @@ const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
 interface Props {
   repoId: string;
-  initialSuite?: string;
+  initialSuite?: string | undefined;
   onInitialSuiteConsumed?: () => void;
   initialStatusFilter?: RunStatus;
   onStatusFilterChange?: (s: RunStatus) => void;

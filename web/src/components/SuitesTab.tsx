@@ -12,7 +12,7 @@ import { useAnnounce } from "@/hooks/useAnnounce";
 interface Props {
   repoId: string;
   basePath: string;
-  initialExpanded?: string;
+  initialExpanded?: string | undefined;
   onExpandedChange?: (slug: string | null) => void;
 }
 
