@@ -18,7 +18,10 @@
       "Bash(npx tsc *)",
       "Bash(centy-daemon *)",
       "Bash(npm show *)",
-      "Bash(cargo install *)"
+      "Bash(cargo install *)",
+      "WebSearch",
+      "Bash(cargo build *)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

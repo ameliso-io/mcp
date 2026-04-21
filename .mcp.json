@@ -2,7 +2,7 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp", "--isolate"]
+      "args": ["-y", "@playwright/mcp", "--isolated"]
     },
     "centy": {
       "args": [
