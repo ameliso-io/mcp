@@ -4,6 +4,8 @@
 // @ts-nocheck
 
 import {
+  BulkRecordResultsRequest,
+  BulkRecordResultsResponse,
   CreateCaseRequest,
   CreateCaseResponse,
   CreateRunRequest,
@@ -194,6 +196,15 @@ export const AmelisoService = {
       name: "RecordResult",
       I: RecordResultRequest,
       O: RecordResultResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
+     */
+    bulkRecordResults: {
+      name: "BulkRecordResults",
+      I: BulkRecordResultsRequest,
+      O: BulkRecordResultsResponse,
       kind: MethodKind.Unary,
     },
     /**

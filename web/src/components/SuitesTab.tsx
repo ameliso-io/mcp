@@ -170,6 +170,7 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
               .map((c) => c.trim())
               .filter(Boolean)
           : [],
+        replaceCases: true,
       });
       setEditingSlug(null);
       lastFocusRef.current?.focus();

@@ -183,6 +183,8 @@ export default function RunsTab({
       setPendingCases([]);
       setRecordedResults([]);
       setResultStatusFilter(null);
+      setRecordingCase(null);
+      setCaseBody(null);
       return;
     }
     setSelectedRunId(runId);
@@ -190,6 +192,8 @@ export default function RunsTab({
     setPendingCases([]);
     setRecordedResults([]);
     setResultStatusFilter(null);
+    setRecordingCase(null);
+    setCaseBody(null);
     try {
       if (status === RunStatus.IN_PROGRESS) {
         const res = await client.getPendingCases({ repoId, runId });
@@ -226,6 +230,7 @@ export default function RunsTab({
       setRecordingCase(null);
       lastFocusRef.current?.focus();
       setRecordNotes("");
+      setRecordStatus(ResultStatus.PASSED);
       setCaseBody(null);
       announce("Result recorded");
       // Refresh pending
@@ -247,6 +252,8 @@ export default function RunsTab({
     }
     lastFocusRef.current = document.activeElement as HTMLElement;
     setRecordingCase(casePath);
+    setRecordNotes("");
+    setRecordStatus(ResultStatus.PASSED);
     setCaseBody(null);
     setCaseBodyLoading(true);
     try {
@@ -278,18 +285,19 @@ export default function RunsTab({
     setConfirmingBulkPass(null);
     setBulkPassing(true);
     try {
-      for (const c of pendingCases) {
-        await client.recordResult({
-          repoId,
-          runId,
+      const resp = await client.bulkRecordResults({
+        repoId,
+        runId,
+        results: pendingCases.map((c) => ({
           casePath: c.path,
           status: ResultStatus.PASSED,
           notes: "",
-        });
-      }
-      const pending = await client.getPendingCases({ repoId, runId });
-      setPendingCases(pending.cases);
-      setTotalInScope(pending.totalInScope);
+        })),
+      });
+      setPendingCases([]);
+      setTotalInScope(resp.totalInScope);
+      setRecordingCase(null);
+      setCaseBody(null);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -303,6 +311,8 @@ export default function RunsTab({
       if (selectedRunId === runId) {
         setSelectedRunId(null);
         setPendingCases([]);
+        setRecordingCase(null);
+        setCaseBody(null);
       }
       setConfirmingDeleteRun(null);
       announce("Run deleted");

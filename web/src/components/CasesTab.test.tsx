@@ -596,6 +596,52 @@ describe("CasesTab", () => {
     await waitFor(() => expect(client.getCase).toHaveBeenCalled());
   });
 
+  it("shows loading state while fetching cases", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listCases).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ cases: [] });
+  });
+
+  it('shows "No cases found." when case list is empty', async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("No cases found.")).toBeInTheDocument());
+  });
+
+  it("cancels create form when Cancel button clicked", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    expect(screen.getByText("Create Case")).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByText("Create Case")).not.toBeInTheDocument();
+    expect(screen.getByText("+ New Case")).toBeInTheDocument();
+  });
+
+  it("resets priority to Medium after creating a case with High priority", async () => {
+    vi.mocked(client.createCase).mockResolvedValue({
+      case: mockCase,
+      filePath: "cases/auth/new.md",
+    } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    const prioritySelect = screen.getByDisplayValue("Medium");
+    await userEvent.selectOptions(prioritySelect, "High");
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "auth/new");
+    await userEvent.type(inputs[1], "New Title");
+    await userEvent.click(screen.getByText("Create"));
+    await waitFor(() => expect(client.createCase).toHaveBeenCalled());
+    // Reopen form — priority should be reset to Medium
+    await userEvent.click(screen.getByText("+ New Case"));
+    await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
+  });
+
   it("discards stale getCase response when a second expand fires before first resolves", async () => {
     const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);

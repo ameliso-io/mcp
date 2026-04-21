@@ -4,6 +4,8 @@
 // @ts-nocheck
 
 import {
+  BulkRecordResultsRequest,
+  BulkRecordResultsResponse,
   CreateCaseRequest,
   CreateCaseResponse,
   CreateRunRequest,
@@ -194,6 +196,15 @@ export declare const AmelisoService: {
       readonly name: "RecordResult";
       readonly I: typeof RecordResultRequest;
       readonly O: typeof RecordResultResponse;
+      readonly kind: MethodKind.Unary;
+    };
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
+     */
+    readonly bulkRecordResults: {
+      readonly name: "BulkRecordResults";
+      readonly I: typeof BulkRecordResultsRequest;
+      readonly O: typeof BulkRecordResultsResponse;
       readonly kind: MethodKind.Unary;
     };
     /**

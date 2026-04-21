@@ -24,6 +24,14 @@ describe("useRepoId", () => {
     expect(localStorage.getItem("ameliso:repoId")).toBe("owner/new-repo");
   });
 
+  it("clears state and stores empty string when set to empty", () => {
+    localStorage.setItem("ameliso:repoId", "owner/repo");
+    const { result } = renderHook(() => useRepoId());
+    act(() => result.current[1](""));
+    expect(result.current[0]).toBe("");
+    expect(localStorage.getItem("ameliso:repoId")).toBe("");
+  });
+
   it("unsubscribes from events on unmount", () => {
     const { unmount } = renderHook(() => useRepoId());
     unmount();

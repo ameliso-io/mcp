@@ -437,6 +437,13 @@ export declare type UpdateSuiteRequest = Message<"ameliso.v1.UpdateSuiteRequest"
    * @generated from field: repeated string cases = 5;
    */
   cases: string[];
+
+  /**
+   * When true, replace the case list with `cases` (even if empty). When false (default), `cases` is ignored.
+   *
+   * @generated from field: bool replace_cases = 6;
+   */
+  replaceCases: boolean;
 };
 
 /**
@@ -680,6 +687,84 @@ export declare type RecordResultResponse = Message<"ameliso.v1.RecordResultRespo
  * Use `create(RecordResultResponseSchema)` to create a new message.
  */
 export declare const RecordResultResponseSchema: GenMessage<RecordResultResponse>;
+
+/**
+ * @generated from message ameliso.v1.BulkResultEntry
+ */
+export declare type BulkResultEntry = Message<"ameliso.v1.BulkResultEntry"> & {
+  /**
+   * @generated from field: string case_path = 1;
+   */
+  casePath: string;
+
+  /**
+   * @generated from field: ameliso.v1.ResultStatus status = 2;
+   */
+  status: ResultStatus;
+
+  /**
+   * @generated from field: string notes = 3;
+   */
+  notes: string;
+};
+
+/**
+ * Describes the message ameliso.v1.BulkResultEntry.
+ * Use `create(BulkResultEntrySchema)` to create a new message.
+ */
+export declare const BulkResultEntrySchema: GenMessage<BulkResultEntry>;
+
+/**
+ * @generated from message ameliso.v1.BulkRecordResultsRequest
+ */
+export declare type BulkRecordResultsRequest = Message<"ameliso.v1.BulkRecordResultsRequest"> & {
+  /**
+   * @generated from field: string repo_id = 1;
+   */
+  repoId: string;
+
+  /**
+   * @generated from field: string run_id = 2;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: repeated ameliso.v1.BulkResultEntry results = 3;
+   */
+  results: BulkResultEntry[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkRecordResultsRequest.
+ * Use `create(BulkRecordResultsRequestSchema)` to create a new message.
+ */
+export declare const BulkRecordResultsRequestSchema: GenMessage<BulkRecordResultsRequest>;
+
+/**
+ * @generated from message ameliso.v1.BulkRecordResultsResponse
+ */
+export declare type BulkRecordResultsResponse = Message<"ameliso.v1.BulkRecordResultsResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.CaseResult results = 1;
+   */
+  results: CaseResult[];
+
+  /**
+   * @generated from field: int32 pending_count = 2;
+   */
+  pendingCount: number;
+
+  /**
+   * @generated from field: int32 total_in_scope = 3;
+   */
+  totalInScope: number;
+};
+
+/**
+ * Describes the message ameliso.v1.BulkRecordResultsResponse.
+ * Use `create(BulkRecordResultsResponseSchema)` to create a new message.
+ */
+export declare const BulkRecordResultsResponseSchema: GenMessage<BulkRecordResultsResponse>;
 
 /**
  * @generated from message ameliso.v1.FinalizeRunRequest
@@ -1164,6 +1249,14 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof RecordResultRequestSchema;
     output: typeof RecordResultResponseSchema;
+  };
+  /**
+   * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
+   */
+  bulkRecordResults: {
+    methodKind: "unary";
+    input: typeof BulkRecordResultsRequestSchema;
+    output: typeof BulkRecordResultsResponseSchema;
   };
   /**
    * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun

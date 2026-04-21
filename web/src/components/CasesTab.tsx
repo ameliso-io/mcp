@@ -234,6 +234,7 @@ export default function CasesTab({
       setNewDesc("");
       setNewTags("");
       setNewBody("");
+      setNewPriority(Priority.MEDIUM);
       announceAction("Case created");
       load();
     } catch (e) {

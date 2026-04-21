@@ -68,6 +68,19 @@ describe("NavBar", () => {
     expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
   });
 
+  it("marks Cases as active when pathname is /cases", () => {
+    mockUsePathname.mockReturnValue("/cases");
+    render(<NavBar />);
+    expect(screen.getByRole("link", { name: "Cases" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Overview" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Runs" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("renders Ameliso logo", () => {
+    render(<NavBar />);
+    expect(screen.getByText("Ameliso")).toBeInTheDocument();
+  });
+
   it('has aria-label="Main navigation" on nav element', () => {
     render(<NavBar />);
     expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
