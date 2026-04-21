@@ -341,4 +341,15 @@ describe('RunsTab', () => {
     await waitFor(() => expect(screen.getByText('select error')).toBeInTheDocument())
   })
 
+  it('sets aria-expanded on run card after click', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 0 } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    const card = screen.getByRole('button', { name: /2026-01-01-smoke/i })
+    expect(card).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(card)
+    await waitFor(() => expect(card).toHaveAttribute('aria-expanded', 'true'))
+  })
+
 })
