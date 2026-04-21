@@ -471,7 +471,11 @@ export default function CasesTab({ repoId }: Props) {
                       }
                     }}
                   >
-                    <span className={styles.priorityDot} data-priority={c.priority} aria-hidden="true" />
+                    <span
+                      className={styles.priorityDot}
+                      data-priority={c.priority}
+                      aria-hidden="true"
+                    />
                     <div className={styles.caseInfo}>
                       <div className={styles.caseMeta}>
                         <span className={styles.casePath}>{c.path}</span>
@@ -487,7 +491,7 @@ export default function CasesTab({ repoId }: Props) {
                       <p className={styles.caseTitle}>{c.title}</p>
                       {c.description && <p className={styles.caseDesc}>{c.description}</p>}
                     </div>
-                    <span className={styles.chevron}>{expandedPath === c.path ? "▲" : "▼"}</span>
+                    <span className={styles.chevron} aria-hidden="true">{expandedPath === c.path ? "▲" : "▼"}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
