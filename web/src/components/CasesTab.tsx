@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useTransition } from 'react'
+import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { Case } from '../gen/ameliso/v1/types_pb'
@@ -41,6 +41,7 @@ function priorityLabel(p: string): string {
 
 export default function CasesTab({ repoPath }: Props) {
   const [cases, setCases] = useState<Case[]>([])
+  const deferredCases = useDeferredValue(cases)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -203,7 +204,8 @@ export default function CasesTab({ repoPath }: Props) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>
   }
 
-  const allTags = Array.from(new Set(cases.flatMap(c => c.tags)))
+  const allTags = Array.from(new Set(deferredCases.flatMap(c => c.tags)))
+  const isStale = cases !== deferredCases
 
   return (
     <div>
@@ -290,8 +292,10 @@ export default function CasesTab({ repoPath }: Props) {
           <option value="priority">Sort: Priority</option>
           <option value="path">Sort: Path</option>
         </select>
-        {!loading && cases.length > 0 && (
-          <span className={styles.caseCount}>{cases.length} case{cases.length !== 1 ? 's' : ''}</span>
+        {!loading && deferredCases.length > 0 && (
+          <span className={styles.caseCount} style={isStale ? { opacity: 0.5 } : undefined}>
+            {deferredCases.length} case{deferredCases.length !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
 
@@ -304,12 +308,12 @@ export default function CasesTab({ repoPath }: Props) {
 
       {loading && <div className={styles.loadingMsg}>Loading…</div>}
 
-      {!loading && cases.length === 0 && !error && (
+      {!loading && deferredCases.length === 0 && !error && (
         <div className={styles.emptyCard}>No cases found.</div>
       )}
 
-      <div className={styles.list}>
-        {[...cases].sort((a, b) => {
+      <div className={styles.list} style={isStale ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+        {[...deferredCases].sort((a, b) => {
           if (sortBy === 'priority') {
             const ord = { high: 0, medium: 1, low: 2 } as Record<string, number>
             const diff = (ord[a.priority] ?? 3) - (ord[b.priority] ?? 3)
