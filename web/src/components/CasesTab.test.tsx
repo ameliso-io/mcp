@@ -108,6 +108,33 @@ describe('CasesTab', () => {
     await waitFor(() => expect(screen.queryByText(/Go to \/login/)).not.toBeInTheDocument())
   })
 
+  it('shows error banner when listCases rejects', async () => {
+    vi.mocked(client.listCases).mockRejectedValue(new Error('server down'))
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('server down')).toBeInTheDocument())
+  })
+
+  it('changes sort order when Sort: Path selected', async () => {
+    const secondCase = { ...mockCase, path: 'auth/logout', title: 'User Logout', priority: 'low' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    const sortSelect = screen.getByDisplayValue('Sort: Priority')
+    await userEvent.selectOptions(sortSelect, 'path')
+    expect(screen.getByDisplayValue('Sort: Path')).toBeInTheDocument()
+    await waitFor(() => expect(client.listCases).toHaveBeenCalled())
+  })
+
+  it('filters by priority when priority select changed', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    const prioritySelect = screen.getByDisplayValue('All priorities')
+    await userEvent.selectOptions(prioritySelect, 'High')
+    await waitFor(() => expect(client.listCases).toHaveBeenCalledWith(
+      expect.objectContaining({ priority: expect.any(Number) })
+    ))
+  })
+
   it('shows no-body placeholder when body is empty', async () => {
     vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '' } as never)
     render(<CasesTab repoPath="/repo" />)
