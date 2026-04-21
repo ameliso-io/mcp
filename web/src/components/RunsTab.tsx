@@ -736,7 +736,13 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             <span className={styles.pendingTitle}>{c.title}</span>
                             {run.status === RunStatus.IN_PROGRESS && (
                               <button
+                                type="button"
                                 onClick={() => openRecord(c.path)}
+                                aria-label={
+                                  recordingCase === c.path
+                                    ? `Cancel recording ${c.path}`
+                                    : `Record result for ${c.path}`
+                                }
                                 className={styles.btnRecordSm}
                               >
                                 {recordingCase === c.path ? "Cancel" : "Record"}
