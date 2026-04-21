@@ -855,6 +855,15 @@ mod tests {
     use crate::repo::RepoError;
     use anyhow::anyhow;
 
+    // ── invalid helper ────────────────────────────────────────────────────────
+
+    #[test]
+    fn invalid_helper_returns_invalid_argument_status() {
+        let s = invalid("repo_id is required");
+        assert_eq!(s.code(), tonic::Code::InvalidArgument);
+        assert_eq!(s.message(), "repo_id is required");
+    }
+
     // ── repo_err mapping ──────────────────────────────────────────────────────
 
     #[test]
