@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import OverviewTab from './OverviewTab'
@@ -202,6 +202,22 @@ describe('OverviewTab', () => {
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText('Known')).toBeInTheDocument())
+  })
+
+  it('clears existing poll interval when rerendered with new repoPath while active runs exist', async () => {
+    const activeRun = {
+      id: 'run-poll', tester: 'alice', environment: 'staging',
+      suite: 'smoke', date: '2026-01-01', status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never)
+    const { rerender } = render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument())
+    await act(async () => {
+      rerender(<OverviewTab repoPath="/new/repo" onRepoPathChange={() => {}} />)
+    })
+    await waitFor(() => expect(client.getCoverageReport).toHaveBeenCalledWith(
+      expect.objectContaining({ repoPath: '/new/repo' })
+    ))
   })
 
   it('sorts AffectedCase with null case field to end (null second)', async () => {
