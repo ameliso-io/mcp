@@ -383,9 +383,15 @@ impl AmelisoMcp {
                             .filter(|s| !s.is_empty())
                             .map(|s| format!(" suite: {s}"))
                             .unwrap_or_default();
+                        let env_part = r
+                            .environment
+                            .as_deref()
+                            .filter(|s| !s.is_empty())
+                            .map(|s| format!(" env: {s}"))
+                            .unwrap_or_default();
                         format!(
-                            "[{}] {} — tester: {} status: {}{}",
-                            r.id, r.date, r.tester, r.status, suite_part
+                            "[{}] {} — tester: {} status: {}{}{}",
+                            r.id, r.date, r.tester, r.status, suite_part, env_part
                         )
                     })
                     .collect::<Vec<_>>()

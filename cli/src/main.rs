@@ -346,9 +346,15 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                         .filter(|s| !s.is_empty())
                         .map(|s| format!(" [suite: {s}]"))
                         .unwrap_or_default();
+                    let env_part = r
+                        .environment
+                        .as_deref()
+                        .filter(|s| !s.is_empty())
+                        .map(|s| format!(" [env: {s}]"))
+                        .unwrap_or_default();
                     println!(
-                        "{:30} {:12} tester: {}{}",
-                        r.id, r.status, r.tester, suite_part
+                        "{:30} {:12} tester: {}{}{}",
+                        r.id, r.status, r.tester, suite_part, env_part
                     );
                 }
                 println!("\n{} run(s)", runs.len());
@@ -677,12 +683,14 @@ fn run_affected(repo: &std::path::Path, since: Option<&str>) -> Result<()> {
         println!("No cases need re-running.");
     } else {
         let mut sorted = result.case_paths.clone();
-        sorted.sort_by_key(|p| match case_map.get(p.as_str()).map(|c| c.fm.priority.as_str()) {
-            Some("high") => 0u8,
-            Some("medium") => 1,
-            Some("low") => 2,
-            _ => 3,
-        });
+        sorted.sort_by_key(
+            |p| match case_map.get(p.as_str()).map(|c| c.fm.priority.as_str()) {
+                Some("high") => 0u8,
+                Some("medium") => 1,
+                Some("low") => 2,
+                _ => 3,
+            },
+        );
         println!("\nCases to re-run ({}, high priority first):", sorted.len());
         for path in &sorted {
             if let Some(c) = case_map.get(path.as_str()) {
