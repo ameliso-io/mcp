@@ -2358,6 +2358,12 @@ mod tests {
     }
 
     #[test]
+    fn text_references_case_double_quote_prefix() {
+        // '"' is in the prefix list — path led by a literal double-quote should match
+        assert!(text_references_case("\"auth/login\" is a case", "auth/login"));
+    }
+
+    #[test]
     fn is_doc_file_no_extension_not_doc() {
         assert!(!is_doc_file("Makefile"));
         assert!(!is_doc_file("README"));
