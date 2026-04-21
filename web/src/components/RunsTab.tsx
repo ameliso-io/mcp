@@ -329,37 +329,45 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
           <h3 className={styles.cardTitle}>Create Run</h3>
           <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label className={styles.label}>Slug</label>
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                required
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Slug
+                <input
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Tester</label>
-              <input
-                value={newTester}
-                onChange={(e) => setNewTester(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Tester
+                <input
+                  value={newTester}
+                  onChange={(e) => setNewTester(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Environment</label>
-              <input
-                value={newEnv}
-                onChange={(e) => setNewEnv(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Environment
+                <input
+                  value={newEnv}
+                  onChange={(e) => setNewEnv(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Suite (optional)</label>
-              <input
-                value={newSuite}
-                onChange={(e) => setNewSuite(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Suite (optional)
+                <input
+                  value={newSuite}
+                  onChange={(e) => setNewSuite(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>

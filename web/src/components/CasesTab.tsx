@@ -239,60 +239,72 @@ export default function CasesTab({ repoId }: Props) {
           <h3 className={styles.cardTitle}>Create Case</h3>
           <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label className={styles.label}>Path (e.g. auth/login)</label>
-              <input
-                value={newPath}
-                onChange={(e) => setNewPath(e.target.value)}
-                required
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Path (e.g. auth/login)
+                <input
+                  value={newPath}
+                  onChange={(e) => setNewPath(e.target.value)}
+                  required
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Title</label>
-              <input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                required
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Title
+                <input
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  required
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Description</label>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Description
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Priority</label>
-              <select
-                value={newPriority}
-                onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
-                className={styles.input}
-              >
-                <option value={Priority.LOW}>Low</option>
-                <option value={Priority.MEDIUM}>Medium</option>
-                <option value={Priority.HIGH}>High</option>
-              </select>
+              <label className={styles.label}>
+                Priority
+                <select
+                  value={newPriority}
+                  onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
+                  className={styles.input}
+                >
+                  <option value={Priority.LOW}>Low</option>
+                  <option value={Priority.MEDIUM}>Medium</option>
+                  <option value={Priority.HIGH}>High</option>
+                </select>
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Tags (comma-separated)</label>
-              <input
-                value={newTags}
-                onChange={(e) => setNewTags(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Tags (comma-separated)
+                <input
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Steps / Body (Markdown)</label>
-              <textarea
-                value={newBody}
-                onChange={(e) => setNewBody(e.target.value)}
-                placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
-                rows={6}
-                className={styles.textarea}
-              />
+              <label className={styles.label}>
+                Steps / Body (Markdown)
+                <textarea
+                  value={newBody}
+                  onChange={(e) => setNewBody(e.target.value)}
+                  placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
+                  rows={6}
+                  className={styles.textarea}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
@@ -400,50 +412,60 @@ export default function CasesTab({ repoId }: Props) {
                 {editingPath === c.path ? (
                   <form onSubmit={handleUpdate} className={styles.formGridSm}>
                     <div>
-                      <label className={styles.labelSm}>Title</label>
-                      <input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        required
-                        className={styles.input}
-                      />
+                      <label className={styles.labelSm}>
+                        Title
+                        <input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          required
+                          className={styles.input}
+                        />
+                      </label>
                     </div>
                     <div>
-                      <label className={styles.labelSm}>Priority</label>
-                      <select
-                        value={editPriority}
-                        onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
-                        className={styles.input}
-                      >
-                        <option value={Priority.LOW}>Low</option>
-                        <option value={Priority.MEDIUM}>Medium</option>
-                        <option value={Priority.HIGH}>High</option>
-                      </select>
+                      <label className={styles.labelSm}>
+                        Priority
+                        <select
+                          value={editPriority}
+                          onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
+                          className={styles.input}
+                        >
+                          <option value={Priority.LOW}>Low</option>
+                          <option value={Priority.MEDIUM}>Medium</option>
+                          <option value={Priority.HIGH}>High</option>
+                        </select>
+                      </label>
                     </div>
                     <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>Description</label>
-                      <input
-                        value={editDesc}
-                        onChange={(e) => setEditDesc(e.target.value)}
-                        className={styles.input}
-                      />
+                      <label className={styles.labelSm}>
+                        Description
+                        <input
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          className={styles.input}
+                        />
+                      </label>
                     </div>
                     <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>Tags (comma-separated)</label>
-                      <input
-                        value={editTags}
-                        onChange={(e) => setEditTags(e.target.value)}
-                        className={styles.input}
-                      />
+                      <label className={styles.labelSm}>
+                        Tags (comma-separated)
+                        <input
+                          value={editTags}
+                          onChange={(e) => setEditTags(e.target.value)}
+                          className={styles.input}
+                        />
+                      </label>
                     </div>
                     <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>Steps / Body (Markdown)</label>
-                      <textarea
-                        value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
-                        rows={8}
-                        className={styles.textarea}
-                      />
+                      <label className={styles.labelSm}>
+                        Steps / Body (Markdown)
+                        <textarea
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          rows={8}
+                          className={styles.textarea}
+                        />
+                      </label>
                     </div>
                     <div className={styles.formActions}>
                       <button type="submit" disabled={saving} className={styles.btnSaveSm}>

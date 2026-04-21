@@ -163,41 +163,49 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
           <h3 className={styles.cardTitle}>Create Suite</h3>
           <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label className={styles.label}>Slug</label>
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                required
-                className={styles.input}
-                placeholder="e.g. smoke"
-              />
+              <label className={styles.label}>
+                Slug
+                <input
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  className={styles.input}
+                  placeholder="e.g. smoke"
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Name</label>
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                required
-                className={styles.input}
-                placeholder="e.g. Smoke Tests"
-              />
+              <label className={styles.label}>
+                Name
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                  className={styles.input}
+                  placeholder="e.g. Smoke Tests"
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Description</label>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Description
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Cases (comma-separated paths)</label>
-              <input
-                value={newCases}
-                onChange={(e) => setNewCases(e.target.value)}
-                className={styles.input}
-                placeholder="auth/login, auth/logout"
-              />
+              <label className={styles.label}>
+                Cases (comma-separated paths)
+                <input
+                  value={newCases}
+                  onChange={(e) => setNewCases(e.target.value)}
+                  className={styles.input}
+                  placeholder="auth/login, auth/logout"
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
@@ -239,29 +247,35 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
                 <form onSubmit={handleUpdate} className={styles.formGridSm}>
                   <div>
-                    <label className={styles.label}>Name</label>
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      required
-                      className={styles.input}
-                    />
+                    <label className={styles.label}>
+                      Name
+                      <input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.label}>Description</label>
-                    <input
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      className={styles.input}
-                    />
+                    <label className={styles.label}>
+                      Description
+                      <input
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.label}>Cases (comma-separated paths)</label>
-                    <input
-                      value={editCases}
-                      onChange={(e) => setEditCases(e.target.value)}
-                      className={styles.input}
-                    />
+                    <label className={styles.label}>
+                      Cases (comma-separated paths)
+                      <input
+                        value={editCases}
+                        onChange={(e) => setEditCases(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
                   <div className={styles.formActions}>
                     <button type="submit" disabled={saving} className={styles.btnSaveSm}>
