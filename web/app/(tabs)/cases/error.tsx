@@ -1,6 +1,6 @@
 'use client'
 
-import styles from '../app.module.css'
+import styles from '../../app.module.css'
 
 export default function Error({
   error,
