@@ -144,7 +144,11 @@
   margin: 0;
   font-size: 32px;
   font-weight: 700;
+  color: var(--color-ink);
 }
+.statValue[data-stat="Passed"] { color: var(--color-success); }
+.statValue[data-stat="Failed"] { color: var(--color-danger-hover); }
+.statValue[data-stat="Never Run"] { color: var(--color-subtle); }
 
 .activeRunsCard {
   composes: card;
@@ -248,7 +252,12 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--color-border);
 }
+.statusDot[data-status="PASSED"] { background: var(--color-result-passed); }
+.statusDot[data-status="FAILED"] { background: var(--color-result-failed); }
+.statusDot[data-status="BLOCKED"] { background: var(--color-result-blocked); }
+.statusDot[data-status="SKIPPED"] { background: var(--color-result-skipped); }
 
 .coveragePath {
   flex: 1;
@@ -269,7 +278,11 @@
 .coverageStatus {
   font-size: 12px;
   font-weight: 600;
+  color: var(--color-subtle);
 }
+.coverageStatus[data-status="PASSED"] { color: var(--color-result-passed); }
+.coverageStatus[data-status="FAILED"] { color: var(--color-result-failed); }
+.coverageStatus[data-status="BLOCKED"] { color: var(--color-result-blocked); }
 
 .affectedForm {
   display: flex;

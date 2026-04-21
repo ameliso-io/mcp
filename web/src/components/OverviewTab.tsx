@@ -22,16 +22,6 @@ function statusSortOrder(s: ResultStatus): number {
   }
 }
 
-function statusColor(s: ResultStatus): string {
-  switch (s) {
-    case ResultStatus.PASSED: return '#22c55e'
-    case ResultStatus.FAILED: return '#ef4444'
-    case ResultStatus.BLOCKED: return '#f97316'
-    case ResultStatus.SKIPPED: return '#94a3b8'
-    case ResultStatus.NEVER: return '#e2e8f0'
-    default: return '#e2e8f0'
-  }
-}
 
 function statusLabel(s: ResultStatus): string {
   switch (s) {
@@ -44,12 +34,6 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-const STAT_COLORS: Record<string, string> = {
-  'Total Cases': '#1e293b',
-  'Passed': '#16a34a',
-  'Failed': '#dc2626',
-  'Never Run': '#94a3b8',
-}
 
 
 
@@ -171,7 +155,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
             ].map(stat => (
               <div key={stat.label} className={styles.statCard}>
                 <p className={styles.label}>{stat.label}</p>
-                <p className={styles.statValue} style={{ color: STAT_COLORS[stat.label] }}>{stat.value}</p>
+                <p className={styles.statValue} data-stat={stat.label}>{stat.value}</p>
               </div>
             ))}
           </div>
@@ -205,11 +189,11 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
             <div className={styles.coverageList}>
               {[...entries].sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)).map(entry => (
                 <div key={entry.case?.path} className={styles.coverageRow}>
-                  <span className={styles.statusDot} style={{ background: statusColor(entry.latestStatus) }} />
+                  <span className={styles.statusDot} data-status={ResultStatus[entry.latestStatus]} />
                   <span className={styles.coveragePath}>{entry.case?.path}</span>
                   <span className={styles.coverageTitle}>{entry.case?.title}</span>
                   {entry.lastRunDate && <span className={styles.coverageDate}>{entry.lastRunDate}</span>}
-                  <span className={styles.coverageStatus} style={{ color: statusColor(entry.latestStatus) }}>
+                  <span className={styles.coverageStatus} data-status={ResultStatus[entry.latestStatus]}>
                     {statusLabel(entry.latestStatus)}
                   </span>
                 </div>
