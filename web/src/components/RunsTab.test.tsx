@@ -62,9 +62,9 @@ describe('RunsTab', () => {
     expect(screen.getByRole('heading', { name: 'Create Run' })).toBeInTheDocument()
   })
 
-  it('pre-fills suite when initialSuite provided', () => {
+  it('pre-fills suite when initialSuite provided', async () => {
     render(<RunsTab repoPath="/repo" initialSuite="smoke" onInitialSuiteConsumed={() => {}} />)
-    expect(screen.getByRole('heading', { name: 'Create Run' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Create Run' })).toBeInTheDocument())
     const suiteInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'smoke')
     expect(suiteInput).toBeDefined()
   })
@@ -84,6 +84,7 @@ describe('RunsTab', () => {
 
   it('shows status filter buttons', async () => {
     render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('No runs found.'))
     expect(screen.getByText('All')).toBeInTheDocument()
     expect(screen.getByText('In Progress')).toBeInTheDocument()
     expect(screen.getByText('Completed')).toBeInTheDocument()

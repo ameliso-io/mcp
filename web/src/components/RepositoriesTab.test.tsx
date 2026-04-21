@@ -30,7 +30,7 @@ beforeEach(() => {
 describe('RepositoriesTab', () => {
   it('shows Repositories heading', async () => {
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
-    expect(screen.getByRole('heading', { name: 'Repositories' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Repositories' })).toBeInTheDocument())
   })
 
   it('shows empty state when no repos and GitHub not configured', async () => {
