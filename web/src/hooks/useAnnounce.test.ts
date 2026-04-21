@@ -36,6 +36,15 @@ describe("useAnnounce", () => {
     expect(result.current[0]).toBe("Saved");
   });
 
+  it("second rapid announce cancels first, only final message appears", async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useAnnounce());
+    act(() => result.current[1]("First"));
+    act(() => result.current[1]("Second"));
+    await act(async () => vi.advanceTimersByTime(50));
+    expect(result.current[0]).toBe("Second");
+  });
+
   it("returns stable announce function reference", () => {
     const { result, rerender } = renderHook(() => useAnnounce());
     const first = result.current[1];
