@@ -6,6 +6,10 @@
         "centy-mcp"
       ],
       "command": "npx"
+    },
+    "ameliso": {
+      "command": "cargo",
+      "args": ["run", "--quiet", "--package", "ameliso-mcp", "--"]
     }
   }
 }

@@ -1,188 +1,149 @@
 # Ameliso — Agent Instructions
 
 This file is the authoritative reference for coding agents working in this repository.
-Read it before touching any test case or run file.
+Read it before touching any test case, run file, or Ameliso source code.
 
 ---
 
-## What this repo is
+## What this project is
 
-Ameliso is a **git-native manual testing management system**.
+Ameliso is a **git-native manual testing management system** — a tool that manages
+a controlled repository of test cases and test runs stored as Markdown/YAML files.
 
-- `test-cases/` — one Markdown file per test case (`TC-NNN-<slug>.md`)
-- `test-runs/` — one Markdown file per test run (`RUN-NNN-YYYY-MM-DD.md`)
-- `SCHEMA.md` — full file format specification
-- `ameliso.py` — unified CLI (requires Python 3.9+, no extra packages)
+### Controlled repository structure
 
----
+When a user points Ameliso at their project repository, it expects:
 
-## Discovery
-
-Find test cases without reading every file:
-
-```sh
-python3 ameliso.py search "login"                    # full-text
-python3 ameliso.py search --tag auth                 # by tag
-python3 ameliso.py search --priority high --json     # by priority, machine-readable
-python3 ameliso.py search --status never             # never-run test cases
-python3 ameliso.py search "reset" --tag auth --json  # combined filters
+```
+cases/{category}/{slug}.md         # one file per test case
+suites/{slug}.yaml                 # optional groupings of cases
+runs/{YYYY-MM-DD}-{slug}/
+  run.yaml                         # run metadata
+  results/{case_path}.md           # one result per executed case
 ```
 
-## Orientation (run once per session)
+### This repository's structure
 
-```sh
-python3 ameliso.py report --json      # current pass/fail status per TC
-python3 ameliso.py affected --json    # TCs that need re-running after recent changes
-python3 ameliso.py validate           # confirm all files are schema-valid
 ```
-
-Parse the JSON output. Do not infer status from file names or dates alone.
+server/   # gRPC server (Rust + tonic); exposes AmelisoService (13 RPCs)
+mcp/      # MCP server (Rust + rmcp); stdio transport; 8 tools
+cli/      # CLI (Rust + clap); calls repo logic directly
+proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
+```
 
 ---
 
-## Creating a test case
+## Using Ameliso via MCP (recommended for agents)
 
-```sh
-python3 ameliso.py new tc "Title of what is being tested"
-```
+This repository ships a `.mcp.json` that auto-starts the MCP server.
+Available tools:
 
-This creates `test-cases/TC-NNN-<slug>.md` with the next available ID.
+| Tool | Description |
+|------|-------------|
+| `list_cases` | List cases; filter by tags or query |
+| `get_case` | Get full case details including steps |
+| `create_case` | Create a new case file |
+| `coverage_report` | Latest status per case across all runs |
+| `list_runs` | List test runs |
+| `create_run` | Start a new test run |
+| `record_result` | Record a case result (passed/failed/blocked/skipped) |
+| `finalize_run` | Mark a run completed or aborted |
 
-**Required:** fill in every field before committing:
-- `description` — one sentence, what is being verified
-- `priority` — `low`, `medium`, or `high`
-- `## Steps` — numbered list of tester actions
-- `## Expected Result` — what a passing execution looks like
-
-Leave `created_at` and `updated_at` as set by `new.py`. Update `updated_at` on every subsequent edit (ISO date, e.g. `2026-04-21`).
-
----
-
-## Creating a test run
-
-```sh
-python3 ameliso.py new run <tester> [environment]
-```
-
-This creates `test-runs/RUN-NNN-YYYY-MM-DD.md` with the next available ID.
-
-**Required:** fill in the `## Results` table and `## Summary` counts before committing.
-
-Result status values:
-
-| Value     | When to use                                              |
-|-----------|----------------------------------------------------------|
-| `passed`  | All steps ran; outcome matched expected result           |
-| `failed`  | Steps ran; outcome did not match expected result         |
-| `blocked` | Could not run due to a dependency or environment issue   |
-| `skipped` | Intentionally excluded from this run                     |
-
-Set `status` in frontmatter to `completed` when done, `aborted` if the run was cut short.
+All tools accept `repo_path` — the absolute path to the controlled repository.
 
 ---
 
-## Validation
-
-The pre-commit hook runs automatically. To validate manually:
+## CLI usage
 
 ```sh
-python3 ameliso.py validate
-```
+# Build first (only needed once)
+cargo build --release
 
-Fix every error before committing. Common errors:
-- `missing required field 'description'` — fill in the frontmatter field
-- `missing required section '## Steps'` — add the section heading
-- `Summary Total (N) != rows in Results table (M)` — recount and fix `## Summary`
-- `filename ID 'TC-002' does not match frontmatter id 'TC-003'` — ID in filename must match `id:` field
+# Cases
+./target/release/ameliso cases list   --repo /path/to/project
+./target/release/ameliso cases get    --repo /path/to/project auth/login
+./target/release/ameliso cases create --repo /path/to/project auth/login \
+    --title "User Login" --description "Verify login flow" --priority high
+
+# Runs
+./target/release/ameliso runs list     --repo /path/to/project
+./target/release/ameliso runs create   --repo /path/to/project smoke
+./target/release/ameliso runs record   --repo /path/to/project 2026-04-21-smoke auth/login passed
+./target/release/ameliso runs finalize --repo /path/to/project 2026-04-21-smoke completed
+
+# Coverage
+./target/release/ameliso coverage --repo /path/to/project
+
+# AMELISO_REPO env var avoids repeating --repo
+export AMELISO_REPO=/path/to/project
+./target/release/ameliso cases list
+```
 
 ---
 
-## Decision rules for agents
+## Test case file format
+
+```markdown
+---
+title: User Login
+description: Verify that a registered user can log in with valid credentials
+tags: [auth, smoke]
+priority: high
+created_at: 2026-04-21
+updated_at: 2026-04-21
+---
+
+## Steps
+
+1. Navigate to /login
+2. Enter valid email and password
+3. Click "Sign in"
+
+## Expected Result
+
+User is redirected to the dashboard. Session cookie is set.
+```
+
+---
+
+## Test result file format
+
+```markdown
+---
+status: passed
+---
+
+Notes go here (optional).
+```
+
+---
+
+## Decision rules
 
 ### When to create a test case
-- A feature or user-facing behaviour exists with no corresponding TC.
-- Identify the gap with: `python3 ameliso.py report --json | jq '.test_cases[] | select(.status == "never")'`
-
-### Recording results without hand-editing tables
-
-```sh
-python3 ameliso.py update-run RUN-001 TC-002 passed
-python3 ameliso.py update-run RUN-001 TC-003 failed "Button missing on mobile"
-```
-
-Atomically updates the Results table and recalculates Summary counts. Safe to call multiple times — re-running with a different status updates the existing row. Rejects writes to `completed` or `aborted` runs.
+- A feature or user-facing behaviour has no corresponding case in `cases/`.
+- Use `list_cases` (MCP) or `ameliso cases list` (CLI) to check coverage first.
 
 ### When to create a test run
-- After manually executing (or simulating) one or more test cases.
-- Always reference specific TC IDs in the Results table — never leave it empty.
+- After executing one or more cases manually or in a controlled environment.
+- Never fabricate results — a run represents a real execution.
 
-### When NOT to create files
-- Do not fabricate run results. A run file represents a real execution.
-- Do not invent TC IDs. Use `python3 ameliso.py new tc` to get the next valid ID.
+### Recording results
+Use `record_result` (MCP) or `ameliso runs record` (CLI).
+Both reject writes to a `completed` or `aborted` run.
 
 ### After code changes
-```sh
-python3 ameliso.py affected --json
-```
-Any TC listed in the output should be re-run before the next release.
+Run `get_affected_cases` via the gRPC API or check coverage to identify cases
+that need re-running before the next release.
 
 ---
 
 ## Commit conventions
 
-Reference TC IDs in commit messages when a commit is related to a specific test case:
+Reference case paths in commit messages when a commit affects a specific test case:
 
 ```
-fix: login redirect on mobile (TC-001)
+fix: login redirect on mobile (cases/auth/login)
 ```
 
-`affected.py` scans commit messages for these references to build its impact list.
-
----
-
-## ID rules
-
-- IDs are monotonically increasing integers, zero-padded to 3 digits: `TC-001`, `TC-002`, …
-- IDs are permanent — never reuse a retired ID, even after deletion.
-- Always use `python3 ameliso.py new` to assign IDs. Never hand-pick a number.
-
----
-
-## Output reference
-
-### `report --json`
-
-```json
-{
-  "test_cases": [
-    {
-      "id": "TC-001",
-      "title": "User Login",
-      "priority": "high",
-      "status": "passed",      // passed | failed | blocked | skipped | never
-      "last_run": "RUN-001",
-      "last_run_date": "2026-04-21",
-      "path": "test-cases/TC-001-user-login.md"
-    }
-  ],
-  "run_count": 1
-}
-```
-
-### `affected --json`
-
-```json
-{
-  "affected": [
-    {
-      "id": "TC-001",
-      "title": "User Login",
-      "priority": "high",
-      "found_in_repo": true
-    }
-  ],
-  "reason": "3 source file(s) changed with no explicit TC references — all 1 test case(s) flagged"
-}
-```
-
-Exit code 1 means action is required; exit code 0 means nothing to do.
+The `GetAffectedCases` RPC scans commit messages for these references.
