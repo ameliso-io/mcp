@@ -1,0 +1,61 @@
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px;
+}
+
+.fullPage {
+  min-height: 100vh;
+}
+
+.heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.message {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: #dc2626;
+}
+
+.btn {
+  padding: 8px 16px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn:hover {
+  background: #334155;
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}

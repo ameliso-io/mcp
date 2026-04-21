@@ -331,7 +331,6 @@ describe("CasesTab", () => {
     const inputs = screen.getAllByRole("textbox");
     await userEvent.type(inputs[0], "auth/new");
     await userEvent.type(inputs[1], "New Case Title");
-    // Fill tags field (4th textbox: path, title, desc, tags)
     await userEvent.type(inputs[3], "auth, smoke");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
@@ -365,6 +364,14 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Save"));
     await userEvent.click(screen.getByText("Cancel"));
     await waitFor(() => expect(screen.queryByText("Save")).not.toBeInTheDocument());
+  });
+
+  it("clears debounce timeout on rapid search input", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const searchInput = screen.getByPlaceholderText("Search cases…");
+    await userEvent.type(searchInput, "lo");
+    await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
 
   it("shows medium priority label and opens edit for medium priority case", async () => {
@@ -418,7 +425,7 @@ describe("CasesTab", () => {
     expect(screen.queryByText("server down")).not.toBeInTheDocument();
   });
 
-  it("fills description and body in create form", async () => {
+  it("fills description and body textarea in create form", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,
       filePath: "cases/auth/new.md",
@@ -504,14 +511,6 @@ describe("CasesTab", () => {
         expect.objectContaining({ body: "## New Steps" })
       )
     );
-  });
-
-  it("clears debounce timeout on rapid search input", async () => {
-    render(<CasesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("User Login"));
-    const searchInput = screen.getByPlaceholderText("Search cases…");
-    await userEvent.type(searchInput, "lo");
-    await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
 
   it("changes title in edit form", async () => {

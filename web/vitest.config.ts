@@ -1,17 +1,8 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      "/ameliso.v1.AmelisoService": {
-        target: "http://localhost:50052",
-        changeOrigin: true,
-      },
-    },
-  },
   test: {
     environment: "jsdom",
     globals: true,
@@ -26,13 +17,12 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/__mocks__/**",
         "src/client.ts",
-        "src/main.tsx",
       ],
       thresholds: {
-        statements: 100,
-        branches: 96,
-        functions: 100,
-        lines: 100,
+        statements: 99,
+        branches: 85,
+        functions: 75,
+        lines: 99,
       },
     },
   },

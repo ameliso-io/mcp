@@ -248,7 +248,6 @@ describe("SuitesTab", () => {
     const inputs = screen.getAllByRole("textbox");
     await userEvent.type(inputs[0], "regression");
     await userEvent.type(inputs[1], "Regression Tests");
-    // 3rd input is description, 4th is cases
     await userEvent.type(inputs[3], "auth/login, auth/logout");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
@@ -286,6 +285,22 @@ describe("SuitesTab", () => {
     if (casesInput) await userEvent.type(casesInput, "auth/login, auth/logout");
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled());
+  });
+
+  it("does not call deleteSuite when confirm cancelled", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Delete"));
+    await userEvent.click(screen.getByText("Delete"));
+    expect(client.deleteSuite).not.toHaveBeenCalled();
+  });
+
+  it("handles listCases failure silently when suite expanded", async () => {
+    vi.mocked(client.listCases).mockRejectedValue(new Error("cases load error"));
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
   });
 
   it("dismisses error banner when X button clicked", async () => {
@@ -327,22 +342,6 @@ describe("SuitesTab", () => {
         expect.objectContaining({ description: "Updated description" })
       )
     );
-  });
-
-  it("handles listCases failure silently when suite expanded", async () => {
-    vi.mocked(client.listCases).mockRejectedValue(new Error("cases load error"));
-    render(<SuitesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Smoke Tests"));
-    await userEvent.click(screen.getByText("Smoke Tests"));
-    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
-  });
-
-  it("does not call deleteSuite when confirm cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
-    render(<SuitesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
-    expect(client.deleteSuite).not.toHaveBeenCalled();
   });
 
   it("cancels edit form when Cancel button clicked", async () => {
