@@ -7,8 +7,13 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('next/link', () => ({
-  default: ({ href, children, style }: { href: string; children: React.ReactNode; style?: React.CSSProperties }) => (
-    <a href={href} style={style}>{children}</a>
+  default: ({ href, children, className, 'aria-current': ariaCurrent }: {
+    href: string
+    children: React.ReactNode
+    className?: string
+    'aria-current'?: string
+  }) => (
+    <a href={href} className={className} aria-current={ariaCurrent}>{children}</a>
   ),
 }))
 
@@ -22,12 +27,11 @@ describe('NavBar', () => {
     expect(screen.getByRole('link', { name: 'Repositories' })).toBeInTheDocument()
   })
 
-  it('highlights active route', () => {
+  it('marks active route with aria-current="page"', () => {
     render(<NavBar />)
-    const overviewLink = screen.getByRole('link', { name: 'Overview' })
-    const casesLink = screen.getByRole('link', { name: 'Cases' })
-    expect(overviewLink).toHaveStyle({ background: '#334155' })
-    expect(casesLink).toHaveStyle({ background: 'transparent' })
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Cases' })).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('link', { name: 'Runs' })).not.toHaveAttribute('aria-current')
   })
 
   it('links point to correct href values', () => {

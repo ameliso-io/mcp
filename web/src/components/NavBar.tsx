@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import styles from './NavBar.module.css'
 
 const NAV_ITEMS = [
   { href: '/repositories', label: 'Repositories' },
@@ -15,54 +16,23 @@ export default function NavBar() {
   const pathname = usePathname()
 
   return (
-    <header style={styles.header}>
-      <span style={styles.logo}>Ameliso</span>
-      <nav style={styles.nav}>
-        {NAV_ITEMS.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            style={styles.navLink(pathname === href || (pathname === '/' && href === '/overview'))}
-          >
-            {label}
-          </Link>
-        ))}
+    <header className={styles.header}>
+      <span className={styles.logo}>Ameliso</span>
+      <nav className={styles.nav}>
+        {NAV_ITEMS.map(({ href, label }) => {
+          const active = pathname === href || (pathname === '/' && href === '/overview')
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`${styles.link}${active ? ` ${styles.linkActive}` : ''}`}
+              aria-current={active ? 'page' : undefined}
+            >
+              {label}
+            </Link>
+          )
+        })}
       </nav>
     </header>
   )
-}
-
-const styles = {
-  header: {
-    backgroundColor: '#1e293b',
-    color: 'white',
-    padding: '0 24px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '32px',
-    borderBottom: '1px solid #334155',
-  },
-  logo: {
-    fontSize: '20px',
-    fontWeight: '700',
-    letterSpacing: '-0.5px',
-    padding: '16px 0',
-    color: '#e2e8f0',
-  },
-  nav: {
-    display: 'flex',
-    gap: '4px',
-  },
-  navLink: (active: boolean): React.CSSProperties => ({
-    background: active ? '#334155' : 'transparent',
-    color: active ? 'white' : '#94a3b8',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500',
-    textDecoration: 'none',
-    display: 'inline-block',
-  }),
 }

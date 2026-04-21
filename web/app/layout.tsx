@@ -12,25 +12,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <div style={styles.app}>
+        <div className="app-shell">
           <NavBar />
-          <main style={styles.content}>{children}</main>
+          <main className="page-content">{children}</main>
         </div>
       </body>
     </html>
   )
-}
-
-const styles = {
-  app: {
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    minHeight: '100vh',
-    backgroundColor: '#f5f5f5',
-    color: '#1a1a1a',
-  },
-  content: {
-    padding: '24px',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
 }
