@@ -667,6 +667,22 @@ describe("CasesTab", () => {
     expect(screen.queryByText(/\d+ cases?/)).not.toBeInTheDocument();
   });
 
+  it("resets tag filter to empty tags when All tags re-selected after filtering", async () => {
+    const taggedCase = { ...mockCase, tags: ["smoke"] } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [taggedCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const tagSelect = screen.getByDisplayValue("All tags");
+    await userEvent.selectOptions(tagSelect, "smoke");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
+    );
+    await userEvent.selectOptions(tagSelect, "");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
+    );
+  });
+
   it("tag filter select is not shown when cases have no tags", async () => {
     const noTagCase = { ...mockCase, tags: [] } as unknown as Case;
     vi.mocked(client.listCases).mockResolvedValue({ cases: [noTagCase] } as never);
