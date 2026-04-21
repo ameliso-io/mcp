@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     description: "Test coverage and quality management",
     type: "website",
     siteName: "Ameliso",
+    locale: "en_US",
   },
   twitter: {
     card: "summary",
