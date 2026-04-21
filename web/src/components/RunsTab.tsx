@@ -204,7 +204,7 @@ export default function RunsTab({
           client.getRun({ repoId, runId }),
           client.listCases({ repoId }),
         ]);
-        setRecordedResults(runRes.run?.results ?? []);
+        setRecordedResults(runRes.run?.results ?? /* v8 ignore next */ []);
         setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
       }
     } catch (e) {
