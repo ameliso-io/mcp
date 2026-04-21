@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { AffectedCase, CoverageEntry, RunMeta } from "../gen/ameliso/v1/types_pb";
@@ -10,7 +11,6 @@ import styles from "./OverviewTab.module.css";
 
 interface Props {
   repoId: string;
-  onGoToRuns?: () => void;
 }
 
 function statusSortOrder(s: ResultStatus): number {
@@ -47,7 +47,7 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoId, onGoToRuns }: Props) {
+export default function OverviewTab({ repoId }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -191,11 +191,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
-                {onGoToRuns && (
-                  <button type="button" onClick={onGoToRuns} className={styles.goToRunsBtn}>
-                    Go to Runs
-                  </button>
-                )}
+                <Link href="/runs" className={styles.goToRunsBtn}>
+                  Go to Runs
+                </Link>
               </div>
               <ul className={styles.runList} role="list">
                 {activeRuns.map((run) => (

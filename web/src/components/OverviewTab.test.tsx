@@ -8,6 +8,22 @@ import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factor
 
 vi.mock("../client");
 
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
+}));
+
 const makeCovEntry = (path: string, title: string, priority: string, status: ResultStatus) =>
   makeCoverageEntry({
     case: { path, title, priority },
@@ -96,14 +112,12 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("modified")).toBeInTheDocument());
   });
 
-  it("calls onGoToRuns when Go to Runs clicked", async () => {
+  it("renders Go to Runs link pointing to /runs", async () => {
     const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
-    const onGoToRuns = vi.fn();
-    render(<OverviewTab repoId="owner/repo" onGoToRuns={onGoToRuns} />);
+    render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Go to Runs"));
-    await userEvent.click(screen.getByText("Go to Runs"));
-    expect(onGoToRuns).toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute("href", "/runs");
   });
 
   it("shows affectedError when getAffectedCases throws", async () => {
