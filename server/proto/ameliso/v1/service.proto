@@ -1,0 +1,226 @@
+syntax = "proto3";
+
+package ameliso.v1;
+
+import "ameliso/v1/types.proto";
+
+option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
+
+// AmelisoService manages test cases and runs in a git-native controlled repository.
+// All operations accept a repo_path that points to the root of the controlled repository.
+service AmelisoService {
+  // --- Cases ---
+
+  // List all cases in the controlled repository, optionally filtered.
+  rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
+
+  // Get a single case by its path (e.g. "auth/user-login").
+  rpc GetCase(GetCaseRequest) returns (GetCaseResponse);
+
+  // Create a new case file. Fails if the path already exists.
+  rpc CreateCase(CreateCaseRequest) returns (CreateCaseResponse);
+
+  // Update an existing case's metadata. Bumps updated_at automatically.
+  rpc UpdateCase(UpdateCaseRequest) returns (UpdateCaseResponse);
+
+  // --- Suites ---
+
+  // List all suites.
+  rpc ListSuites(ListSuitesRequest) returns (ListSuitesResponse);
+
+  // Get a suite by slug.
+  rpc GetSuite(GetSuiteRequest) returns (GetSuiteResponse);
+
+  // Create a new suite.
+  rpc CreateSuite(CreateSuiteRequest) returns (CreateSuiteResponse);
+
+  // --- Runs ---
+
+  // List all runs, newest first.
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+
+  // Get a run with all its results.
+  rpc GetRun(GetRunRequest) returns (GetRunResponse);
+
+  // Create a new in-progress run.
+  rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
+
+  // Record or update a single case result within a run.
+  // Idempotent: calling again with a different status overwrites the previous result.
+  rpc RecordResult(RecordResultRequest) returns (RecordResultResponse);
+
+  // Mark a run as completed or aborted. Validates all expected cases have results.
+  rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
+
+  // --- Reports ---
+
+  // Return the latest known status for every case.
+  rpc GetCoverageReport(GetCoverageReportRequest) returns (GetCoverageReportResponse);
+
+  // Return cases that may need re-running based on git changes since the last run.
+  rpc GetAffectedCases(GetAffectedCasesRequest) returns (GetAffectedCasesResponse);
+}
+
+// --- Cases ---
+
+message ListCasesRequest {
+  string repo_path = 1;
+  // Optional: filter by tag
+  repeated string tags = 2;
+  // Optional: filter by priority
+  Priority priority = 3;
+  // Optional: full-text query against title and description
+  string query = 4;
+}
+
+message ListCasesResponse {
+  repeated Case cases = 1;
+}
+
+message GetCaseRequest {
+  string repo_path = 1;
+  string case_path = 2;
+}
+
+message GetCaseResponse {
+  Case case = 1;
+}
+
+message CreateCaseRequest {
+  string repo_path = 1;
+  // Path within cases/, without extension. E.g. "auth/user-login"
+  string case_path = 2;
+  string title = 3;
+  string description = 4;
+  repeated string tags = 5;
+  Priority priority = 6;
+}
+
+message CreateCaseResponse {
+  Case case = 1;
+  // Full path of the created file relative to repo root
+  string file_path = 2;
+}
+
+message UpdateCaseRequest {
+  string repo_path = 1;
+  string case_path = 2;
+  string title = 3;
+  string description = 4;
+  repeated string tags = 5;
+  Priority priority = 6;
+}
+
+message UpdateCaseResponse {
+  Case case = 1;
+}
+
+// --- Suites ---
+
+message ListSuitesRequest {
+  string repo_path = 1;
+}
+
+message ListSuitesResponse {
+  repeated Suite suites = 1;
+}
+
+message GetSuiteRequest {
+  string repo_path = 1;
+  string slug = 2;
+}
+
+message GetSuiteResponse {
+  Suite suite = 1;
+}
+
+message CreateSuiteRequest {
+  string repo_path = 1;
+  string slug = 2;
+  string name = 3;
+  string description = 4;
+  repeated string cases = 5;
+}
+
+message CreateSuiteResponse {
+  Suite suite = 1;
+  string file_path = 2;
+}
+
+// --- Runs ---
+
+message ListRunsRequest {
+  string repo_path = 1;
+}
+
+message ListRunsResponse {
+  repeated RunMeta runs = 1;
+}
+
+message GetRunRequest {
+  string repo_path = 1;
+  string run_id = 2;
+}
+
+message GetRunResponse {
+  Run run = 1;
+}
+
+message CreateRunRequest {
+  string repo_path = 1;
+  // Human-readable slug for the run (appended to date)
+  string slug = 2;
+  string tester = 3;
+  string environment = 4;
+  // Optional: pre-populate the run with cases from this suite
+  string suite = 5;
+}
+
+message CreateRunResponse {
+  RunMeta run = 1;
+  string dir_path = 2;
+}
+
+message RecordResultRequest {
+  string repo_path = 1;
+  string run_id = 2;
+  string case_path = 3;
+  ResultStatus status = 4;
+  string notes = 5;
+}
+
+message RecordResultResponse {
+  CaseResult result = 1;
+}
+
+message FinalizeRunRequest {
+  string repo_path = 1;
+  string run_id = 2;
+  RunStatus status = 3;
+}
+
+message FinalizeRunResponse {
+  RunMeta run = 1;
+}
+
+// --- Reports ---
+
+message GetCoverageReportRequest {
+  string repo_path = 1;
+}
+
+message GetCoverageReportResponse {
+  repeated CoverageEntry entries = 1;
+  int32 run_count = 2;
+}
+
+message GetAffectedCasesRequest {
+  string repo_path = 1;
+  // Compare against this git ref. Defaults to last run commit if empty.
+  string since_ref = 2;
+}
+
+message GetAffectedCasesResponse {
+  repeated AffectedCase cases = 1;
+  string reason = 2;
+}

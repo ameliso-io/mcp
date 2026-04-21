@@ -1,0 +1,7 @@
+# buf.gen.yaml — code generation for non-Rust targets.
+# Rust generation is handled by tonic-build in build.rs (cargo build).
+#
+# To regenerate for other languages, run: buf generate
+version: v2
+inputs:
+  - directory: proto

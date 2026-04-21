@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Validate staged test-cases/ and test-runs/ files against the Ameliso schema.
+
+set -euo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(test-cases|test-runs)/.*\.md$' || true)
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+echo "Validating staged Ameliso files..."
+python3 validate.py $staged
