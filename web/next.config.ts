@@ -11,6 +11,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   turbopack: {
     root: path.resolve(__dirname, ".."),
   },
