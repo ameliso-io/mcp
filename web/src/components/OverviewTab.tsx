@@ -288,7 +288,7 @@ export default function OverviewTab({ repoId }: Props) {
               <ul className={styles.affectedList} role="list">
                 {[...affected]
                   .sort((a, b) => {
-                    const order = { high: 0, medium: 1, low: 2 } as Record<string, number>;
+                    const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
                     return (
                       (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3)
                     );
