@@ -477,6 +477,12 @@ impl AmelisoMcp {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_run(&repo, &req.run_id) {
             Ok(run) => {
+                let case_titles: std::collections::HashMap<String, String> =
+                    repo::list_cases(&repo)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|c| (c.case_path, c.fm.title))
+                        .collect();
                 let mut lines = vec![
                     format!("id:     {}", run.meta.id),
                     format!("date:   {}", run.meta.date),
@@ -485,6 +491,11 @@ impl AmelisoMcp {
                 ];
                 if let Some(env) = &run.meta.environment {
                     lines.push(format!("env:    {env}"));
+                }
+                if let Some(ref suite) = run.meta.suite {
+                    if !suite.is_empty() {
+                        lines.push(format!("suite:  {suite}"));
+                    }
                 }
                 let passed = run
                     .results
@@ -516,7 +527,14 @@ impl AmelisoMcp {
                 ));
                 lines.push(format!("\nResults ({}):", run.results.len()));
                 for r in &run.results {
-                    lines.push(format!("  {:40} {}", r.case_path, r.fm.status));
+                    let title = case_titles
+                        .get(&r.case_path)
+                        .map(|t| format!(" — {t}"))
+                        .unwrap_or_default();
+                    lines.push(format!(
+                        "  {:40} {:8}{}",
+                        r.case_path, r.fm.status, title
+                    ));
                 }
                 lines.join("\n")
             }

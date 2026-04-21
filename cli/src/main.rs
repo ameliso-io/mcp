@@ -342,12 +342,23 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
         }
         RunsCmd::Get { repo, run_id } => {
             let run = repo::get_run(&repo, &run_id)?;
+            let case_titles: std::collections::HashMap<String, String> =
+                repo::list_cases(&repo)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|c| (c.case_path, c.fm.title))
+                    .collect();
             println!("id:     {}", run.meta.id);
             println!("date:   {}", run.meta.date);
             println!("tester: {}", run.meta.tester);
             println!("status: {}", run.meta.status);
             if let Some(env) = &run.meta.environment {
                 println!("env:    {env}");
+            }
+            if let Some(ref suite) = run.meta.suite {
+                if !suite.is_empty() {
+                    println!("suite:  {suite}");
+                }
             }
             let passed = run
                 .results
@@ -379,7 +390,11 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             );
             println!("\nResults ({}):", run.results.len());
             for r in &run.results {
-                println!("  {:40} {}", r.case_path, r.fm.status);
+                let title = case_titles
+                    .get(&r.case_path)
+                    .map(|t| format!(" — {t}"))
+                    .unwrap_or_default();
+                println!("  {:40} {:8}{}", r.case_path, r.fm.status, title);
             }
         }
         RunsCmd::Create {
