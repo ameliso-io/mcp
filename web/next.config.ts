@@ -1,9 +1,30 @@
 import path from "path";
 import type { NextConfig } from "next";
 
+const csp = [
+  "default-src 'self'",
+  // unsafe-inline required: Next.js embeds hydration scripts inline
+  "script-src 'self' 'unsafe-inline'",
+  // unsafe-inline required: CSS Modules inject <style> tags in dev; extracted in prod but Next.js adds inline critical CSS
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  // 'self' covers the gRPC-Web proxy rewrite at /ameliso.v1.AmelisoService/*
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  // frame-ancestors supersedes X-Frame-Options in CSP-aware browsers
+  "frame-ancestors 'none'",
+]
+  .join("; ")
+  .trim();
+
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: csp },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  // X-Frame-Options kept for legacy browsers that don't parse CSP frame-ancestors
+  { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
