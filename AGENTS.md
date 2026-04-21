@@ -151,8 +151,8 @@ Use `record_result` (MCP) or `ameliso runs record` (CLI).
 Both reject writes to a `completed` or `aborted` run.
 
 ### After code changes
-Run `get_affected_cases` via the gRPC API or check coverage to identify cases
-that need re-running before the next release.
+Use `get_affected_cases` (MCP) or `ameliso affected` (CLI) to identify cases
+that need re-running. The tool compares git history since the last run commit.
 
 ---
 
