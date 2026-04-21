@@ -103,6 +103,22 @@ describe("CasesTab", () => {
     expect(client.deleteCase).not.toHaveBeenCalled();
   });
 
+  it("hides expanded body panel when case switches from expanded to edit mode", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    // Expand the case — MarkdownBody renders "## Steps" as an <h2>
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument()
+    );
+    // Click Edit — expanded body panel hides (edit textarea replaces MarkdownBody rendering)
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    // The rendered <h2> from MarkdownBody should be gone
+    expect(screen.queryByRole("heading", { name: "Steps" })).not.toBeInTheDocument();
+  });
+
   it("opens edit form with pre-filled values when Edit clicked", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
