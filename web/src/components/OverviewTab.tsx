@@ -266,7 +266,10 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
             </button>
           </form>
           {affectedError && (
-            <div style={{ color: '#991b1b', fontSize: '13px', marginBottom: '8px' }}>{affectedError}</div>
+            <div style={{ color: '#991b1b', fontSize: '13px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>{affectedError}</span>
+              <button onClick={() => setAffectedError(null)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: '14px', padding: '0 0 0 8px' }}>×</button>
+            </div>
           )}
           {affected !== null && (
             affected.length === 0 ? (
