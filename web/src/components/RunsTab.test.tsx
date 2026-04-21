@@ -1140,6 +1140,28 @@ describe("RunsTab", () => {
     expect(screen.queryByText("User Login")).not.toBeInTheDocument();
   });
 
+  it("does not render notes element when result notes is empty", async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const emptyNotesResult = {
+      casePath: "auth/login",
+      status: ResultStatus.PASSED,
+      notes: "",
+    } as unknown as CaseResult;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [emptyNotesResult] },
+    } as never);
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("Passed")).toBeInTheDocument());
+    // The notes conditional `{r.notes && ...}` must not render any italic span when notes is "".
+    const italicSpans = document
+      .querySelectorAll("span[style*='italic']");
+    expect(italicSpans).toHaveLength(0);
+  });
+
   it("cancels Create Run form when Cancel button clicked on toggle", async () => {
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
