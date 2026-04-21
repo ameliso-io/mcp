@@ -1083,7 +1083,7 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
     await waitFor(() => screen.getByRole("heading", { name: "Create Run" }));
-    await userEvent.type(screen.getAllByRole("textbox")[0]!,"2026-01-15-smoke");
+    await userEvent.type(screen.getAllByRole("textbox")[0]!, "2026-01-15-smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ run: mockRun, dirPath: "runs/2026-01-01-smoke" });
