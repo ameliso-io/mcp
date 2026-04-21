@@ -1620,6 +1620,40 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    #[tokio::test]
+    async fn record_result_blocked_with_notes_passes_validation() {
+        // blocked + non-empty notes satisfies validation → DB error, not InvalidArgument.
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Blocked as i32,
+                notes: "blocked by infra".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn record_result_failed_with_notes_passes_validation() {
+        // failed + non-empty notes satisfies validation → DB error, not InvalidArgument.
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Failed as i32,
+                notes: "assertion failed".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── create_case validation ────────────────────────────────────────────────
 
     #[tokio::test]
@@ -1901,6 +1935,44 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_blocked_with_notes_passes_validation() {
+        // blocked + non-empty notes satisfies validation → DB error, not InvalidArgument.
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Blocked as i32,
+                    notes: "blocked by infra".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn bulk_record_failed_with_notes_passes_validation() {
+        // failed + non-empty notes satisfies validation → DB error, not InvalidArgument.
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Failed as i32,
+                    notes: "assertion failed".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     // ── delete validation ─────────────────────────────────────────────────────
