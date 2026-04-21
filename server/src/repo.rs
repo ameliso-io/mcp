@@ -1053,6 +1053,22 @@ mod tests {
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
 
+    #[tokio::test]
+    async fn record_result_invalid_case_path_returns_invalid_arg() {
+        // Valid status and run_id — validate_slug_path on case_path fires before DB.
+        let err = record_result(
+            &lazy_pool(),
+            "owner/repo",
+            "2026-01-01-smoke",
+            "bad case!",
+            "passed",
+            "",
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
     // -----------------------------------------------------------------------
     // get_case / create_case / update_case / delete_case / get_suite pre-DB
     // -----------------------------------------------------------------------
