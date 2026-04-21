@@ -76,8 +76,11 @@ struct CreateRunRequest {
     repo_path: String,
     #[schemars(description = "Short slug, e.g. smoke or regression")]
     slug: String,
+    #[schemars(description = "Who is running the tests (defaults to $USER)")]
     tester: Option<String>,
+    #[schemars(description = "Environment being tested, e.g. staging or production (optional)")]
     environment: Option<String>,
+    #[schemars(description = "Suite slug to scope this run to a subset of cases (optional; must exist)")]
     suite: Option<String>,
 }
 
@@ -88,6 +91,7 @@ struct RecordResultRequest {
     case_path: String,
     #[schemars(description = "passed | failed | blocked | skipped")]
     status: String,
+    #[schemars(description = "Freeform notes, e.g. failure details, environment observations (optional)")]
     notes: Option<String>,
 }
 
@@ -402,8 +406,9 @@ impl AmelisoMcp {
             Ok((meta, dir_path)) => {
                 let scope_msg = match repo::get_pending_cases(&repo, &meta.id) {
                     Ok((pending, total)) => {
-                        let mut lines =
-                            vec![format!("\nscope: {total} case(s) to test (in priority order):")];
+                        let mut lines = vec![format!(
+                            "\nscope: {total} case(s) to test (in priority order):"
+                        )];
                         for c in &pending {
                             let tags = if c.fm.tags.is_empty() {
                                 String::new()
@@ -513,9 +518,9 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Return case paths in a run's scope that have no result recorded yet. \
+        description = "Return cases in a run's scope that have no result recorded yet, sorted high→medium→low priority. \
                        Scope = suite cases if the run references a suite; otherwise all repo cases. \
-                       Use this to know which cases still need record_result calls."
+                       Returns case path, title, priority, and tags for each pending case."
     )]
     fn get_pending_cases(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -723,7 +728,7 @@ impl AmelisoMcp {
             .collect();
         let desc = req.description.filter(|s| !s.is_empty());
         match repo::create_suite(&repo, &req.slug, &req.name, desc, case_list) {
-            Ok(_) => format!("created: suites/{}.yaml", req.slug),
+            Ok(s) => format!("created: suites/{}.yaml ({} cases)", req.slug, s.cases.len()),
             Err(e) => format!("error: {e}"),
         }
     }
@@ -743,7 +748,7 @@ impl AmelisoMcp {
             .description
             .map(|d| if d.is_empty() { None } else { Some(d) });
         match repo::update_suite(&repo, &req.slug, req.name.as_deref(), desc, cases) {
-            Ok(_) => format!("updated: suites/{}.yaml", req.slug),
+            Ok(s) => format!("updated: suites/{}.yaml ({} cases)", req.slug, s.cases.len()),
             Err(e) => format!("error: {e}"),
         }
     }
