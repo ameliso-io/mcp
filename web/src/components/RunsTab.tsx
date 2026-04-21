@@ -341,7 +341,7 @@ export default function RunsTab({
                 { label: "In Progress", value: RunStatus.IN_PROGRESS },
                 { label: "Completed", value: RunStatus.COMPLETED },
                 { label: "Aborted", value: RunStatus.ABORTED },
-              ] as { label: string; value: RunStatus }[]
+              ] satisfies { label: string; value: RunStatus }[]
             ).map((opt) => (
               <button
                 key={opt.value}
