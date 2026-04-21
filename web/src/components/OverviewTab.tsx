@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
-import type { CoverageEntry } from '../gen/ameliso/v1/types_pb'
+import type { AffectedCase, CoverageEntry } from '../gen/ameliso/v1/types_pb'
 import { ResultStatus } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
@@ -54,6 +54,11 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [sinceRef, setSinceRef] = useState('')
+  const [affected, setAffected] = useState<AffectedCase[] | null>(null)
+  const [affectedLoading, setAffectedLoading] = useState(false)
+  const [affectedError, setAffectedError] = useState<string | null>(null)
+
   const load = useCallback(async (path: string) => {
     if (!path) return
     setLoading(true)
@@ -80,6 +85,21 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
     e.preventDefault()
     onRepoPathChange(inputPath)
     load(inputPath)
+  }
+
+  async function handleAffected(e: React.FormEvent) {
+    e.preventDefault()
+    if (!repoPath) return
+    setAffectedLoading(true)
+    setAffectedError(null)
+    try {
+      const res = await client.getAffectedCases({ repoPath, sinceRef })
+      setAffected(res.cases)
+    } catch (err) {
+      setAffectedError(String(err))
+    } finally {
+      setAffectedLoading(false)
+    }
   }
 
   const counts = {
@@ -207,6 +227,71 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
       {!loading && !error && repoPath && entries.length === 0 && (
         <div style={{ ...card, color: '#64748b', textAlign: 'center', padding: '40px' }}>
           No cases found in this repository.
+        </div>
+      )}
+
+      {repoPath && (
+        <div style={card}>
+          <p style={{ ...label, marginBottom: '12px' }}>Affected Cases by Git Diff</p>
+          <form onSubmit={handleAffected} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <input
+              type="text"
+              value={sinceRef}
+              onChange={e => setSinceRef(e.target.value)}
+              placeholder="Since ref (default: last run commit)"
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                fontSize: '14px',
+              }}
+            />
+            <button
+              type="submit"
+              disabled={affectedLoading}
+              style={{
+                padding: '8px 16px',
+                background: '#1e293b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {affectedLoading ? 'Checking…' : 'Check Diff'}
+            </button>
+          </form>
+          {affectedError && (
+            <div style={{ color: '#991b1b', fontSize: '13px', marginBottom: '8px' }}>{affectedError}</div>
+          )}
+          {affected !== null && (
+            affected.length === 0 ? (
+              <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>No cases affected by this diff.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {affected.map(ac => (
+                  <div
+                    key={ac.case?.path}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      background: '#f8fafc',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <span style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace' }}>{ac.case?.path}</span>
+                    <span style={{ fontSize: '13px', color: '#64748b' }}>{ac.case?.title}</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>{ac.reason}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
         </div>
       )}
     </div>
