@@ -104,6 +104,9 @@
   color: var(--color-subtle);
   white-space: nowrap;
 }
+.caseCountStale {
+  opacity: 0.5;
+}
 
 .errorCard {
   composes: card;
@@ -143,6 +146,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.listStale {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .caseCard {

@@ -382,16 +382,16 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                       return (
                         <div className={styles.resultFilters}>
                           {[
-                            { label: 'Passed', count: counts.passed, color: '#16a34a', bg: '#f0fdf4', status: ResultStatus.PASSED },
-                            { label: 'Failed', count: counts.failed, color: '#dc2626', bg: '#fef2f2', status: ResultStatus.FAILED },
-                            { label: 'Blocked', count: counts.blocked, color: '#ea580c', bg: '#fff7ed', status: ResultStatus.BLOCKED },
-                            { label: 'Skipped', count: counts.skipped, color: '#64748b', bg: '#f8fafc', status: ResultStatus.SKIPPED },
+                            { label: 'Passed', count: counts.passed, status: ResultStatus.PASSED },
+                            { label: 'Failed', count: counts.failed, status: ResultStatus.FAILED },
+                            { label: 'Blocked', count: counts.blocked, status: ResultStatus.BLOCKED },
+                            { label: 'Skipped', count: counts.skipped, status: ResultStatus.SKIPPED },
                           ].filter(s => s.count > 0).map(s => (
                             <button
                               key={s.label}
+                              data-status={ResultStatus[s.status]}
                               onClick={() => setResultStatusFilter(rsf => rsf === s.status ? null : s.status)}
                               className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ''}`}
-                              style={{ '--btn-color': s.color, '--btn-bg': s.bg, '--btn-color-alpha': s.color + '30' } as React.CSSProperties}
                             >
                               {s.count} {s.label}
                             </button>

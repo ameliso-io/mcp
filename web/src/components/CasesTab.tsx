@@ -288,7 +288,7 @@ export default function CasesTab({ repoPath }: Props) {
           <option value="path">Sort: Path</option>
         </select>
         {!loading && deferredCases.length > 0 && (
-          <span className={styles.caseCount} style={isStale ? { opacity: 0.5 } : undefined}>
+          <span className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}>
             {deferredCases.length} case{deferredCases.length !== 1 ? 's' : ''}
           </span>
         )}
@@ -307,7 +307,7 @@ export default function CasesTab({ repoPath }: Props) {
         <div className={styles.emptyCard}>No cases found.</div>
       )}
 
-      <div className={styles.list} style={isStale ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+      <div className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}>
         {[...deferredCases].sort((a, b) => {
           if (sortBy === 'priority') {
             const ord = { high: 0, medium: 1, low: 2 } as Record<string, number>

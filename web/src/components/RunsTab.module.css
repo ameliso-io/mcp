@@ -262,17 +262,22 @@
 .resultFilterBtn {
   font-size: 13px;
   font-weight: 600;
-  color: var(--btn-color);
-  background: var(--btn-bg);
-  border: 1px solid var(--btn-color-alpha);
+  --_c: var(--color-subtle);
+  color: var(--_c);
+  background: color-mix(in srgb, var(--_c) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--_c) 20%, transparent);
   padding: 4px 10px;
   border-radius: 6px;
   cursor: pointer;
 }
+.resultFilterBtn[data-status="PASSED"] { --_c: var(--color-result-passed); }
+.resultFilterBtn[data-status="FAILED"] { --_c: var(--color-result-failed); }
+.resultFilterBtn[data-status="BLOCKED"] { --_c: var(--color-result-blocked); }
+.resultFilterBtn[data-status="SKIPPED"] { --_c: var(--color-result-skipped); }
 
 .resultFilterBtnActive {
-  background: var(--btn-color-alpha);
-  border-color: var(--btn-color);
+  background: color-mix(in srgb, var(--_c) 20%, transparent);
+  border-color: var(--_c);
 }
 
 .noResults {
