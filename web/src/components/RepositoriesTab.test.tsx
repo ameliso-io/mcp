@@ -144,4 +144,12 @@ describe('RepositoriesTab', () => {
     await userEvent.click(screen.getByText('Remove'))
     await waitFor(() => expect(screen.getByText('remove failed')).toBeInTheDocument())
   })
+
+  it('calls handleGitHubCallback for setup_action=update', async () => {
+    window.history.pushState({}, '', '?installation_id=inst-99&setup_action=update')
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({ repositories: [makeRepo()] } as never)
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
+    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: 'inst-99' }))
+    window.history.replaceState({}, '', '/')
+  })
 })

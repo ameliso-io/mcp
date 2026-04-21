@@ -308,4 +308,26 @@ describe('RunsTab', () => {
     await userEvent.click(screen.getByText('Cancel'))
     await waitFor(() => expect(screen.queryByText('Save Result')).not.toBeInTheDocument())
   })
+
+  it('shows error when recordResult fails in record form', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.recordResult).mockRejectedValue(new Error('record error'))
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('Record'))
+    await waitFor(() => screen.getByText('Save Result'))
+    await userEvent.click(screen.getByText('Save Result'))
+    await waitFor(() => expect(screen.getByText('record error')).toBeInTheDocument())
+  })
+
+  it('shows error when selectRun fails', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.getPendingCases).mockRejectedValue(new Error('select error'))
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(screen.getByText('select error')).toBeInTheDocument())
+  })
 })
