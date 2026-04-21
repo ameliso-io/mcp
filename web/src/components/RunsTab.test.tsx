@@ -317,6 +317,19 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("delete error")).toBeInTheDocument());
   });
 
+  it("shows progressbar with aria-valuetext for completion progress", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [mockCase], totalInScope: 3 } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByRole("progressbar"));
+    const bar = screen.getByRole("progressbar");
+    expect(bar).toHaveAttribute("aria-valuemax", "3");
+    expect(bar).toHaveAttribute("aria-valuenow", "2");
+    expect(bar).toHaveAttribute("aria-valuetext", "2 of 3 cases complete");
+  });
+
   it('shows "all cases recorded" message when pending is empty', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 1 } as never);

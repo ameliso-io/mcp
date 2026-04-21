@@ -611,6 +611,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                           aria-valuemin={0}
                           aria-valuemax={totalInScope}
                           aria-valuenow={totalInScope - pendingCases.length}
+                          aria-valuetext={`${totalInScope - pendingCases.length} of ${totalInScope} case${totalInScope !== 1 ? "s" : ""} complete`}
                         >
                           <div
                             className={styles.progressBar}
