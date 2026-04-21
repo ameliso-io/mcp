@@ -20,6 +20,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [expandedCasesLoading, setExpandedCasesLoading] = useState(false)
 
   const createFormId = useId()
+  const editFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
   const [newName, setNewName] = useState('')
@@ -187,16 +188,16 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
                 <form onSubmit={handleUpdate} className={styles.formGridSm}>
                   <div>
-                    <label className={styles.label}>Name</label>
-                    <input className={styles.input} value={editName} onChange={e => setEditName(e.target.value)} required />
+                    <label htmlFor={`${editFormId}-name`} className={styles.label}>Name</label>
+                    <input id={`${editFormId}-name`} className={styles.input} value={editName} onChange={e => setEditName(e.target.value)} required />
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.label}>Description</label>
-                    <input className={styles.input} value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+                    <label htmlFor={`${editFormId}-desc`} className={styles.label}>Description</label>
+                    <input id={`${editFormId}-desc`} className={styles.input} value={editDesc} onChange={e => setEditDesc(e.target.value)} />
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.label}>Cases (comma-separated paths)</label>
-                    <input className={styles.input} value={editCases} onChange={e => setEditCases(e.target.value)} />
+                    <label htmlFor={`${editFormId}-cases`} className={styles.label}>Cases (comma-separated paths)</label>
+                    <input id={`${editFormId}-cases`} className={styles.input} value={editCases} onChange={e => setEditCases(e.target.value)} />
                   </div>
                   <div className={styles.formActions}>
                     <button type="submit" disabled={saving} className={styles.btnSaveSm}>{saving ? 'Saving…' : 'Save'}</button>

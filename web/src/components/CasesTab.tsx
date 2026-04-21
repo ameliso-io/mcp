@@ -45,6 +45,7 @@ export default function CasesTab({ repoPath }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const createFormId = useId()
+  const editFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newPath, setNewPath] = useState('')
   const [newTitle, setNewTitle] = useState('')
@@ -320,28 +321,28 @@ export default function CasesTab({ repoPath }: Props) {
               {editingPath === c.path ? (
                 <form onSubmit={handleUpdate} className={styles.formGridSm}>
                   <div>
-                    <label className={styles.labelSm}>Title</label>
-                    <input value={editTitle} onChange={e => setEditTitle(e.target.value)} required className={styles.input} />
+                    <label htmlFor={`${editFormId}-title`} className={styles.labelSm}>Title</label>
+                    <input id={`${editFormId}-title`} value={editTitle} onChange={e => setEditTitle(e.target.value)} required className={styles.input} />
                   </div>
                   <div>
-                    <label className={styles.labelSm}>Priority</label>
-                    <select value={editPriority} onChange={e => setEditPriority(Number(e.target.value) as Priority)} className={styles.input}>
+                    <label htmlFor={`${editFormId}-priority`} className={styles.labelSm}>Priority</label>
+                    <select id={`${editFormId}-priority`} value={editPriority} onChange={e => setEditPriority(Number(e.target.value) as Priority)} className={styles.input}>
                       <option value={Priority.LOW}>Low</option>
                       <option value={Priority.MEDIUM}>Medium</option>
                       <option value={Priority.HIGH}>High</option>
                     </select>
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.labelSm}>Description</label>
-                    <input value={editDesc} onChange={e => setEditDesc(e.target.value)} className={styles.input} />
+                    <label htmlFor={`${editFormId}-desc`} className={styles.labelSm}>Description</label>
+                    <input id={`${editFormId}-desc`} value={editDesc} onChange={e => setEditDesc(e.target.value)} className={styles.input} />
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.labelSm}>Tags (comma-separated)</label>
-                    <input value={editTags} onChange={e => setEditTags(e.target.value)} className={styles.input} />
+                    <label htmlFor={`${editFormId}-tags`} className={styles.labelSm}>Tags (comma-separated)</label>
+                    <input id={`${editFormId}-tags`} value={editTags} onChange={e => setEditTags(e.target.value)} className={styles.input} />
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.labelSm}>Steps / Body (Markdown)</label>
-                    <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={8} className={styles.textarea} />
+                    <label htmlFor={`${editFormId}-body`} className={styles.labelSm}>Steps / Body (Markdown)</label>
+                    <textarea id={`${editFormId}-body`} value={editBody} onChange={e => setEditBody(e.target.value)} rows={8} className={styles.textarea} />
                   </div>
                   <div className={styles.formActions}>
                     <button type="submit" disabled={saving} className={styles.btnSaveSm}>{saving ? 'Saving…' : 'Save'}</button>
