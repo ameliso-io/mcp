@@ -14,8 +14,10 @@ pub struct GitHubConfig {
 pub fn config() -> Option<GitHubConfig> {
     let app_id = std::env::var("GITHUB_APP_ID").ok()?;
     let private_key = std::env::var("GITHUB_APP_PRIVATE_KEY").ok()?;
-    let installation_url = std::env::var("GITHUB_APP_INSTALLATION_URL")
-        .unwrap_or_else(|_| String::from("https://github.com/apps/ameliso/installations/new"));
+    let installation_url = std::env::var("GITHUB_APP_INSTALLATION_URL").unwrap_or_else(|_| {
+        let app_name = std::env::var("GITHUB_APP_NAME").unwrap_or_else(|_| "ameliso".to_owned());
+        format!("https://github.com/apps/{app_name}/installations/new")
+    });
     Some(GitHubConfig {
         app_id,
         private_key,
