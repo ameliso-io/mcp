@@ -27,12 +27,12 @@ function RunsInner() {
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
 
-  function handleInitialSuiteConsumed() {
+  const handleInitialSuiteConsumed = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
     const qs = params.toString();
     router.replace(qs ? `/runs?${qs}` : "/runs");
-  }
+  }, [router, searchParams]);
 
   const handleStatusFilterChange = useCallback(
     (s: RunStatus) => {
