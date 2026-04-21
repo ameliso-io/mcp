@@ -12,6 +12,11 @@ graph TD
     Human --> Web
 
     Server --> GitProvider[Git Provider]
-    GitProvider --> Git[Git Repo<br/>GitHub / GitLab]
-    Git --> Tests[Test Cases]
-    Git --> Results[Test Results]
+    GitProvider --> GitHubApp[GitHub App]
+    GitProvider --> GitLabIntegration[GitLab Integration]
+    GitHubApp --> GitHubRepo[GitHub Repo]
+    GitLabIntegration --> GitLabRepo[GitLab Repo]
+    GitHubRepo --> Tests[Test Cases]
+    GitHubRepo --> Results[Test Results]
+    GitLabRepo --> Tests
+    GitLabRepo --> Results
