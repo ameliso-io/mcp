@@ -313,30 +313,38 @@ impl AmelisoMcp {
 #[tool_router(server_handler)]
 impl AmelisoMcp {
     #[tool(
-        description = "Get an overview of the test repo: total cases by priority, coverage stats (never/passed/failed/blocked/skipped), active in-progress runs. Use this first to understand the testing state before diving into details."
+        description = "Get an overview of the test repo: total cases by priority, coverage stats (never/passed/failed/blocked/skipped), active in-progress runs with pending counts, and suite count. Use this first to understand the testing state before diving into details."
     )]
     async fn repo_status(&self, Parameters(req): Parameters<RepoIdRequest>) -> String {
-        let mut client = self.client();
-        let cov = match client
-            .get_coverage_report(pb::GetCoverageReportRequest {
+        let mut c1 = self.client();
+        let mut c2 = self.client();
+        let mut c3 = self.client();
+        let (cov_res, runs_res, suites_res) = tokio::join!(
+            c1.get_coverage_report(pb::GetCoverageReportRequest {
                 repo_id: req.repo_id.clone(),
                 status_filter: pb::ResultStatus::Unspecified as i32,
-            })
-            .await
-        {
+            }),
+            c2.list_runs(pb::ListRunsRequest {
+                repo_id: req.repo_id.clone(),
+                status: pb::RunStatus::Unspecified as i32,
+            }),
+            c3.list_suites(pb::ListSuitesRequest {
+                repo_id: req.repo_id.clone(),
+            }),
+        );
+        let cov = match cov_res {
             Ok(r) => r.into_inner(),
             Err(e) => return format!("error: {e}"),
         };
-        let runs = match client
-            .list_runs(pb::ListRunsRequest {
-                repo_id: req.repo_id.clone(),
-                status: pb::RunStatus::Unspecified as i32,
-            })
-            .await
-        {
+        let runs = match runs_res {
             Ok(r) => r.into_inner().runs,
             Err(e) => return format!("error listing runs: {e}"),
         };
+        let suite_count = match suites_res {
+            Ok(r) => r.into_inner().suites.len(),
+            Err(_) => 0,
+        };
+        let client = self.client();
 
         let total = cov.entries.len();
         let mut high = 0usize;
@@ -372,6 +380,7 @@ impl AmelisoMcp {
                 counts.get("skipped").copied().unwrap_or(0),
                 counts.get("never").copied().unwrap_or(0),
             ),
+            format!("Suites: {suite_count}"),
             format!("Runs: {} total", runs.len()),
         ];
 
@@ -379,19 +388,27 @@ impl AmelisoMcp {
             lines.push("Active runs: none".to_owned());
         } else {
             lines.push(format!("Active runs ({}):", active.len()));
-            for r in &active {
+            // Fetch pending counts for all active runs concurrently.
+            let pending_futures: Vec<_> = active
+                .iter()
+                .map(|r| {
+                    let mut c = client.clone();
+                    let repo_id = req.repo_id.clone();
+                    let run_id = r.id.clone();
+                    async move {
+                        c.get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
+                            .await
+                    }
+                })
+                .collect();
+            let pending_results = futures::future::join_all(pending_futures).await;
+            for (r, pend_res) in active.iter().zip(pending_results) {
                 let suite_part = if r.suite.is_empty() {
                     String::new()
                 } else {
                     format!(" suite: {}", r.suite)
                 };
-                let pending_part = match client
-                    .get_pending_cases(pb::GetPendingCasesRequest {
-                        repo_id: req.repo_id.clone(),
-                        run_id: r.id.clone(),
-                    })
-                    .await
-                {
+                let pending_part = match pend_res {
                     Ok(resp) => {
                         let resp = resp.into_inner();
                         format!(" ({}/{} pending)", resp.cases.len(), resp.total_in_scope)

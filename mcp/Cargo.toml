@@ -16,3 +16,4 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 tonic = { version = "0.12", default-features = false, features = ["channel"] }
+futures = "0.3"
