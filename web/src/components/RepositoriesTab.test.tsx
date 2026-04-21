@@ -377,6 +377,24 @@ describe("RepositoriesTab", () => {
     expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "shared-inst" });
   });
 
+  it("Refresh All skips repos with empty installationId (filter(Boolean))", async () => {
+    const repoWithId = makeRepo({ id: "org/alpha", installationId: "inst-99" });
+    const repoNoId = makeRepo({ id: "org/beta", installationId: "" });
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [repoWithId, repoNoId],
+    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [repoWithId],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledTimes(1));
+    // Only the repo with a non-empty installationId should trigger a callback.
+    expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-99" });
+    expect(client.handleGitHubCallback).not.toHaveBeenCalledWith({ installationId: "" });
+  });
+
   it("search filters repos by html url", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({
       repositories: [
