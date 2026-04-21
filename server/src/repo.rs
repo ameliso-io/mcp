@@ -409,6 +409,18 @@ pub fn create_run(
     suite: Option<String>,
 ) -> RResult<(RunYaml, String)> {
     validate_slug_path(slug, "run slug")?;
+    if let Some(ref suite_slug) = suite {
+        if !suite_slug.is_empty() {
+            validate_slug_path(suite_slug, "suite")?;
+            let suite_file = suites_dir(repo).join(format!("{}.yaml", suite_slug));
+            if !suite_file.exists() {
+                return Err(RepoError::NotFound(format!(
+                    "suite not found: {}",
+                    suite_slug
+                )));
+            }
+        }
+    }
     let today = Local::now().format("%Y-%m-%d").to_string();
     let run_id = format!("{}-{}", today, slug);
     let dir = run_dir_path(repo, &run_id);
@@ -465,7 +477,10 @@ pub fn record_result(
 
     let case_file = case_file_path(repo, case_path);
     if !case_file.exists() {
-        return Err(RepoError::NotFound(format!("case not found: {}", case_path)));
+        return Err(RepoError::NotFound(format!(
+            "case not found: {}",
+            case_path
+        )));
     }
     let result_file = result_file_path(repo, run_id, case_path);
     write_result_file(&result_file, status, notes)?;

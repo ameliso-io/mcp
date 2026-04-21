@@ -1017,3 +1017,23 @@ async fn record_result_rejects_nonexistent_case() {
         .unwrap_err();
     assert_eq!(err.code(), tonic::Code::NotFound);
 }
+
+#[tokio::test]
+async fn create_run_rejects_nonexistent_suite() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let err = c
+        .create_run(Request::new(pb::CreateRunRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+            tester: "alice".to_owned(),
+            suite: "ghost-suite".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
