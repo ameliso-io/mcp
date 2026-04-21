@@ -346,13 +346,17 @@ describe("CasesTab", () => {
   it("clears debounce timeout on rapid search input", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
-    const searchInput = screen.getByPlaceholderText("Search cases…");
+    const searchInput = screen.getByRole("searchbox", { name: "Search cases" });
     await userEvent.type(searchInput, "lo");
     await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
 
   it("shows medium priority label and opens edit for medium priority case", async () => {
-    const mediumCase = makeCase({ priority: "medium", path: "auth/reset", title: "Reset Password" });
+    const mediumCase = makeCase({
+      priority: "medium",
+      path: "auth/reset",
+      title: "Reset Password",
+    });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mediumCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Reset Password")).toBeInTheDocument());

@@ -154,12 +154,15 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <div className={styles.searchWrapper}>
           <input
             type="search"
+            aria-label="Search repositories"
             placeholder="Search repositories…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.searchInput}
           />
-          <span className={styles.searchIcon}>⌕</span>
+          <span className={styles.searchIcon} aria-hidden="true">
+            ⌕
+          </span>
         </div>
       )}
 
@@ -176,7 +179,11 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg} role="status">Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && repos.length === 0 && (
         <div className={styles.emptyCard}>

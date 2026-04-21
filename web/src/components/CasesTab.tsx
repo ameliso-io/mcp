@@ -305,7 +305,8 @@ export default function CasesTab({ repoId }: Props) {
 
       <div className={styles.filterBar}>
         <input
-          type="text"
+          type="search"
+          aria-label="Search cases"
           placeholder="Search cases…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -491,7 +492,9 @@ export default function CasesTab({ repoId }: Props) {
                       <p className={styles.caseTitle}>{c.title}</p>
                       {c.description && <p className={styles.caseDesc}>{c.description}</p>}
                     </div>
-                    <span className={styles.chevron} aria-hidden="true">{expandedPath === c.path ? "▲" : "▼"}</span>
+                    <span className={styles.chevron} aria-hidden="true">
+                      {expandedPath === c.path ? "▲" : "▼"}
+                    </span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

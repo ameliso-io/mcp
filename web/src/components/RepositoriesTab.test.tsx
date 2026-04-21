@@ -201,7 +201,7 @@ describe("RepositoriesTab", () => {
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("org/alpha"));
-    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "alpha");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search repositories" }), "alpha");
     expect(screen.getByText("org/alpha")).toBeInTheDocument();
     expect(screen.queryByText("org/beta")).not.toBeInTheDocument();
   });
@@ -232,8 +232,8 @@ describe("RepositoriesTab", () => {
   it("search shows no-results state and clear button resets", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByPlaceholderText("Search repositories…"));
-    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "no-match-xyz");
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search repositories" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search repositories" }), "no-match-xyz");
     await waitFor(() => expect(screen.getByText(/No results for/)).toBeInTheDocument());
     await userEvent.click(screen.getByText("Clear search"));
     expect(screen.getByText("owner/repo")).toBeInTheDocument();
