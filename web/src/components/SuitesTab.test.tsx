@@ -391,6 +391,22 @@ describe("SuitesTab", () => {
     await waitFor(() => expect(screen.getByText("No suites found.")).toBeInTheDocument());
   });
 
+  it('shows "Loading…" inside expanded suite while cases are loading', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listCases).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() =>
+      expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0)
+    );
+    resolve!({ cases: [] });
+  });
+
   it('shows "Saving…" on Save button while update in progress', async () => {
     let resolve: (v: unknown) => void;
     vi.mocked(client.updateSuite).mockReturnValue(
