@@ -162,6 +162,14 @@ describe("RepositoriesTab", () => {
     window.history.replaceState({}, "", "/");
   });
 
+  it("does not call handleGitHubCallback when setup_action=request_install", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-bad&setup_action=request_install");
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("No repositories connected"));
+    expect(client.handleGitHubCallback).not.toHaveBeenCalled();
+    window.history.replaceState({}, "", "/");
+  });
+
   it("calls handleGitHubCallback when installation_id present without setup_action", async () => {
     window.history.pushState({}, "", "?installation_id=inst-no-action");
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
