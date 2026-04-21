@@ -1001,6 +1001,19 @@ describe("RunsTab", () => {
     expect(screen.getByText("67%")).toBeInTheDocument();
   });
 
+  it("does not auto-expand when createRun returns no run field", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.createRun).mockResolvedValue({ run: undefined } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "smoke-3");
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    await waitFor(() => expect(client.createRun).toHaveBeenCalled());
+    // getPendingCases should NOT be called — no auto-expand
+    expect(client.getPendingCases).not.toHaveBeenCalled();
+  });
+
   it("shows suite badge, tester, and environment in run card", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
