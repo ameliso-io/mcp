@@ -1,3 +1,0 @@
-module.exports=[68144,a=>{"use strict";var b=a.i(50683);let c={display:"flex",flexDirection:"column",alignItems:"center",gap:"16px",padding:"48px",color:"#dc2626"},d={fontSize:"14px"},e={padding:"8px 16px",background:"#1e293b",color:"white",border:"none",borderRadius:"6px",cursor:"pointer",fontSize:"14px"};a.s(["default",0,function({error:a,reset:f}){return(0,b.jsxs)("div",{style:c,children:[(0,b.jsx)("p",{style:d,children:a.message||"Something went wrong."}),(0,b.jsx)("button",{style:e,onClick:f,children:"Try again"})]})}])}];
-
-//# sourceMappingURL=_claude_worktrees_melodic-humming-gosling_web_app_error_tsx_0gts1a4._.js.map
