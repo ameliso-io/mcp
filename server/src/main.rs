@@ -11,7 +11,8 @@ async fn main() -> Result<()> {
     println!("ameliso-server listening on {}", addr);
 
     Server::builder()
-        .add_service(AmelisoServiceServer::new(AmelisoServer))
+        .accept_http1(true)
+        .add_service(tonic_web::enable(AmelisoServiceServer::new(AmelisoServer)))
         .serve(addr)
         .await?;
 

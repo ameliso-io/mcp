@@ -1,0 +1,214 @@
+import { useState, useEffect, useCallback } from 'react'
+import { client } from '../client'
+import type { CoverageEntry } from '../gen/ameliso/v1/types_pb'
+import { ResultStatus } from '../gen/ameliso/v1/types_pb'
+
+interface Props {
+  repoPath: string
+  onRepoPathChange: (p: string) => void
+}
+
+const card = {
+  background: 'white',
+  borderRadius: '8px',
+  padding: '20px',
+  border: '1px solid #e2e8f0',
+  marginBottom: '16px',
+}
+
+const label = {
+  fontSize: '12px',
+  fontWeight: '600',
+  color: '#64748b',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.5px',
+  marginBottom: '6px',
+}
+
+function statusColor(s: ResultStatus): string {
+  switch (s) {
+    case ResultStatus.PASSED: return '#22c55e'
+    case ResultStatus.FAILED: return '#ef4444'
+    case ResultStatus.BLOCKED: return '#f97316'
+    case ResultStatus.SKIPPED: return '#94a3b8'
+    case ResultStatus.NEVER: return '#e2e8f0'
+    default: return '#e2e8f0'
+  }
+}
+
+function statusLabel(s: ResultStatus): string {
+  switch (s) {
+    case ResultStatus.PASSED: return 'Passed'
+    case ResultStatus.FAILED: return 'Failed'
+    case ResultStatus.BLOCKED: return 'Blocked'
+    case ResultStatus.SKIPPED: return 'Skipped'
+    case ResultStatus.NEVER: return 'Never run'
+    default: return 'Unknown'
+  }
+}
+
+export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
+  const [inputPath, setInputPath] = useState(repoPath)
+  const [entries, setEntries] = useState<CoverageEntry[]>([])
+  const [runCount, setRunCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async (path: string) => {
+    if (!path) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await client.getCoverageReport({ repoPath: path })
+      setEntries(res.entries)
+      setRunCount(res.runCount)
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (repoPath) {
+      setInputPath(repoPath)
+      load(repoPath)
+    }
+  }, [repoPath, load])
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    onRepoPathChange(inputPath)
+    load(inputPath)
+  }
+
+  const counts = {
+    passed: entries.filter(e => e.latestStatus === ResultStatus.PASSED).length,
+    failed: entries.filter(e => e.latestStatus === ResultStatus.FAILED).length,
+    blocked: entries.filter(e => e.latestStatus === ResultStatus.BLOCKED).length,
+    never: entries.filter(e => e.latestStatus === ResultStatus.NEVER || e.latestStatus === ResultStatus.UNSPECIFIED).length,
+  }
+
+  return (
+    <div>
+      <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '22px', fontWeight: '700' }}>
+        Overview
+      </h2>
+
+      <div style={card}>
+        <p style={label}>Repository Path</p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px' }}>
+          <input
+            type="text"
+            value={inputPath}
+            onChange={e => setInputPath(e.target.value)}
+            placeholder="/path/to/repo"
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              fontSize: '14px',
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: '8px 16px',
+              background: '#1e293b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            Load
+          </button>
+        </form>
+      </div>
+
+      {error && (
+        <div style={{ ...card, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>
+          Loading…
+        </div>
+      )}
+
+      {!loading && entries.length > 0 && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            {[
+              { label: 'Total Cases', value: entries.length, color: '#1e293b' },
+              { label: 'Passed', value: counts.passed, color: '#16a34a' },
+              { label: 'Failed', value: counts.failed, color: '#dc2626' },
+              { label: 'Never Run', value: counts.never, color: '#94a3b8' },
+            ].map(stat => (
+              <div key={stat.label} style={{ ...card, marginBottom: 0 }}>
+                <p style={label}>{stat.label}</p>
+                <p style={{ margin: 0, fontSize: '32px', fontWeight: '700', color: stat.color }}>
+                  {stat.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={card}>
+            <p style={{ ...label, marginBottom: '12px' }}>Coverage ({runCount} run{runCount !== 1 ? 's' : ''})</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {entries.map(entry => (
+                <div
+                  key={entry.case?.path}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 12px',
+                    background: '#f8fafc',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: statusColor(entry.latestStatus),
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace' }}>
+                    {entry.case?.path}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>
+                    {entry.case?.title}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: statusColor(entry.latestStatus),
+                    }}
+                  >
+                    {statusLabel(entry.latestStatus)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {!loading && !error && repoPath && entries.length === 0 && (
+        <div style={{ ...card, color: '#64748b', textAlign: 'center', padding: '40px' }}>
+          No cases found in this repository.
+        </div>
+      )}
+    </div>
+  )
+}
