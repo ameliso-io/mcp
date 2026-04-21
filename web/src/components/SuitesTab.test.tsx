@@ -356,6 +356,35 @@ describe("SuitesTab", () => {
     expect(screen.getByText("Edit")).toBeInTheDocument();
   });
 
+  it("shows loading state while fetching suites", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listSuites).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ suites: [] });
+  });
+
+  it('shows "Creating…" on Create Suite button while creating', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.createSuite).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "regression");
+    await userEvent.type(inputs[1], "Regression Tests");
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    expect(screen.getByText("Creating…")).toBeInTheDocument();
+    resolve!({ suite: mockSuite, filePath: "suites/regression.yaml" });
+  });
+
   it('shows "No suites found." when suites list is empty', async () => {
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [] } as never);
     render(<SuitesTab repoId="owner/repo" />);
