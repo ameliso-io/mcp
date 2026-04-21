@@ -1079,6 +1079,42 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument());
   });
 
+  it("does not show notes span in result row when notes is empty", async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const emptyNotesResult = {
+      casePath: "auth/login",
+      status: ResultStatus.PASSED,
+      notes: "",
+    } as unknown as CaseResult;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [emptyNotesResult] },
+    } as never);
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // notes span is conditionally rendered — must be absent when notes is ""
+    expect(screen.queryByText("looks good")).not.toBeInTheDocument();
+  });
+
+  it("does not show progress bar when totalInScope is 0", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [],
+      totalInScope: 0,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() =>
+      expect(screen.getByText("All cases have results recorded.")).toBeInTheDocument()
+    );
+    // progress bar text is only shown when totalInScope > 0
+    expect(screen.queryByText(/\d+ \/ \d+ done/)).not.toBeInTheDocument();
+  });
+
   it("does not show title span when result casePath has no matching case in caseTitleMap", async () => {
     const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
     const unknownPathResult = {
