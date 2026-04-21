@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useTransition,
+  useDeferredValue,
+} from "react";
 import dynamic from "next/dynamic";
 import styles from "./CasesTab.module.css";
 import { client } from "@/client";
@@ -213,42 +221,45 @@ export default function CasesTab({
     prevCountRef.current = count;
   }, [deferredCases.length, loading, announceFilter]);
 
-  const handleCreate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newPath || !newTitle) return;
-    setCreating(true);
-    try {
-      await client.createCase({
-        repoId,
-        casePath: newPath,
-        title: newTitle,
-        description: newDesc,
-        priority: newPriority,
-        tags: newTags
-          ? newTags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-        body: newBody,
-      });
-      setShowCreate(false);
-      lastFocusRef.current?.focus();
-      setNewPath("");
-      setNewTitle("");
-      setNewDesc("");
-      setNewTags("");
-      setNewBody("");
-      setNewPriority(Priority.MEDIUM);
-      announceAction("Case created");
-      await load();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setCreating(false);
-    }
-  }, [repoId, newPath, newTitle, newDesc, newPriority, newTags, newBody, announceAction, load]);
+  const handleCreate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — required fields prevent submission when blank */
+      if (!repoId || !newPath || !newTitle) return;
+      setCreating(true);
+      try {
+        await client.createCase({
+          repoId,
+          casePath: newPath,
+          title: newTitle,
+          description: newDesc,
+          priority: newPriority,
+          tags: newTags
+            ? newTags
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
+            : [],
+          body: newBody,
+        });
+        setShowCreate(false);
+        lastFocusRef.current?.focus();
+        setNewPath("");
+        setNewTitle("");
+        setNewDesc("");
+        setNewTags("");
+        setNewBody("");
+        setNewPriority(Priority.MEDIUM);
+        announceAction("Case created");
+        load();
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setCreating(false);
+      }
+    },
+    [repoId, newPath, newTitle, newDesc, newPriority, newTags, newBody, announceAction, load]
+  );
 
   async function handleDelete(casePath: string) {
     try {
@@ -262,43 +273,74 @@ export default function CasesTab({
     }
   }
 
-  const handleUpdate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    /* v8 ignore next 2 — form only renders when editingPath is set */
-    if (!editingPath) return;
-    setSaving(true);
-    try {
-      await client.updateCase({
-        repoId,
-        casePath: editingPath,
-        title: editTitle,
-        description: editDesc,
-        priority: editPriority,
-        tags: editTags
-          ? editTags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-        body: editBody,
-        newPath: editNewPath,
-      });
-      setEditingPath(null);
-      lastFocusRef.current?.focus();
-      announceAction("Case updated");
-      await load();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  }, [editingPath, repoId, editTitle, editDesc, editPriority, editTags, editBody, announceAction, load]);
+  const handleUpdate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — form only renders when editingPath is set */
+      if (!editingPath) return;
+      setSaving(true);
+      try {
+        await client.updateCase({
+          repoId,
+          casePath: editingPath,
+          title: editTitle,
+          description: editDesc,
+          priority: editPriority,
+          tags: editTags
+            ? editTags
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
+            : [],
+          body: editBody,
+          newPath: editNewPath,
+        });
+        setEditingPath(null);
+        lastFocusRef.current?.focus();
+        announceAction("Case updated");
+        load();
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setSaving(false);
+      }
+    },
+    [
+      editingPath,
+      repoId,
+      editTitle,
+      editDesc,
+      editPriority,
+      editTags,
+      editBody,
+      editNewPath,
+      announceAction,
+      load,
+    ]
+  );
+
+  const sortedCases = useMemo(
+    () =>
+      [...deferredCases].sort((a, b) => {
+        if (sortBy === "priority") {
+          const ord: Record<string, number> = { high: 0, medium: 1, low: 2 };
+          const diff = (ord[a.priority] ?? 3) - (ord[b.priority] ?? 3);
+          return diff !== 0 ? diff : a.path.localeCompare(b.path);
+        }
+        return a.path.localeCompare(b.path);
+      }),
+    [deferredCases, sortBy]
+  );
+
+  const allTags = useMemo(
+    () => Array.from(new Set(deferredCases.flatMap((c) => c.tags))),
+    [deferredCases]
+  );
 
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
-  const allTags = Array.from(new Set(deferredCases.flatMap((c) => c.tags)));
   const isStale = cases !== deferredCases;
 
   return (
@@ -532,16 +574,7 @@ export default function CasesTab({
         aria-busy={loading || isStale}
         role="list"
       >
-        {[...deferredCases]
-          .sort((a, b) => {
-            if (sortBy === "priority") {
-              const ord: Record<string, number> = { high: 0, medium: 1, low: 2 };
-              const diff = (ord[a.priority] ?? 3) - (ord[b.priority] ?? 3);
-              return diff !== 0 ? diff : a.path.localeCompare(b.path);
-            }
-            return a.path.localeCompare(b.path);
-          })
-          .map((c) => (
+        {sortedCases.map((c) => (
             <li key={c.path}>
               <div
                 className={
