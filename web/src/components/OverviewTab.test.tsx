@@ -561,6 +561,20 @@ describe("OverviewTab", () => {
     spy.mockRestore();
   });
 
+  it("Go to Runs button not shown when onGoToRuns prop is not provided", async () => {
+    const activeRun = {
+      id: "run-no-goto",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Go to Runs" })).not.toBeInTheDocument();
+  });
+
   it("polling timer callback shows error banner when load fails", async () => {
     const activeRun = {
       id: "run-poll-err",
