@@ -399,8 +399,8 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression Tests");
+    await userEvent.type(inputs[0]!, "regression");
+    await userEvent.type(inputs[1]!, "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ suite: mockSuite, filePath: "suites/regression.yaml" });

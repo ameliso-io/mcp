@@ -63,7 +63,7 @@ describe("OverviewTab", () => {
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("auth/login"));
     const entries = screen.getAllByText(/auth\//);
-    expect(entries[0].textContent).toBe("auth/logout");
+    expect(entries[0]!.textContent).toBe("auth/logout");
   });
 
   it("shows last run date on coverage entries", async () => {
@@ -153,8 +153,8 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
     const titles = screen.getAllByText(/Priority/);
-    expect(titles[0].textContent).toBe("High Priority");
-    expect(titles[1].textContent).toBe("Low Priority");
+    expect(titles[0]!.textContent).toBe("High Priority");
+    expect(titles[1]!.textContent).toBe("Low Priority");
   });
 
   it('shows singular "run" when runCount is 1', async () => {
@@ -228,7 +228,7 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
     const titles = screen.getAllByText(/Priority/);
-    expect(titles[0].textContent).toBe("High Priority");
+    expect(titles[0]!.textContent).toBe("High Priority");
   });
 
   it("sorts AffectedCase with null case field to end (null first)", async () => {
@@ -323,7 +323,7 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("diff error")).toBeInTheDocument());
     const xButtons = screen.getAllByText("×");
-    await userEvent.click(xButtons[xButtons.length - 1]);
+    await userEvent.click(xButtons[xButtons.length - 1]!);
     expect(screen.queryByText("diff error")).not.toBeInTheDocument();
   });
 

@@ -910,14 +910,14 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     // Open record form for first case
     const recordBtns = await screen.findAllByText("Record");
-    await userEvent.click(recordBtns[0]);
+    await userEvent.click(recordBtns[0]!);
     await waitFor(() => screen.getByRole("combobox"));
     // Set FAILED and add notes
     await userEvent.selectOptions(screen.getByRole("combobox"), String(ResultStatus.FAILED));
     await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "broken");
     // Now click Record on the second case — form should switch and reset
     const btns2 = screen.getAllByText("Record");
-    await userEvent.click(btns2[btns2.length - 1]);
+    await userEvent.click(btns2[btns2.length - 1]!);
     await waitFor(() => {
       const select = screen.getByRole("combobox") as HTMLSelectElement;
       expect(select.value).toBe(String(ResultStatus.PASSED));
