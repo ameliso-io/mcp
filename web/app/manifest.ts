@@ -22,5 +22,12 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon/512", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
     ],
+    shortcuts: [
+      { name: "Overview", url: "/overview", description: "Test coverage summary" },
+      { name: "Cases", url: "/cases", description: "Manage test cases" },
+      { name: "Runs", url: "/runs", description: "View and manage test runs" },
+      { name: "Suites", url: "/suites", description: "Manage test suites" },
+    ],
+    launch_handler: { client_mode: "navigate-existing" },
   };
 }
