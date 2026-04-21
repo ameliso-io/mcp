@@ -307,6 +307,11 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
                   <span style={{ fontSize: '13px', color: '#64748b' }}>
                     {entry.case?.title}
                   </span>
+                  {entry.lastRunDate && (
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      {entry.lastRunDate}
+                    </span>
+                  )}
                   <span
                     style={{
                       fontSize: '12px',
