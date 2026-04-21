@@ -7,6 +7,7 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export default function GlobalError({

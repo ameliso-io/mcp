@@ -7,6 +7,8 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  // Enables size-adjust on fallbacks to minimize CLS during font swap
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const viewport: Viewport = {
