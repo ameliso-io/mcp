@@ -234,6 +234,23 @@ describe("OverviewTab", () => {
     );
   });
 
+  it("active runs panel not shown when coverage entries empty even with active runs", async () => {
+    const activeRun = {
+      id: "run-active",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(screen.getByText("No cases found in this repository.")).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
+  });
+
   it("shows BLOCKED, SKIPPED, NEVER, and UNSPECIFIED status entries in coverage", async () => {
     const blockedEntry = makeCovEntry("auth/block", "Blocked Case", "medium", ResultStatus.BLOCKED);
     const skippedEntry = makeCovEntry("auth/skip", "Skipped Case", "low", ResultStatus.SKIPPED);
