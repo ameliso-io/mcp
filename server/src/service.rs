@@ -1865,6 +1865,57 @@ mod tests {
         assert!(err.message().contains("id is required"));
     }
 
+    #[tokio::test]
+    async fn record_result_rejects_never_status() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Never as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("status must be one of"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_rejects_never_status() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Never as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("status must be one of"));
+    }
+
+    #[tokio::test]
+    async fn finalize_run_rejects_unspecified_status() {
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                status: pb::RunStatus::Unspecified as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("status must be completed or aborted"));
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
@@ -2274,7 +2325,10 @@ mod tests {
     #[test]
     fn text_references_case_paren_suffix() {
         // ends_cleanly allows ')' — path followed by closing paren
-        assert!(text_references_case("see (auth/login) for more", "auth/login"));
+        assert!(text_references_case(
+            "see (auth/login) for more",
+            "auth/login"
+        ));
     }
 
     #[test]
