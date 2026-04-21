@@ -1242,4 +1242,25 @@ mod tests {
             .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
+
+    // -----------------------------------------------------------------------
+    // validate_suite_cases: invalid case path fires before DB
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn create_suite_invalid_case_path_in_cases_returns_invalid_arg() {
+        // Valid slug but an invalid case path in the list — validate_slug_path fires in
+        // validate_suite_cases before the first DB query.
+        let err = create_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "Smoke Tests",
+            None,
+            vec!["bad path!".to_owned()],
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
 }
