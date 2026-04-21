@@ -1,18 +1,10 @@
-'use client'
+import type { Metadata } from 'next'
+import OverviewPageClient from './client'
 
-import { useRouter } from 'next/navigation'
-import OverviewTab from '@/components/OverviewTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+export const metadata: Metadata = {
+  title: 'Overview | Ameliso',
+}
 
 export default function OverviewPage() {
-  const router = useRouter()
-  const [repoPath, setRepoPath] = useRepoPath()
-
-  return (
-    <OverviewTab
-      repoPath={repoPath}
-      onRepoPathChange={setRepoPath}
-      onGoToRuns={() => router.push('/runs')}
-    />
-  )
+  return <OverviewPageClient />
 }

@@ -1,17 +1,10 @@
-'use client'
+import type { Metadata } from 'next'
+import RepositoriesPageClient from './client'
 
-import { useRouter } from 'next/navigation'
-import RepositoriesTab from '@/components/RepositoriesTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+export const metadata: Metadata = {
+  title: 'Repositories | Ameliso',
+}
 
 export default function RepositoriesPage() {
-  const router = useRouter()
-  const [repoPath, setRepoPath] = useRepoPath()
-
-  function handleRepoSelect(path: string) {
-    setRepoPath(path)
-    router.push('/overview')
-  }
-
-  return <RepositoriesTab activeRepoPath={repoPath} onRepoSelect={handleRepoSelect} />
+  return <RepositoriesPageClient />
 }

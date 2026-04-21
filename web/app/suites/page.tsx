@@ -1,17 +1,10 @@
-'use client'
+import type { Metadata } from 'next'
+import SuitesPageClient from './client'
 
-import { useRouter } from 'next/navigation'
-import SuitesTab from '@/components/SuitesTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+export const metadata: Metadata = {
+  title: 'Suites | Ameliso',
+}
 
 export default function SuitesPage() {
-  const router = useRouter()
-  const [repoPath] = useRepoPath()
-
-  return (
-    <SuitesTab
-      repoPath={repoPath}
-      onRunSuite={(slug) => router.push(`/runs?suite=${encodeURIComponent(slug)}`)}
-    />
-  )
+  return <SuitesPageClient />
 }

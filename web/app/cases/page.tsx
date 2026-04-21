@@ -1,9 +1,10 @@
-'use client'
+import type { Metadata } from 'next'
+import CasesPageClient from './client'
 
-import CasesTab from '@/components/CasesTab'
-import { useRepoPath } from '@/hooks/useRepoPath'
+export const metadata: Metadata = {
+  title: 'Cases | Ameliso',
+}
 
 export default function CasesPage() {
-  const [repoPath] = useRepoPath()
-  return <CasesTab repoPath={repoPath} />
+  return <CasesPageClient />
 }
