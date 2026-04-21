@@ -560,6 +560,8 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
 
 fn run_affected(repo: &std::path::Path, since: Option<&str>) -> Result<()> {
     let cases = repo::list_cases(repo)?;
+    let case_map: std::collections::HashMap<&str, &repo::LoadedCase> =
+        cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
     let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
     let result = git::find_affected(repo, since, &known_paths)?;
     println!("Reason: {}", result.reason);
@@ -568,7 +570,19 @@ fn run_affected(repo: &std::path::Path, since: Option<&str>) -> Result<()> {
     } else {
         println!("\nCases to re-run ({}):", result.case_paths.len());
         for path in &result.case_paths {
-            println!("  {path}");
+            if let Some(c) = case_map.get(path.as_str()) {
+                let tags = if c.fm.tags.is_empty() {
+                    String::new()
+                } else {
+                    format!(", tags: {}", c.fm.tags.join(", "))
+                };
+                println!(
+                    "  {} — {} (priority: {}{})",
+                    path, c.fm.title, c.fm.priority, tags
+                );
+            } else {
+                println!("  {path}");
+            }
         }
     }
     Ok(())

@@ -598,15 +598,36 @@ impl AmelisoMcp {
         };
         let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
         let since = req.since_ref.as_deref().filter(|s| !s.is_empty());
+        let case_map: std::collections::HashMap<String, &repo::LoadedCase> =
+            cases.iter().map(|c| (c.case_path.clone(), c)).collect();
         match git::find_affected(&repo, since, &known_paths) {
             Ok(result) => {
                 if result.case_paths.is_empty() {
                     format!("No cases need re-running.\nReason: {}", result.reason)
                 } else {
+                    let lines: Vec<String> = result
+                        .case_paths
+                        .iter()
+                        .map(|p| {
+                            if let Some(c) = case_map.get(p) {
+                                let tags = if c.fm.tags.is_empty() {
+                                    String::new()
+                                } else {
+                                    format!(", tags: {}", c.fm.tags.join(", "))
+                                };
+                                format!(
+                                    "  {} — {} (priority: {}{})",
+                                    p, c.fm.title, c.fm.priority, tags
+                                )
+                            } else {
+                                format!("  {p}")
+                            }
+                        })
+                        .collect();
                     format!(
                         "Cases to re-run ({}):\n{}\n\nReason: {}",
                         result.case_paths.len(),
-                        result.case_paths.join("\n"),
+                        lines.join("\n"),
                         result.reason
                     )
                 }
