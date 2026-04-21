@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import MarkdownBody from "./MarkdownBody";
+import styles from "./MarkdownBody.module.css";
 
 describe("MarkdownBody", () => {
   it("renders markdown as HTML", () => {
@@ -32,9 +33,9 @@ describe("MarkdownBody", () => {
     expect(container.querySelector("em")).toHaveTextContent("italic");
   });
 
-  it("applies md-body class", () => {
+  it("applies body CSS module class", () => {
     const { container } = render(<MarkdownBody body="text" />);
-    expect(container.firstChild).toHaveClass("md-body");
+    expect(container.firstChild).toHaveClass(styles.body);
   });
 
   it("sets --md-max-height CSS variable when maxHeight provided", () => {
