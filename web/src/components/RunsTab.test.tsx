@@ -4,28 +4,13 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import RunsTab from "./RunsTab";
 import { client } from "../client";
 import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
-import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
+import { makeCase, makeCaseResult, makeRunMeta } from "../test/factories";
 
 vi.mock("../client");
 
-const mockRun = {
-  id: "2026-01-01-smoke",
-  date: "2026-01-01",
-  tester: "alice",
-  status: RunStatus.IN_PROGRESS,
-  environment: "staging",
-  suite: "smoke",
-} as unknown as RunMeta;
+const mockRun = makeRunMeta({ tester: "alice", environment: "staging" });
 
-const mockCase = {
-  path: "auth/login",
-  title: "User Login",
-  description: "",
-  tags: [],
-  priority: "high",
-  createdAt: "2026-01-01",
-  updatedAt: "2026-01-01",
-} as unknown as Case;
+const mockCase = makeCase({ createdAt: "2026-01-01", updatedAt: "2026-01-01" });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -226,12 +211,8 @@ describe("RunsTab", () => {
   });
 
   it("shows result badges for completed run", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
-    const mockResult = {
-      casePath: "auth/login",
-      status: ResultStatus.PASSED,
-      notes: "",
-    } as unknown as CaseResult;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const mockResult = makeCaseResult();
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [mockResult] },
@@ -243,12 +224,8 @@ describe("RunsTab", () => {
   });
 
   it("shows case title and notes in completed run results", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
-    const mockResult = {
-      casePath: "auth/login",
-      status: ResultStatus.PASSED,
-      notes: "looks good",
-    } as unknown as CaseResult;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const mockResult = makeCaseResult({ notes: "looks good" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [mockResult] },
@@ -262,12 +239,8 @@ describe("RunsTab", () => {
   });
 
   it("filters results by status and shows Show all button", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
-    const mockResult = {
-      casePath: "auth/login",
-      status: ResultStatus.PASSED,
-      notes: "",
-    } as unknown as CaseResult;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const mockResult = makeCaseResult();
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [mockResult] },
@@ -289,7 +262,7 @@ describe("RunsTab", () => {
   });
 
   it('shows "No results recorded" for completed run with empty results', async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [] },
@@ -467,7 +440,7 @@ describe("RunsTab", () => {
   });
 
   it("handles getRun response with no results field", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun } } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -523,12 +496,8 @@ describe("RunsTab", () => {
   });
 
   it("toggles result filter off when same filter clicked twice", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
-    const mockResult = {
-      casePath: "auth/login",
-      status: ResultStatus.PASSED,
-      notes: "",
-    } as unknown as CaseResult;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const mockResult = makeCaseResult();
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [mockResult] },
@@ -648,26 +617,26 @@ describe("RunsTab", () => {
   });
 
   it("renders aborted run with correct label", async () => {
-    const abortedRun = { ...mockRun, status: RunStatus.ABORTED } as unknown as RunMeta;
+    const abortedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.ABORTED });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [abortedRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Aborted")).toBeInTheDocument());
   });
 
   it("renders run with unknown status using default label and color", async () => {
-    const unknownRun = { ...mockRun, status: RunStatus.UNSPECIFIED } as unknown as RunMeta;
+    const unknownRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.UNSPECIFIED });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [unknownRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
 
   it("shows FAILED, BLOCKED, and SKIPPED result status labels", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
     const results = [
-      { casePath: "auth/login", status: ResultStatus.FAILED, notes: "" },
-      { casePath: "auth/logout", status: ResultStatus.BLOCKED, notes: "" },
-      { casePath: "auth/reset", status: ResultStatus.SKIPPED, notes: "" },
-    ] as unknown as CaseResult[];
+      makeCaseResult({ casePath: "auth/login", status: ResultStatus.FAILED }),
+      makeCaseResult({ casePath: "auth/logout", status: ResultStatus.BLOCKED }),
+      makeCaseResult({ casePath: "auth/reset", status: ResultStatus.SKIPPED }),
+    ];
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results },
@@ -681,10 +650,8 @@ describe("RunsTab", () => {
   });
 
   it("shows Unknown label for result with unspecified status", async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
-    const results = [
-      { casePath: "auth/login", status: ResultStatus.UNSPECIFIED, notes: "" },
-    ] as unknown as CaseResult[];
+    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const results = [makeCaseResult({ status: ResultStatus.UNSPECIFIED })];
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results },
@@ -693,5 +660,32 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
+  });
+
+  it("expands run on Enter key", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    const runRow = screen.getByRole("button", { name: /2026-01-01-smoke/ });
+    await userEvent.type(runRow, "{Enter}");
+    await waitFor(() =>
+      expect(client.getPendingCases).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
+  });
+
+  it("expands run on Space key", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    const runRow = screen.getByRole("button", { name: /2026-01-01-smoke/ });
+    runRow.focus();
+    await userEvent.keyboard(" ");
+    await waitFor(() =>
+      expect(client.getPendingCases).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
   });
 });

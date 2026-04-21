@@ -3,20 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RepositoriesTab from "./RepositoriesTab";
 import { client } from "../client";
-import type { Repository } from "../gen/ameliso/v1/types_pb";
+import { makeRepository } from "../test/factories";
 
 vi.mock("../client");
 
-const makeRepo = (overrides: Partial<Repository> = {}): Repository =>
-  ({
-    id: "owner/repo",
-    name: "repo",
-    fullName: "owner/repo",
-    htmlUrl: "https://github.com/owner/repo",
-    installationId: "inst-1",
-    addedAt: "2026-01-01",
-    ...overrides,
-  }) as unknown as Repository;
+const makeRepo = (overrides = {}) => makeRepository({ installationId: "inst-1", ...overrides });
 
 beforeEach(() => {
   vi.clearAllMocks();

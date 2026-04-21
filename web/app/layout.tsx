@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import NavBar from "@/components/NavBar";
 import "./globals.css";
+import styles from "./layout.module.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -29,9 +30,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <div className="app-shell">
+        <div className={styles.shell}>
           <NavBar />
-          <main className="page-content">{children}</main>
+          <main className={styles.content}>{children}</main>
         </div>
       </body>
     </html>

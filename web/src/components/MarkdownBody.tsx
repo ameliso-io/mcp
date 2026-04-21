@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "dompurify";
 import { marked } from "marked";
 import "./MarkdownBody.css";
 
@@ -9,7 +10,8 @@ interface Props {
 }
 
 export default function MarkdownBody({ body, maxHeight }: Props) {
-  const html = marked(body, { async: false }) as string;
+  const raw = marked(body, { async: false }) as string;
+  const html = DOMPurify.sanitize(raw);
   return (
     <div
       className="md-body"

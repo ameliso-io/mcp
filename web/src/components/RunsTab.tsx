@@ -6,6 +6,7 @@ import { errorMessage } from "../errorMessage";
 import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
+import styles from "./RunsTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
@@ -13,38 +14,6 @@ interface Props {
   repoId: string;
   initialSuite?: string;
   onInitialSuiteConsumed?: () => void;
-}
-
-const card = {
-  background: "white",
-  borderRadius: "8px",
-  padding: "20px",
-  border: "1px solid #e2e8f0",
-  marginBottom: "16px",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: "6px",
-  fontSize: "14px",
-  boxSizing: "border-box",
-};
-
-function statusColor(s: ResultStatus): string {
-  switch (s) {
-    case ResultStatus.PASSED:
-      return "#22c55e";
-    case ResultStatus.FAILED:
-      return "#ef4444";
-    case ResultStatus.BLOCKED:
-      return "#f97316";
-    case ResultStatus.SKIPPED:
-      return "#94a3b8";
-    default:
-      return "#e2e8f0";
-  }
 }
 
 function statusLabel(s: ResultStatus): string {
@@ -72,19 +41,6 @@ function runStatusLabel(s: RunStatus): string {
       return "Aborted";
     default:
       return "Unknown";
-  }
-}
-
-function runStatusColor(s: RunStatus): string {
-  switch (s) {
-    case RunStatus.IN_PROGRESS:
-      return "#3b82f6";
-    case RunStatus.COMPLETED:
-      return "#22c55e";
-    case RunStatus.ABORTED:
-      return "#ef4444";
-    default:
-      return "#94a3b8";
   }
 }
 
@@ -333,25 +289,14 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   if (!repoId) {
-    return (
-      <div style={{ color: "#64748b", padding: "40px", textAlign: "center" }}>
-        Set a repository path in the Overview tab first.
-      </div>
-    );
+    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "16px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700" }}>Runs</h2>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.title}>Runs</h2>
           {(
             [
               { label: "All", value: RunStatus.UNSPECIFIED },
@@ -363,127 +308,58 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
             <button
               key={opt.value}
               onClick={() => setStatusFilter(opt.value)}
-              style={{
-                padding: "4px 10px",
-                background: statusFilter === opt.value ? "#1e293b" : "transparent",
-                color: statusFilter === opt.value ? "white" : "#64748b",
-                border: `1px solid ${statusFilter === opt.value ? "#1e293b" : "#e2e8f0"}`,
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: "500",
-              }}
+              className={
+                statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive
+              }
             >
               {opt.label}
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          style={{
-            padding: "8px 16px",
-            background: "#1e293b",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
+        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
           {showCreate ? "Cancel" : "+ New Run"}
         </button>
       </div>
 
       {showCreate && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px" }}>Create Run</h3>
-          <form
-            onSubmit={handleCreate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}
-          >
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Create Run</h3>
+          <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Slug
-              </label>
+              <label className={styles.label}>Slug</label>
               <input
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
                 required
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Tester
-              </label>
+              <label className={styles.label}>Tester</label>
               <input
                 value={newTester}
                 onChange={(e) => setNewTester(e.target.value)}
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Environment
-              </label>
+              <label className={styles.label}>Environment</label>
               <input
                 value={newEnv}
                 onChange={(e) => setNewEnv(e.target.value)}
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Suite (optional)
-              </label>
+              <label className={styles.label}>Suite (optional)</label>
               <input
                 value={newSuite}
                 onChange={(e) => setNewSuite(e.target.value)}
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <button
-                type="submit"
-                disabled={creating}
-                style={{
-                  padding: "8px 20px",
-                  background: "#16a34a",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create Run"}
               </button>
             </div>
@@ -492,107 +368,51 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       )}
 
       {error && (
-        <div
-          style={{
-            ...card,
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#991b1b",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
+        <div className={styles.errorCard}>
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#991b1b",
-              cursor: "pointer",
-              fontSize: "16px",
-              lineHeight: 1,
-              padding: "0 0 0 12px",
-              flexShrink: 0,
-            }}
-          >
+          <button onClick={() => setError(null)} className={styles.errorDismiss}>
             ×
           </button>
         </div>
       )}
 
-      {loading && (
-        <div style={{ textAlign: "center", color: "#64748b", padding: "40px" }}>Loading…</div>
-      )}
+      {loading && <div className={styles.loadingMsg}>Loading…</div>}
 
       {!loading && runs.length === 0 && !error && (
-        <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "40px" }}>
-          No runs found.
-        </div>
+        <div className={styles.emptyCard}>No runs found.</div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div className={styles.list}>
         {runs.map((run) => (
           <div key={run.id}>
             <div
-              style={{
-                ...card,
-                marginBottom: 0,
-                cursor: "pointer",
-                borderColor: selectedRunId === run.id ? "#3b82f6" : "#e2e8f0",
-              }}
+              className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
+              role="button"
+              tabIndex={0}
+              aria-expanded={selectedRunId === run.id}
               onClick={() => selectRun(run.id, run.status)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  selectRun(run.id, run.status);
+                }
+              }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "700",
-                    color: runStatusColor(run.status),
-                    background: runStatusColor(run.status) + "18",
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                  }}
-                >
+              <div className={styles.runRow}>
+                <span className={styles.runStatusBadge} data-status={RunStatus[run.status]}>
                   {runStatusLabel(run.status)}
                 </span>
-                <span style={{ fontWeight: "600", fontSize: "15px", flex: 1 }}>{run.id}</span>
-                {run.suite && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      background: "#eff6ff",
-                      color: "#3b82f6",
-                      padding: "2px 7px",
-                      borderRadius: "4px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {run.suite}
-                  </span>
-                )}
-                {run.tester && (
-                  <span style={{ fontSize: "13px", color: "#64748b" }}>{run.tester}</span>
-                )}
-                {run.environment && (
-                  <span style={{ fontSize: "13px", color: "#94a3b8" }}>{run.environment}</span>
-                )}
-                <span style={{ fontSize: "12px", color: "#94a3b8" }}>{run.date}</span>
+                <span className={styles.runId}>{run.id}</span>
+                {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
+                {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
+                <span className={styles.runDate}>{run.date}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteRun(run.id);
                   }}
-                  style={{
-                    background: "none",
-                    border: "1px solid #fecaca",
-                    color: "#ef4444",
-                    borderRadius: "4px",
-                    padding: "4px 10px",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                  }}
+                  className={styles.btnDangerSm}
                 >
                   Delete
                 </button>
@@ -600,18 +420,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
             </div>
 
             {selectedRunId === run.id && (
-              <div
-                style={{
-                  ...card,
-                  marginTop: 0,
-                  borderTop: "none",
-                  borderTopLeftRadius: 0,
-                  borderTopRightRadius: 0,
-                  background: "#f8fafc",
-                }}
-              >
+              <div className={styles.expandedPanel}>
                 {loadingPending ? (
-                  <div style={{ color: "#64748b", padding: "12px 0" }}>Loading…</div>
+                  <div className={styles.panelLoading}>Loading…</div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
                     {recordedResults.length > 0 &&
@@ -621,47 +432,26 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             .length,
                           failed: recordedResults.filter((r) => r.status === ResultStatus.FAILED)
                             .length,
-                          blocked: recordedResults.filter((r) => r.status === ResultStatus.BLOCKED)
-                            .length,
-                          skipped: recordedResults.filter((r) => r.status === ResultStatus.SKIPPED)
-                            .length,
+                          blocked: recordedResults.filter(
+                            (r) => r.status === ResultStatus.BLOCKED
+                          ).length,
+                          skipped: recordedResults.filter(
+                            (r) => r.status === ResultStatus.SKIPPED
+                          ).length,
                         };
                         return (
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              marginBottom: "14px",
-                              flexWrap: "wrap",
-                            }}
-                          >
+                          <div className={styles.resultFilters}>
                             {[
-                              {
-                                label: "Passed",
-                                count: counts.passed,
-                                color: "#16a34a",
-                                bg: "#f0fdf4",
-                                status: ResultStatus.PASSED,
-                              },
-                              {
-                                label: "Failed",
-                                count: counts.failed,
-                                color: "#dc2626",
-                                bg: "#fef2f2",
-                                status: ResultStatus.FAILED,
-                              },
+                              { label: "Passed", count: counts.passed, status: ResultStatus.PASSED },
+                              { label: "Failed", count: counts.failed, status: ResultStatus.FAILED },
                               {
                                 label: "Blocked",
                                 count: counts.blocked,
-                                color: "#ea580c",
-                                bg: "#fff7ed",
                                 status: ResultStatus.BLOCKED,
                               },
                               {
                                 label: "Skipped",
                                 count: counts.skipped,
-                                color: "#64748b",
-                                bg: "#f8fafc",
                                 status: ResultStatus.SKIPPED,
                               },
                             ]
@@ -674,17 +464,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                       rsf === s.status ? null : s.status
                                     )
                                   }
-                                  style={{
-                                    fontSize: "13px",
-                                    fontWeight: "600",
-                                    color: s.color,
-                                    background:
-                                      resultStatusFilter === s.status ? s.color + "30" : s.bg,
-                                    border: `1px solid ${resultStatusFilter === s.status ? s.color : s.color + "30"}`,
-                                    padding: "4px 10px",
-                                    borderRadius: "6px",
-                                    cursor: "pointer",
-                                  }}
+                                  className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
+                                  data-status={ResultStatus[s.status]}
                                 >
                                   {s.count} {s.label}
                                 </button>
@@ -692,15 +473,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             {resultStatusFilter !== null && (
                               <button
                                 onClick={() => setResultStatusFilter(null)}
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#64748b",
-                                  background: "none",
-                                  border: "1px solid #e2e8f0",
-                                  padding: "4px 8px",
-                                  borderRadius: "6px",
-                                  cursor: "pointer",
-                                }}
+                                className={styles.showAllBtn}
                               >
                                 Show all
                               </button>
@@ -709,60 +482,27 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                         );
                       })()}
                     {recordedResults.length === 0 ? (
-                      <p style={{ color: "#64748b", fontSize: "14px" }}>No results recorded.</p>
+                      <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <div className={styles.resultList}>
                         {(resultStatusFilter !== null
                           ? recordedResults.filter((r) => r.status === resultStatusFilter)
                           : recordedResults
                         ).map((r) => (
-                          <div
-                            key={r.casePath}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              padding: "10px 12px",
-                              background: "white",
-                              borderRadius: "6px",
-                              border: "1px solid #e2e8f0",
-                            }}
-                          >
+                          <div key={r.casePath} className={styles.resultRow}>
                             <span
-                              style={{
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                color: statusColor(r.status),
-                                background: statusColor(r.status) + "18",
-                                padding: "2px 7px",
-                                borderRadius: "4px",
-                                flexShrink: 0,
-                              }}
+                              className={styles.resultStatusBadge}
+                              data-status={ResultStatus[r.status]}
                             >
                               {statusLabel(r.status)}
                             </span>
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                fontFamily: "monospace",
-                                color: "#64748b",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {r.casePath}
-                            </span>
+                            <span className={styles.resultPath}>{r.casePath}</span>
                             {caseTitleMap.get(r.casePath)?.title && (
-                              <span style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
+                              <span className={styles.resultTitle}>
                                 {caseTitleMap.get(r.casePath)!.title}
                               </span>
                             )}
-                            {r.notes && (
-                              <span
-                                style={{ fontSize: "13px", color: "#64748b", fontStyle: "italic" }}
-                              >
-                                {r.notes}
-                              </span>
-                            )}
+                            {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
                           </div>
                         ))}
                       </div>
@@ -771,16 +511,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                 ) : (
                   <>
                     {totalInScope > 0 && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "13px",
-                            color: "#64748b",
-                            marginBottom: "6px",
-                          }}
-                        >
+                      <div className={styles.progressWrap}>
+                        <div className={styles.progressMeta}>
                           <span>
                             {totalInScope - pendingCases.length} / {totalInScope} done
                           </span>
@@ -791,91 +523,41 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             %
                           </span>
                         </div>
-                        <div
-                          style={{
-                            height: "6px",
-                            background: "#e2e8f0",
-                            borderRadius: "3px",
-                            overflow: "hidden",
-                          }}
-                        >
+                        <div className={styles.progressTrack}>
                           <div
+                            className={styles.progressBar}
                             style={{
-                              height: "100%",
                               width: `${((totalInScope - pendingCases.length) / totalInScope) * 100}%`,
-                              background: "#16a34a",
-                              borderRadius: "3px",
-                              transition: "width 0.3s ease",
                             }}
                           />
                         </div>
                       </div>
                     )}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>
+                    <div className={styles.pendingHeader}>
+                      <p className={styles.pendingLabel}>
                         {pendingCases.length} pending
-                        <span
-                          style={{
-                            marginLeft: "8px",
-                            fontSize: "10px",
-                            fontWeight: "400",
-                            color: "#94a3b8",
-                          }}
-                        >
-                          auto-refresh 30s
-                        </span>
+                        <span className={styles.refreshHint}>auto-refresh 30s</span>
                       </p>
                       {run.status === RunStatus.IN_PROGRESS && (
-                        <div style={{ display: "flex", gap: "8px" }}>
+                        <div className={styles.pendingActions}>
                           {pendingCases.length > 0 && (
                             <button
                               onClick={() => handleBulkPass(run.id)}
                               disabled={bulkPassing}
-                              style={{
-                                padding: "6px 14px",
-                                background: "#0ea5e9",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "13px",
-                              }}
+                              className={styles.btnBlueSm}
                             >
                               {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
                             </button>
                           )}
                           <button
                             onClick={() => handleFinalize(run.id, RunStatus.COMPLETED)}
-                            style={{
-                              padding: "6px 14px",
-                              background: "#16a34a",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "13px",
-                            }}
+                            className={styles.btnGreenSm}
                           >
                             Complete Run
                           </button>
                           <button
                             onClick={() => handleFinalize(run.id, RunStatus.ABORTED)}
-                            style={{
-                              padding: "6px 14px",
-                              background: "#ef4444",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "13px",
-                            }}
+                            className={styles.btnRedSm}
                           >
                             Abort Run
                           </button>
@@ -884,41 +566,19 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                     </div>
 
                     {pendingCases.length === 0 && (
-                      <p style={{ color: "#64748b", fontSize: "14px" }}>
-                        All cases have results recorded.
-                      </p>
+                      <p className={styles.allDone}>All cases have results recorded.</p>
                     )}
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div className={styles.pendingList}>
                       {pendingCases.map((c) => (
                         <div key={c.path}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              padding: "10px 12px",
-                              background: "white",
-                              borderRadius: "6px",
-                              border: "1px solid #e2e8f0",
-                            }}
-                          >
-                            <span style={{ flex: 1, fontSize: "14px", fontFamily: "monospace" }}>
-                              {c.path}
-                            </span>
-                            <span style={{ fontSize: "13px", color: "#64748b" }}>{c.title}</span>
+                          <div className={styles.pendingRow}>
+                            <span className={styles.pendingPath}>{c.path}</span>
+                            <span className={styles.pendingTitle}>{c.title}</span>
                             {run.status === RunStatus.IN_PROGRESS && (
                               <button
                                 onClick={() => openRecord(c.path)}
-                                style={{
-                                  padding: "5px 12px",
-                                  background: "#3b82f6",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  cursor: "pointer",
-                                  fontSize: "13px",
-                                }}
+                                className={styles.btnRecordSm}
                               >
                                 {recordingCase === c.path ? "Cancel" : "Record"}
                               </button>
@@ -926,59 +586,25 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                           </div>
 
                           {recordingCase === c.path && (
-                            <div
-                              style={{
-                                background: "white",
-                                border: "1px solid #e2e8f0",
-                                borderTop: "none",
-                                borderBottomLeftRadius: "6px",
-                                borderBottomRightRadius: "6px",
-                              }}
-                            >
+                            <div className={styles.recordPanel}>
                               {(caseBodyLoading || caseBody) && (
-                                <div
-                                  style={{
-                                    padding: "12px 16px",
-                                    borderBottom: "1px solid #f1f5f9",
-                                    background: "#f8fafc",
-                                  }}
-                                >
+                                <div className={styles.recordSteps}>
                                   {caseBodyLoading ? (
-                                    <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
-                                      Loading steps…
-                                    </p>
+                                    <p className={styles.stepsLoading}>Loading steps…</p>
                                   ) : (
                                     caseBody && <MarkdownBody body={caseBody} maxHeight="200px" />
                                   )}
                                 </div>
                               )}
-                              <form
-                                onSubmit={handleRecord}
-                                style={{
-                                  padding: "12px",
-                                  display: "flex",
-                                  gap: "10px",
-                                  alignItems: "flex-end",
-                                  flexWrap: "wrap",
-                                }}
-                              >
+                              <form onSubmit={handleRecord} className={styles.recordForm}>
                                 <div>
-                                  <label
-                                    style={{
-                                      fontSize: "12px",
-                                      color: "#64748b",
-                                      display: "block",
-                                      marginBottom: "4px",
-                                    }}
-                                  >
-                                    Status
-                                  </label>
+                                  <label className={styles.labelSm}>Status</label>
                                   <select
                                     value={recordStatus}
                                     onChange={(e) =>
                                       setRecordStatus(Number(e.target.value) as ResultStatus)
                                     }
-                                    style={{ ...inputStyle, width: "auto" }}
+                                    className={styles.inputAuto}
                                   >
                                     <option value={ResultStatus.PASSED}>Passed</option>
                                     <option value={ResultStatus.FAILED}>Failed</option>
@@ -986,18 +612,14 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                     <option value={ResultStatus.SKIPPED}>Skipped</option>
                                   </select>
                                 </div>
-                                <div style={{ flex: 1, minWidth: "160px" }}>
+                                <div className={styles.notesWrap}>
                                   <label
-                                    style={{
-                                      fontSize: "12px",
-                                      color:
-                                        recordStatus === ResultStatus.FAILED ||
-                                        recordStatus === ResultStatus.BLOCKED
-                                          ? "#dc2626"
-                                          : "#64748b",
-                                      display: "block",
-                                      marginBottom: "4px",
-                                    }}
+                                    className={
+                                      recordStatus === ResultStatus.FAILED ||
+                                      recordStatus === ResultStatus.BLOCKED
+                                        ? styles.labelSmErr
+                                        : styles.labelSm
+                                    }
                                   >
                                     Notes
                                     {recordStatus === ResultStatus.FAILED ||
@@ -1015,29 +637,18 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                           ? "Describe what is blocking…"
                                           : "Optional notes…"
                                     }
-                                    style={{
-                                      ...inputStyle,
-                                      borderColor:
-                                        recordStatus === ResultStatus.FAILED ||
-                                        recordStatus === ResultStatus.BLOCKED
-                                          ? "#fca5a5"
-                                          : "#e2e8f0",
-                                    }}
+                                    className={
+                                      recordStatus === ResultStatus.FAILED ||
+                                      recordStatus === ResultStatus.BLOCKED
+                                        ? styles.inputErr
+                                        : styles.input
+                                    }
                                   />
                                 </div>
                                 <button
                                   type="submit"
                                   disabled={recording}
-                                  style={{
-                                    padding: "8px 16px",
-                                    background: "#16a34a",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "6px",
-                                    cursor: "pointer",
-                                    fontSize: "14px",
-                                    whiteSpace: "nowrap",
-                                  }}
+                                  className={styles.btnSaveResult}
                                 >
                                   {recording ? "Saving…" : "Save Result"}
                                 </button>

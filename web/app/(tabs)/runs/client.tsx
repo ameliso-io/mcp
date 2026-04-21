@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
 import { useRepoId } from "@/hooks/useRepoId";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 function RunsInner() {
   const router = useRouter();
@@ -28,7 +29,7 @@ function RunsInner() {
 
 export default function RunsPageClient() {
   return (
-    <Suspense>
+    <Suspense fallback={<LoadingSpinner />}>
       <RunsInner />
     </Suspense>
   );
