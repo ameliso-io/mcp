@@ -367,7 +367,11 @@ export default function CasesTab({ repoId }: Props) {
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg} role="status">Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && deferredCases.length === 0 && !error && (
         <div className={styles.emptyCard}>No cases found.</div>
@@ -467,7 +471,7 @@ export default function CasesTab({ repoId }: Props) {
                       }
                     }}
                   >
-                    <span className={styles.priorityDot} data-priority={c.priority} />
+                    <span className={styles.priorityDot} data-priority={c.priority} aria-hidden="true" />
                     <div className={styles.caseInfo}>
                       <div className={styles.caseMeta}>
                         <span className={styles.casePath}>{c.path}</span>

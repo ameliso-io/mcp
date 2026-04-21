@@ -143,7 +143,11 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg} role="status">Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && entries.length > 0 && (
         <>
@@ -199,7 +203,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                 .map((entry) => (
                   <div key={entry.case?.path} className={styles.coverageRow}>
                     <span
-                      className={styles.statusDot}
+                      className={styles.statusDot} aria-hidden="true"
                       data-status={ResultStatus[entry.latestStatus]}
                     />
                     <span className={styles.coveragePath}>{entry.case?.path}</span>
@@ -240,7 +244,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             </button>
           </form>
           {affectedError && (
-            <div className={styles.inlineError}>
+            <div className={styles.inlineError} role="alert">
               <span>{affectedError}</span>
               <button
                 onClick={() => setAffectedError(null)}
@@ -266,7 +270,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   .map((ac, idx) => (
                     <div key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
-                        <span className={styles.priorityDot} data-priority={ac.case.priority} />
+                        <span className={styles.priorityDot} data-priority={ac.case.priority} aria-hidden="true" />
                       )}
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>
