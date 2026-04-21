@@ -16,7 +16,9 @@ struct ListCasesRequest {
     repo_path: String,
     #[schemars(description = "Comma-separated tag filter (optional)")]
     tags: Option<String>,
-    #[schemars(description = "Full-text query against title, description, body, and path (optional)")]
+    #[schemars(
+        description = "Full-text query against title, description, body, and path (optional)"
+    )]
     query: Option<String>,
     #[schemars(description = "Filter by priority: low | medium | high (optional)")]
     priority: Option<String>,
@@ -186,8 +188,16 @@ impl AmelisoMcp {
             .iter()
             .map(|c| {
                 format!(
-                    "[{}] {} — {} (priority: {})",
-                    c.case_path, c.fm.title, c.fm.description, c.fm.priority
+                    "[{}] {} — {} (priority: {}{})",
+                    c.case_path,
+                    c.fm.title,
+                    c.fm.description,
+                    c.fm.priority,
+                    if c.fm.tags.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", tags: {}", c.fm.tags.join(", "))
+                    }
                 )
             })
             .collect::<Vec<_>>()
