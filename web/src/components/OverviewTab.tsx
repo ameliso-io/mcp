@@ -151,7 +151,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
       {!loading && entries.length > 0 && (
         <>
-          <div className={styles.statsGrid}>
+          <dl className={styles.statsGrid}>
             {[
               { label: "Total Cases", value: statCases },
               { label: "Passed", value: statPassed },
@@ -159,13 +159,13 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
               { label: "Never Run", value: statNever },
             ].map((stat) => (
               <div key={stat.label} className={styles.statCard}>
-                <p className={styles.label}>{stat.label}</p>
-                <p className={styles.statValue} data-stat={stat.label}>
+                <dt className={styles.label}>{stat.label}</dt>
+                <dd className={styles.statValue} data-stat={stat.label}>
                   {stat.value}
-                </p>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
 
           {activeRuns.length > 0 && (
             <div className={styles.activeRunsCard}>
