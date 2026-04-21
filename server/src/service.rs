@@ -2256,6 +2256,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn list_runs_passes_validation() {
+        // No status filter (Unspecified default) is valid; passes validation → DB error.
+        let s = server();
+        let err = s
+            .list_runs(Request::new(pb::ListRunsRequest {
+                repo_id: "owner/repo".to_owned(),
+                status: pb::RunStatus::Unspecified as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn get_coverage_report_with_status_filter_passes_validation() {
         // A non-Unspecified status_filter is valid — passes validation → DB error.
         let s = server();
