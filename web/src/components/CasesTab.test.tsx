@@ -673,7 +673,9 @@ describe("CasesTab", () => {
     const prioritySelect = screen.getByDisplayValue("All priorities");
     await userEvent.selectOptions(prioritySelect, "High");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: expect.any(Number) }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: expect.any(Number) })
+      )
     );
     await userEvent.selectOptions(prioritySelect, "All priorities");
     await waitFor(() =>
@@ -703,5 +705,30 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     expect(screen.queryByDisplayValue("All tags")).not.toBeInTheDocument();
+  });
+
+  it('shows "Low" priority label for low-priority case', async () => {
+    const lowCase = {
+      ...mockCase,
+      priority: "low",
+      path: "auth/logout",
+      title: "Logout",
+    } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [lowCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Low")).toBeInTheDocument());
+  });
+
+  it('shows "—" priority label for unknown-priority case', async () => {
+    const unknownCase = {
+      ...mockCase,
+      priority: "",
+      path: "other/thing",
+      title: "Unknown Priority Case",
+    } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Unknown Priority Case")).toBeInTheDocument());
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
