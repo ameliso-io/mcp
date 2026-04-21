@@ -88,6 +88,8 @@ export default function RunsTab({ repoPath }: Props) {
   const [recordStatus, setRecordStatus] = useState<ResultStatus>(ResultStatus.PASSED)
   const [recordNotes, setRecordNotes] = useState('')
   const [recording, setRecording] = useState(false)
+  const [caseBody, setCaseBody] = useState<string | null>(null)
+  const [caseBodyLoading, setCaseBodyLoading] = useState(false)
 
   const load = useCallback(async () => {
     if (!repoPath) return
@@ -171,6 +173,7 @@ export default function RunsTab({ repoPath }: Props) {
       })
       setRecordingCase(null)
       setRecordNotes('')
+      setCaseBody(null)
       // Refresh pending
       const res = await client.getPendingCases({ repoPath, runId: selectedRunId })
       setPendingCases(res.cases)
@@ -179,6 +182,25 @@ export default function RunsTab({ repoPath }: Props) {
       setError(errorMessage(e))
     } finally {
       setRecording(false)
+    }
+  }
+
+  async function openRecord(casePath: string) {
+    if (recordingCase === casePath) {
+      setRecordingCase(null)
+      setCaseBody(null)
+      return
+    }
+    setRecordingCase(casePath)
+    setCaseBody(null)
+    setCaseBodyLoading(true)
+    try {
+      const res = await client.getCase({ repoPath, casePath })
+      setCaseBody(res.body || null)
+    } catch {
+      // body unavailable; proceed without it
+    } finally {
+      setCaseBodyLoading(false)
     }
   }
 
@@ -487,7 +509,7 @@ export default function RunsTab({ repoPath }: Props) {
                             <span style={{ fontSize: '13px', color: '#64748b' }}>{c.title}</span>
                             {run.status === RunStatus.IN_PROGRESS && (
                               <button
-                                onClick={() => setRecordingCase(recordingCase === c.path ? null : c.path)}
+                                onClick={() => openRecord(c.path)}
                                 style={{
                                   padding: '5px 12px',
                                   background: '#3b82f6',
@@ -498,20 +520,54 @@ export default function RunsTab({ repoPath }: Props) {
                                   fontSize: '13px',
                                 }}
                               >
-                                Record
+                                {recordingCase === c.path ? 'Cancel' : 'Record'}
                               </button>
                             )}
                           </div>
 
                           {recordingCase === c.path && (
+                            <div
+                              style={{
+                                background: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderTop: 'none',
+                                borderBottomLeftRadius: '6px',
+                                borderBottomRightRadius: '6px',
+                              }}
+                            >
+                              {(caseBodyLoading || caseBody) && (
+                                <div
+                                  style={{
+                                    padding: '12px 16px',
+                                    borderBottom: '1px solid #f1f5f9',
+                                    background: '#f8fafc',
+                                  }}
+                                >
+                                  {caseBodyLoading ? (
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Loading steps…</p>
+                                  ) : (
+                                    <pre
+                                      style={{
+                                        margin: 0,
+                                        fontFamily: 'monospace',
+                                        fontSize: '12px',
+                                        color: '#1e293b',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                        lineHeight: '1.6',
+                                        maxHeight: '200px',
+                                        overflowY: 'auto',
+                                      }}
+                                    >
+                                      {caseBody}
+                                    </pre>
+                                  )}
+                                </div>
+                              )}
                             <form
                               onSubmit={handleRecord}
                               style={{
-                                background: 'white',
                                 padding: '12px',
-                                borderRadius: '0 0 6px 6px',
-                                border: '1px solid #e2e8f0',
-                                borderTop: 'none',
                                 display: 'flex',
                                 gap: '10px',
                                 alignItems: 'flex-end',
@@ -561,6 +617,7 @@ export default function RunsTab({ repoPath }: Props) {
                                 {recording ? 'Saving…' : 'Save Result'}
                               </button>
                             </form>
+                            </div>
                           )}
                         </div>
                       ))}
