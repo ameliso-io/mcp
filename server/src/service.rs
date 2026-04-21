@@ -1636,6 +1636,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn bulk_record_rejects_blocked_without_notes() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Blocked as i32,
+                    notes: "  ".to_owned(), // whitespace-only
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes are required"));
+    }
+
+    #[tokio::test]
     async fn bulk_record_rejects_invalid_status() {
         let s = server();
         let err = s
@@ -2158,14 +2177,23 @@ mod tests {
 
     #[test]
     fn text_references_case_in_quotes() {
-        assert!(text_references_case("see 'auth/login' for details", "auth/login"));
-        assert!(text_references_case(r#"see "auth/login" for details"#, "auth/login"));
+        assert!(text_references_case(
+            "see 'auth/login' for details",
+            "auth/login"
+        ));
+        assert!(text_references_case(
+            r#"see "auth/login" for details"#,
+            "auth/login"
+        ));
     }
 
     #[test]
     fn text_references_case_no_match_prefix_only() {
         // "auth/login" is a prefix of "auth/login-flow" — should NOT match
-        assert!(!text_references_case("src/auth/login-flow.ts", "auth/login"));
+        assert!(!text_references_case(
+            "src/auth/login-flow.ts",
+            "auth/login"
+        ));
     }
 
     // ── is_doc_file ───────────────────────────────────────────────────────────
