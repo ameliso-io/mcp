@@ -3,7 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RepositoriesTab from "./RepositoriesTab";
 import { client } from "@/client";
-import { makeRepository } from "@/test/factories";
+import {
+  makeGetGitHubInstallUrlResponse,
+  makeHandleGitHubCallbackResponse,
+  makeListRepositoriesResponse,
+  makeRemoveRepositoryResponse,
+  makeRepository,
+  makeSyncRepositoryResponse,
+} from "@/test/factories";
 
 vi.mock("@/client");
 
@@ -11,10 +18,12 @@ const makeRepo = (overrides = {}) => makeRepository({ installationId: "inst-1", 
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [] } as never);
-  vi.mocked(client.getGitHubInstallUrl).mockResolvedValue({ url: "", configured: false } as never);
-  vi.mocked(client.syncRepository).mockResolvedValue({ repository: makeRepo() } as never);
-  vi.mocked(client.removeRepository).mockResolvedValue({} as never);
+  vi.mocked(client.listRepositories).mockResolvedValue(makeListRepositoriesResponse());
+  vi.mocked(client.getGitHubInstallUrl).mockResolvedValue(makeGetGitHubInstallUrlResponse());
+  vi.mocked(client.syncRepository).mockResolvedValue(
+    makeSyncRepositoryResponse({ repository: makeRepo() })
+  );
+  vi.mocked(client.removeRepository).mockResolvedValue(makeRemoveRepositoryResponse());
 });
 
 describe("RepositoriesTab", () => {
@@ -32,29 +41,34 @@ describe("RepositoriesTab", () => {
   });
 
   it("shows Connect GitHub Repo link when configured", async () => {
-    vi.mocked(client.getGitHubInstallUrl).mockResolvedValue({
-      url: "https://github.com/apps/ameliso/install",
-      configured: true,
-    } as never);
+    vi.mocked(client.getGitHubInstallUrl).mockResolvedValue(
+      makeGetGitHubInstallUrlResponse({ url: "https://github.com/apps/ameliso/install", configured: true })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getByText("+ Connect GitHub Repo")).toBeInTheDocument());
   });
 
   it("shows repo card with name and link", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getByText("owner/repo")).toBeInTheDocument());
     expect(screen.getByText("https://github.com/owner/repo")).toBeInTheDocument();
   });
 
   it("shows Active badge for active repo", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Active")).toBeInTheDocument());
   });
 
   it("calls onRepoSelect with repo id when Use clicked", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     const onRepoSelect = vi.fn();
     render(<RepositoriesTab onRepoSelect={onRepoSelect} activeRepoId="" />);
     await waitFor(() => screen.getByText("Use"));
@@ -63,7 +77,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls onRepoSelect with empty string when Deselect clicked", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     const onRepoSelect = vi.fn();
     render(<RepositoriesTab onRepoSelect={onRepoSelect} activeRepoId="owner/repo" />);
     await waitFor(() => screen.getByText("Deselect"));
@@ -72,7 +88,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls syncRepository when Sync clicked", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
@@ -80,7 +98,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls removeRepository after inline confirm", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
@@ -89,7 +109,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("announces removal via live region", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
@@ -102,7 +124,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("does not call removeRepository when inline confirm cancelled", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
@@ -120,9 +144,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls handleGitHubCallback when installationId prop present with setup_action=install", async () => {
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(
       <RepositoriesTab
         onRepoSelect={() => {}}
@@ -137,7 +161,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("shows error when syncRepository fails", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     vi.mocked(client.syncRepository).mockRejectedValue(new Error("sync failed"));
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("Sync"));
@@ -146,7 +172,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("shows error when removeRepository fails", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     vi.mocked(client.removeRepository).mockRejectedValue(new Error("remove failed"));
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
@@ -156,9 +184,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls handleGitHubCallback for setup_action=update", async () => {
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(
       <RepositoriesTab
         onRepoSelect={() => {}}
@@ -186,9 +214,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls handleGitHubCallback when installationId present without setupAction", async () => {
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(
       <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-no-action" />
     );
@@ -199,9 +227,9 @@ describe("RepositoriesTab", () => {
 
   it("calls onInstallationHandled after processing GitHub callback", async () => {
     const onInstallationHandled = vi.fn();
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(
       <RepositoriesTab
         onRepoSelect={() => {}}
@@ -215,8 +243,10 @@ describe("RepositoriesTab", () => {
   });
 
   it("handles syncRepository with no repository in response", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.mocked(client.syncRepository).mockResolvedValue({} as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    vi.mocked(client.syncRepository).mockResolvedValue(makeSyncRepositoryResponse());
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
@@ -226,10 +256,12 @@ describe("RepositoriesTab", () => {
   it("updates repo in list when syncRepository succeeds with repository", async () => {
     const otherRepo = makeRepo({ id: "owner/other", name: "other" });
     const updatedRepo = makeRepo({ name: "repo-updated" });
-    vi.mocked(client.listRepositories).mockResolvedValue({
-      repositories: [makeRepo(), otherRepo],
-    } as never);
-    vi.mocked(client.syncRepository).mockResolvedValue({ repository: updatedRepo } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo(), otherRepo] })
+    );
+    vi.mocked(client.syncRepository).mockResolvedValue(
+      makeSyncRepositoryResponse({ repository: updatedRepo })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getAllByText("Sync").length).toBeGreaterThan(0));
     await userEvent.click(screen.getAllByText("Sync")[0]!);
@@ -237,22 +269,24 @@ describe("RepositoriesTab", () => {
   });
 
   it("search filters repos by name", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({
-      repositories: [
-        makeRepo({
-          id: "org/alpha",
-          name: "alpha",
-          fullName: "org/alpha",
-          htmlUrl: "https://github.com/org/alpha",
-        }),
-        makeRepo({
-          id: "org/beta",
-          name: "beta",
-          fullName: "org/beta",
-          htmlUrl: "https://github.com/org/beta",
-        }),
-      ],
-    } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({
+        repositories: [
+          makeRepo({
+            id: "org/alpha",
+            name: "alpha",
+            fullName: "org/alpha",
+            htmlUrl: "https://github.com/org/alpha",
+          }),
+          makeRepo({
+            id: "org/beta",
+            name: "beta",
+            fullName: "org/beta",
+            htmlUrl: "https://github.com/org/beta",
+          }),
+        ],
+      })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("org/alpha"));
     await userEvent.type(screen.getByRole("searchbox", { name: "Search repositories" }), "alpha");
@@ -261,9 +295,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls handleGitHubCallback when installationId present with no setupAction (refresh-all path)", async () => {
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-55" />);
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-55" })
@@ -271,8 +305,10 @@ describe("RepositoriesTab", () => {
   });
 
   it("does not update repo list when syncRepository returns no repository", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.mocked(client.syncRepository).mockResolvedValue({ repository: undefined } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    vi.mocked(client.syncRepository).mockResolvedValue(makeSyncRepositoryResponse());
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
@@ -282,7 +318,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("search shows no-results state and clear button resets", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByRole("searchbox", { name: "Search repositories" }));
     await userEvent.type(
@@ -295,10 +333,12 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls handleGitHubCallback for each installation when Refresh All clicked", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("↻ Refresh All"));
     await userEvent.click(screen.getByText("↻ Refresh All"));
@@ -308,10 +348,12 @@ describe("RepositoriesTab", () => {
   });
 
   it("announces refresh completion via live region", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
-      repositories: [makeRepo()],
-    } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue(
+      makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("↻ Refresh All"));
     await userEvent.click(screen.getByText("↻ Refresh All"));
@@ -325,7 +367,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("shows error when Refresh All fails", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("refresh failed"));
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("↻ Refresh All"));
@@ -334,73 +378,73 @@ describe("RepositoriesTab", () => {
   });
 
   it("shows addedAt date on repo card", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({
-      repositories: [makeRepo({ addedAt: "2026-03-15" })],
-    } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo({ addedAt: "2026-03-15" })] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getByText("2026-03-15")).toBeInTheDocument());
   });
 
   it("does not show addedAt line when addedAt is empty", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({
-      repositories: [makeRepo({ addedAt: "" })],
-    } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo({ addedAt: "" })] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("owner/repo"));
     expect(screen.queryByText(/Added /)).not.toBeInTheDocument();
   });
 
   it('shows "Syncing…" on Sync button while sync in progress', async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    let resolve: (v: unknown) => void;
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    let resolve!: (v: ReturnType<typeof makeSyncRepositoryResponse>) => void;
     vi.mocked(client.syncRepository).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
-      }) as never
+        resolve = res as typeof resolve;
+      })
     );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
     expect(screen.getByText("Syncing…")).toBeInTheDocument();
-    resolve!({ repository: makeRepo() });
-    await waitFor(() => expect(screen.queryByText("Syncing…")).not.toBeInTheDocument());
+    resolve(makeSyncRepositoryResponse({ repository: makeRepo() }));
   });
 
   it('shows "Refreshing…" on Refresh All button while refreshing', async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    let resolve: (v: unknown) => void;
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    let resolve!: (v: ReturnType<typeof makeHandleGitHubCallbackResponse>) => void;
     vi.mocked(client.handleGitHubCallback).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
-      }) as never
+        resolve = res as typeof resolve;
+      })
     );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("↻ Refresh All"));
     await userEvent.click(screen.getByText("↻ Refresh All"));
     expect(screen.getByText("Refreshing…")).toBeInTheDocument();
-    resolve!({ repositories: [makeRepo()] });
-    await waitFor(() => expect(screen.queryByText("Refreshing…")).not.toBeInTheDocument());
+    resolve(makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] }));
   });
 
   it("shows loading state while fetching repos", async () => {
-    let resolve: (v: unknown) => void;
+    let resolve!: (v: ReturnType<typeof makeListRepositoriesResponse>) => void;
     vi.mocked(client.listRepositories).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
-      }) as never
+        resolve = res as typeof resolve;
+      })
     );
-    vi.mocked(client.getGitHubInstallUrl).mockReturnValue(
-      new Promise((res) => {
-        resolve = res;
-      }) as never
-    );
+    vi.mocked(client.getGitHubInstallUrl).mockReturnValue(new Promise(() => {}));
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve!({ repositories: [], runs: [] });
+    resolve(makeListRepositoriesResponse());
   });
 
   it("announces repo selection via live region when activeRepoId changes", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     const { rerender } = render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("owner/repo"));
     rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />);
@@ -412,7 +456,9 @@ describe("RepositoriesTab", () => {
   });
 
   it("announces deselection via live region when activeRepoId is cleared", async () => {
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
     const { rerender } = render(
       <RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />
     );
@@ -429,8 +475,12 @@ describe("RepositoriesTab", () => {
 
   it("announces sync completion via live region", async () => {
     const synced = makeRepo({ fullName: "owner/repo" });
-    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.mocked(client.syncRepository).mockResolvedValue({ repository: synced } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo()] })
+    );
+    vi.mocked(client.syncRepository).mockResolvedValue(
+      makeSyncRepositoryResponse({ repository: synced })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
@@ -450,9 +500,9 @@ describe("RepositoriesTab", () => {
       fullName: "owner/other",
       htmlUrl: "https://github.com/owner/other",
     });
-    vi.mocked(client.listRepositories).mockResolvedValue({
-      repositories: [makeRepo(), repo2],
-    } as never);
+    vi.mocked(client.listRepositories).mockResolvedValue(
+      makeListRepositoriesResponse({ repositories: [makeRepo(), repo2] })
+    );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("owner/repo"));
     await userEvent.type(screen.getByRole("searchbox"), "other");

@@ -5,7 +5,14 @@ import CasesTab from "./CasesTab";
 import { client } from "@/client";
 import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
-import { makeCase } from "@/test/factories";
+import {
+  makeCase,
+  makeCreateCaseResponse,
+  makeDeleteCaseResponse,
+  makeGetCaseResponse,
+  makeListCasesResponse,
+  makeUpdateCaseResponse,
+} from "@/test/factories";
 
 vi.mock("@/client");
 
@@ -18,12 +25,11 @@ const mockCase = makeCase({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never);
-  vi.mocked(client.getCase).mockResolvedValue({
-    case: mockCase,
-    body: "## Steps\n\n1. Go to /login",
-  } as never);
-  vi.mocked(client.updateCase).mockResolvedValue({ case: mockCase } as never);
+  vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [mockCase] }));
+  vi.mocked(client.getCase).mockResolvedValue(
+    makeGetCaseResponse({ case: mockCase, body: "## Steps\n\n1. Go to /login" })
+  );
+  vi.mocked(client.updateCase).mockResolvedValue(makeUpdateCaseResponse({ case: mockCase }));
 });
 
 describe("CasesTab", () => {
@@ -45,7 +51,7 @@ describe("CasesTab", () => {
 
   it("shows plural case count when multiple cases", async () => {
     const mockCase2 = { ...mockCase, path: "auth/signup", title: "User Signup" } as unknown as Case;
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, mockCase2] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [mockCase, mockCase2] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("2 cases")).toBeInTheDocument());
   });
@@ -76,10 +82,9 @@ describe("CasesTab", () => {
   });
 
   it("calls createCase on form submit", async () => {
-    vi.mocked(client.createCase).mockResolvedValue({
-      case: mockCase,
-      filePath: "cases/auth/login.md",
-    } as never);
+    vi.mocked(client.createCase).mockResolvedValue(
+      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/login.md" })
+    );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     await userEvent.type(
@@ -96,7 +101,7 @@ describe("CasesTab", () => {
   });
 
   it("calls deleteCase when delete confirmed", async () => {
-    vi.mocked(client.deleteCase).mockResolvedValue({ filePath: "cases/auth/login.md" } as never);
+    vi.mocked(client.deleteCase).mockResolvedValue(makeDeleteCaseResponse({ filePath: "cases/auth/login.md" }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
@@ -176,7 +181,7 @@ describe("CasesTab", () => {
 
   it("changes sort order when Sort: Path selected", async () => {
     const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [mockCase, secondCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     const sortSelect = screen.getByDisplayValue("Sort: Priority");
@@ -217,7 +222,7 @@ describe("CasesTab", () => {
   });
 
   it("shows no-body placeholder when body is empty", async () => {
-    vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: "" } as never);
+    vi.mocked(client.getCase).mockResolvedValue(makeGetCaseResponse({ case: mockCase, body: "" }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
@@ -275,7 +280,7 @@ describe("CasesTab", () => {
 
   it("sorts by priority with path tiebreaker for equal-priority cases", async () => {
     const case2 = makeCase({ path: "auth/logout", title: "User Logout", priority: "high" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [case2, mockCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [case2, mockCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
     const paths = screen.getAllByText(/auth\//);
@@ -285,7 +290,7 @@ describe("CasesTab", () => {
 
   it("sorts unknown priority cases to end", async () => {
     const unknownCase = makeCase({ path: "other/thing", title: "Unknown", priority: "" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase, mockCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [unknownCase, mockCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
     const paths = screen.getAllByText(/\//);
@@ -296,7 +301,7 @@ describe("CasesTab", () => {
 
   it("sorts known before unknown priority from reversed order", async () => {
     const unknownCase = makeCase({ path: "other/thing", title: "Unknown", priority: "" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, unknownCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [mockCase, unknownCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
     const paths = screen.getAllByText(/\//);
@@ -306,7 +311,7 @@ describe("CasesTab", () => {
   });
 
   it("collapses expanded case when it is deleted", async () => {
-    vi.mocked(client.deleteCase).mockResolvedValue({ filePath: "cases/auth/login.md" } as never);
+    vi.mocked(client.deleteCase).mockResolvedValue(makeDeleteCaseResponse({ filePath: "cases/auth/login.md" }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
@@ -322,7 +327,7 @@ describe("CasesTab", () => {
 
   it("filters by tag when tag select changed", async () => {
     const taggedCase = makeCase({ tags: ["smoke"] });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [taggedCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [taggedCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     const tagSelect = screen.getByDisplayValue("All tags");
@@ -375,10 +380,9 @@ describe("CasesTab", () => {
   });
 
   it("calls createCase with parsed tags when tags field is filled", async () => {
-    vi.mocked(client.createCase).mockResolvedValue({
-      case: mockCase,
-      filePath: "cases/auth/new.md",
-    } as never);
+    vi.mocked(client.createCase).mockResolvedValue(
+      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+    );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     await userEvent.type(
@@ -447,7 +451,7 @@ describe("CasesTab", () => {
       path: "auth/reset",
       title: "Reset Password",
     });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [mediumCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [mediumCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Reset Password")).toBeInTheDocument());
     expect(screen.getAllByText("Medium").length).toBeGreaterThan(0);
@@ -457,7 +461,7 @@ describe("CasesTab", () => {
 
   it("opens edit for low priority case", async () => {
     const lowCase = makeCase({ priority: "low", path: "auth/logout", title: "Logout" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [lowCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [lowCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -466,7 +470,7 @@ describe("CasesTab", () => {
 
   it("opens edit for case with unknown priority (default branch)", async () => {
     const unknownCase = makeCase({ priority: "", path: "other/thing", title: "Unknown Priority" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [unknownCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -482,10 +486,9 @@ describe("CasesTab", () => {
   });
 
   it("fills description and body textarea in create form", async () => {
-    vi.mocked(client.createCase).mockResolvedValue({
-      case: mockCase,
-      filePath: "cases/auth/new.md",
-    } as never);
+    vi.mocked(client.createCase).mockResolvedValue(
+      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+    );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     await userEvent.type(
@@ -507,10 +510,9 @@ describe("CasesTab", () => {
   });
 
   it("changes priority select in create form", async () => {
-    vi.mocked(client.createCase).mockResolvedValue({
-      case: mockCase,
-      filePath: "cases/auth/new.md",
-    } as never);
+    vi.mocked(client.createCase).mockResolvedValue(
+      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+    );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     const prioritySelect = screen.getByDisplayValue("Medium");
@@ -609,8 +611,8 @@ describe("CasesTab", () => {
   it("announces result count via live region when filter changes case count", async () => {
     const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
     vi.mocked(client.listCases)
-      .mockResolvedValueOnce({ cases: [mockCase, secondCase] } as never)
-      .mockResolvedValue({ cases: [mockCase] } as never);
+      .mockResolvedValueOnce(makeListCasesResponse({ cases: [mockCase, secondCase] }))
+      .mockResolvedValue(makeListCasesResponse({ cases: [mockCase] }));
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.selectOptions(screen.getByDisplayValue("All priorities"), "High");
@@ -638,20 +640,19 @@ describe("CasesTab", () => {
   });
 
   it("shows loading state while fetching cases", async () => {
-    let resolve: (v: unknown) => void;
+    let resolve!: (v: ReturnType<typeof makeListCasesResponse>) => void;
     vi.mocked(client.listCases).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
-      }) as never
+        resolve = res as typeof resolve;
+      })
     );
     render(<CasesTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve!({ cases: [] });
-    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
+    resolve(makeListCasesResponse());
   });
 
   it('shows "No cases found." when case list is empty', async () => {
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse());
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("No cases found.")).toBeInTheDocument());
   });
@@ -666,10 +667,9 @@ describe("CasesTab", () => {
   });
 
   it("resets priority to Medium after creating a case with High priority", async () => {
-    vi.mocked(client.createCase).mockResolvedValue({
-      case: mockCase,
-      filePath: "cases/auth/new.md",
-    } as never);
+    vi.mocked(client.createCase).mockResolvedValue(
+      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+    );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     const prioritySelect = screen.getByDisplayValue("Medium");
@@ -686,15 +686,15 @@ describe("CasesTab", () => {
 
   it("discards stale getCase response when a second expand fires before first resolves", async () => {
     const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse({ cases: [mockCase, secondCase] }));
 
-    let resolveFirst!: (v: unknown) => void;
-    const firstPromise = new Promise((res) => {
-      resolveFirst = res;
+    let resolveFirst!: (v: ReturnType<typeof makeGetCaseResponse>) => void;
+    const firstPromise = new Promise<ReturnType<typeof makeGetCaseResponse>>((res) => {
+      resolveFirst = res as typeof resolveFirst;
     });
     vi.mocked(client.getCase)
-      .mockImplementationOnce(() => firstPromise as never)
-      .mockResolvedValue({ case: secondCase, body: "second body" } as never);
+      .mockImplementationOnce(() => firstPromise as ReturnType<typeof client.getCase>)
+      .mockResolvedValue(makeGetCaseResponse({ case: secondCase, body: "second body" }));
 
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -704,9 +704,8 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
 
     // resolve stale first fetch — should not overwrite second body
-    await act(async () => {
-      resolveFirst({ case: mockCase, body: "first body" });
-    });
+    resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }));
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
   });

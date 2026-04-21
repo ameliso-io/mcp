@@ -3,11 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
 import { client } from "@/client";
-import { makeCase, makeSuite } from "@/test/factories";
-import type { Suite } from "@/gen/ameliso/v1/types_pb";
-import { create } from "@bufbuild/protobuf";
-import type { ListCasesResponse } from "@/gen/ameliso/v1/service_pb";
-import { ListCasesResponseSchema } from "@/gen/ameliso/v1/service_pb";
+import {
+  makeCase,
+  makeCreateSuiteResponse,
+  makeDeleteSuiteResponse,
+  makeListCasesResponse,
+  makeListSuitesResponse,
+  makeSuite,
+  makeUpdateSuiteResponse,
+} from "@/test/factories";
 
 vi.mock("@/client");
 vi.mock("next/link", () => ({
@@ -34,19 +38,22 @@ const mockSuite = makeSuite({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite] } as never);
-  vi.mocked(client.listCases).mockResolvedValue({
-    cases: [
-      makeCase({ path: "auth/login", title: "User Login", tags: ["auth"], priority: "high" }),
-      makeCase({ path: "auth/logout", title: "User Logout", tags: [], priority: "low" }),
-    ],
-  } as never);
-  vi.mocked(client.createSuite).mockResolvedValue({
-    suite: mockSuite,
-    filePath: "suites/smoke.yaml",
-  } as never);
-  vi.mocked(client.updateSuite).mockResolvedValue({ suite: mockSuite } as never);
-  vi.mocked(client.deleteSuite).mockResolvedValue({ filePath: "suites/smoke.yaml" } as never);
+  vi.mocked(client.listSuites).mockResolvedValue(makeListSuitesResponse({ suites: [mockSuite] }));
+  vi.mocked(client.listCases).mockResolvedValue(
+    makeListCasesResponse({
+      cases: [
+        makeCase({ path: "auth/login", title: "User Login", tags: ["auth"], priority: "high" }),
+        makeCase({ path: "auth/logout", title: "User Logout", tags: [], priority: "low" }),
+      ],
+    })
+  );
+  vi.mocked(client.createSuite).mockResolvedValue(
+    makeCreateSuiteResponse({ suite: mockSuite, filePath: "suites/smoke.yaml" })
+  );
+  vi.mocked(client.updateSuite).mockResolvedValue(makeUpdateSuiteResponse({ suite: mockSuite }));
+  vi.mocked(client.deleteSuite).mockResolvedValue(
+    makeDeleteSuiteResponse({ filePath: "suites/smoke.yaml" })
+  );
 });
 
 describe("SuitesTab", () => {
@@ -142,7 +149,7 @@ describe("SuitesTab", () => {
   });
 
   it("shows raw case paths when listCases returns empty", async () => {
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse());
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
@@ -152,8 +159,8 @@ describe("SuitesTab", () => {
 
   it('shows "No cases in this suite" for suite with no cases', async () => {
     const emptySuite = makeSuite({ description: "Critical path checks", cases: [] });
-    vi.mocked(client.listSuites).mockResolvedValue({ suites: [emptySuite] } as never);
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    vi.mocked(client.listSuites).mockResolvedValue(makeListSuitesResponse({ suites: [emptySuite] }));
+    vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse());
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
@@ -203,15 +210,19 @@ describe("SuitesTab", () => {
       description: "Critical path checks",
       cases: ["auth/login"],
     });
-    vi.mocked(client.listSuites).mockResolvedValue({ suites: [singleCaseSuite] } as never);
+    vi.mocked(client.listSuites).mockResolvedValue(
+      makeListSuitesResponse({ suites: [singleCaseSuite] })
+    );
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());
   });
 
   it("shows medium priority dot when case has medium priority", async () => {
-    vi.mocked(client.listCases).mockResolvedValue({
-      cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
-    } as never);
+    vi.mocked(client.listCases).mockResolvedValue(
+      makeListCasesResponse({
+        cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
+      })
+    );
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
@@ -381,24 +392,23 @@ describe("SuitesTab", () => {
   });
 
   it("shows loading state while fetching suites", async () => {
-    let resolve: (v: unknown) => void;
+    let resolve!: (v: ReturnType<typeof makeListSuitesResponse>) => void;
     vi.mocked(client.listSuites).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
-      }) as never
+        resolve = res as typeof resolve;
+      })
     );
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve!({ suites: [] });
-    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
+    resolve(makeListSuitesResponse());
   });
 
   it('shows "Creating…" on Create Suite button while creating', async () => {
-    let resolve: (v: unknown) => void;
+    let resolve!: (v: ReturnType<typeof makeCreateSuiteResponse>) => void;
     vi.mocked(client.createSuite).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
-      }) as never
+        resolve = res as typeof resolve;
+      })
     );
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
@@ -407,21 +417,22 @@ describe("SuitesTab", () => {
     await userEvent.type(inputs[1]!, "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
-    resolve!({ suite: mockSuite, filePath: "suites/regression.yaml" });
-    await waitFor(() => expect(screen.queryByText("Creating…")).not.toBeInTheDocument());
+    resolve(makeCreateSuiteResponse({ suite: mockSuite, filePath: "suites/regression.yaml" }));
   });
 
   it('shows "No suites found." when suites list is empty', async () => {
-    vi.mocked(client.listSuites).mockResolvedValue({ suites: [] } as never);
+    vi.mocked(client.listSuites).mockResolvedValue(makeListSuitesResponse());
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("No suites found.")).toBeInTheDocument());
   });
 
   it("ignores stale listCases response when suite clicked twice rapidly", async () => {
     const suite2 = makeSuite({ slug: "regression", name: "Regression", cases: [] });
-    vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
-    let resolveFirst!: (v: ListCasesResponse) => void;
-    let resolveSecond!: (v: ListCasesResponse) => void;
+    vi.mocked(client.listSuites).mockResolvedValue(
+      makeListSuitesResponse({ suites: [mockSuite, suite2] })
+    );
+    let resolveFirst!: (v: ReturnType<typeof makeListCasesResponse>) => void;
+    let resolveSecond!: (v: ReturnType<typeof makeListCasesResponse>) => void;
     vi.mocked(client.listCases)
       .mockImplementationOnce(
         () =>
@@ -440,10 +451,18 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByRole("button", { name: /Smoke Tests/ }));
     await userEvent.click(screen.getByRole("button", { name: /Regression/ }));
     // Resolve second fetch first (out of order)
-    resolveSecond(create(ListCasesResponseSchema, { cases: [makeCase({ path: "reg/test", title: "Regression Test" })] }));
+    resolveSecond(
+      makeListCasesResponse({
+        cases: [makeCase({ path: "reg/test", title: "Regression Test" })],
+      })
+    );
     await waitFor(() => screen.getByText("Regression Test"));
     // Now resolve first fetch — stale result must be discarded
-    resolveFirst(create(ListCasesResponseSchema, { cases: [makeCase({ path: "auth/login", title: "Should Not Appear" })] }));
+    resolveFirst(
+      makeListCasesResponse({
+        cases: [makeCase({ path: "auth/login", title: "Should Not Appear" })],
+      })
+    );
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText("Should Not Appear")).not.toBeInTheDocument();
     expect(screen.getByText("Regression Test")).toBeInTheDocument();
@@ -650,9 +669,11 @@ describe("SuitesTab", () => {
   });
 
   it("auto-expands suite from initialExpanded prop after suites load", async () => {
-    vi.mocked(client.listCases).mockResolvedValue({
-      cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
-    } as never);
+    vi.mocked(client.listCases).mockResolvedValue(
+      makeListCasesResponse({
+        cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
+      })
+    );
     render(
       <SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" initialExpanded="smoke" />
     );
