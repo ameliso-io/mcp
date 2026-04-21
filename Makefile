@@ -1,4 +1,4 @@
-.PHONY: install build test fmt lint spell pre-commit pre-push dev
+.PHONY: install build test fmt lint spell pre-commit pre-push dev coverage-check
 
 dev: install build
 	@trap 'kill 0' SIGINT SIGTERM; \
@@ -27,10 +27,14 @@ lint:
 spell:
 	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
 
+coverage-check:
+	cargo tarpaulin --workspace --fail-under 80
+	cd web && pnpm run coverage
+
 # --- Git hooks (called by Husky) ---
 
 pre-commit: fmt lint spell
 	@echo "pre-commit: OK"
 
-pre-push: build test
+pre-push: build test coverage-check
 	@echo "pre-push: OK"
