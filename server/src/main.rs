@@ -50,7 +50,11 @@ async fn main() -> Result<()> {
     load_env();
     validate_env();
 
-    let addr: SocketAddr = "[::1]:50051".parse()?;
+    let port = std::env::var("AMELISO_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(50052);
+    let addr: SocketAddr = format!("127.0.0.1:{port}").parse()?;
     println!("ameliso-server listening on {}", addr);
 
     Server::builder()
