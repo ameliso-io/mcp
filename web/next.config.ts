@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
+  output: "standalone",
   turbopack: {
     root: path.resolve(__dirname, ".."),
   },
