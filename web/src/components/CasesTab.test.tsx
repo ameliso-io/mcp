@@ -515,6 +515,19 @@ describe("CasesTab", () => {
     expect(screen.queryByText("Save")).not.toBeInTheDocument();
   });
 
+  it("announces result count via live region when filter changes case count", async () => {
+    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
+    vi.mocked(client.listCases)
+      .mockResolvedValueOnce({ cases: [mockCase, secondCase] } as never)
+      .mockResolvedValue({ cases: [mockCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.selectOptions(screen.getByDisplayValue("All priorities"), "High");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("1 case found")
+    );
+  });
+
   it("expands case on Enter key", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));

@@ -137,7 +137,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
 
   return (
     <div>
-      <div role="status" aria-live="polite" className={styles.srOnly}>
+      <div role="status" aria-live="polite" className="sr-only">
         {announcement}
       </div>
       <div className={styles.header}>

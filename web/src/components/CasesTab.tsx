@@ -54,6 +54,8 @@ export default function CasesTab({ repoId }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [filterAnnouncement, setFilterAnnouncement] = useState("");
+  const prevCountRef = useRef<number | null>(null);
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
@@ -149,6 +151,15 @@ export default function CasesTab({ repoId }: Props) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading) return;
+    const count = deferredCases.length;
+    if (prevCountRef.current !== null && prevCountRef.current !== count) {
+      setFilterAnnouncement(`${count} case${count !== 1 ? "s" : ""} found`);
+    }
+    prevCountRef.current = count;
+  }, [deferredCases.length, loading]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!repoId || !newPath || !newTitle) return;
@@ -230,6 +241,9 @@ export default function CasesTab({ repoId }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
+      </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Cases</h2>
         <button
