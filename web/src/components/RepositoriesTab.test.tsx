@@ -361,11 +361,37 @@ describe("RepositoriesTab", () => {
     window.history.replaceState({}, "", "/");
   });
 
+  it("Refresh All deduplicates installationIds — calls handleGitHubCallback once when two repos share same installation", async () => {
+    const repo1 = makeRepo({ id: "org/alpha", installationId: "shared-inst" });
+    const repo2 = makeRepo({ id: "org/beta", installationId: "shared-inst" });
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [repo1, repo2],
+    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [repo1, repo2],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledTimes(1));
+    expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "shared-inst" });
+  });
+
   it("search filters repos by html url", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({
       repositories: [
-        makeRepo({ id: "org/alpha", name: "alpha", fullName: "org/alpha", htmlUrl: "https://github.com/org/alpha" }),
-        makeRepo({ id: "org/beta", name: "beta", fullName: "org/beta", htmlUrl: "https://github.com/org/beta" }),
+        makeRepo({
+          id: "org/alpha",
+          name: "alpha",
+          fullName: "org/alpha",
+          htmlUrl: "https://github.com/org/alpha",
+        }),
+        makeRepo({
+          id: "org/beta",
+          name: "beta",
+          fullName: "org/beta",
+          htmlUrl: "https://github.com/org/beta",
+        }),
       ],
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
