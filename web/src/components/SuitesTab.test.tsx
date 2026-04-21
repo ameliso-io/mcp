@@ -505,4 +505,23 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Smoke Tests"));
     expect(screen.queryByText("Critical path checks")).not.toBeInTheDocument();
   });
+
+  it('shows "No cases in this suite." when suite and listCases both have empty cases', async () => {
+    const emptySuite = { ...mockSuite, cases: [] } as unknown as Suite;
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [emptySuite] } as never);
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() =>
+      expect(screen.getByText("No cases in this suite.")).toBeInTheDocument()
+    );
+  });
+
+  it('shows "1 case" (singular) when suite has exactly one case', async () => {
+    const oneCaseSuite = { ...mockSuite, cases: ["auth/login"] } as unknown as Suite;
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [oneCaseSuite] } as never);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());
+  });
 });
