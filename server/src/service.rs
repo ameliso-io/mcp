@@ -1249,6 +1249,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn list_cases_with_priority_filter_passes_validation() {
+        // Non-Unspecified priority takes the Some(pri) branch — passes validation → DB error.
+        let s = server();
+        let err = s
+            .list_cases(Request::new(pb::ListCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                priority: pb::Priority::High as i32,
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn get_case_rejects_empty_repo_id() {
         let s = server();
         let err = s
