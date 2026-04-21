@@ -25,11 +25,11 @@ lint:
 	cd server && buf lint
 
 spell:
-	@echo "spell check: not yet configured"
+	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
 
 # --- Git hooks (called by Husky) ---
 
-pre-commit: fmt lint
+pre-commit: fmt lint spell
 	@echo "pre-commit: OK"
 
 pre-push: build test
