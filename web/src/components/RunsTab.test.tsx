@@ -341,4 +341,16 @@ describe('RunsTab', () => {
     await waitFor(() => expect(screen.getByText('select error')).toBeInTheDocument())
   })
 
+  it('shows error when finalizeRun fails', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.finalizeRun).mockRejectedValue(new Error('finalize failed'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Complete Run'))
+    await userEvent.click(screen.getByText('Complete Run'))
+    await waitFor(() => expect(screen.getByText('finalize failed')).toBeInTheDocument())
+  })
+
 })

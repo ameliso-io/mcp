@@ -209,4 +209,47 @@ describe('SuitesTab', () => {
     await userEvent.click(screen.getByText('Save'))
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled())
   })
+
+  it('calls createSuite with parsed cases when cases field is filled', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Suite'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'e2e')
+    await userEvent.type(inputs[1], 'E2E Tests')
+    const casesInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).placeholder?.includes('auth/login'))
+    if (casesInput) await userEvent.type(casesInput, 'auth/login, auth/logout')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Suite' }))
+    await waitFor(() => expect(client.createSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ cases: expect.arrayContaining(['auth/login', 'auth/logout']) })
+    ))
+  })
+
+  it('does not call deleteSuite when confirm cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    expect(client.deleteSuite).not.toHaveBeenCalled()
+  })
+
+  it('calls updateSuite with empty cases when cases field is cleared', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const casesInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'auth/login, auth/logout') as HTMLInputElement
+    await userEvent.clear(casesInput)
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateSuite).toHaveBeenCalledWith(
+      expect.objectContaining({ cases: [] })
+    ))
+  })
+
+  it('handles listCases failure silently when suite expanded', async () => {
+    vi.mocked(client.listCases).mockRejectedValue(new Error('cases load error'))
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => expect(screen.getByText('auth/login')).toBeInTheDocument())
+  })
 })
