@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Git as Git Push
+    participant Webhook as GitHub Webhook
+    participant Server as gRPC Server
+    participant GH as GitHub Contents API
+    participant PG as PostgreSQL
+
+    Git->>Webhook: push event
+    Webhook->>Server: POST /webhook
+    Server->>Server: Parse changed cases/**/*.md paths
+    Server->>GH: GET file content for each changed path
+    GH-->>Server: File content
+    Server->>PG: Upsert case from markdown front matter + body
+    PG-->>Server: OK

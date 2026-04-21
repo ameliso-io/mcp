@@ -29,7 +29,10 @@
       "Bash(pnpm build *)",
       "Skill(update-config)",
       "Bash(pnpm test:coverage)",
-      "Bash(pnpm add *)"
+      "Bash(pnpm add *)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "Bash(cargo fmt *)"
     ]
   }
 }

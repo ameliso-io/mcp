@@ -247,4 +247,26 @@ describe("RepositoriesTab", () => {
     await userEvent.click(screen.getByText("Clear search"));
     expect(screen.getByText("owner/repo")).toBeInTheDocument();
   });
+
+  it("calls handleGitHubCallback for each installation when Refresh All clicked", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() =>
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-1" })
+    );
+  });
+
+  it("shows error when Refresh All fails", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("refresh failed"));
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() => expect(screen.getByText("refresh failed")).toBeInTheDocument());
+  });
 });

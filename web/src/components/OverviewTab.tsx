@@ -257,8 +257,8 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                       (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3)
                     );
                   })
-                  .map((ac) => (
-                    <div key={ac.case?.path} className={styles.affectedRow}>
+                  .map((ac, idx) => (
+                    <div key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
                         <span
                           className={styles.priorityDot}

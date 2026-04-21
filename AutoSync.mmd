@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant User
+    participant Web
+    participant Server as gRPC Server
+    participant PG as PostgreSQL
+    participant GH as GitHub Contents API
+    %% Write path: Web → PostgreSQL → GitHub
+    User->>Web: Create/Update/Delete case
+    Web->>Server: CreateCase / UpdateCase / DeleteCase (gRPC)
+    Server->>PG: Write case
+    PG-->>Server: OK
+    Server->>GH: PUT /repos/{owner}/{repo}/contents/cases/{path}.md
+    Note over Server,GH: Uses installation token (GitHub App JWT)
+    GH-->>Server: 200 OK (or 409 stale SHA)
+    alt 409 Conflict (stale SHA)
+        Server->>GH: GET current file SHA
+        GH-->>Server: Current SHA
+        Server->>GH: PUT with current SHA (PostgreSQL wins)
+        GH-->>Server: 200 OK
+    end
+    Server-->>Web: Response
+
+    %% GitHub App not configured
+    Note over Server,GH: If GitHub App not configured → skip push, log warning, return success
