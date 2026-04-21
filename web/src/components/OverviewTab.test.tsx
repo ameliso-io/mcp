@@ -629,6 +629,23 @@ describe("OverviewTab", () => {
     expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
   });
 
+  it("UNSPECIFIED status sorts after PASSED in coverage list (default branch)", async () => {
+    // statusSortOrder returns 5 for UNSPECIFIED (default case), PASSED returns 4.
+    // So PASSED entries must appear before UNSPECIFIED in the rendered list.
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("auth/reset", "Reset", "high", ResultStatus.UNSPECIFIED),
+        makeCovEntry("auth/login", "Login", "high", ResultStatus.PASSED),
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Login")).toBeInTheDocument());
+    // PASSED (Login) must appear before UNSPECIFIED (Reset) in DOM — sort order 4 < 5.
+    const body = document.body.innerHTML;
+    expect(body.indexOf("Login")).toBeLessThan(body.indexOf("Reset"));
+  });
+
   it("shows all four stat card labels and Never Run count is 0 when no never-run cases", async () => {
     // default entries: 1 PASSED + 1 FAILED — no NEVER entries
     render(<OverviewTab repoId="owner/repo" />);
