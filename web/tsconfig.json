@@ -31,7 +31,8 @@
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "exactOptionalPropertyTypes": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "moduleDetection": "force"
   },
   "include": [
     "next-env.d.ts",
