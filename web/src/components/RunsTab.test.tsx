@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import RunsTab from './RunsTab'
@@ -351,6 +351,46 @@ describe('RunsTab', () => {
     await waitFor(() => screen.getByText('Complete Run'))
     await userEvent.click(screen.getByText('Complete Run'))
     await waitFor(() => expect(screen.getByText('finalize failed')).toBeInTheDocument())
+  })
+
+  it('polling timer callback updates pending cases on success', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    let capturedCallback: (() => Promise<void>) | null = null
+    const spy = vi.spyOn(global, 'setInterval').mockImplementation((fn, delay) => {
+      if (delay === 30_000) capturedCallback = fn as () => Promise<void>
+      return 0 as unknown as ReturnType<typeof setInterval>
+    })
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled())
+    expect(capturedCallback).not.toBeNull()
+    if (capturedCallback) {
+      await act(async () => { await capturedCallback!() })
+    }
+    expect(client.getPendingCases).toHaveBeenCalledTimes(2)
+    spy.mockRestore()
+  })
+
+  it('polling timer callback silently ignores errors', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.getPendingCases)
+      .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
+      .mockRejectedValueOnce(new Error('poll error'))
+    let capturedCallback: (() => Promise<void>) | null = null
+    const spy = vi.spyOn(global, 'setInterval').mockImplementation((fn, delay) => {
+      if (delay === 30_000) capturedCallback = fn as () => Promise<void>
+      return 0 as unknown as ReturnType<typeof setInterval>
+    })
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled())
+    if (capturedCallback) {
+      await act(async () => { await capturedCallback!() })
+    }
+    expect(screen.queryByText('poll error')).not.toBeInTheDocument()
+    spy.mockRestore()
   })
 
 })
