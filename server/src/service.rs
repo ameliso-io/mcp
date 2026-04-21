@@ -1148,6 +1148,116 @@ mod tests {
         assert!(err.message().contains("status must be one of"));
     }
 
+    // ── create_case validation ────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn create_case_rejects_empty_title() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title is required"));
+    }
+
+    #[tokio::test]
+    async fn create_case_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "".to_owned(),
+                title: "Login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path is required"));
+    }
+
+    // ── create_run validation ─────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn create_run_rejects_empty_slug() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug is required"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "".to_owned(),
+                slug: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    // ── delete validation ─────────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn delete_case_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .delete_case(Request::new(pb::DeleteCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path is required"));
+    }
+
+    #[tokio::test]
+    async fn delete_suite_rejects_empty_slug() {
+        let s = server();
+        let err = s
+            .delete_suite(Request::new(pb::DeleteSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug is required"));
+    }
+
+    #[tokio::test]
+    async fn delete_run_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .delete_run(Request::new(pb::DeleteRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
