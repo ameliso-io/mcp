@@ -80,8 +80,10 @@ Do not commit generated files from `server/generated/`.
 ## Adding a new RPC
 
 1. Add request/response messages and the RPC to `service.proto`.
-2. Implement the handler in `server/src/service.rs`.
-3. Add repo logic in `server/src/repo.rs` if needed.
-4. Add a corresponding MCP tool in `mcp/src/main.rs`.
-5. Add a corresponding CLI subcommand in `cli/src/main.rs`.
-6. Add an integration test in `server/tests/integration.rs`.
+2. Run `cd server && buf lint && buf generate` — regenerates Rust bindings (via `build.rs`) and TypeScript bindings (`web/src/gen/`). Commit the generated files.
+3. Implement the handler in `server/src/service.rs`.
+4. Add repo logic in `server/src/repo.rs` if needed.
+5. Add a corresponding MCP tool in `mcp/src/main.rs`.
+6. Add a corresponding CLI subcommand in `cli/src/main.rs`.
+7. Add an integration test in `server/tests/integration.rs`.
+8. Update the tool count in `AGENTS.md` and `README.md`.

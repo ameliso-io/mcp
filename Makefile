@@ -9,6 +9,7 @@ dev:
 
 build:
 	cargo build --release
+	pnpm --filter ameliso-web build
 
 test:
 	cargo test
