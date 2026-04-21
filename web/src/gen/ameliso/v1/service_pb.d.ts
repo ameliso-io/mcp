@@ -696,84 +696,6 @@ export declare type RecordResultResponse = Message<"ameliso.v1.RecordResultRespo
 export declare const RecordResultResponseSchema: GenMessage<RecordResultResponse>;
 
 /**
- * @generated from message ameliso.v1.BulkResultEntry
- */
-export declare type BulkResultEntry = Message<"ameliso.v1.BulkResultEntry"> & {
-  /**
-   * @generated from field: string case_path = 1;
-   */
-  casePath: string;
-
-  /**
-   * @generated from field: ameliso.v1.ResultStatus status = 2;
-   */
-  status: ResultStatus;
-
-  /**
-   * @generated from field: string notes = 3;
-   */
-  notes: string;
-};
-
-/**
- * Describes the message ameliso.v1.BulkResultEntry.
- * Use `create(BulkResultEntrySchema)` to create a new message.
- */
-export declare const BulkResultEntrySchema: GenMessage<BulkResultEntry>;
-
-/**
- * @generated from message ameliso.v1.BulkRecordResultsRequest
- */
-export declare type BulkRecordResultsRequest = Message<"ameliso.v1.BulkRecordResultsRequest"> & {
-  /**
-   * @generated from field: string repo_path = 1;
-   */
-  repoPath: string;
-
-  /**
-   * @generated from field: string run_id = 2;
-   */
-  runId: string;
-
-  /**
-   * @generated from field: repeated ameliso.v1.BulkResultEntry results = 3;
-   */
-  results: BulkResultEntry[];
-};
-
-/**
- * Describes the message ameliso.v1.BulkRecordResultsRequest.
- * Use `create(BulkRecordResultsRequestSchema)` to create a new message.
- */
-export declare const BulkRecordResultsRequestSchema: GenMessage<BulkRecordResultsRequest>;
-
-/**
- * @generated from message ameliso.v1.BulkRecordResultsResponse
- */
-export declare type BulkRecordResultsResponse = Message<"ameliso.v1.BulkRecordResultsResponse"> & {
-  /**
-   * @generated from field: repeated ameliso.v1.CaseResult results = 1;
-   */
-  results: CaseResult[];
-
-  /**
-   * @generated from field: int32 pending_count = 2;
-   */
-  pendingCount: number;
-
-  /**
-   * @generated from field: int32 total_count = 3;
-   */
-  totalCount: number;
-};
-
-/**
- * Describes the message ameliso.v1.BulkRecordResultsResponse.
- * Use `create(BulkRecordResultsResponseSchema)` to create a new message.
- */
-export declare const BulkRecordResultsResponseSchema: GenMessage<BulkRecordResultsResponse>;
-
-/**
  * @generated from message ameliso.v1.FinalizeRunRequest
  */
 export declare type FinalizeRunRequest = Message<"ameliso.v1.FinalizeRunRequest"> & {
@@ -899,156 +821,6 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
  * Use `create(GetPendingCasesResponseSchema)` to create a new message.
  */
 export declare const GetPendingCasesResponseSchema: GenMessage<GetPendingCasesResponse>;
-
-/**
- * @generated from message ameliso.v1.GetRepoStatusRequest
- */
-export declare type GetRepoStatusRequest = Message<"ameliso.v1.GetRepoStatusRequest"> & {
-  /**
-   * @generated from field: string repo_path = 1;
-   */
-  repoPath: string;
-};
-
-/**
- * Describes the message ameliso.v1.GetRepoStatusRequest.
- * Use `create(GetRepoStatusRequestSchema)` to create a new message.
- */
-export declare const GetRepoStatusRequestSchema: GenMessage<GetRepoStatusRequest>;
-
-/**
- * Summary for one active (in-progress) run.
- *
- * @generated from message ameliso.v1.ActiveRunSummary
- */
-export declare type ActiveRunSummary = Message<"ameliso.v1.ActiveRunSummary"> & {
-  /**
-   * @generated from field: string run_id = 1;
-   */
-  runId: string;
-
-  /**
-   * @generated from field: string tester = 2;
-   */
-  tester: string;
-
-  /**
-   * @generated from field: string environment = 3;
-   */
-  environment: string;
-
-  /**
-   * @generated from field: string suite = 4;
-   */
-  suite: string;
-
-  /**
-   * @generated from field: string date = 5;
-   */
-  date: string;
-
-  /**
-   * @generated from field: int32 pending_count = 6;
-   */
-  pendingCount: number;
-
-  /**
-   * @generated from field: int32 total_in_scope = 7;
-   */
-  totalInScope: number;
-};
-
-/**
- * Describes the message ameliso.v1.ActiveRunSummary.
- * Use `create(ActiveRunSummarySchema)` to create a new message.
- */
-export declare const ActiveRunSummarySchema: GenMessage<ActiveRunSummary>;
-
-/**
- * @generated from message ameliso.v1.GetRepoStatusResponse
- */
-export declare type GetRepoStatusResponse = Message<"ameliso.v1.GetRepoStatusResponse"> & {
-  /**
-   * Case counts
-   *
-   * @generated from field: int32 total_cases = 1;
-   */
-  totalCases: number;
-
-  /**
-   * @generated from field: int32 high_priority = 2;
-   */
-  highPriority: number;
-
-  /**
-   * @generated from field: int32 medium_priority = 3;
-   */
-  mediumPriority: number;
-
-  /**
-   * @generated from field: int32 low_priority = 4;
-   */
-  lowPriority: number;
-
-  /**
-   * Coverage summary (latest known status across all cases)
-   *
-   * @generated from field: int32 passed_count = 5;
-   */
-  passedCount: number;
-
-  /**
-   * @generated from field: int32 failed_count = 6;
-   */
-  failedCount: number;
-
-  /**
-   * @generated from field: int32 blocked_count = 7;
-   */
-  blockedCount: number;
-
-  /**
-   * @generated from field: int32 skipped_count = 8;
-   */
-  skippedCount: number;
-
-  /**
-   * @generated from field: int32 never_run_count = 9;
-   */
-  neverRunCount: number;
-
-  /**
-   * Active runs
-   *
-   * @generated from field: repeated ameliso.v1.ActiveRunSummary active_runs = 10;
-   */
-  activeRuns: ActiveRunSummary[];
-
-  /**
-   * Totals
-   *
-   * @generated from field: int32 total_runs = 11;
-   */
-  totalRuns: number;
-
-  /**
-   * @generated from field: int32 total_suites = 12;
-   */
-  totalSuites: number;
-
-  /**
-   * Per-case coverage (same as GetCoverageReport without status_filter)
-   *
-   * @generated from field: repeated ameliso.v1.CoverageEntry coverage_entries = 13;
-   */
-  coverageEntries: CoverageEntry[];
-};
-
-/**
- * Describes the message ameliso.v1.GetRepoStatusResponse.
- * Use `create(GetRepoStatusResponseSchema)` to create a new message.
- */
-export declare const GetRepoStatusResponseSchema: GenMessage<GetRepoStatusResponse>;
 
 /**
  * @generated from message ameliso.v1.GetCoverageReportRequest
@@ -1442,17 +1214,6 @@ export declare const AmelisoService: GenService<{
     output: typeof RecordResultResponseSchema;
   },
   /**
-   * Record multiple case results in one call. More efficient than N sequential RecordResult calls.
-   * Idempotent per case: later entries for the same case_path overwrite earlier ones.
-   *
-   * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
-   */
-  bulkRecordResults: {
-    methodKind: "unary";
-    input: typeof BulkRecordResultsRequestSchema;
-    output: typeof BulkRecordResultsResponseSchema;
-  },
-  /**
    * Mark a run as completed or aborted. Validates all expected cases have results.
    *
    * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
@@ -1482,17 +1243,6 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetPendingCasesRequestSchema;
     output: typeof GetPendingCasesResponseSchema;
-  },
-  /**
-   * Return a combined snapshot of repo state in one call: case counts by priority,
-   * coverage summary, active in-progress runs with pending counts, and suite count.
-   *
-   * @generated from rpc ameliso.v1.AmelisoService.GetRepoStatus
-   */
-  getRepoStatus: {
-    methodKind: "unary";
-    input: typeof GetRepoStatusRequestSchema;
-    output: typeof GetRepoStatusResponseSchema;
   },
   /**
    * Return the latest known status for every case.

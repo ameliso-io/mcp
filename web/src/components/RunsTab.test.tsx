@@ -35,7 +35,6 @@ beforeEach(() => {
   vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never)
   vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '## Steps\n\n1. Login' } as never)
   vi.mocked(client.recordResult).mockResolvedValue({ result: undefined } as never)
-  vi.mocked(client.bulkRecordResults).mockResolvedValue({ results: [{}], pendingCount: 0, totalCount: 1 } as never)
   vi.mocked(client.finalizeRun).mockResolvedValue({ run: { ...mockRun, status: RunStatus.COMPLETED } } as never)
   vi.mocked(client.deleteRun).mockResolvedValue({ dirPath: 'runs/2026-01-01-smoke' } as never)
 })
@@ -162,7 +161,7 @@ describe('RunsTab', () => {
     ))
   })
 
-  it('calls bulkRecordResults when All Passed clicked', async () => {
+  it('calls recordResult for each pending case when All Passed clicked', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     render(<RunsTab repoPath="/repo" />)
@@ -170,8 +169,8 @@ describe('RunsTab', () => {
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText(/All Passed/))
     await userEvent.click(screen.getByText(/All Passed/))
-    await waitFor(() => expect(client.bulkRecordResults).toHaveBeenCalledWith(
-      expect.objectContaining({ runId: '2026-01-01-smoke' })
+    await waitFor(() => expect(client.recordResult).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: '2026-01-01-smoke', casePath: 'auth/login', status: ResultStatus.PASSED })
     ))
   })
 

@@ -4,8 +4,6 @@ package ameliso.v1;
 
 option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
 
-// A test case read from the controlled repository.
-// Identified by its path within cases/ (e.g. "auth/user-login").
 message Case {
   string path = 1;
   string title = 2;
@@ -16,7 +14,6 @@ message Case {
   string updated_at = 7;
 }
 
-// A suite definition — an ordered collection of case paths.
 message Suite {
   string slug = 1;
   string name = 2;
@@ -24,7 +21,6 @@ message Suite {
   repeated string cases = 4;
 }
 
-// Metadata for a test run (stored in runs/{slug}/run.yaml).
 message RunMeta {
   string id = 1;
   string date = 2;
@@ -34,20 +30,17 @@ message RunMeta {
   string suite = 6;
 }
 
-// The result of executing a single case within a run.
 message CaseResult {
   string case_path = 1;
   ResultStatus status = 2;
   string notes = 3;
 }
 
-// A run with its results loaded.
 message Run {
   RunMeta meta = 1;
   repeated CaseResult results = 2;
 }
 
-// A coverage entry: latest known status for a case across all runs.
 message CoverageEntry {
   Case case = 1;
   ResultStatus latest_status = 2;
@@ -55,7 +48,6 @@ message CoverageEntry {
   string last_run_date = 4;
 }
 
-// A case that may need re-running based on git history.
 message AffectedCase {
   Case case = 1;
   string reason = 2;
@@ -90,8 +82,8 @@ message Repository {
   string name = 2;            // "repo"
   string full_name = 3;       // "owner/repo"
   string html_url = 4;        // "https://github.com/owner/repo"
-  string local_path = 5;      // absolute path to local clone
+  reserved 5, 7;
+  reserved "local_path", "cloned";
   string installation_id = 6;
-  bool cloned = 7;
   string added_at = 8;
 }

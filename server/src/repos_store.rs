@@ -1,63 +1,65 @@
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use anyhow::anyhow;
+use sqlx::PgPool;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct StoredRepo {
     pub id: String,
     pub name: String,
     pub full_name: String,
     pub html_url: String,
-    pub local_path: String,
     pub installation_id: String,
-    pub cloned: bool,
     pub added_at: String,
 }
 
-pub fn data_dir() -> PathBuf {
-    if let Ok(dir) = std::env::var("AMELISO_DATA_DIR") {
-        PathBuf::from(dir)
-    } else {
-        dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".ameliso")
-    }
+fn map_db(e: sqlx::Error) -> anyhow::Error {
+    anyhow!(e)
 }
 
-pub fn repos_dir() -> PathBuf {
-    data_dir().join("repos")
+pub async fn load(pool: &PgPool) -> anyhow::Result<Vec<StoredRepo>> {
+    sqlx::query_as::<_, StoredRepo>(
+        "SELECT id, name, full_name, html_url, installation_id, added_at
+         FROM repositories ORDER BY added_at DESC",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(map_db)
 }
 
-fn store_path() -> PathBuf {
-    data_dir().join("repos.json")
+pub async fn get(pool: &PgPool, id: &str) -> anyhow::Result<Option<StoredRepo>> {
+    sqlx::query_as::<_, StoredRepo>(
+        "SELECT id, name, full_name, html_url, installation_id, added_at
+         FROM repositories WHERE id=$1",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    .map_err(map_db)
 }
 
-pub fn load() -> Vec<StoredRepo> {
-    let path = store_path();
-    if !path.exists() {
-        return vec![];
-    }
-    let data = std::fs::read_to_string(&path).unwrap_or_default();
-    serde_json::from_str(&data).unwrap_or_default()
+pub async fn add_or_update(pool: &PgPool, repo: &StoredRepo) -> anyhow::Result<()> {
+    sqlx::query(
+        "INSERT INTO repositories (id, name, full_name, html_url, installation_id, added_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO UPDATE SET
+             name=$2, full_name=$3, html_url=$4, installation_id=$5",
+    )
+    .bind(&repo.id)
+    .bind(&repo.name)
+    .bind(&repo.full_name)
+    .bind(&repo.html_url)
+    .bind(&repo.installation_id)
+    .bind(&repo.added_at)
+    .execute(pool)
+    .await
+    .map_err(map_db)?;
+    Ok(())
 }
 
-pub fn save(repos: &[StoredRepo]) {
-    let dir = data_dir();
-    std::fs::create_dir_all(&dir).ok();
-    let data = serde_json::to_string_pretty(repos).unwrap_or_default();
-    std::fs::write(store_path(), data).ok();
-}
-
-pub fn add_or_update(repo: StoredRepo) {
-    let mut repos = load();
-    match repos.iter_mut().find(|r| r.id == repo.id) {
-        Some(existing) => *existing = repo,
-        None => repos.push(repo),
-    }
-    save(&repos);
-}
-
-pub fn remove(id: &str) {
-    let mut repos = load();
-    repos.retain(|r| r.id != id);
-    save(&repos);
+pub async fn remove(pool: &PgPool, id: &str) -> anyhow::Result<()> {
+    sqlx::query("DELETE FROM repositories WHERE id=$1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    Ok(())
 }

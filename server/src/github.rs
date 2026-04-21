@@ -1,8 +1,6 @@
 use anyhow::{Context, Result};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
-use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct GitHubConfig {
@@ -47,7 +45,7 @@ pub fn generate_jwt(app_id: &str, private_key_pem: &str) -> Result<String> {
     encode(&Header::new(Algorithm::RS256), &claims, &key).context("JWT encode failed")
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct InstallationTokenResponse {
     token: String,
 }
@@ -109,32 +107,75 @@ pub async fn list_installation_repos(token: &str) -> Result<Vec<GitHubRepo>> {
     Ok(resp.repositories)
 }
 
-/// Clone repo if not present, or pull if already cloned.
-/// Returns true on success.
-pub fn clone_or_update(repo: &GitHubRepo, local_path: &Path, token: &str) -> Result<bool> {
-    if local_path.exists() {
-        let out = Command::new("git")
-            .args(["-C", &local_path.to_string_lossy(), "pull", "--ff-only"])
-            .env_remove("GIT_DIR")
-            .env_remove("GIT_WORK_TREE")
-            .env_remove("GIT_INDEX_FILE")
-            .output()?;
-        return Ok(out.status.success());
-    }
+pub async fn get_repo(full_name: &str, token: &str) -> Result<GitHubRepo> {
+    let client = reqwest::Client::new();
+    let repo: GitHubRepo = client
+        .get(format!("https://api.github.com/repos/{full_name}"))
+        .header("Authorization", format!("token {token}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .send()
+        .await
+        .context("request failed")?
+        .error_for_status()
+        .context("get repo: bad status")?
+        .json()
+        .await
+        .context("get repo: parse error")?;
+    Ok(repo)
+}
 
-    if let Some(parent) = local_path.parent() {
-        std::fs::create_dir_all(parent).context("create repo parent dir")?;
-    }
+// ---------------------------------------------------------------------------
+// Compare API for affected-cases analysis
+// ---------------------------------------------------------------------------
 
-    let auth_url = format!(
-        "https://x-access-token:{token}@github.com/{}.git",
-        repo.full_name
-    );
-    let out = Command::new("git")
-        .args(["clone", &auth_url, &local_path.to_string_lossy()])
-        .env_remove("GIT_DIR")
-        .env_remove("GIT_WORK_TREE")
-        .env_remove("GIT_INDEX_FILE")
-        .output()?;
-    Ok(out.status.success())
+pub struct CompareResult {
+    pub commit_messages: Vec<String>,
+    pub changed_files: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct CompareResponse {
+    commits: Vec<CommitWrapper>,
+    #[serde(default)]
+    files: Vec<ChangedFile>,
+}
+
+#[derive(Deserialize)]
+struct CommitWrapper {
+    commit: CommitData,
+}
+
+#[derive(Deserialize)]
+struct CommitData {
+    message: String,
+}
+
+#[derive(Deserialize)]
+struct ChangedFile {
+    filename: String,
+}
+
+pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result<CompareResult> {
+    let client = reqwest::Client::new();
+    let resp: CompareResponse = client
+        .get(format!(
+            "https://api.github.com/repos/{owner}/{repo}/compare/{base}...HEAD"
+        ))
+        .header("Authorization", format!("token {token}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .send()
+        .await
+        .context("compare request failed")?
+        .error_for_status()
+        .context("compare: bad status")?
+        .json()
+        .await
+        .context("compare: parse error")?;
+
+    Ok(CompareResult {
+        commit_messages: resp.commits.into_iter().map(|c| c.commit.message).collect(),
+        changed_files: resp.files.into_iter().map(|f| f.filename).collect(),
+    })
 }

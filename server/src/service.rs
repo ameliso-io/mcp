@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-
+use sqlx::PgPool;
 use tonic::{Request, Response, Status};
 
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
@@ -20,24 +19,24 @@ fn invalid(msg: impl Into<String>) -> Status {
 }
 
 // ---------------------------------------------------------------------------
-// Conversions between repo types and proto types
+// Conversions
 // ---------------------------------------------------------------------------
 
 fn case_to_pb(c: &repo::LoadedCase) -> pb::Case {
     pb::Case {
         path: c.case_path.clone(),
-        title: c.fm.title.clone(),
-        description: c.fm.description.clone(),
-        tags: c.fm.tags.clone(),
-        priority: c.fm.priority.clone(),
-        created_at: c.fm.created_at.clone(),
-        updated_at: c.fm.updated_at.clone(),
+        title: c.title.clone(),
+        description: c.description.clone(),
+        tags: c.tags.clone(),
+        priority: c.priority.clone(),
+        created_at: c.created_at.clone(),
+        updated_at: c.updated_at.clone(),
     }
 }
 
-fn run_meta_to_pb(r: &repo::RunYaml) -> pb::RunMeta {
+fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
     pb::RunMeta {
-        id: r.id.clone(),
+        id: r.run_id.clone(),
         date: r.date.clone(),
         tester: r.tester.clone(),
         status: run_status_to_i32(&r.status),
@@ -49,17 +48,28 @@ fn run_meta_to_pb(r: &repo::RunYaml) -> pb::RunMeta {
 fn result_to_pb(r: &repo::LoadedResult) -> pb::CaseResult {
     pb::CaseResult {
         case_path: r.case_path.clone(),
-        status: result_status_to_i32(&r.fm.status),
+        status: result_status_to_i32(&r.status),
         notes: r.notes.clone(),
     }
 }
 
-fn suite_to_pb(slug: &str, s: &repo::SuiteYaml) -> pb::Suite {
+fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
     pb::Suite {
-        slug: slug.to_owned(),
+        slug: s.slug.clone(),
         name: s.name.clone(),
         description: s.description.clone().unwrap_or_default(),
         cases: s.cases.clone(),
+    }
+}
+
+fn stored_to_pb(r: &crate::repos_store::StoredRepo) -> pb::Repository {
+    pb::Repository {
+        id: r.id.clone(),
+        name: r.name.clone(),
+        full_name: r.full_name.clone(),
+        html_url: r.html_url.clone(),
+        installation_id: r.installation_id.clone(),
+        added_at: r.added_at.clone(),
     }
 }
 
@@ -112,11 +122,22 @@ fn priority_from_i32(n: i32) -> Option<&'static str> {
     }
 }
 
+fn priority_rank(p: &str) -> u8 {
+    match p {
+        "high" => 0,
+        "medium" => 1,
+        "low" => 2,
+        _ => 3,
+    }
+}
+
 // ---------------------------------------------------------------------------
-// Service implementation
+// Service
 // ---------------------------------------------------------------------------
 
-pub struct AmelisoServer;
+pub struct AmelisoServer {
+    pub pool: PgPool,
+}
 
 #[tonic::async_trait]
 impl AmelisoService for AmelisoServer {
@@ -125,30 +146,31 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListCasesRequest>,
     ) -> Result<Response<pb::ListCasesResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-        let mut cases = repo::list_cases(&repo).map_err(repo_err)?;
+        let mut cases = repo::list_cases(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
 
         if !req.tags.is_empty() {
             cases.retain(|c| {
                 req.tags
                     .iter()
-                    .all(|t| c.fm.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                    .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
             });
         }
         if let Some(pri) = priority_from_i32(req.priority) {
-            cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(pri));
+            cases.retain(|c| c.priority.eq_ignore_ascii_case(pri));
         }
         if !req.query.is_empty() {
             let q = req.query.to_lowercase();
             cases.retain(|c| {
-                c.fm.title.to_lowercase().contains(&q)
-                    || c.fm.description.to_lowercase().contains(&q)
+                c.title.to_lowercase().contains(&q)
+                    || c.description.to_lowercase().contains(&q)
                     || c.body.to_lowercase().contains(&q)
                     || c.case_path.to_lowercase().contains(&q)
             });
         }
         if !req.suite.is_empty() {
-            match repo::get_suite(&repo, &req.suite) {
+            match repo::get_suite(&self.pool, &req.repo_id, &req.suite).await {
                 Ok(suite) => {
                     let suite_set: std::collections::HashSet<&str> =
                         suite.cases.iter().map(|p| p.as_str()).collect();
@@ -158,19 +180,15 @@ impl AmelisoService for AmelisoServer {
             }
         }
 
-        let priority_rank = |p: &str| match p {
-            "high" => 0u8,
-            "medium" => 1,
-            "low" => 2,
-            _ => 3,
-        };
         cases.sort_by(|a, b| {
-            priority_rank(&a.fm.priority)
-                .cmp(&priority_rank(&b.fm.priority))
+            priority_rank(&a.priority)
+                .cmp(&priority_rank(&b.priority))
                 .then_with(|| a.case_path.cmp(&b.case_path))
         });
-        let pb_cases = cases.iter().map(case_to_pb).collect();
-        Ok(Response::new(pb::ListCasesResponse { cases: pb_cases }))
+
+        Ok(Response::new(pb::ListCasesResponse {
+            cases: cases.iter().map(case_to_pb).collect(),
+        }))
     }
 
     async fn get_case(
@@ -178,11 +196,13 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCaseRequest>,
     ) -> Result<Response<pb::GetCaseResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-        let case = repo::get_case(&repo, &req.case_path).map_err(repo_err)?;
+        let case = repo::get_case(&self.pool, &req.repo_id, &req.case_path)
+            .await
+            .map_err(repo_err)?;
+        let body = case.body.clone();
         Ok(Response::new(pb::GetCaseResponse {
             case: Some(case_to_pb(&case)),
-            body: case.body.clone(),
+            body,
         }))
     }
 
@@ -197,7 +217,6 @@ impl AmelisoService for AmelisoServer {
         if req.title.is_empty() {
             return Err(invalid("title is required"));
         }
-        let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
         let body = if req.body.is_empty() {
             None
@@ -205,7 +224,8 @@ impl AmelisoService for AmelisoServer {
             Some(req.body.as_str())
         };
         let case = repo::create_case(
-            &repo,
+            &self.pool,
+            &req.repo_id,
             &req.case_path,
             &req.title,
             &req.description,
@@ -213,6 +233,7 @@ impl AmelisoService for AmelisoServer {
             priority,
             body,
         )
+        .await
         .map_err(repo_err)?;
         let file_path = format!("cases/{}.md", req.case_path);
         Ok(Response::new(pb::CreateCaseResponse {
@@ -226,7 +247,6 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::UpdateCaseRequest>,
     ) -> Result<Response<pb::UpdateCaseResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority);
         let title = if req.title.is_empty() {
             None
@@ -249,7 +269,8 @@ impl AmelisoService for AmelisoServer {
             Some(req.body.as_str())
         };
         let case = repo::update_case(
-            &repo,
+            &self.pool,
+            &req.repo_id,
             &req.case_path,
             title,
             description,
@@ -257,6 +278,7 @@ impl AmelisoService for AmelisoServer {
             priority,
             body,
         )
+        .await
         .map_err(repo_err)?;
         Ok(Response::new(pb::UpdateCaseResponse {
             case: Some(case_to_pb(&case)),
@@ -271,8 +293,9 @@ impl AmelisoService for AmelisoServer {
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
-        let repo = PathBuf::from(&req.repo_path);
-        repo::delete_case(&repo, &req.case_path).map_err(repo_err)?;
+        repo::delete_case(&self.pool, &req.repo_id, &req.case_path)
+            .await
+            .map_err(repo_err)?;
         Ok(Response::new(pb::DeleteCaseResponse {
             file_path: format!("cases/{}.md", req.case_path),
         }))
@@ -282,13 +305,13 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::ListSuitesRequest>,
     ) -> Result<Response<pb::ListSuitesResponse>, Status> {
-        let repo = PathBuf::from(&request.into_inner().repo_path);
-        let suites = repo::list_suites(&repo).map_err(repo_err)?;
-        let pb_suites = suites
-            .iter()
-            .map(|(slug, s)| suite_to_pb(slug, s))
-            .collect();
-        Ok(Response::new(pb::ListSuitesResponse { suites: pb_suites }))
+        let req = request.into_inner();
+        let suites = repo::list_suites(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
+        Ok(Response::new(pb::ListSuitesResponse {
+            suites: suites.iter().map(suite_to_pb).collect(),
+        }))
     }
 
     async fn get_suite(
@@ -296,10 +319,11 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetSuiteRequest>,
     ) -> Result<Response<pb::GetSuiteResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-        let suite = repo::get_suite(&repo, &req.slug).map_err(repo_err)?;
+        let suite = repo::get_suite(&self.pool, &req.repo_id, &req.slug)
+            .await
+            .map_err(repo_err)?;
         Ok(Response::new(pb::GetSuiteResponse {
-            suite: Some(suite_to_pb(&req.slug, &suite)),
+            suite: Some(suite_to_pb(&suite)),
         }))
     }
 
@@ -308,18 +332,24 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateSuiteRequest>,
     ) -> Result<Response<pb::CreateSuiteResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let desc = if req.description.is_empty() {
             None
         } else {
             Some(req.description.clone())
         };
-        let suite =
-            repo::create_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(repo_err)?;
-        let file_path = format!("suites/{}.yaml", req.slug);
+        let suite = repo::create_suite(
+            &self.pool,
+            &req.repo_id,
+            &req.slug,
+            &req.name,
+            desc,
+            req.cases,
+        )
+        .await
+        .map_err(repo_err)?;
         Ok(Response::new(pb::CreateSuiteResponse {
-            suite: Some(suite_to_pb(&req.slug, &suite)),
-            file_path,
+            suite: Some(suite_to_pb(&suite)),
+            file_path: format!("suites/{}.yaml", req.slug),
         }))
     }
 
@@ -328,7 +358,6 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::UpdateSuiteRequest>,
     ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let name = if req.name.is_empty() {
             None
         } else {
@@ -344,10 +373,18 @@ impl AmelisoService for AmelisoServer {
         } else {
             Some(req.cases)
         };
-        let suite =
-            repo::update_suite(&repo, &req.slug, name, description, cases).map_err(repo_err)?;
+        let suite = repo::update_suite(
+            &self.pool,
+            &req.repo_id,
+            &req.slug,
+            name,
+            description,
+            cases,
+        )
+        .await
+        .map_err(repo_err)?;
         Ok(Response::new(pb::UpdateSuiteResponse {
-            suite: Some(suite_to_pb(&req.slug, &suite)),
+            suite: Some(suite_to_pb(&suite)),
         }))
     }
 
@@ -359,8 +396,9 @@ impl AmelisoService for AmelisoServer {
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
-        let repo = PathBuf::from(&req.repo_path);
-        repo::delete_suite(&repo, &req.slug).map_err(repo_err)?;
+        repo::delete_suite(&self.pool, &req.repo_id, &req.slug)
+            .await
+            .map_err(repo_err)?;
         Ok(Response::new(pb::DeleteSuiteResponse {
             file_path: format!("suites/{}.yaml", req.slug),
         }))
@@ -371,9 +409,10 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListRunsRequest>,
     ) -> Result<Response<pb::ListRunsResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let status_filter = req.status;
-        let runs = repo::list_runs(&repo).map_err(repo_err)?;
+        let runs = repo::list_runs(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
         let pb_runs = runs
             .iter()
             .filter(|r| {
@@ -390,8 +429,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetRunRequest>,
     ) -> Result<Response<pb::GetRunResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-        let run = repo::get_run(&repo, &req.run_id).map_err(repo_err)?;
+        let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+            .await
+            .map_err(repo_err)?;
         let pb_run = pb::Run {
             meta: Some(run_meta_to_pb(&run.meta)),
             results: run.results.iter().map(result_to_pb).collect(),
@@ -407,7 +447,6 @@ impl AmelisoService for AmelisoServer {
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
-        let repo = PathBuf::from(&req.repo_path);
         let env = if req.environment.is_empty() {
             None
         } else {
@@ -419,12 +458,14 @@ impl AmelisoService for AmelisoServer {
             Some(req.suite)
         };
         let tester = if req.tester.is_empty() {
-            std::env::var("USER").unwrap_or_else(|_| "unknown".to_owned())
+            "unknown".to_owned()
         } else {
             req.tester
         };
-        let (meta, dir_path) =
-            repo::create_run(&repo, &req.slug, &tester, env, suite).map_err(repo_err)?;
+        let meta = repo::create_run(&self.pool, &req.repo_id, &req.slug, &tester, env, suite)
+            .await
+            .map_err(repo_err)?;
+        let dir_path = format!("runs/{}", meta.run_id);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
@@ -436,45 +477,22 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::RecordResultRequest>,
     ) -> Result<Response<pb::RecordResultResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let status = result_status_from_i32(req.status);
         if status == "unspecified" {
             return Err(invalid("status is required"));
         }
-        let (result, _) =
-            repo::record_result(&repo, &req.run_id, &req.case_path, status, &req.notes)
-                .map_err(repo_err)?;
+        let (result, _) = repo::record_result(
+            &self.pool,
+            &req.repo_id,
+            &req.run_id,
+            &req.case_path,
+            status,
+            &req.notes,
+        )
+        .await
+        .map_err(repo_err)?;
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
-        }))
-    }
-
-    async fn bulk_record_results(
-        &self,
-        request: Request<pb::BulkRecordResultsRequest>,
-    ) -> Result<Response<pb::BulkRecordResultsResponse>, Status> {
-        let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-        let mut pb_results = Vec::new();
-        for entry in &req.results {
-            let status = result_status_from_i32(entry.status);
-            if status == "unspecified" {
-                return Err(invalid(format!(
-                    "status is required for case {}",
-                    entry.case_path
-                )));
-            }
-            let (result, _) =
-                repo::record_result(&repo, &req.run_id, &entry.case_path, status, &entry.notes)
-                    .map_err(repo_err)?;
-            pb_results.push(result_to_pb(&result));
-        }
-        let (pending, total_in_scope) =
-            repo::get_pending_cases(&repo, &req.run_id).map_err(repo_err)?;
-        Ok(Response::new(pb::BulkRecordResultsResponse {
-            results: pb_results,
-            pending_count: pending.len() as i32,
-            total_count: total_in_scope as i32,
         }))
     }
 
@@ -483,12 +501,13 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::FinalizeRunRequest>,
     ) -> Result<Response<pb::FinalizeRunResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let status = run_status_from_i32(req.status);
         if status == "unspecified" {
             return Err(invalid("status must be completed or aborted"));
         }
-        let meta = repo::finalize_run(&repo, &req.run_id, status).map_err(repo_err)?;
+        let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, status)
+            .await
+            .map_err(repo_err)?;
         Ok(Response::new(pb::FinalizeRunResponse {
             run: Some(run_meta_to_pb(&meta)),
         }))
@@ -502,11 +521,11 @@ impl AmelisoService for AmelisoServer {
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
-        let repo = PathBuf::from(&req.repo_path);
-        repo::delete_run(&repo, &req.run_id).map_err(repo_err)?;
-        Ok(Response::new(pb::DeleteRunResponse {
-            dir_path: format!("runs/{}", req.run_id),
-        }))
+        let dir_path = format!("runs/{}", req.run_id);
+        repo::delete_run(&self.pool, &req.repo_id, &req.run_id)
+            .await
+            .map_err(repo_err)?;
+        Ok(Response::new(pb::DeleteRunResponse { dir_path }))
     }
 
     async fn get_pending_cases(
@@ -514,115 +533,12 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetPendingCasesRequest>,
     ) -> Result<Response<pb::GetPendingCasesResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-        let (pending, total) = repo::get_pending_cases(&repo, &req.run_id).map_err(repo_err)?;
+        let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+            .await
+            .map_err(repo_err)?;
         Ok(Response::new(pb::GetPendingCasesResponse {
             cases: pending.iter().map(case_to_pb).collect(),
             total_in_scope: total as i32,
-        }))
-    }
-
-    async fn get_repo_status(
-        &self,
-        request: Request<pb::GetRepoStatusRequest>,
-    ) -> Result<Response<pb::GetRepoStatusResponse>, Status> {
-        let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
-
-        let cases = repo::list_cases(&repo).map_err(repo_err)?;
-        let runs = repo::list_runs(&repo).map_err(repo_err)?;
-        let suites = repo::list_suites(&repo).map_err(repo_err)?;
-
-        let high = cases.iter().filter(|c| c.fm.priority == "high").count() as i32;
-        let medium = cases.iter().filter(|c| c.fm.priority == "medium").count() as i32;
-        let low = cases.iter().filter(|c| c.fm.priority == "low").count() as i32;
-
-        // Build latest-status map: case_path -> (status, run_id, run_date)
-        // Runs are newest-first; first write wins = latest result.
-        let mut latest: std::collections::HashMap<String, (String, String, String)> =
-            std::collections::HashMap::new();
-        for run_meta in &runs {
-            if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
-                for result in &run.results {
-                    latest.entry(result.case_path.clone()).or_insert_with(|| {
-                        (
-                            result.fm.status.clone(),
-                            run_meta.id.clone(),
-                            run_meta.date.clone(),
-                        )
-                    });
-                }
-            }
-        }
-
-        let mut passed = 0i32;
-        let mut failed = 0i32;
-        let mut blocked = 0i32;
-        let mut skipped = 0i32;
-        let mut never_run = 0i32;
-        for c in &cases {
-            match latest
-                .get(&c.case_path)
-                .map(|(s, _, _)| s.as_str())
-                .unwrap_or("never")
-            {
-                "passed" => passed += 1,
-                "failed" => failed += 1,
-                "blocked" => blocked += 1,
-                "skipped" => skipped += 1,
-                _ => never_run += 1,
-            }
-        }
-
-        let active_runs: Vec<pb::ActiveRunSummary> = runs
-            .iter()
-            .filter(|r| r.status == "in-progress")
-            .map(|r| {
-                let (pending_count, total_in_scope) = repo::get_pending_cases(&repo, &r.id)
-                    .map(|(p, t)| (p.len() as i32, t as i32))
-                    .unwrap_or((0, 0));
-                pb::ActiveRunSummary {
-                    run_id: r.id.clone(),
-                    tester: r.tester.clone(),
-                    environment: r.environment.clone().unwrap_or_default(),
-                    suite: r.suite.clone().unwrap_or_default(),
-                    date: r.date.clone(),
-                    pending_count,
-                    total_in_scope,
-                }
-            })
-            .collect();
-
-        let coverage_entries: Vec<pb::CoverageEntry> = cases
-            .iter()
-            .map(|c| {
-                let (status, last_run_id, last_run_date) = latest
-                    .get(&c.case_path)
-                    .cloned()
-                    .unwrap_or_else(|| ("never".to_owned(), String::new(), String::new()));
-                pb::CoverageEntry {
-                    case: Some(case_to_pb(c)),
-                    latest_status: result_status_to_i32(&status),
-                    last_run_id,
-                    last_run_date,
-                }
-            })
-            .collect();
-
-        Ok(Response::new(pb::GetRepoStatusResponse {
-            total_cases: cases.len() as i32,
-            high_priority: high,
-            medium_priority: medium,
-            low_priority: low,
-            passed_count: passed,
-            failed_count: failed,
-            blocked_count: blocked,
-            skipped_count: skipped,
-            never_run_count: never_run,
-            active_runs,
-            total_runs: runs.len() as i32,
-            total_suites: suites.len() as i32,
-            coverage_entries,
         }))
     }
 
@@ -631,54 +547,41 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCoverageReportRequest>,
     ) -> Result<Response<pb::GetCoverageReportResponse>, Status> {
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
         let status_filter = req.status_filter;
-        let cases = repo::list_cases(&repo).map_err(repo_err)?;
-        let runs = repo::list_runs(&repo).map_err(repo_err)?;
+        let (entries, run_count) = repo::get_coverage_report(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
 
-        // Build latest-status map: case_path -> (status, run_id, run_date)
-        let mut latest: std::collections::HashMap<String, (String, String, String)> =
-            std::collections::HashMap::new();
-        // Runs are newest-first; first write wins = latest. Skip corrupt run.yaml files.
-        for run_meta in &runs {
-            if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
-                for result in &run.results {
-                    latest.entry(result.case_path.clone()).or_insert_with(|| {
-                        (
-                            result.fm.status.clone(),
-                            run_meta.id.clone(),
-                            run_meta.date.clone(),
-                        )
-                    });
-                }
-            }
-        }
-
-        let entries: Vec<_> = cases
-            .iter()
-            .filter_map(|c| {
-                let (status, last_run_id, last_run_date) = latest
-                    .get(&c.case_path)
-                    .cloned()
-                    .unwrap_or_else(|| ("never".to_owned(), String::new(), String::new()));
-                let status_i32 = result_status_to_i32(&status);
+        let pb_entries = entries
+            .into_iter()
+            .filter_map(|row| {
+                let status_i32 = result_status_to_i32(&row.latest_status);
                 if status_filter != pb::ResultStatus::Unspecified as i32
                     && status_i32 != status_filter
                 {
                     return None;
                 }
+                let case = pb::Case {
+                    path: row.case_path,
+                    title: row.title,
+                    description: row.description,
+                    tags: row.tags,
+                    priority: row.priority,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                };
                 Some(pb::CoverageEntry {
-                    case: Some(case_to_pb(c)),
+                    case: Some(case),
                     latest_status: status_i32,
-                    last_run_id,
-                    last_run_date,
+                    last_run_id: row.last_run_id,
+                    last_run_date: row.last_run_date,
                 })
             })
             .collect();
 
         Ok(Response::new(pb::GetCoverageReportResponse {
-            entries,
-            run_count: runs.len() as i32,
+            entries: pb_entries,
+            run_count: run_count as i32,
         }))
     }
 
@@ -686,48 +589,126 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::GetAffectedCasesRequest>,
     ) -> Result<Response<pb::GetAffectedCasesResponse>, Status> {
-        use crate::git;
-
         let req = request.into_inner();
-        let repo = PathBuf::from(&req.repo_path);
 
-        let cases = repo::list_cases(&repo).map_err(repo_err)?;
+        let cases = repo::list_cases(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
+
+        if req.since_ref.is_empty() {
+            let affected = cases
+                .iter()
+                .map(|c| pb::AffectedCase {
+                    case: Some(case_to_pb(c)),
+                    reason: "no since_ref provided; all cases flagged".to_owned(),
+                })
+                .collect();
+            return Ok(Response::new(pb::GetAffectedCasesResponse {
+                cases: affected,
+                reason: "no since_ref provided; all cases flagged".to_owned(),
+            }));
+        }
+
+        // Use GitHub compare API to find changed files.
+        let stored = crate::repos_store::get(&self.pool, &req.repo_id)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
+            .ok_or_else(|| Status::not_found(format!("repository {} not found", req.repo_id)))?;
+
+        let cfg = crate::github::config()
+            .ok_or_else(|| Status::failed_precondition("GitHub App not configured"))?;
+        let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
+            .map_err(|e| Status::internal(e.to_string()))?;
+        let token = crate::github::get_installation_token(&stored.installation_id, &jwt)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let parts: Vec<&str> = stored.full_name.splitn(2, '/').collect();
+        if parts.len() != 2 {
+            return Err(Status::internal("invalid full_name in stored repo"));
+        }
+        let (owner, repo_name) = (parts[0], parts[1]);
+
+        let compare = crate::github::compare(owner, repo_name, &req.since_ref, &token)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
         let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
-        let case_map: std::collections::HashMap<String, &repo::LoadedCase> =
-            cases.iter().map(|c| (c.case_path.clone(), c)).collect();
+        let case_map: std::collections::HashMap<&str, &repo::LoadedCase> =
+            cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
 
-        let since = if req.since_ref.is_empty() {
-            None
+        let mut affected: Vec<String> = Vec::new();
+        let mut reasons: Vec<String> = Vec::new();
+
+        let all_text = compare.commit_messages.join("\n");
+        for path in &known_paths {
+            if all_text.contains(path.as_str()) {
+                reasons.push(format!("commit messages reference: {}", path));
+                if !affected.contains(path) {
+                    affected.push(path.clone());
+                }
+            }
+        }
+
+        for file in &compare.changed_files {
+            for path in &known_paths {
+                if file.contains(path.as_str()) {
+                    reasons.push(format!("file {} references {}", file, path));
+                    if !affected.contains(path) {
+                        affected.push(path.clone());
+                    }
+                }
+            }
+        }
+
+        let doc_exts = [".md", ".txt", ".gitignore", ".yaml", ".yml"];
+        let source_changed: Vec<&str> = compare
+            .changed_files
+            .iter()
+            .filter(|f| {
+                let ext = std::path::Path::new(f)
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| format!(".{e}"))
+                    .unwrap_or_default();
+                !doc_exts.contains(&ext.as_str())
+            })
+            .map(|f| f.as_str())
+            .collect();
+
+        if !source_changed.is_empty() && affected.is_empty() {
+            reasons.push(format!(
+                "{} source file(s) changed with no explicit case references — all {} case(s) flagged",
+                source_changed.len(),
+                known_paths.len()
+            ));
+            affected = known_paths;
+        }
+
+        let reason = if reasons.is_empty() {
+            "no relevant changes since last run".to_owned()
         } else {
-            Some(req.since_ref.as_str())
+            reasons.join("; ")
         };
-        let result = git::find_affected(&repo, since, &known_paths)
-            .map_err(|e| repo_err(RepoError::Other(e)))?;
 
-        let priority_rank = |p: &str| match p {
-            "high" => 0u8,
-            "medium" => 1,
-            "low" => 2,
-            _ => 3,
-        };
-        let mut sorted_paths = result.case_paths.clone();
-        sorted_paths.sort_by_key(|p| {
+        affected.sort_by_key(|p| {
             case_map
-                .get(p)
-                .map(|c| priority_rank(&c.fm.priority))
+                .get(p.as_str())
+                .map(|c| priority_rank(&c.priority))
                 .unwrap_or(3)
         });
-        let affected = sorted_paths
+
+        let pb_cases = affected
             .iter()
             .map(|path| pb::AffectedCase {
-                case: case_map.get(path).map(|c| case_to_pb(c)),
-                reason: result.reason.clone(),
+                case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
+                reason: reason.clone(),
             })
             .collect();
 
         Ok(Response::new(pb::GetAffectedCasesResponse {
-            cases: affected,
-            reason: result.reason,
+            cases: pb_cases,
+            reason,
         }))
     }
 
@@ -773,43 +754,22 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        let repos_base = crate::repos_store::repos_dir();
         let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
         let mut result = Vec::new();
 
         for gh_repo in &gh_repos {
-            let local_path = repos_base.join(&gh_repo.full_name);
-            let token_clone = token.clone();
-            let gh_repo_clone = gh_repo.clone();
-            let local_path_clone = local_path.clone();
-            let cloned = tokio::task::spawn_blocking(move || {
-                crate::github::clone_or_update(&gh_repo_clone, &local_path_clone, &token_clone)
-                    .unwrap_or(false)
-            })
-            .await
-            .unwrap_or(false);
-
             let stored = crate::repos_store::StoredRepo {
                 id: gh_repo.full_name.clone(),
                 name: gh_repo.name.clone(),
                 full_name: gh_repo.full_name.clone(),
                 html_url: gh_repo.html_url.clone(),
-                local_path: local_path.to_string_lossy().into_owned(),
                 installation_id: req.installation_id.clone(),
-                cloned,
                 added_at: now.clone(),
             };
-            crate::repos_store::add_or_update(stored.clone());
-            result.push(pb::Repository {
-                id: stored.id,
-                name: stored.name,
-                full_name: stored.full_name,
-                html_url: stored.html_url,
-                local_path: stored.local_path,
-                installation_id: stored.installation_id,
-                cloned: stored.cloned,
-                added_at: stored.added_at,
-            });
+            crate::repos_store::add_or_update(&self.pool, &stored)
+                .await
+                .map_err(|e| Status::internal(e.to_string()))?;
+            result.push(stored_to_pb(&stored));
         }
 
         Ok(Response::new(pb::HandleGitHubCallbackResponse {
@@ -821,18 +781,11 @@ impl AmelisoService for AmelisoServer {
         &self,
         _request: Request<pb::ListRepositoriesRequest>,
     ) -> Result<Response<pb::ListRepositoriesResponse>, Status> {
-        let repositories = crate::repos_store::load()
-            .into_iter()
-            .map(|r| pb::Repository {
-                id: r.id,
-                name: r.name,
-                full_name: r.full_name,
-                html_url: r.html_url,
-                local_path: r.local_path,
-                installation_id: r.installation_id,
-                cloned: r.cloned,
-                added_at: r.added_at,
-            })
+        let repositories = crate::repos_store::load(&self.pool)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
+            .iter()
+            .map(stored_to_pb)
             .collect();
         Ok(Response::new(pb::ListRepositoriesResponse { repositories }))
     }
@@ -846,12 +799,12 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("id is required"));
         }
 
-        let mut repos = crate::repos_store::load();
-        let stored = repos
-            .iter_mut()
-            .find(|r| r.id == req.id)
+        let stored = crate::repos_store::get(&self.pool, &req.id)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
             .ok_or_else(|| Status::not_found(format!("repository {} not found", req.id)))?;
 
+        // Verify the repo still exists in GitHub and refresh metadata.
         let cfg = crate::github::config()
             .ok_or_else(|| Status::failed_precondition("GitHub App not configured"))?;
         let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
@@ -860,37 +813,24 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        let local_path = std::path::PathBuf::from(&stored.local_path);
-        let gh_repo = crate::github::GitHubRepo {
-            id: 0,
-            name: stored.name.clone(),
-            full_name: stored.full_name.clone(),
-            html_url: stored.html_url.clone(),
-            clone_url: format!("https://github.com/{}.git", stored.full_name),
-            private: false,
-        };
+        let gh_repo = crate::github::get_repo(&stored.full_name, &token)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
 
-        let cloned = tokio::task::spawn_blocking(move || {
-            crate::github::clone_or_update(&gh_repo, &local_path, &token).unwrap_or(false)
-        })
-        .await
-        .unwrap_or(false);
-
-        stored.cloned = cloned;
-        let result = pb::Repository {
+        let updated = crate::repos_store::StoredRepo {
             id: stored.id.clone(),
-            name: stored.name.clone(),
-            full_name: stored.full_name.clone(),
-            html_url: stored.html_url.clone(),
-            local_path: stored.local_path.clone(),
+            name: gh_repo.name,
+            full_name: gh_repo.full_name,
+            html_url: gh_repo.html_url,
             installation_id: stored.installation_id.clone(),
-            cloned: stored.cloned,
             added_at: stored.added_at.clone(),
         };
-        crate::repos_store::save(&repos);
+        crate::repos_store::add_or_update(&self.pool, &updated)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
 
         Ok(Response::new(pb::SyncRepositoryResponse {
-            repository: Some(result),
+            repository: Some(stored_to_pb(&updated)),
         }))
     }
 
@@ -902,7 +842,9 @@ impl AmelisoService for AmelisoServer {
         if req.id.is_empty() {
             return Err(invalid("id is required"));
         }
-        crate::repos_store::remove(&req.id);
+        crate::repos_store::remove(&self.pool, &req.id)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
         Ok(Response::new(pb::RemoveRepositoryResponse {}))
     }
 }

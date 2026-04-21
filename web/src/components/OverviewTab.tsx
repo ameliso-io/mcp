@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
-import type { AffectedCase, CoverageEntry } from '../gen/ameliso/v1/types_pb'
-import { ResultStatus } from '../gen/ameliso/v1/types_pb'
-import type { ActiveRunSummary } from '../gen/ameliso/v1/service_pb'
+import type { AffectedCase, CoverageEntry, RunMeta } from '../gen/ameliso/v1/types_pb'
+import { ResultStatus, RunStatus } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
   repoPath: string
@@ -68,11 +67,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [totalCases, setTotalCases] = useState(0)
-  const [passed, setPassed] = useState(0)
-  const [failed, setFailed] = useState(0)
-  const [neverRun, setNeverRun] = useState(0)
-  const [activeRuns, setActiveRuns] = useState<ActiveRunSummary[]>([])
+  const [activeRuns, setActiveRuns] = useState<RunMeta[]>([])
 
   const [sinceRef, setSinceRef] = useState('')
   const [affected, setAffected] = useState<AffectedCase[] | null>(null)
@@ -84,14 +79,13 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     setLoading(true)
     setError(null)
     try {
-      const res = await client.getRepoStatus({ repoPath: path })
-      setTotalCases(res.totalCases)
-      setPassed(res.passedCount)
-      setFailed(res.failedCount)
-      setNeverRun(res.neverRunCount)
-      setActiveRuns(res.activeRuns)
-      setEntries(res.coverageEntries)
-      setRunCount(res.totalRuns)
+      const [coverageRes, activeRunsRes] = await Promise.all([
+        client.getCoverageReport({ repoPath: path }),
+        client.listRuns({ repoPath: path, status: RunStatus.IN_PROGRESS }),
+      ])
+      setEntries(coverageRes.entries)
+      setRunCount(coverageRes.runCount)
+      setActiveRuns(activeRunsRes.runs)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -138,10 +132,10 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     }
   }
 
-  const statCases = totalCases
-  const statPassed = passed
-  const statFailed = failed
-  const statNever = neverRun
+  const statCases = entries.length
+  const statPassed = entries.filter(e => e.latestStatus === ResultStatus.PASSED).length
+  const statFailed = entries.filter(e => e.latestStatus === ResultStatus.FAILED).length
+  const statNever = entries.filter(e => e.latestStatus === ResultStatus.NEVER).length
 
   return (
     <div>
@@ -255,49 +249,29 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {activeRuns.map(run => {
-                  const done = run.totalInScope - run.pendingCount
-                  const pct = run.totalInScope > 0 ? Math.round((done / run.totalInScope) * 100) : 0
-                  return (
-                    <div
-                      key={run.runId}
-                      style={{
-                        padding: '12px',
-                        background: 'white',
-                        borderRadius: '6px',
-                        border: '1px solid #dbeafe',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: run.totalInScope > 0 ? '8px' : 0 }}>
-                        <span style={{ fontWeight: '600', fontSize: '14px', flex: 1, fontFamily: 'monospace' }}>{run.runId}</span>
-                        {run.suite && (
-                          <span style={{ fontSize: '11px', background: '#eff6ff', color: '#3b82f6', padding: '2px 7px', borderRadius: '4px', fontWeight: '600' }}>{run.suite}</span>
-                        )}
-                        {run.tester && (
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>{run.tester}</span>
-                        )}
-                        {run.totalInScope > 0 && (
-                          <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                            {done} / {run.totalInScope} done
-                          </span>
-                        )}
-                      </div>
-                      {run.totalInScope > 0 && (
-                        <div style={{ height: '4px', background: '#dbeafe', borderRadius: '2px', overflow: 'hidden' }}>
-                          <div
-                            style={{
-                              height: '100%',
-                              width: `${pct}%`,
-                              background: '#3b82f6',
-                              borderRadius: '2px',
-                              transition: 'width 0.3s ease',
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                {activeRuns.map(run => (
+                  <div
+                    key={run.id}
+                    style={{
+                      padding: '12px',
+                      background: 'white',
+                      borderRadius: '6px',
+                      border: '1px solid #dbeafe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+                    <span style={{ fontWeight: '600', fontSize: '14px', flex: 1, fontFamily: 'monospace' }}>{run.id}</span>
+                    {run.suite && (
+                      <span style={{ fontSize: '11px', background: '#eff6ff', color: '#3b82f6', padding: '2px 7px', borderRadius: '4px', fontWeight: '600' }}>{run.suite}</span>
+                    )}
+                    {run.tester && (
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>{run.tester}</span>
+                    )}
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>{run.date}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}

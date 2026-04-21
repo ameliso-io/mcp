@@ -268,13 +268,9 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     if (!confirm(`Mark all ${pendingCases.length} pending case${pendingCases.length !== 1 ? 's' : ''} as Passed?`)) return
     setBulkPassing(true)
     try {
-      const res = await client.bulkRecordResults({
-        repoPath,
-        runId,
-        results: pendingCases.map(c => ({ casePath: c.path, status: ResultStatus.PASSED, notes: '' })),
-      })
-      setPendingCases(res.results.length > 0 ? [] : pendingCases)
-      // Refresh pending list
+      for (const c of pendingCases) {
+        await client.recordResult({ repoPath, runId, casePath: c.path, status: ResultStatus.PASSED, notes: '' })
+      }
       const pending = await client.getPendingCases({ repoPath, runId })
       setPendingCases(pending.cases)
       setTotalInScope(pending.totalInScope)

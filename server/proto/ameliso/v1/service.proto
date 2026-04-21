@@ -6,114 +6,52 @@ import "ameliso/v1/types.proto";
 
 option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
 
-// AmelisoService manages test cases and runs in a git-native controlled repository.
-// All operations accept a repo_path that points to the root of the controlled repository.
+// AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
+// All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
 service AmelisoService {
   // --- Cases ---
-
-  // List all cases in the controlled repository, optionally filtered.
   rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
-
-  // Get a single case by its path (e.g. "auth/user-login").
   rpc GetCase(GetCaseRequest) returns (GetCaseResponse);
-
-  // Create a new case file. Fails if the path already exists.
   rpc CreateCase(CreateCaseRequest) returns (CreateCaseResponse);
-
-  // Update an existing case's metadata. Bumps updated_at automatically.
   rpc UpdateCase(UpdateCaseRequest) returns (UpdateCaseResponse);
-
-  // Delete a case file from the repository.
   rpc DeleteCase(DeleteCaseRequest) returns (DeleteCaseResponse);
 
   // --- Suites ---
-
-  // List all suites.
   rpc ListSuites(ListSuitesRequest) returns (ListSuitesResponse);
-
-  // Get a suite by slug.
   rpc GetSuite(GetSuiteRequest) returns (GetSuiteResponse);
-
-  // Create a new suite.
   rpc CreateSuite(CreateSuiteRequest) returns (CreateSuiteResponse);
-
-  // Update an existing suite's name, description, or case list.
   rpc UpdateSuite(UpdateSuiteRequest) returns (UpdateSuiteResponse);
-
-  // Delete a suite file from the repository.
   rpc DeleteSuite(DeleteSuiteRequest) returns (DeleteSuiteResponse);
 
   // --- Runs ---
-
-  // List all runs, newest first.
   rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
-
-  // Get a run with all its results.
   rpc GetRun(GetRunRequest) returns (GetRunResponse);
-
-  // Create a new in-progress run.
   rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
-
-  // Record or update a single case result within a run.
-  // Idempotent: calling again with a different status overwrites the previous result.
   rpc RecordResult(RecordResultRequest) returns (RecordResultResponse);
-
-  // Record multiple case results in one call. More efficient than N sequential RecordResult calls.
-  // Idempotent per case: later entries for the same case_path overwrite earlier ones.
-  rpc BulkRecordResults(BulkRecordResultsRequest) returns (BulkRecordResultsResponse);
-
-  // Mark a run as completed or aborted. Validates all expected cases have results.
   rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
-
-  // Delete a run directory entirely. Useful for cleaning up accidentally-created runs.
   rpc DeleteRun(DeleteRunRequest) returns (DeleteRunResponse);
-
-  // Return case paths in a run's scope that have no result recorded yet.
-  // If the run references a suite, scope = suite cases; otherwise scope = all cases in repo.
   rpc GetPendingCases(GetPendingCasesRequest) returns (GetPendingCasesResponse);
 
   // --- Reports ---
-
-  // Return a combined snapshot of repo state in one call: case counts by priority,
-  // coverage summary, active in-progress runs with pending counts, and suite count.
-  rpc GetRepoStatus(GetRepoStatusRequest) returns (GetRepoStatusResponse);
-
-  // Return the latest known status for every case.
   rpc GetCoverageReport(GetCoverageReportRequest) returns (GetCoverageReportResponse);
-
-  // Return cases that may need re-running based on git changes since the last run.
+  // Return cases affected by source changes since since_ref (uses GitHub compare API).
   rpc GetAffectedCases(GetAffectedCasesRequest) returns (GetAffectedCasesResponse);
 
   // --- GitHub App ---
-
-  // Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
   rpc GetGitHubInstallUrl(GetGitHubInstallUrlRequest) returns (GetGitHubInstallUrlResponse);
-
-  // Called after GitHub redirects back with an installation_id.
-  // Fetches repos for the installation, clones them, and persists the connection.
   rpc HandleGitHubCallback(HandleGitHubCallbackRequest) returns (HandleGitHubCallbackResponse);
-
-  // List all connected repositories.
   rpc ListRepositories(ListRepositoriesRequest) returns (ListRepositoriesResponse);
-
-  // Pull latest changes for a connected repository.
   rpc SyncRepository(SyncRepositoryRequest) returns (SyncRepositoryResponse);
-
-  // Remove a connected repository from the store (does not delete the local clone).
   rpc RemoveRepository(RemoveRepositoryRequest) returns (RemoveRepositoryResponse);
 }
 
 // --- Cases ---
 
 message ListCasesRequest {
-  string repo_path = 1;
-  // Optional: filter by tag
+  string repo_id = 1;
   repeated string tags = 2;
-  // Optional: filter by priority
   Priority priority = 3;
-  // Optional: full-text query against title and description
   string query = 4;
-  // Optional: restrict to cases in this suite slug
   string suite = 5;
 }
 
@@ -122,42 +60,37 @@ message ListCasesResponse {
 }
 
 message GetCaseRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string case_path = 2;
 }
 
 message GetCaseResponse {
   Case case = 1;
-  // Full markdown body (everything after the frontmatter delimiter)
   string body = 2;
 }
 
 message CreateCaseRequest {
-  string repo_path = 1;
-  // Path within cases/, without extension. E.g. "auth/user-login"
+  string repo_id = 1;
   string case_path = 2;
   string title = 3;
   string description = 4;
   repeated string tags = 5;
   Priority priority = 6;
-  // Optional: full markdown body (steps, expected results, etc.). Defaults to a template.
   string body = 7;
 }
 
 message CreateCaseResponse {
   Case case = 1;
-  // Full path of the created file relative to repo root
   string file_path = 2;
 }
 
 message UpdateCaseRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string case_path = 2;
   string title = 3;
   string description = 4;
   repeated string tags = 5;
   Priority priority = 6;
-  // Optional: replace the full markdown body. If empty, existing body is preserved.
   string body = 7;
 }
 
@@ -166,19 +99,18 @@ message UpdateCaseResponse {
 }
 
 message DeleteCaseRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string case_path = 2;
 }
 
 message DeleteCaseResponse {
-  // Path of the deleted file relative to repo root
   string file_path = 1;
 }
 
 // --- Suites ---
 
 message ListSuitesRequest {
-  string repo_path = 1;
+  string repo_id = 1;
 }
 
 message ListSuitesResponse {
@@ -186,7 +118,7 @@ message ListSuitesResponse {
 }
 
 message GetSuiteRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string slug = 2;
 }
 
@@ -195,7 +127,7 @@ message GetSuiteResponse {
 }
 
 message CreateSuiteRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string slug = 2;
   string name = 3;
   string description = 4;
@@ -208,7 +140,7 @@ message CreateSuiteResponse {
 }
 
 message UpdateSuiteRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string slug = 2;
   string name = 3;
   string description = 4;
@@ -220,7 +152,7 @@ message UpdateSuiteResponse {
 }
 
 message DeleteSuiteRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string slug = 2;
 }
 
@@ -231,8 +163,7 @@ message DeleteSuiteResponse {
 // --- Runs ---
 
 message ListRunsRequest {
-  string repo_path = 1;
-  // Optional: filter by run status. Unspecified = return all.
+  string repo_id = 1;
   RunStatus status = 2;
 }
 
@@ -241,7 +172,7 @@ message ListRunsResponse {
 }
 
 message GetRunRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string run_id = 2;
 }
 
@@ -250,12 +181,10 @@ message GetRunResponse {
 }
 
 message CreateRunRequest {
-  string repo_path = 1;
-  // Human-readable slug for the run (appended to date)
+  string repo_id = 1;
   string slug = 2;
   string tester = 3;
   string environment = 4;
-  // Optional: pre-populate the run with cases from this suite
   string suite = 5;
 }
 
@@ -265,7 +194,7 @@ message CreateRunResponse {
 }
 
 message RecordResultRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string run_id = 2;
   string case_path = 3;
   ResultStatus status = 4;
@@ -276,26 +205,8 @@ message RecordResultResponse {
   CaseResult result = 1;
 }
 
-message BulkResultEntry {
-  string case_path = 1;
-  ResultStatus status = 2;
-  string notes = 3;
-}
-
-message BulkRecordResultsRequest {
-  string repo_path = 1;
-  string run_id = 2;
-  repeated BulkResultEntry results = 3;
-}
-
-message BulkRecordResultsResponse {
-  repeated CaseResult results = 1;
-  int32 pending_count = 2;
-  int32 total_count = 3;
-}
-
 message FinalizeRunRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string run_id = 2;
   RunStatus status = 3;
 }
@@ -305,68 +216,28 @@ message FinalizeRunResponse {
 }
 
 message DeleteRunRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string run_id = 2;
 }
 
 message DeleteRunResponse {
-  // Path of the deleted run directory relative to repo root (e.g. runs/2026-04-21-smoke)
   string dir_path = 1;
 }
 
 message GetPendingCasesRequest {
-  string repo_path = 1;
+  string repo_id = 1;
   string run_id = 2;
 }
 
 message GetPendingCasesResponse {
-  // Cases in scope that have no result recorded yet (includes metadata).
   repeated Case cases = 1;
-  // Total scope size (suite or all cases).
   int32 total_in_scope = 2;
 }
 
 // --- Reports ---
 
-message GetRepoStatusRequest {
-  string repo_path = 1;
-}
-
-// Summary for one active (in-progress) run.
-message ActiveRunSummary {
-  string run_id = 1;
-  string tester = 2;
-  string environment = 3;
-  string suite = 4;
-  string date = 5;
-  int32 pending_count = 6;
-  int32 total_in_scope = 7;
-}
-
-message GetRepoStatusResponse {
-  // Case counts
-  int32 total_cases = 1;
-  int32 high_priority = 2;
-  int32 medium_priority = 3;
-  int32 low_priority = 4;
-  // Coverage summary (latest known status across all cases)
-  int32 passed_count = 5;
-  int32 failed_count = 6;
-  int32 blocked_count = 7;
-  int32 skipped_count = 8;
-  int32 never_run_count = 9;
-  // Active runs
-  repeated ActiveRunSummary active_runs = 10;
-  // Totals
-  int32 total_runs = 11;
-  int32 total_suites = 12;
-  // Per-case coverage (same as GetCoverageReport without status_filter)
-  repeated CoverageEntry coverage_entries = 13;
-}
-
 message GetCoverageReportRequest {
-  string repo_path = 1;
-  // Optional: return only entries with this latest status. Unspecified = return all.
+  string repo_id = 1;
   ResultStatus status_filter = 2;
 }
 
@@ -376,8 +247,7 @@ message GetCoverageReportResponse {
 }
 
 message GetAffectedCasesRequest {
-  string repo_path = 1;
-  // Compare against this git ref. Defaults to last run commit if empty.
+  string repo_id = 1;
   string since_ref = 2;
 }
 
