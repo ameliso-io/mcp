@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use ameliso_server::repo;
+use ameliso_server::{git, repo};
 use rmcp::schemars;
 use rmcp::transport::stdio;
 use rmcp::{handler::server::wrapper::Parameters, tool, tool_router, ServiceExt};
@@ -70,6 +70,47 @@ struct FinalizeRunRequest {
     run_id: String,
     #[schemars(description = "completed | aborted")]
     status: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct UpdateCaseRequest {
+    repo_path: String,
+    case_path: String,
+    title: String,
+    description: String,
+    #[schemars(description = "Comma-separated tags (optional)")]
+    tags: Option<String>,
+    #[schemars(description = "low | medium | high (default: medium)")]
+    priority: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct RunIdRequest {
+    repo_path: String,
+    run_id: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct SuiteSlugRequest {
+    repo_path: String,
+    slug: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct CreateSuiteRequest {
+    repo_path: String,
+    slug: String,
+    name: String,
+    description: Option<String>,
+    #[schemars(description = "Comma-separated case paths")]
+    cases: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct AffectedRequest {
+    repo_path: String,
+    #[schemars(description = "Git ref to compare from (default: last run commit)")]
+    since_ref: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -262,6 +303,127 @@ impl AmelisoMcp {
         let repo = PathBuf::from(&req.repo_path);
         match repo::finalize_run(&repo, &req.run_id, &req.status) {
             Ok(meta) => format!("finalized run {} as {}", meta.id, meta.status),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Update an existing test case's metadata.")]
+    fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let tag_list: Vec<String> = req
+            .tags
+            .as_deref()
+            .unwrap_or("")
+            .split(',')
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let pri = req.priority.as_deref().unwrap_or("medium");
+        match repo::update_case(&repo, &req.case_path, &req.title, &req.description, tag_list, pri) {
+            Ok(c) => format!("updated: cases/{}.md", c.case_path),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Get full details of a test run including all results.")]
+    fn get_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::get_run(&repo, &req.run_id) {
+            Ok(run) => {
+                let mut lines = vec![
+                    format!("id:     {}", run.meta.id),
+                    format!("date:   {}", run.meta.date),
+                    format!("tester: {}", run.meta.tester),
+                    format!("status: {}", run.meta.status),
+                ];
+                if let Some(env) = &run.meta.environment {
+                    lines.push(format!("env:    {env}"));
+                }
+                lines.push(format!("\nResults ({}):", run.results.len()));
+                for r in &run.results {
+                    lines.push(format!("  {:40} {}", r.case_path, r.fm.status));
+                }
+                lines.join("\n")
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "List all test suites.")]
+    fn list_suites(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::list_suites(&repo) {
+            Ok(suites) => {
+                if suites.is_empty() {
+                    return "No suites found.".to_owned();
+                }
+                suites
+                    .iter()
+                    .map(|(slug, s)| format!("[{}] {} ({} cases)", slug, s.name, s.cases.len()))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Get details of a test suite by slug.")]
+    fn get_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::get_suite(&repo, &req.slug) {
+            Ok(s) => {
+                let mut lines = vec![
+                    format!("slug: {}", req.slug),
+                    format!("name: {}", s.name),
+                ];
+                if let Some(d) = &s.description {
+                    lines.push(format!("description: {d}"));
+                }
+                lines.push(format!("cases ({}): {}", s.cases.len(), s.cases.join(", ")));
+                lines.join("\n")
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Create a new test suite grouping related cases.")]
+    fn create_suite(&self, Parameters(req): Parameters<CreateSuiteRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let case_list: Vec<String> = req
+            .cases
+            .split(',')
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let desc = req.description.filter(|s| !s.is_empty());
+        match repo::create_suite(&repo, &req.slug, &req.name, desc, case_list) {
+            Ok(_) => format!("created: suites/{}.yaml", req.slug),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Show which test cases need re-running after recent code changes.")]
+    fn get_affected_cases(&self, Parameters(req): Parameters<AffectedRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let cases = match repo::list_cases(&repo) {
+            Ok(c) => c,
+            Err(e) => return format!("error listing cases: {e}"),
+        };
+        let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+        let since = req.since_ref.as_deref().filter(|s| !s.is_empty());
+        match git::find_affected(&repo, since, &known_paths) {
+            Ok(result) => {
+                if result.case_paths.is_empty() {
+                    format!("No cases need re-running.\nReason: {}", result.reason)
+                } else {
+                    format!(
+                        "Cases to re-run ({}):\n{}\n\nReason: {}",
+                        result.case_paths.len(),
+                        result.case_paths.join("\n"),
+                        result.reason
+                    )
+                }
+            }
             Err(e) => format!("error: {e}"),
         }
     }
