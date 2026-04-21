@@ -1523,6 +1523,43 @@ mod tests {
         assert!(err.message().contains("status must be one of"));
     }
 
+    // "skipped" and "passed" must not require notes (notes are only required for failed/blocked).
+    // These tests verify that both statuses pass validation by producing a DB error (Internal),
+    // not a validation error (InvalidArgument).
+
+    #[tokio::test]
+    async fn record_result_skipped_without_notes_passes_validation() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Skipped as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        // Validation passed; DB call failed because the lazy pool has no real connection.
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn record_result_passed_without_notes_passes_validation() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Passed as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── create_case validation ────────────────────────────────────────────────
 
     #[tokio::test]
