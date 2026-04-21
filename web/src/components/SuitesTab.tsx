@@ -29,6 +29,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   const [creating, setCreating] = useState(false);
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const expandingRef = useRef<string | null>(null);
   const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
@@ -43,18 +44,20 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
     if (expanded === slug) {
       setExpanded(null);
       setExpandedCases([]);
+      expandingRef.current = null;
       return;
     }
     setExpanded(slug);
     setExpandedCases([]);
+    expandingRef.current = slug;
     setExpandedCasesLoading(true);
     try {
       const res = await client.listCases({ repoId, suite: slug });
-      setExpandedCases(res.cases);
+      if (expandingRef.current === slug) setExpandedCases(res.cases);
     } catch {
       // silently fall back — suite.cases paths still visible
     } finally {
-      setExpandedCasesLoading(false);
+      if (expandingRef.current === slug) setExpandedCasesLoading(false);
     }
   }
 

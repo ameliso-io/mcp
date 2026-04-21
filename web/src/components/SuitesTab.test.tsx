@@ -358,4 +358,30 @@ describe("SuitesTab", () => {
       expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
     );
   });
+
+  it("ignores stale listCases response when suite clicked twice rapidly", async () => {
+    const suite2 = makeSuite({ slug: "regression", name: "Regression", cases: [] });
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
+    let resolveFirst!: (v: unknown) => void;
+    let resolveSecond!: (v: unknown) => void;
+    vi.mocked(client.listCases)
+      .mockImplementationOnce(
+        () => new Promise((res) => { resolveFirst = res; })
+      )
+      .mockImplementationOnce(
+        () => new Promise((res) => { resolveSecond = res; })
+      );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByRole("button", { name: /Smoke Tests/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Regression/ }));
+    // Resolve second fetch first (out of order)
+    resolveSecond({ cases: [makeCase({ path: "reg/test", title: "Regression Test" })] });
+    await waitFor(() => screen.getByText("Regression Test"));
+    // Now resolve first fetch — stale result must be discarded
+    resolveFirst({ cases: [makeCase({ path: "auth/login", title: "Should Not Appear" })] });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText("Should Not Appear")).not.toBeInTheDocument();
+    expect(screen.getByText("Regression Test")).toBeInTheDocument();
+  });
 });
