@@ -148,4 +148,28 @@ describe('OverviewTab', () => {
     expect(titles[0].textContent).toBe('High Priority')
     expect(titles[1].textContent).toBe('Low Priority')
   })
+
+  it('shows singular "run" when runCount is 1', async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: coverageEntries, runCount: 1 } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => expect(screen.getByText(/Coverage \(1 run\)/)).toBeInTheDocument())
+  })
+
+  it('shows medium priority dot for medium priority affected case', async () => {
+    const mediumCase = {
+      case: { path: 'auth/reset', title: 'Medium Priority', priority: 'medium', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'changed',
+    } as unknown as AffectedCase
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [mediumCase], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('Medium Priority')).toBeInTheDocument())
+  })
+
+  it('shows "No cases found" when coverage entries are empty', async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => expect(screen.getByText('No cases found in this repository.')).toBeInTheDocument())
+  })
 })
