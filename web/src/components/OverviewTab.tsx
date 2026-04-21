@@ -61,27 +61,30 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
   const [affectedError, setAffectedError] = useState<string | null>(null);
   const [announcement, announce] = useAnnounce();
 
-  const load = useCallback(async (path: string) => {
-    /* v8 ignore next 2 — useEffect guards !path before calling load */
-    if (!path) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [coverageRes, activeRunsRes] = await Promise.all([
-        client.getCoverageReport({ repoId: path }),
-        client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
-      ]);
-      setEntries(coverageRes.entries);
-      setRunCount(coverageRes.runCount);
-      setActiveRuns(activeRunsRes.runs);
-      const n = coverageRes.entries.length;
-      announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [announce]);
+  const load = useCallback(
+    async (path: string) => {
+      /* v8 ignore next 2 — useEffect guards !path before calling load */
+      if (!path) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const [coverageRes, activeRunsRes] = await Promise.all([
+          client.getCoverageReport({ repoId: path }),
+          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
+        ]);
+        setEntries(coverageRes.entries);
+        setRunCount(coverageRes.runCount);
+        setActiveRuns(activeRunsRes.runs);
+        const n = coverageRes.entries.length;
+        announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [announce]
+  );
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

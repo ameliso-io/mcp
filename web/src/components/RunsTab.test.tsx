@@ -930,7 +930,6 @@ describe("RunsTab", () => {
   });
 
   it("closes record form when selected run is deleted", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
@@ -938,8 +937,10 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("Record"));
     await userEvent.click(screen.getByText("Record"));
     await waitFor(() => screen.getByText("Save Result"));
-    // Delete the run
-    await userEvent.click(screen.getByText("Delete"));
+    // Delete the run via inline confirm
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.deleteRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke" })
