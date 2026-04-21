@@ -18,6 +18,7 @@ build:
 test:
 	cargo test
 	pnpm --filter ameliso-web test
+	pnpm --filter ameliso-web test:typecheck
 
 coverage-check:
 	cargo llvm-cov -p ameliso-server --fail-under-lines 0
