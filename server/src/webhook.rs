@@ -1,0 +1,221 @@
+use axum::{
+    body::Bytes,
+    extract::State,
+    http::{HeaderMap, StatusCode},
+    response::IntoResponse,
+};
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
+use sqlx::PgPool;
+use std::sync::Arc;
+
+pub struct WebhookState {
+    pub pool: PgPool,
+    pub secret: Option<String>,
+}
+
+fn verify_signature(secret: &str, body: &[u8], sig_header: &str) -> bool {
+    let sig_hex = match sig_header.strip_prefix("sha256=") {
+        Some(s) => s,
+        None => return false,
+    };
+    let mut mac =
+        Hmac::<Sha256>::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
+    mac.update(body);
+    let expected = hex::encode(mac.finalize().into_bytes());
+    expected == sig_hex
+}
+
+#[derive(serde::Deserialize)]
+struct PushPayload {
+    #[serde(default)]
+    commits: Vec<Commit>,
+    repository: Repo,
+}
+
+#[derive(serde::Deserialize)]
+struct Commit {
+    #[serde(default)]
+    added: Vec<String>,
+    #[serde(default)]
+    modified: Vec<String>,
+    #[serde(default)]
+    removed: Vec<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct Repo {
+    full_name: String,
+}
+
+fn is_case_file(path: &str) -> bool {
+    path.starts_with("cases/") && path.ends_with(".md")
+}
+
+pub async fn github_push(
+    State(state): State<Arc<WebhookState>>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> impl IntoResponse {
+    if let Some(ref secret) = state.secret {
+        let sig = headers
+            .get("x-hub-signature-256")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        if !verify_signature(secret, &body, sig) {
+            return (StatusCode::UNAUTHORIZED, "invalid signature");
+        }
+    }
+
+    let payload: PushPayload = match serde_json::from_slice(&body) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("webhook: json parse error: {e}");
+            return (StatusCode::BAD_REQUEST, "invalid payload");
+        }
+    };
+
+    let repo_id = payload.repository.full_name.clone();
+
+    let mut upsert: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut remove: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for commit in &payload.commits {
+        for path in commit.added.iter().chain(commit.modified.iter()) {
+            if is_case_file(path) {
+                upsert.insert(path.clone());
+            }
+        }
+        for path in &commit.removed {
+            if is_case_file(path) {
+                upsert.remove(path);
+                remove.insert(path.clone());
+            }
+        }
+    }
+
+    if upsert.is_empty() && remove.is_empty() {
+        return (StatusCode::OK, "no case files changed");
+    }
+
+    let token_result = get_token(&state.pool, &repo_id).await;
+    let (token, owner, repo_name) = match token_result {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("webhook: token error for {repo_id}: {e}");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "token error");
+        }
+    };
+
+    for file_path in &upsert {
+        if let Err(e) =
+            process_upsert(&state.pool, &repo_id, &owner, &repo_name, &token, file_path).await
+        {
+            eprintln!("webhook: upsert failed for {file_path}: {e}");
+        }
+    }
+
+    for file_path in &remove {
+        let case_path = match file_path
+            .strip_prefix("cases/")
+            .and_then(|p| p.strip_suffix(".md"))
+        {
+            Some(p) => p,
+            None => continue,
+        };
+        if let Err(e) = crate::repo::delete_case_if_exists(&state.pool, &repo_id, case_path).await {
+            eprintln!("webhook: delete failed for {case_path}: {e}");
+        }
+    }
+
+    (StatusCode::OK, "ok")
+}
+
+async fn get_token(pool: &PgPool, repo_id: &str) -> anyhow::Result<(String, String, String)> {
+    use anyhow::Context as _;
+    let stored = crate::repos_store::get(pool, repo_id)
+        .await?
+        .with_context(|| format!("repository {repo_id} not found"))?;
+    let cfg = crate::github::config().context("GitHub App not configured")?;
+    let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)?;
+    let token = crate::github::get_installation_token(&stored.installation_id, &jwt).await?;
+    let parts: Vec<&str> = stored.full_name.splitn(2, '/').collect();
+    anyhow::ensure!(parts.len() == 2, "invalid full_name: {}", stored.full_name);
+    Ok((token, parts[0].to_owned(), parts[1].to_owned()))
+}
+
+async fn process_upsert(
+    pool: &PgPool,
+    repo_id: &str,
+    owner: &str,
+    repo_name: &str,
+    token: &str,
+    file_path: &str,
+) -> anyhow::Result<()> {
+    let file = crate::github::get_file(owner, repo_name, file_path, token).await?;
+    let (content_b64, _) = match file {
+        Some(f) => f,
+        None => return Ok(()),
+    };
+    let parsed = crate::sync::parse_case_from_base64(file_path, &content_b64)?;
+    crate::repo::upsert_case(
+        pool,
+        repo_id,
+        &parsed.case_path,
+        &parsed.title,
+        &parsed.description,
+        parsed.tags,
+        &parsed.priority,
+        &parsed.body,
+        &parsed.created_at,
+        &parsed.updated_at,
+    )
+    .await?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verify_signature_valid() {
+        // echo -n "payload" | openssl dgst -sha256 -hmac "secret"
+        let body = b"payload";
+        let secret = "secret";
+        // Compute expected
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(body);
+        let hex = hex::encode(mac.finalize().into_bytes());
+        let header = format!("sha256={hex}");
+        assert!(verify_signature(secret, body, &header));
+    }
+
+    #[test]
+    fn verify_signature_wrong_secret() {
+        let body = b"payload";
+        let mut mac = Hmac::<Sha256>::new_from_slice(b"secret").unwrap();
+        mac.update(body);
+        let hex = hex::encode(mac.finalize().into_bytes());
+        let header = format!("sha256={hex}");
+        assert!(!verify_signature("wrong", body, &header));
+    }
+
+    #[test]
+    fn verify_signature_missing_prefix() {
+        assert!(!verify_signature("secret", b"payload", "invalidsig"));
+    }
+
+    #[test]
+    fn is_case_file_matches() {
+        assert!(is_case_file("cases/auth/login.md"));
+        assert!(is_case_file("cases/smoke.md"));
+    }
+
+    #[test]
+    fn is_case_file_rejects_others() {
+        assert!(!is_case_file("runs/2026-01-01.md"));
+        assert!(!is_case_file("cases/auth/login.txt"));
+        assert!(!is_case_file("README.md"));
+    }
+}
