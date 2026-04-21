@@ -212,6 +212,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         notes: recordNotes,
       });
       setRecordingCase(null);
+      lastFocusRef.current?.focus();
       setRecordNotes("");
       setCaseBody(null);
       announce("Result recorded");
