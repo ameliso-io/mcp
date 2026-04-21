@@ -4,7 +4,7 @@ import { errorMessage } from '../errorMessage'
 import type { Suite, Case } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
-  repoPath: string
+  repoId: string
   onRunSuite?: (slug: string) => void
 }
 
@@ -32,7 +32,7 @@ const label: React.CSSProperties = {
   marginBottom: '4px',
 }
 
-export default function SuitesTab({ repoPath, onRunSuite }: Props) {
+export default function SuitesTab({ repoId, onRunSuite }: Props) {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +65,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
     setExpandedCases([])
     setExpandedCasesLoading(true)
     try {
-      const res = await client.listCases({ repoPath, suite: slug })
+      const res = await client.listCases({ repoId, suite: slug })
       setExpandedCases(res.cases)
     } catch {
       // silently fall back — suite.cases paths still visible
@@ -82,28 +82,28 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   }
 
   const load = useCallback(async () => {
-    if (!repoPath) return
+    if (!repoId) return
     setLoading(true)
     setError(null)
     try {
-      const res = await client.listSuites({ repoPath })
+      const res = await client.listSuites({ repoId })
       setSuites(res.suites)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
-  }, [repoPath])
+  }, [repoId])
 
   useEffect(() => { load() }, [load])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!repoPath || !newSlug || !newName) return
+    if (!repoId || !newSlug || !newName) return
     setCreating(true)
     try {
       await client.createSuite({
-        repoPath,
+        repoId,
         slug: newSlug,
         name: newName,
         description: newDesc,
@@ -125,7 +125,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   async function handleDelete(slug: string) {
     if (!confirm(`Delete suite "${slug}"?`)) return
     try {
-      await client.deleteSuite({ repoPath, slug })
+      await client.deleteSuite({ repoId, slug })
       if (expanded === slug) setExpanded(null)
       load()
     } catch (e) {
@@ -139,7 +139,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
     setSaving(true)
     try {
       await client.updateSuite({
-        repoPath,
+        repoId,
         slug: editingSlug,
         name: editName,
         description: editDesc,
@@ -154,7 +154,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
     }
   }
 
-  if (!repoPath) {
+  if (!repoId) {
     return (
       <div style={{ color: '#64748b', padding: '40px', textAlign: 'center' }}>
         Set a repository path in the Overview tab first.

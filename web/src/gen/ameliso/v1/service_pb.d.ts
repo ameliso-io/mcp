@@ -16,34 +16,26 @@ export declare const file_ameliso_v1_service: GenFile;
  */
 export declare type ListCasesRequest = Message<"ameliso.v1.ListCasesRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
-   * Optional: filter by tag
-   *
    * @generated from field: repeated string tags = 2;
    */
   tags: string[];
 
   /**
-   * Optional: filter by priority
-   *
    * @generated from field: ameliso.v1.Priority priority = 3;
    */
   priority: Priority;
 
   /**
-   * Optional: full-text query against title and description
-   *
    * @generated from field: string query = 4;
    */
   query: string;
 
   /**
-   * Optional: restrict to cases in this suite slug
-   *
    * @generated from field: string suite = 5;
    */
   suite: string;
@@ -76,9 +68,9 @@ export declare const ListCasesResponseSchema: GenMessage<ListCasesResponse>;
  */
 export declare type GetCaseRequest = Message<"ameliso.v1.GetCaseRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string case_path = 2;
@@ -102,8 +94,6 @@ export declare type GetCaseResponse = Message<"ameliso.v1.GetCaseResponse"> & {
   case?: Case;
 
   /**
-   * Full markdown body (everything after the frontmatter delimiter)
-   *
    * @generated from field: string body = 2;
    */
   body: string;
@@ -120,13 +110,11 @@ export declare const GetCaseResponseSchema: GenMessage<GetCaseResponse>;
  */
 export declare type CreateCaseRequest = Message<"ameliso.v1.CreateCaseRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
-   * Path within cases/, without extension. E.g. "auth/user-login"
-   *
    * @generated from field: string case_path = 2;
    */
   casePath: string;
@@ -152,8 +140,6 @@ export declare type CreateCaseRequest = Message<"ameliso.v1.CreateCaseRequest"> 
   priority: Priority;
 
   /**
-   * Optional: full markdown body (steps, expected results, etc.). Defaults to a template.
-   *
    * @generated from field: string body = 7;
    */
   body: string;
@@ -175,8 +161,6 @@ export declare type CreateCaseResponse = Message<"ameliso.v1.CreateCaseResponse"
   case?: Case;
 
   /**
-   * Full path of the created file relative to repo root
-   *
    * @generated from field: string file_path = 2;
    */
   filePath: string;
@@ -193,9 +177,9 @@ export declare const CreateCaseResponseSchema: GenMessage<CreateCaseResponse>;
  */
 export declare type UpdateCaseRequest = Message<"ameliso.v1.UpdateCaseRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string case_path = 2;
@@ -223,8 +207,6 @@ export declare type UpdateCaseRequest = Message<"ameliso.v1.UpdateCaseRequest"> 
   priority: Priority;
 
   /**
-   * Optional: replace the full markdown body. If empty, existing body is preserved.
-   *
    * @generated from field: string body = 7;
    */
   body: string;
@@ -257,9 +239,9 @@ export declare const UpdateCaseResponseSchema: GenMessage<UpdateCaseResponse>;
  */
 export declare type DeleteCaseRequest = Message<"ameliso.v1.DeleteCaseRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string case_path = 2;
@@ -278,8 +260,6 @@ export declare const DeleteCaseRequestSchema: GenMessage<DeleteCaseRequest>;
  */
 export declare type DeleteCaseResponse = Message<"ameliso.v1.DeleteCaseResponse"> & {
   /**
-   * Path of the deleted file relative to repo root
-   *
    * @generated from field: string file_path = 1;
    */
   filePath: string;
@@ -296,9 +276,9 @@ export declare const DeleteCaseResponseSchema: GenMessage<DeleteCaseResponse>;
  */
 export declare type ListSuitesRequest = Message<"ameliso.v1.ListSuitesRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 };
 
 /**
@@ -328,9 +308,9 @@ export declare const ListSuitesResponseSchema: GenMessage<ListSuitesResponse>;
  */
 export declare type GetSuiteRequest = Message<"ameliso.v1.GetSuiteRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string slug = 2;
@@ -365,9 +345,9 @@ export declare const GetSuiteResponseSchema: GenMessage<GetSuiteResponse>;
  */
 export declare type CreateSuiteRequest = Message<"ameliso.v1.CreateSuiteRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string slug = 2;
@@ -422,9 +402,9 @@ export declare const CreateSuiteResponseSchema: GenMessage<CreateSuiteResponse>;
  */
 export declare type UpdateSuiteRequest = Message<"ameliso.v1.UpdateSuiteRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string slug = 2;
@@ -474,9 +454,9 @@ export declare const UpdateSuiteResponseSchema: GenMessage<UpdateSuiteResponse>;
  */
 export declare type DeleteSuiteRequest = Message<"ameliso.v1.DeleteSuiteRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string slug = 2;
@@ -511,13 +491,11 @@ export declare const DeleteSuiteResponseSchema: GenMessage<DeleteSuiteResponse>;
  */
 export declare type ListRunsRequest = Message<"ameliso.v1.ListRunsRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
-   * Optional: filter by run status. Unspecified = return all.
-   *
    * @generated from field: ameliso.v1.RunStatus status = 2;
    */
   status: RunStatus;
@@ -550,9 +528,9 @@ export declare const ListRunsResponseSchema: GenMessage<ListRunsResponse>;
  */
 export declare type GetRunRequest = Message<"ameliso.v1.GetRunRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string run_id = 2;
@@ -587,13 +565,11 @@ export declare const GetRunResponseSchema: GenMessage<GetRunResponse>;
  */
 export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
-   * Human-readable slug for the run (appended to date)
-   *
    * @generated from field: string slug = 2;
    */
   slug: string;
@@ -609,8 +585,6 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
   environment: string;
 
   /**
-   * Optional: pre-populate the run with cases from this suite
-   *
    * @generated from field: string suite = 5;
    */
   suite: string;
@@ -648,9 +622,9 @@ export declare const CreateRunResponseSchema: GenMessage<CreateRunResponse>;
  */
 export declare type RecordResultRequest = Message<"ameliso.v1.RecordResultRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string run_id = 2;
@@ -700,9 +674,9 @@ export declare const RecordResultResponseSchema: GenMessage<RecordResultResponse
  */
 export declare type FinalizeRunRequest = Message<"ameliso.v1.FinalizeRunRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string run_id = 2;
@@ -742,9 +716,9 @@ export declare const FinalizeRunResponseSchema: GenMessage<FinalizeRunResponse>;
  */
 export declare type DeleteRunRequest = Message<"ameliso.v1.DeleteRunRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string run_id = 2;
@@ -763,8 +737,6 @@ export declare const DeleteRunRequestSchema: GenMessage<DeleteRunRequest>;
  */
 export declare type DeleteRunResponse = Message<"ameliso.v1.DeleteRunResponse"> & {
   /**
-   * Path of the deleted run directory relative to repo root (e.g. runs/2026-04-21-smoke)
-   *
    * @generated from field: string dir_path = 1;
    */
   dirPath: string;
@@ -781,9 +753,9 @@ export declare const DeleteRunResponseSchema: GenMessage<DeleteRunResponse>;
  */
 export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCasesRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
    * @generated from field: string run_id = 2;
@@ -802,15 +774,11 @@ export declare const GetPendingCasesRequestSchema: GenMessage<GetPendingCasesReq
  */
 export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCasesResponse"> & {
   /**
-   * Cases in scope that have no result recorded yet (includes metadata).
-   *
    * @generated from field: repeated ameliso.v1.Case cases = 1;
    */
   cases: Case[];
 
   /**
-   * Total scope size (suite or all cases).
-   *
    * @generated from field: int32 total_in_scope = 2;
    */
   totalInScope: number;
@@ -827,13 +795,11 @@ export declare const GetPendingCasesResponseSchema: GenMessage<GetPendingCasesRe
  */
 export declare type GetCoverageReportRequest = Message<"ameliso.v1.GetCoverageReportRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
-   * Optional: return only entries with this latest status. Unspecified = return all.
-   *
    * @generated from field: ameliso.v1.ResultStatus status_filter = 2;
    */
   statusFilter: ResultStatus;
@@ -871,13 +837,11 @@ export declare const GetCoverageReportResponseSchema: GenMessage<GetCoverageRepo
  */
 export declare type GetAffectedCasesRequest = Message<"ameliso.v1.GetAffectedCasesRequest"> & {
   /**
-   * @generated from field: string repo_path = 1;
+   * @generated from field: string repo_id = 1;
    */
-  repoPath: string;
+  repoId: string;
 
   /**
-   * Compare against this git ref. Defaults to last run commit if empty.
-   *
    * @generated from field: string since_ref = 2;
    */
   sinceRef: string;
@@ -1064,16 +1028,14 @@ export declare type RemoveRepositoryResponse = Message<"ameliso.v1.RemoveReposit
 export declare const RemoveRepositoryResponseSchema: GenMessage<RemoveRepositoryResponse>;
 
 /**
- * AmelisoService manages test cases and runs in a git-native controlled repository.
- * All operations accept a repo_path that points to the root of the controlled repository.
- *
- * --- Cases ---
+ * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
+ * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
  * @generated from service ameliso.v1.AmelisoService
  */
 export declare const AmelisoService: GenService<{
   /**
-   * List all cases in the controlled repository, optionally filtered.
+   * --- Cases ---
    *
    * @generated from rpc ameliso.v1.AmelisoService.ListCases
    */
@@ -1083,8 +1045,6 @@ export declare const AmelisoService: GenService<{
     output: typeof ListCasesResponseSchema;
   },
   /**
-   * Get a single case by its path (e.g. "auth/user-login").
-   *
    * @generated from rpc ameliso.v1.AmelisoService.GetCase
    */
   getCase: {
@@ -1093,8 +1053,6 @@ export declare const AmelisoService: GenService<{
     output: typeof GetCaseResponseSchema;
   },
   /**
-   * Create a new case file. Fails if the path already exists.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.CreateCase
    */
   createCase: {
@@ -1103,8 +1061,6 @@ export declare const AmelisoService: GenService<{
     output: typeof CreateCaseResponseSchema;
   },
   /**
-   * Update an existing case's metadata. Bumps updated_at automatically.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.UpdateCase
    */
   updateCase: {
@@ -1113,8 +1069,6 @@ export declare const AmelisoService: GenService<{
     output: typeof UpdateCaseResponseSchema;
   },
   /**
-   * Delete a case file from the repository.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
    */
   deleteCase: {
@@ -1123,7 +1077,7 @@ export declare const AmelisoService: GenService<{
     output: typeof DeleteCaseResponseSchema;
   },
   /**
-   * List all suites.
+   * --- Suites ---
    *
    * @generated from rpc ameliso.v1.AmelisoService.ListSuites
    */
@@ -1133,8 +1087,6 @@ export declare const AmelisoService: GenService<{
     output: typeof ListSuitesResponseSchema;
   },
   /**
-   * Get a suite by slug.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.GetSuite
    */
   getSuite: {
@@ -1143,8 +1095,6 @@ export declare const AmelisoService: GenService<{
     output: typeof GetSuiteResponseSchema;
   },
   /**
-   * Create a new suite.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.CreateSuite
    */
   createSuite: {
@@ -1153,8 +1103,6 @@ export declare const AmelisoService: GenService<{
     output: typeof CreateSuiteResponseSchema;
   },
   /**
-   * Update an existing suite's name, description, or case list.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.UpdateSuite
    */
   updateSuite: {
@@ -1163,8 +1111,6 @@ export declare const AmelisoService: GenService<{
     output: typeof UpdateSuiteResponseSchema;
   },
   /**
-   * Delete a suite file from the repository.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.DeleteSuite
    */
   deleteSuite: {
@@ -1173,7 +1119,7 @@ export declare const AmelisoService: GenService<{
     output: typeof DeleteSuiteResponseSchema;
   },
   /**
-   * List all runs, newest first.
+   * --- Runs ---
    *
    * @generated from rpc ameliso.v1.AmelisoService.ListRuns
    */
@@ -1183,8 +1129,6 @@ export declare const AmelisoService: GenService<{
     output: typeof ListRunsResponseSchema;
   },
   /**
-   * Get a run with all its results.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.GetRun
    */
   getRun: {
@@ -1193,8 +1137,6 @@ export declare const AmelisoService: GenService<{
     output: typeof GetRunResponseSchema;
   },
   /**
-   * Create a new in-progress run.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.CreateRun
    */
   createRun: {
@@ -1203,9 +1145,6 @@ export declare const AmelisoService: GenService<{
     output: typeof CreateRunResponseSchema;
   },
   /**
-   * Record or update a single case result within a run.
-   * Idempotent: calling again with a different status overwrites the previous result.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.RecordResult
    */
   recordResult: {
@@ -1214,8 +1153,6 @@ export declare const AmelisoService: GenService<{
     output: typeof RecordResultResponseSchema;
   },
   /**
-   * Mark a run as completed or aborted. Validates all expected cases have results.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
    */
   finalizeRun: {
@@ -1224,8 +1161,6 @@ export declare const AmelisoService: GenService<{
     output: typeof FinalizeRunResponseSchema;
   },
   /**
-   * Delete a run directory entirely. Useful for cleaning up accidentally-created runs.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.DeleteRun
    */
   deleteRun: {
@@ -1234,9 +1169,6 @@ export declare const AmelisoService: GenService<{
     output: typeof DeleteRunResponseSchema;
   },
   /**
-   * Return case paths in a run's scope that have no result recorded yet.
-   * If the run references a suite, scope = suite cases; otherwise scope = all cases in repo.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.GetPendingCases
    */
   getPendingCases: {
@@ -1245,7 +1177,7 @@ export declare const AmelisoService: GenService<{
     output: typeof GetPendingCasesResponseSchema;
   },
   /**
-   * Return the latest known status for every case.
+   * --- Reports ---
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
    */
@@ -1255,7 +1187,7 @@ export declare const AmelisoService: GenService<{
     output: typeof GetCoverageReportResponseSchema;
   },
   /**
-   * Return cases that may need re-running based on git changes since the last run.
+   * Return cases affected by source changes since since_ref (uses GitHub compare API).
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetAffectedCases
    */
@@ -1265,7 +1197,7 @@ export declare const AmelisoService: GenService<{
     output: typeof GetAffectedCasesResponseSchema;
   },
   /**
-   * Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
+   * --- GitHub App ---
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetGitHubInstallUrl
    */
@@ -1275,9 +1207,6 @@ export declare const AmelisoService: GenService<{
     output: typeof GetGitHubInstallUrlResponseSchema;
   },
   /**
-   * Called after GitHub redirects back with an installation_id.
-   * Fetches repos for the installation, clones them, and persists the connection.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
    */
   handleGitHubCallback: {
@@ -1286,8 +1215,6 @@ export declare const AmelisoService: GenService<{
     output: typeof HandleGitHubCallbackResponseSchema;
   },
   /**
-   * List all connected repositories.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
    */
   listRepositories: {
@@ -1296,8 +1223,6 @@ export declare const AmelisoService: GenService<{
     output: typeof ListRepositoriesResponseSchema;
   },
   /**
-   * Pull latest changes for a connected repository.
-   *
    * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
    */
   syncRepository: {
@@ -1306,8 +1231,6 @@ export declare const AmelisoService: GenService<{
     output: typeof SyncRepositoryResponseSchema;
   },
   /**
-   * Remove a connected repository from the store (does not delete the local clone).
-   *
    * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
    */
   removeRepository: {

@@ -6,7 +6,7 @@ import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
 import MarkdownBody from './MarkdownBody'
 
 interface Props {
-  repoPath: string
+  repoId: string
   initialSuite?: string
   onInitialSuiteConsumed?: () => void
 }
@@ -66,7 +66,7 @@ function runStatusColor(s: RunStatus): string {
   }
 }
 
-export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed }: Props) {
+export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -116,7 +116,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     if (selectedRun && selectedRun.status === RunStatus.IN_PROGRESS) {
       pendingPollRef.current = setInterval(async () => {
         try {
-          const res = await client.getPendingCases({ repoPath, runId: selectedRunId! })
+          const res = await client.getPendingCases({ repoId, runId: selectedRunId! })
           setPendingCases(res.cases)
           setTotalInScope(res.totalInScope)
         } catch {
@@ -125,31 +125,31 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
       }, 30_000)
     }
     return () => { if (pendingPollRef.current) clearInterval(pendingPollRef.current) }
-  }, [repoPath, selectedRunId, runs])
+  }, [repoId, selectedRunId, runs])
 
   const load = useCallback(async () => {
-    if (!repoPath) return
+    if (!repoId) return
     setLoading(true)
     setError(null)
     try {
-      const res = await client.listRuns({ repoPath, status: statusFilter })
+      const res = await client.listRuns({ repoId, status: statusFilter })
       setRuns(res.runs)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
-  }, [repoPath, statusFilter])
+  }, [repoId, statusFilter])
 
   useEffect(() => { load() }, [load])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!repoPath || !newSlug) return
+    if (!repoId || !newSlug) return
     setCreating(true)
     try {
       const created = await client.createRun({
-        repoPath,
+        repoId,
         slug: newSlug,
         tester: newTester,
         environment: newEnv,
@@ -187,13 +187,13 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     setResultStatusFilter(null)
     try {
       if (status === RunStatus.IN_PROGRESS) {
-        const res = await client.getPendingCases({ repoPath, runId })
+        const res = await client.getPendingCases({ repoId, runId })
         setPendingCases(res.cases)
         setTotalInScope(res.totalInScope)
       } else {
         const [runRes, casesRes] = await Promise.all([
-          client.getRun({ repoPath, runId }),
-          client.listCases({ repoPath }),
+          client.getRun({ repoId, runId }),
+          client.listCases({ repoId }),
         ])
         setRecordedResults(runRes.run?.results ?? [])
         setCaseTitleMap(new Map(casesRes.cases.map(c => [c.path, c])))
@@ -211,7 +211,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     setRecording(true)
     try {
       await client.recordResult({
-        repoPath,
+        repoId,
         runId: selectedRunId,
         casePath: recordingCase,
         status: recordStatus,
@@ -221,7 +221,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
       setRecordNotes('')
       setCaseBody(null)
       // Refresh pending
-      const res = await client.getPendingCases({ repoPath, runId: selectedRunId })
+      const res = await client.getPendingCases({ repoId, runId: selectedRunId })
       setPendingCases(res.cases)
       setTotalInScope(res.totalInScope)
     } catch (e) {
@@ -241,7 +241,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     setCaseBody(null)
     setCaseBodyLoading(true)
     try {
-      const res = await client.getCase({ repoPath, casePath })
+      const res = await client.getCase({ repoId, casePath })
       setCaseBody(res.body || null)
     } catch {
       // body unavailable; proceed without it
@@ -254,7 +254,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     const label = status === RunStatus.COMPLETED ? 'complete' : 'abort'
     if (!confirm(`Mark run as ${label}?`)) return
     try {
-      await client.finalizeRun({ repoPath, runId, status })
+      await client.finalizeRun({ repoId, runId, status })
       setSelectedRunId(null)
       setPendingCases([])
       load()
@@ -269,9 +269,9 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     setBulkPassing(true)
     try {
       for (const c of pendingCases) {
-        await client.recordResult({ repoPath, runId, casePath: c.path, status: ResultStatus.PASSED, notes: '' })
+        await client.recordResult({ repoId, runId, casePath: c.path, status: ResultStatus.PASSED, notes: '' })
       }
-      const pending = await client.getPendingCases({ repoPath, runId })
+      const pending = await client.getPendingCases({ repoId, runId })
       setPendingCases(pending.cases)
       setTotalInScope(pending.totalInScope)
     } catch (e) {
@@ -284,7 +284,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   async function handleDeleteRun(runId: string) {
     if (!confirm(`Delete run "${runId}"?`)) return
     try {
-      await client.deleteRun({ repoPath, runId })
+      await client.deleteRun({ repoId, runId })
       if (selectedRunId === runId) {
         setSelectedRunId(null)
         setPendingCases([])
@@ -295,7 +295,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     }
   }
 
-  if (!repoPath) {
+  if (!repoId) {
     return (
       <div style={{ color: '#64748b', padding: '40px', textAlign: 'center' }}>
         Set a repository path in the Overview tab first.

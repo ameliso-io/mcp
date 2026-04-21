@@ -51,7 +51,7 @@ const styles = {
   },
 }
 
-const REPO_PATH_KEY = 'ameliso:repoPath'
+const REPO_ID_KEY = 'ameliso:repoId'
 
 const TAB_LABELS: Record<Tab, string> = {
   repositories: 'Repositories',
@@ -69,16 +69,16 @@ const initialTab = (): Tab => {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>(initialTab)
-  const [repoPath, setRepoPath] = useState(() => localStorage.getItem(REPO_PATH_KEY) ?? '')
+  const [repoId, setRepoId] = useState(() => localStorage.getItem(REPO_ID_KEY) ?? '')
   const [runSuiteSlug, setRunSuiteSlug] = useState<string | undefined>(undefined)
 
-  function handleRepoPathChange(p: string) {
-    setRepoPath(p)
-    localStorage.setItem(REPO_PATH_KEY, p)
+  function handleRepoIdChange(id: string) {
+    setRepoId(id)
+    localStorage.setItem(REPO_ID_KEY, id)
   }
 
-  function handleRepoSelect(path: string) {
-    handleRepoPathChange(path)
+  function handleRepoSelect(id: string) {
+    handleRepoIdChange(id)
     setTab('overview')
   }
 
@@ -101,27 +101,26 @@ export default function App() {
       <main style={styles.content}>
         {tab === 'repositories' && (
           <RepositoriesTab
-            activeRepoPath={repoPath}
+            activeRepoId={repoId}
             onRepoSelect={handleRepoSelect}
           />
         )}
         {tab === 'overview' && (
           <OverviewTab
-            repoPath={repoPath}
-            onRepoPathChange={handleRepoPathChange}
+            repoId={repoId}
             onGoToRuns={() => setTab('runs')}
           />
         )}
-        {tab === 'cases' && <CasesTab repoPath={repoPath} />}
+        {tab === 'cases' && <CasesTab repoId={repoId} />}
         {tab === 'suites' && (
           <SuitesTab
-            repoPath={repoPath}
+            repoId={repoId}
             onRunSuite={slug => { setRunSuiteSlug(slug); setTab('runs') }}
           />
         )}
         {tab === 'runs' && (
           <RunsTab
-            repoPath={repoPath}
+            repoId={repoId}
             initialSuite={runSuiteSlug}
             onInitialSuiteConsumed={() => setRunSuiteSlug(undefined)}
           />

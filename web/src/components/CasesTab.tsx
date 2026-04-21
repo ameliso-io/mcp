@@ -6,7 +6,7 @@ import { Priority } from '../gen/ameliso/v1/types_pb'
 import MarkdownBody from './MarkdownBody'
 
 interface Props {
-  repoPath: string
+  repoId: string
 }
 
 const card = {
@@ -53,7 +53,7 @@ function priorityLabel(p: string): string {
   }
 }
 
-export default function CasesTab({ repoPath }: Props) {
+export default function CasesTab({ repoId }: Props) {
   const [cases, setCases] = useState<Case[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,7 +89,7 @@ export default function CasesTab({ repoPath }: Props) {
   const [saving, setSaving] = useState(false)
 
   async function fetchBody(casePath: string): Promise<string> {
-    const res = await client.getCase({ repoPath, casePath })
+    const res = await client.getCase({ repoId, casePath })
     return res.body
   }
 
@@ -133,12 +133,12 @@ export default function CasesTab({ repoPath }: Props) {
   }, [search])
 
   const load = useCallback(async () => {
-    if (!repoPath) return
+    if (!repoId) return
     setLoading(true)
     setError(null)
     try {
       const res = await client.listCases({
-        repoPath,
+        repoId,
         query: debouncedSearch,
         priority: priorityFilter,
         tags: tagFilter ? [tagFilter] : [],
@@ -149,17 +149,17 @@ export default function CasesTab({ repoPath }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [repoPath, debouncedSearch, priorityFilter, tagFilter])
+  }, [repoId, debouncedSearch, priorityFilter, tagFilter])
 
   useEffect(() => { load() }, [load])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!repoPath || !newPath || !newTitle) return
+    if (!repoId || !newPath || !newTitle) return
     setCreating(true)
     try {
       await client.createCase({
-        repoPath,
+        repoId,
         casePath: newPath,
         title: newTitle,
         description: newDesc,
@@ -184,7 +184,7 @@ export default function CasesTab({ repoPath }: Props) {
   async function handleDelete(casePath: string) {
     if (!confirm(`Delete case "${casePath}"?`)) return
     try {
-      await client.deleteCase({ repoPath, casePath })
+      await client.deleteCase({ repoId, casePath })
       if (expandedPath === casePath) setExpandedPath(null)
       load()
     } catch (e) {
@@ -198,7 +198,7 @@ export default function CasesTab({ repoPath }: Props) {
     setSaving(true)
     try {
       await client.updateCase({
-        repoPath,
+        repoId,
         casePath: editingPath,
         title: editTitle,
         description: editDesc,
@@ -215,7 +215,7 @@ export default function CasesTab({ repoPath }: Props) {
     }
   }
 
-  if (!repoPath) {
+  if (!repoId) {
     return (
       <div style={{ color: '#64748b', padding: '40px', textAlign: 'center' }}>
         Set a repository path in the Overview tab first.

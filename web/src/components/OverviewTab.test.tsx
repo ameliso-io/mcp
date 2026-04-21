@@ -28,26 +28,26 @@ beforeEach(() => {
 })
 
 describe('OverviewTab', () => {
-  it('shows helpful empty state when no repo path', () => {
-    render(<OverviewTab repoPath="" onRepoPathChange={() => {}} />)
-    expect(screen.getByText(/Enter a repository path/i)).toBeInTheDocument()
+  it('shows helpful empty state when no repo selected', () => {
+    render(<OverviewTab repoId="" />)
+    expect(screen.getByText(/No repository selected/i)).toBeInTheDocument()
   })
 
   it('loads and displays stat counts', async () => {
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument())
     expect(screen.getAllByText('1').length).toBeGreaterThan(0)
   })
 
   it('shows coverage entries with failed first', async () => {
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('auth/login'))
     const entries = screen.getAllByText(/auth\//)
     expect(entries[0].textContent).toBe('auth/logout')
   })
 
   it('shows last run date on coverage entries', async () => {
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getAllByText('2026-01-01').length).toBeGreaterThan(0))
   })
 
@@ -57,23 +57,23 @@ describe('OverviewTab', () => {
       suite: 'smoke', date: '2026-01-01', status: RunStatus.IN_PROGRESS,
     } as unknown as RunMeta
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument())
     expect(screen.getByText('run-abc')).toBeInTheDocument()
   })
 
   it('calls getAffectedCases when Check Diff submitted', async () => {
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(client.getAffectedCases).toHaveBeenCalledWith(
-      expect.objectContaining({ repoPath: '/repo' })
+      expect.objectContaining({ repoId: 'owner/repo' })
     ))
   })
 
   it('shows "no cases affected" when diff returns empty list', async () => {
     vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: '' } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText(/No cases affected/)).toBeInTheDocument())
@@ -85,7 +85,7 @@ describe('OverviewTab', () => {
       reason: 'modified',
     } as unknown as AffectedCase
     vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [affectedCase], reason: '' } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText('modified')).toBeInTheDocument())
@@ -98,7 +98,7 @@ describe('OverviewTab', () => {
     } as unknown as RunMeta
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never)
     const onGoToRuns = vi.fn()
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} onGoToRuns={onGoToRuns} />)
+    render(<OverviewTab repoId="owner/repo" onGoToRuns={onGoToRuns} />)
     await waitFor(() => screen.getByText('Go to Runs'))
     await userEvent.click(screen.getByText('Go to Runs'))
     expect(onGoToRuns).toHaveBeenCalled()
@@ -106,7 +106,7 @@ describe('OverviewTab', () => {
 
   it('shows affectedError when getAffectedCases throws', async () => {
     vi.mocked(client.getAffectedCases).mockRejectedValue(new Error('network error'))
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText('network error')).toBeInTheDocument())
@@ -114,20 +114,8 @@ describe('OverviewTab', () => {
 
   it('shows error banner when getCoverageReport fails', async () => {
     vi.mocked(client.getCoverageReport).mockRejectedValue(new Error('coverage failed'))
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('coverage failed')).toBeInTheDocument())
-  })
-
-  it('loads repo on form submit', async () => {
-    const onRepoPathChange = vi.fn()
-    render(<OverviewTab repoPath="" onRepoPathChange={onRepoPathChange} />)
-    const input = screen.getByPlaceholderText('/path/to/repo')
-    await userEvent.type(input, '/new/repo')
-    await userEvent.click(screen.getByText('Load'))
-    expect(onRepoPathChange).toHaveBeenCalledWith('/new/repo')
-    await waitFor(() => expect(client.getCoverageReport).toHaveBeenCalledWith(
-      expect.objectContaining({ repoPath: '/new/repo' })
-    ))
   })
 
   it('sorts affected cases high before low', async () => {
@@ -140,7 +128,7 @@ describe('OverviewTab', () => {
       reason: 'added',
     } as unknown as AffectedCase
     vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [lowCase, highCase], reason: '' } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText('High Priority')).toBeInTheDocument())
@@ -151,7 +139,7 @@ describe('OverviewTab', () => {
 
   it('shows singular "run" when runCount is 1', async () => {
     vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: coverageEntries, runCount: 1 } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText(/Coverage \(1 run\)/)).toBeInTheDocument())
   })
 
@@ -161,7 +149,7 @@ describe('OverviewTab', () => {
       reason: 'changed',
     } as unknown as AffectedCase
     vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [mediumCase], reason: '' } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText('Medium Priority')).toBeInTheDocument())
@@ -169,7 +157,7 @@ describe('OverviewTab', () => {
 
   it('shows "No cases found" when coverage entries are empty', async () => {
     vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('No cases found in this repository.')).toBeInTheDocument())
   })
 
@@ -183,7 +171,7 @@ describe('OverviewTab', () => {
       reason: 'added',
     } as unknown as AffectedCase
     vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [unknownCase, knownCase], reason: '' } as never)
-    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    render(<OverviewTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Check Diff'))
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(screen.getByText('High Priority')).toBeInTheDocument())

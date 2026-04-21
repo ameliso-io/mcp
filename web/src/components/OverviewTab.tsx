@@ -5,8 +5,7 @@ import type { AffectedCase, CoverageEntry, RunMeta } from '../gen/ameliso/v1/typ
 import { ResultStatus, RunStatus } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
-  repoPath: string
-  onRepoPathChange: (p: string) => void
+  repoId: string
   onGoToRuns?: () => void
 }
 
@@ -60,8 +59,7 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: Props) {
-  const [inputPath, setInputPath] = useState(repoPath)
+export default function OverviewTab({ repoId, onGoToRuns }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([])
   const [runCount, setRunCount] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -80,8 +78,8 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     setError(null)
     try {
       const [coverageRes, activeRunsRes] = await Promise.all([
-        client.getCoverageReport({ repoPath: path }),
-        client.listRuns({ repoPath: path, status: RunStatus.IN_PROGRESS }),
+        client.getCoverageReport({ repoId: path }),
+        client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
       ])
       setEntries(coverageRes.entries)
       setRunCount(coverageRes.runCount)
@@ -96,34 +94,27 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (repoPath) {
-      setInputPath(repoPath)
-      load(repoPath)
+    if (repoId) {
+      load(repoId)
     }
-  }, [repoPath, load])
+  }, [repoId, load])
 
   // Auto-refresh every 30s while there are active runs
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current)
-    if (repoPath && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => load(repoPath), 30_000)
+    if (repoId && activeRuns.length > 0) {
+      pollRef.current = setInterval(() => load(repoId), 30_000)
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [repoPath, activeRuns.length, load])
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    onRepoPathChange(inputPath)
-    load(inputPath)
-  }
+  }, [repoId, activeRuns.length, load])
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault()
-    if (!repoPath) return
+    if (!repoId) return
     setAffectedLoading(true)
     setAffectedError(null)
     try {
-      const res = await client.getAffectedCases({ repoPath, sinceRef })
+      const res = await client.getAffectedCases({ repoId, sinceRef })
       setAffected(res.cases)
     } catch (err) {
       setAffectedError(errorMessage(err))
@@ -143,39 +134,6 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
         Overview
       </h2>
 
-      <div style={card}>
-        <p style={label}>Repository Path</p>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            value={inputPath}
-            onChange={e => setInputPath(e.target.value)}
-            placeholder="/path/to/repo"
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              fontSize: '14px',
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              padding: '8px 16px',
-              background: '#1e293b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            Load
-          </button>
-        </form>
-      </div>
-
       {error && (
         <div style={{ ...card, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <span>{error}</span>
@@ -183,16 +141,13 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
         </div>
       )}
 
-      {!repoPath && !loading && (
+      {!repoId && !loading && (
         <div style={{ ...card, color: '#64748b', padding: '32px', textAlign: 'center' }}>
           <p style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: '600', color: '#334155' }}>
-            Enter a repository path to get started
+            No repository selected
           </p>
-          <p style={{ margin: '0 0 16px', fontSize: '14px' }}>
-            Point Ameliso at a repository that contains a <code style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>cases/</code> directory.
-          </p>
-          <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>
-            Or use the Repositories tab to connect a GitHub repository.
+          <p style={{ margin: 0, fontSize: '14px' }}>
+            Go to the Repositories tab and click "Use" on a connected repository.
           </p>
         </div>
       )}
@@ -327,13 +282,13 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
         </>
       )}
 
-      {!loading && !error && repoPath && entries.length === 0 && (
+      {!loading && !error && repoId && entries.length === 0 && (
         <div style={{ ...card, color: '#64748b', textAlign: 'center', padding: '40px' }}>
           No cases found in this repository.
         </div>
       )}
 
-      {repoPath && (
+      {repoId && (
         <div style={card}>
           <p style={{ ...label, marginBottom: '12px' }}>Affected Cases by Git Diff</p>
           <form onSubmit={handleAffected} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>

@@ -29,19 +29,19 @@ beforeEach(() => {
 
 describe('SuitesTab', () => {
   it('renders empty state when no repo path', () => {
-    render(<SuitesTab repoPath="" />)
+    render(<SuitesTab repoId="" />)
     expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument()
   })
 
   it('shows suites after load', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('Smoke Tests')).toBeInTheDocument())
     expect(screen.getByText('smoke')).toBeInTheDocument()
     expect(screen.getByText('2 cases')).toBeInTheDocument()
   })
 
   it('expands suite and shows case details', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
@@ -50,21 +50,21 @@ describe('SuitesTab', () => {
 
   it('calls onRunSuite when Run button clicked', async () => {
     const onRunSuite = vi.fn()
-    render(<SuitesTab repoPath="/repo" onRunSuite={onRunSuite} />)
+    render(<SuitesTab repoId="owner/repo" onRunSuite={onRunSuite} />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Run'))
     expect(onRunSuite).toHaveBeenCalledWith('smoke')
   })
 
   it('opens create form', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Suite'))
     expect(screen.getByRole('heading', { name: 'Create Suite' })).toBeInTheDocument()
   })
 
   it('calls deleteSuite when delete confirmed', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Delete'))
     await userEvent.click(screen.getByText('Delete'))
     await waitFor(() => expect(client.deleteSuite).toHaveBeenCalledWith(
@@ -73,19 +73,19 @@ describe('SuitesTab', () => {
   })
 
   it('calls createSuite when create form submitted', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Suite'))
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'regression')
     await userEvent.type(inputs[1], 'Regression Tests')
     await userEvent.click(screen.getByRole('button', { name: 'Create Suite' }))
     await waitFor(() => expect(client.createSuite).toHaveBeenCalledWith(
-      expect.objectContaining({ repoPath: '/repo', slug: 'regression', name: 'Regression Tests' })
+      expect.objectContaining({ repoId: 'owner/repo', slug: 'regression', name: 'Regression Tests' })
     ))
   })
 
   it('opens edit form with pre-filled values when Edit clicked', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     expect(screen.getByText('Edit: smoke')).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('SuitesTab', () => {
   })
 
   it('calls updateSuite when edit form submitted', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     const nameInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'Smoke Tests') as HTMLInputElement
@@ -102,19 +102,19 @@ describe('SuitesTab', () => {
     await userEvent.type(nameInput, 'Updated Smoke')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalledWith(
-      expect.objectContaining({ repoPath: '/repo', slug: 'smoke', name: 'Updated Smoke' })
+      expect.objectContaining({ repoId: 'owner/repo', slug: 'smoke', name: 'Updated Smoke' })
     ))
   })
 
   it('shows error banner when listSuites fails', async () => {
     vi.mocked(client.listSuites).mockRejectedValue(new Error('load failed'))
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('load failed')).toBeInTheDocument())
   })
 
   it('shows raw case paths when listCases returns empty', async () => {
     vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('auth/login')).toBeInTheDocument())
@@ -125,7 +125,7 @@ describe('SuitesTab', () => {
     const emptySuite = { ...mockSuite, cases: [] } as unknown as Suite
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [emptySuite] } as never)
     vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('No cases in this suite.')).toBeInTheDocument())
@@ -133,7 +133,7 @@ describe('SuitesTab', () => {
 
   it('shows error when createSuite fails', async () => {
     vi.mocked(client.createSuite).mockRejectedValue(new Error('create failed'))
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Suite'))
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'regression')
@@ -145,7 +145,7 @@ describe('SuitesTab', () => {
   it('shows error when deleteSuite fails', async () => {
     vi.mocked(client.deleteSuite).mockRejectedValue(new Error('delete failed'))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Delete'))
     await userEvent.click(screen.getByText('Delete'))
     await waitFor(() => expect(screen.getByText('delete failed')).toBeInTheDocument())
@@ -153,7 +153,7 @@ describe('SuitesTab', () => {
 
   it('shows error when updateSuite fails', async () => {
     vi.mocked(client.updateSuite).mockRejectedValue(new Error('update failed'))
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => screen.getByText('Save'))
@@ -162,7 +162,7 @@ describe('SuitesTab', () => {
   })
 
   it('collapses expanded suite when clicked again', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
@@ -173,7 +173,7 @@ describe('SuitesTab', () => {
   it('shows singular "case" label when suite has exactly one case', async () => {
     const singleCaseSuite = { ...mockSuite, cases: ['auth/login'] } as unknown as Suite
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [singleCaseSuite] } as never)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('1 case')).toBeInTheDocument())
   })
 
@@ -181,7 +181,7 @@ describe('SuitesTab', () => {
     vi.mocked(client.listCases).mockResolvedValue({ cases: [
       { path: 'auth/login', title: 'User Login', description: '', tags: [], priority: 'medium', createdAt: '', updatedAt: '' },
     ] as unknown as Case[] } as never)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
@@ -189,7 +189,7 @@ describe('SuitesTab', () => {
 
   it('collapses expanded suite when it is deleted', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => screen.getByText('User Login'))
@@ -200,7 +200,7 @@ describe('SuitesTab', () => {
   })
 
   it('calls updateSuite with parsed cases when cases field is filled', async () => {
-    render(<SuitesTab repoPath="/repo" />)
+    render(<SuitesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => screen.getByText('Save'))

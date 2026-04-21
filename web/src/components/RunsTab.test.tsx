@@ -41,29 +41,29 @@ beforeEach(() => {
 
 describe('RunsTab', () => {
   it('renders empty state when no repo path', () => {
-    render(<RunsTab repoPath="" />)
+    render(<RunsTab repoId="" />)
     expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument()
   })
 
   it('shows empty runs list', async () => {
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('No runs found.')).toBeInTheDocument())
   })
 
   it('shows runs from list', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('2026-01-01-smoke')).toBeInTheDocument())
   })
 
   it('opens create form when New Run clicked', async () => {
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Run'))
     expect(screen.getByRole('heading', { name: 'Create Run' })).toBeInTheDocument()
   })
 
   it('pre-fills suite when initialSuite provided', async () => {
-    render(<RunsTab repoPath="/repo" initialSuite="smoke" onInitialSuiteConsumed={() => {}} />)
+    render(<RunsTab repoId="owner/repo" initialSuite="smoke" onInitialSuiteConsumed={() => {}} />)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Create Run' })).toBeInTheDocument())
     const suiteInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'smoke')
     expect(suiteInput).toBeDefined()
@@ -71,7 +71,7 @@ describe('RunsTab', () => {
 
   it('creates run and auto-expands on submit', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Run'))
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'smoke')
@@ -83,7 +83,7 @@ describe('RunsTab', () => {
   })
 
   it('shows status filter buttons', async () => {
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('No runs found.'))
     expect(screen.getByText('All')).toBeInTheDocument()
     expect(screen.getByText('In Progress')).toBeInTheDocument()
@@ -91,7 +91,7 @@ describe('RunsTab', () => {
   })
 
   it('filters runs by status', async () => {
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('In Progress'))
     await waitFor(() => expect(client.listRuns).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: RunStatus.IN_PROGRESS })
@@ -100,7 +100,7 @@ describe('RunsTab', () => {
 
   it('expands in-progress run and shows pending cases', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(client.getPendingCases).toHaveBeenCalledWith(
@@ -111,7 +111,7 @@ describe('RunsTab', () => {
 
   it('opens record form when Record clicked and shows case body', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Record'))
@@ -124,7 +124,7 @@ describe('RunsTab', () => {
 
   it('calls recordResult when Save Result submitted', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Record'))
@@ -139,7 +139,7 @@ describe('RunsTab', () => {
   it('calls finalizeRun when Complete Run clicked', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Complete Run'))
@@ -152,7 +152,7 @@ describe('RunsTab', () => {
   it('calls finalizeRun with ABORTED when Abort Run clicked', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Abort Run'))
@@ -165,7 +165,7 @@ describe('RunsTab', () => {
   it('calls recordResult for each pending case when All Passed clicked', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText(/All Passed/))
@@ -178,7 +178,7 @@ describe('RunsTab', () => {
   it('calls deleteRun when Delete confirmed', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Delete'))
     await userEvent.click(screen.getByText('Delete'))
     await waitFor(() => expect(client.deleteRun).toHaveBeenCalledWith(
@@ -193,7 +193,7 @@ describe('RunsTab', () => {
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [mockResult] },
     } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('1 Passed')).toBeInTheDocument())
@@ -205,7 +205,7 @@ describe('RunsTab', () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
     vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [mockResult] } } as never)
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
@@ -217,7 +217,7 @@ describe('RunsTab', () => {
     const mockResult = { casePath: 'auth/login', status: ResultStatus.PASSED, notes: '' } as unknown as CaseResult
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
     vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [mockResult] } } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('1 Passed'))
@@ -229,7 +229,7 @@ describe('RunsTab', () => {
 
   it('shows error banner when listRuns fails', async () => {
     vi.mocked(client.listRuns).mockRejectedValue(new Error('fetch error'))
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('fetch error')).toBeInTheDocument())
   })
 
@@ -237,7 +237,7 @@ describe('RunsTab', () => {
     const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
     vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [] } } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('No results recorded.')).toBeInTheDocument())
@@ -247,7 +247,7 @@ describe('RunsTab', () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.deleteRun).mockRejectedValue(new Error('delete error'))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Delete'))
     await userEvent.click(screen.getByText('Delete'))
     await waitFor(() => expect(screen.getByText('delete error')).toBeInTheDocument())
@@ -256,7 +256,7 @@ describe('RunsTab', () => {
   it('shows "all cases recorded" message when pending is empty', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 1 } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('All cases have results recorded.')).toBeInTheDocument())
@@ -264,7 +264,7 @@ describe('RunsTab', () => {
 
   it('shows error when createRun fails', async () => {
     vi.mocked(client.createRun).mockRejectedValue(new Error('create error'))
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Run'))
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'smoke')
@@ -276,7 +276,7 @@ describe('RunsTab', () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.recordResult).mockRejectedValue(new Error('bulk error'))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText(/All Passed/))
@@ -287,7 +287,7 @@ describe('RunsTab', () => {
   it('collapses selected run when it is deleted', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Delete'))
@@ -299,7 +299,7 @@ describe('RunsTab', () => {
 
   it('closes record form when Cancel clicked', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Record'))
@@ -311,7 +311,7 @@ describe('RunsTab', () => {
 
   it('collapses expanded run when clicked again', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Record'))
@@ -322,7 +322,7 @@ describe('RunsTab', () => {
   it('shows error when recordResult fails in record form', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.recordResult).mockRejectedValue(new Error('record error'))
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => screen.getByText('Record'))
@@ -335,7 +335,7 @@ describe('RunsTab', () => {
   it('shows error when selectRun fails', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.getPendingCases).mockRejectedValue(new Error('select error'))
-    render(<RunsTab repoPath="/repo" />)
+    render(<RunsTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('select error')).toBeInTheDocument())

@@ -4,8 +4,8 @@ import { errorMessage } from '../errorMessage'
 import type { Repository } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
-  onRepoSelect: (localPath: string) => void
-  activeRepoPath: string
+  onRepoSelect: (id: string) => void
+  activeRepoId: string
 }
 
 const card = {
@@ -46,7 +46,7 @@ const btn = (variant: 'primary' | 'secondary' | 'danger' | 'outline') => {
   }
 }
 
-export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props) {
+export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [repos, setRepos] = useState<Repository[]>([])
   const [installUrl, setInstallUrl] = useState<string>('')
   const [configured, setConfigured] = useState(false)
@@ -172,7 +172,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
       )}
 
       {repos.map(repo => {
-        const isActive = activeRepoPath === repo.localPath
+        const isActive = activeRepoId === repo.id
         return (
           <div
             key={repo.id}
@@ -198,35 +198,19 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
                       Active
                     </span>
                   )}
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    background: repo.cloned ? '#dcfce7' : '#fef9c3',
-                    color: repo.cloned ? '#166534' : '#854d0e',
-                    padding: '1px 7px',
-                    borderRadius: '999px',
-                  }}>
-                    {repo.cloned ? 'Cloned' : 'Not cloned'}
-                  </span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
                   <a href={repo.htmlUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>
                     {repo.htmlUrl}
                   </a>
                 </div>
-                {repo.localPath && (
-                  <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                    {repo.localPath}
-                  </div>
-                )}
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                {repo.cloned && !isActive && (
-                  <button style={btn('primary')} onClick={() => onRepoSelect(repo.localPath)}>
+                {!isActive ? (
+                  <button style={btn('primary')} onClick={() => onRepoSelect(repo.id)}>
                     Use
                   </button>
-                )}
-                {repo.cloned && isActive && (
+                ) : (
                   <button style={btn('outline')} onClick={() => onRepoSelect('')}>
                     Deselect
                   </button>
@@ -236,7 +220,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
                   disabled={syncing === repo.id}
                   onClick={() => handleSync(repo.id)}
                 >
-                  {syncing === repo.id ? 'Syncing…' : repo.cloned ? 'Sync' : 'Clone'}
+                  {syncing === repo.id ? 'Syncing…' : 'Sync'}
                 </button>
                 <button style={btn('danger')} onClick={() => handleRemove(repo.id)}>
                   Remove

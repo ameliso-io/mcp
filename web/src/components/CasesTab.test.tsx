@@ -26,37 +26,37 @@ beforeEach(() => {
 
 describe('CasesTab', () => {
   it('renders empty state when no repo path', () => {
-    render(<CasesTab repoPath="" />)
+    render(<CasesTab repoId="" />)
     expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument()
   })
 
   it('shows cases after load', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
     expect(screen.getByText('auth/login')).toBeInTheDocument()
   })
 
   it('shows case count in filter bar', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('1 case')).toBeInTheDocument())
   })
 
   it('expands case body on click', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     await userEvent.click(screen.getByText('User Login'))
     await waitFor(() => expect(screen.getByText(/Go to \/login/)).toBeInTheDocument())
   })
 
   it('opens create form when New Case clicked', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Case'))
     expect(screen.getByText('Create Case')).toBeInTheDocument()
   })
 
   it('calls createCase on form submit', async () => {
     vi.mocked(client.createCase).mockResolvedValue({ case: mockCase, filePath: 'cases/auth/login.md' } as never)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Case'))
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'auth/new')
@@ -70,7 +70,7 @@ describe('CasesTab', () => {
   it('calls deleteCase when delete confirmed', async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: 'cases/auth/login.md' } as never)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     await userEvent.click(screen.getByText('Delete'))
     await waitFor(() => expect(client.deleteCase).toHaveBeenCalledWith(
@@ -80,14 +80,14 @@ describe('CasesTab', () => {
 
   it('does not call deleteCase when confirm cancelled', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Delete'))
     await userEvent.click(screen.getByText('Delete'))
     expect(client.deleteCase).not.toHaveBeenCalled()
   })
 
   it('opens edit form with pre-filled values when Edit clicked', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => {
@@ -97,18 +97,18 @@ describe('CasesTab', () => {
   })
 
   it('calls updateCase when edit form submitted', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => screen.getByText('Save'))
     await userEvent.click(screen.getByText('Save'))
     await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
-      expect.objectContaining({ repoPath: '/repo', casePath: 'auth/login', title: 'User Login' })
+      expect.objectContaining({ repoId: 'owner/repo', casePath: 'auth/login', title: 'User Login' })
     ))
   })
 
   it('collapses expanded case when clicked again', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     await userEvent.click(screen.getByText('User Login'))
     await waitFor(() => expect(screen.getByText(/Go to \/login/)).toBeInTheDocument())
@@ -118,14 +118,14 @@ describe('CasesTab', () => {
 
   it('shows error banner when listCases rejects', async () => {
     vi.mocked(client.listCases).mockRejectedValue(new Error('server down'))
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('server down')).toBeInTheDocument())
   })
 
   it('changes sort order when Sort: Path selected', async () => {
     const secondCase = { ...mockCase, path: 'auth/logout', title: 'User Logout', priority: 'low' } as unknown as Case
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     const sortSelect = screen.getByDisplayValue('Sort: Priority')
     await userEvent.selectOptions(sortSelect, 'path')
@@ -134,7 +134,7 @@ describe('CasesTab', () => {
   })
 
   it('filters by priority when priority select changed', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     const prioritySelect = screen.getByDisplayValue('All priorities')
     await userEvent.selectOptions(prioritySelect, 'High')
@@ -146,7 +146,7 @@ describe('CasesTab', () => {
   it('shows error when deleteCase fails', async () => {
     vi.mocked(client.deleteCase).mockRejectedValue(new Error('delete failed'))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Delete'))
     await userEvent.click(screen.getByText('Delete'))
     await waitFor(() => expect(screen.getByText('delete failed')).toBeInTheDocument())
@@ -154,7 +154,7 @@ describe('CasesTab', () => {
 
   it('shows error when updateCase fails', async () => {
     vi.mocked(client.updateCase).mockRejectedValue(new Error('update failed'))
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => screen.getByText('Save'))
@@ -164,7 +164,7 @@ describe('CasesTab', () => {
 
   it('shows no-body placeholder when body is empty', async () => {
     vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '' } as never)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     await userEvent.click(screen.getByText('User Login'))
     await waitFor(() => expect(screen.getByText('No body.')).toBeInTheDocument())
@@ -172,7 +172,7 @@ describe('CasesTab', () => {
 
   it('shows error when getCase fails on expand', async () => {
     vi.mocked(client.getCase).mockRejectedValue(new Error('case fetch error'))
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     await userEvent.click(screen.getByText('User Login'))
     await waitFor(() => expect(screen.getByText('case fetch error')).toBeInTheDocument())
@@ -180,7 +180,7 @@ describe('CasesTab', () => {
 
   it('shows error when createCase fails', async () => {
     vi.mocked(client.createCase).mockRejectedValue(new Error('create case error'))
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await userEvent.click(screen.getByText('+ New Case'))
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'auth/new')
@@ -191,7 +191,7 @@ describe('CasesTab', () => {
 
   it('handles fetchBody failure silently in edit form', async () => {
     vi.mocked(client.getCase).mockRejectedValue(new Error('body unavailable'))
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => {
@@ -201,7 +201,7 @@ describe('CasesTab', () => {
   })
 
   it('calls updateCase with parsed tags when tags field is filled', async () => {
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('Edit'))
     await userEvent.click(screen.getByText('Edit'))
     await waitFor(() => screen.getByText('Save'))
@@ -219,7 +219,7 @@ describe('CasesTab', () => {
   it('sorts by priority with path tiebreaker for equal-priority cases', async () => {
     const case2 = { ...mockCase, path: 'auth/logout', title: 'User Logout', priority: 'high' } as unknown as Case
     vi.mocked(client.listCases).mockResolvedValue({ cases: [case2, mockCase] } as never)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
     const paths = screen.getAllByText(/auth\//)
     expect(paths[0].textContent).toBe('auth/login')
@@ -229,7 +229,7 @@ describe('CasesTab', () => {
   it('sorts unknown priority cases to end', async () => {
     const unknownCase = { ...mockCase, path: 'other/thing', title: 'Unknown', priority: '' } as unknown as Case
     vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase, mockCase] } as never)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
     const paths = screen.getAllByText(/\//)
     const loginIdx = paths.findIndex(el => el.textContent === 'auth/login')
@@ -240,7 +240,7 @@ describe('CasesTab', () => {
   it('sorts known before unknown priority from reversed order', async () => {
     const unknownCase = { ...mockCase, path: 'other/thing', title: 'Unknown', priority: '' } as unknown as Case
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, unknownCase] } as never)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
     const paths = screen.getAllByText(/\//)
     const loginIdx = paths.findIndex(el => el.textContent === 'auth/login')
@@ -251,7 +251,7 @@ describe('CasesTab', () => {
   it('collapses expanded case when it is deleted', async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: 'cases/auth/login.md' } as never)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<CasesTab repoPath="/repo" />)
+    render(<CasesTab repoId="owner/repo" />)
     await waitFor(() => screen.getByText('User Login'))
     await userEvent.click(screen.getByText('User Login'))
     await waitFor(() => screen.getByText(/Go to \/login/))

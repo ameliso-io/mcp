@@ -4,32 +4,31 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import App from './App'
 
 vi.mock('./components/OverviewTab', () => ({
-  default: ({ repoPath, onRepoPathChange, onGoToRuns }: { repoPath: string; onRepoPathChange: (p: string) => void; onGoToRuns?: () => void }) => (
+  default: ({ repoId, onGoToRuns }: { repoId: string; onGoToRuns?: () => void }) => (
     <div>
-      <span data-testid="overview-repo">{repoPath}</span>
-      <button onClick={() => onRepoPathChange('/new-path')}>SetPath</button>
+      <span data-testid="overview-repo">{repoId}</span>
       {onGoToRuns && <button onClick={onGoToRuns}>GoToRuns</button>}
     </div>
   ),
 }))
 
 vi.mock('./components/CasesTab', () => ({
-  default: ({ repoPath }: { repoPath: string }) => <div data-testid="cases-tab">{repoPath}</div>,
+  default: ({ repoId }: { repoId: string }) => <div data-testid="cases-tab">{repoId}</div>,
 }))
 
 vi.mock('./components/SuitesTab', () => ({
-  default: ({ repoPath, onRunSuite }: { repoPath: string; onRunSuite?: (s: string) => void }) => (
+  default: ({ repoId, onRunSuite }: { repoId: string; onRunSuite?: (s: string) => void }) => (
     <div>
-      <span data-testid="suites-repo">{repoPath}</span>
+      <span data-testid="suites-repo">{repoId}</span>
       {onRunSuite && <button onClick={() => onRunSuite('smoke')}>RunSuite</button>}
     </div>
   ),
 }))
 
 vi.mock('./components/RunsTab', () => ({
-  default: ({ repoPath, initialSuite, onInitialSuiteConsumed }: { repoPath: string; initialSuite?: string; onInitialSuiteConsumed?: () => void }) => (
+  default: ({ repoId, initialSuite, onInitialSuiteConsumed }: { repoId: string; initialSuite?: string; onInitialSuiteConsumed?: () => void }) => (
     <div>
-      <span data-testid="runs-repo">{repoPath}</span>
+      <span data-testid="runs-repo">{repoId}</span>
       {initialSuite && <span data-testid="initial-suite">{initialSuite}</span>}
       {onInitialSuiteConsumed && <button onClick={onInitialSuiteConsumed}>ConsumedSuite</button>}
     </div>
@@ -37,10 +36,10 @@ vi.mock('./components/RunsTab', () => ({
 }))
 
 vi.mock('./components/RepositoriesTab', () => ({
-  default: ({ activeRepoPath, onRepoSelect }: { activeRepoPath: string; onRepoSelect: (p: string) => void }) => (
+  default: ({ activeRepoId, onRepoSelect }: { activeRepoId: string; onRepoSelect: (id: string) => void }) => (
     <div>
-      <span data-testid="repos-active">{activeRepoPath}</span>
-      <button onClick={() => onRepoSelect('/selected-repo')}>SelectRepo</button>
+      <span data-testid="repos-active">{activeRepoId}</span>
+      <button onClick={() => onRepoSelect('owner/repo')}>SelectRepo</button>
     </div>
   ),
 }))
@@ -83,23 +82,25 @@ describe('App', () => {
     expect(screen.getByTestId('runs-repo')).toBeInTheDocument()
   })
 
-  it('persists repoPath to localStorage on change', async () => {
+  it('persists repoId to localStorage on repo select', async () => {
     render(<App />)
-    await userEvent.click(screen.getByRole('button', { name: 'SetPath' }))
-    expect(localStorage.getItem('ameliso:repoPath')).toBe('/new-path')
+    await userEvent.click(screen.getByRole('button', { name: 'Repositories' }))
+    await userEvent.click(screen.getByRole('button', { name: 'SelectRepo' }))
+    expect(localStorage.getItem('ameliso:repoId')).toBe('owner/repo')
   })
 
-  it('loads repoPath from localStorage on mount', () => {
-    localStorage.setItem('ameliso:repoPath', '/saved-repo')
+  it('loads repoId from localStorage on mount', () => {
+    localStorage.setItem('ameliso:repoId', 'saved/repo')
     render(<App />)
-    expect(screen.getByTestId('overview-repo').textContent).toBe('/saved-repo')
+    expect(screen.getByTestId('overview-repo').textContent).toBe('saved/repo')
   })
 
-  it('passes repoPath down to active tab', async () => {
+  it('passes repoId down to active tab', async () => {
     render(<App />)
-    await userEvent.click(screen.getByRole('button', { name: 'SetPath' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Repositories' }))
+    await userEvent.click(screen.getByRole('button', { name: 'SelectRepo' }))
     await userEvent.click(screen.getByRole('button', { name: 'Cases' }))
-    expect(screen.getByTestId('cases-tab').textContent).toBe('/new-path')
+    expect(screen.getByTestId('cases-tab').textContent).toBe('owner/repo')
   })
 
   it('onGoToRuns switches to Runs tab', async () => {
@@ -125,11 +126,11 @@ describe('App', () => {
     expect(screen.queryByTestId('initial-suite')).not.toBeInTheDocument()
   })
 
-  it('onRepoSelect sets repoPath and navigates to Overview', async () => {
+  it('onRepoSelect sets repoId and navigates to Overview', async () => {
     render(<App />)
     await userEvent.click(screen.getByRole('button', { name: 'Repositories' }))
     await userEvent.click(screen.getByRole('button', { name: 'SelectRepo' }))
-    expect(screen.getByTestId('overview-repo').textContent).toBe('/selected-repo')
-    expect(localStorage.getItem('ameliso:repoPath')).toBe('/selected-repo')
+    expect(screen.getByTestId('overview-repo').textContent).toBe('owner/repo')
+    expect(localStorage.getItem('ameliso:repoId')).toBe('owner/repo')
   })
 })
