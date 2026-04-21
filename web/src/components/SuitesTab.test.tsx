@@ -441,4 +441,54 @@ describe("SuitesTab", () => {
     expect(screen.queryByRole("heading", { name: "Create Suite" })).not.toBeInTheDocument();
     expect(screen.getByText("+ New Suite")).toBeInTheDocument();
   });
+
+  it("expanding a second suite collapses the first", async () => {
+    const suite2 = {
+      slug: "regression",
+      name: "Regression Tests",
+      description: "Full regression checks",
+      cases: ["auth/logout"],
+    } as unknown as Suite;
+    vi.mocked(client.listSuites).mockResolvedValue({
+      suites: [mockSuite, suite2],
+    } as never);
+    vi.mocked(client.listCases).mockImplementation(async (req) => {
+      const r = req as { suite?: string };
+      if (r?.suite === "regression") {
+        return {
+          cases: [
+            {
+              path: "auth/logout",
+              title: "User Logout",
+              description: "",
+              tags: [],
+              priority: "low",
+              createdAt: "",
+              updatedAt: "",
+            },
+          ],
+        } as never;
+      }
+      return {
+        cases: [
+          {
+            path: "auth/login",
+            title: "User Login",
+            description: "",
+            tags: ["auth"],
+            priority: "high",
+            createdAt: "",
+            updatedAt: "",
+          },
+        ],
+      } as never;
+    });
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
+    await userEvent.click(screen.getByText("Regression Tests"));
+    await waitFor(() => expect(screen.queryByText("User Login")).not.toBeInTheDocument());
+    expect(screen.getByText("User Logout")).toBeInTheDocument();
+  });
 });
