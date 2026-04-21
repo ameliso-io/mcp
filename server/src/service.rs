@@ -22,10 +22,12 @@ fn text_references_case(text: &str, case_path: &str) -> bool {
     if text.starts_with(case_path) && ends_cleanly(&text[case_path.len()..]) {
         return true;
     }
-    // Match after any path separator or whitespace character
+    // Match after any path separator or whitespace character.
+    // Use match_indices to check all occurrences: the first hit may have a dirty
+    // suffix while a later hit in the same text has a clean boundary.
     for prefix in ['/', ' ', '\t', '\n', '"', '\'', '('] {
         let needle = format!("{prefix}{case_path}");
-        if let Some(idx) = text.find(&needle) {
+        for (idx, _) in text.match_indices(needle.as_str()) {
             if ends_cleanly(&text[idx + needle.len()..]) {
                 return true;
             }
@@ -2360,7 +2362,20 @@ mod tests {
     #[test]
     fn text_references_case_double_quote_prefix() {
         // '"' is in the prefix list — path led by a literal double-quote should match
-        assert!(text_references_case("\"auth/login\" is a case", "auth/login"));
+        assert!(text_references_case(
+            "\"auth/login\" is a case",
+            "auth/login"
+        ));
+    }
+
+    #[test]
+    fn text_references_case_second_occurrence_with_clean_boundary_matches() {
+        // First '/'-prefixed occurrence has a dirty suffix (-mobile); the second is clean.
+        // The loop must check all occurrences, not just the first one found.
+        assert!(text_references_case(
+            "/auth/login-mobile\n/auth/login",
+            "auth/login"
+        ));
     }
 
     #[test]
