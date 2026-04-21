@@ -6,10 +6,19 @@ use anyhow::Result;
 use tonic::transport::Server;
 
 fn load_env() {
-    match dotenvy::dotenv() {
-        Ok(path) => eprintln!("loaded env from {}", path.display()),
-        Err(dotenvy::Error::Io(_)) => {}
-        Err(e) => eprintln!("warning: .env error: {e}"),
+    let candidates = [
+        std::path::PathBuf::from(".env"),
+        std::path::PathBuf::from("server/.env"),
+    ];
+    for path in &candidates {
+        match dotenvy::from_path(path) {
+            Ok(()) => {
+                eprintln!("loaded env from {}", path.display());
+                return;
+            }
+            Err(dotenvy::Error::Io(_)) => {}
+            Err(e) => eprintln!("warning: .env error ({}): {e}", path.display()),
+        }
     }
 }
 
