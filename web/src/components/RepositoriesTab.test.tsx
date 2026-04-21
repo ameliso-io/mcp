@@ -308,7 +308,7 @@ describe("RepositoriesTab", () => {
       repositories: [makeRepo({ addedAt: "2026-03-15" })],
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => expect(screen.getByText("Added 2026-03-15")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("2026-03-15")).toBeInTheDocument());
   });
 
   it("does not show addedAt line when addedAt is empty", async () => {
