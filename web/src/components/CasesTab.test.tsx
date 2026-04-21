@@ -583,4 +583,18 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("+ New Case"));
     await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
   });
+
+  it('shows "Loading…" while case body is loading on expand', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.getCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ case: mockCase, body: "" });
+  });
 });
