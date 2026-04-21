@@ -7,10 +7,13 @@ Go to **GitHub → Settings → Developer settings → GitHub Apps → New GitHu
 | Field                  | Value                       |
 | ---------------------- | --------------------------- |
 | App name               | `ameliso-dev` (or anything) |
-| Homepage URL           | `http://localhost:3000`     |
+| Homepage URL           | `http://localhost:5173`     |
+| Setup URL              | `http://localhost:5173`     |
 | Webhook                | Disable (uncheck "Active")  |
 | Repository permissions | **Contents**: Read          |
 | Where installed        | "Only on this account"      |
+
+The **Setup URL** is critical — GitHub redirects back to it with `?installation_id=<id>&setup_action=install` after install, which the app uses to automatically clone repos.
 
 After creation, note the **App ID** shown on the app settings page.
 
@@ -24,13 +27,7 @@ Downloads a `.pem` file. Keep it — you need it for the env var.
 
 On the app settings page → **Install App** → select your account → choose which repos to grant access to.
 
-After install, GitHub redirects to a URL like:
-
-```
-https://github.com/settings/installations/12345678
-```
-
-The number at the end is the **installation ID** — not needed for server startup, but used at runtime when connecting repos.
+After install, GitHub redirects back to `http://localhost:5173?installation_id=<id>&setup_action=install`. The app detects this and automatically calls the server to clone the repos.
 
 ## 4. Set Environment Variables
 
