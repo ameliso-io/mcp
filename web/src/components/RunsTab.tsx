@@ -329,6 +329,11 @@ export default function RunsTab({ repoPath }: Props) {
                   {runStatusLabel(run.status)}
                 </span>
                 <span style={{ fontWeight: '600', fontSize: '15px', flex: 1 }}>{run.id}</span>
+                {run.suite && (
+                  <span style={{ fontSize: '11px', background: '#eff6ff', color: '#3b82f6', padding: '2px 7px', borderRadius: '4px', fontWeight: '600' }}>
+                    {run.suite}
+                  </span>
+                )}
                 {run.tester && (
                   <span style={{ fontSize: '13px', color: '#64748b' }}>{run.tester}</span>
                 )}

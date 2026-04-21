@@ -25,10 +25,11 @@ runs/{YYYY-MM-DD}-{slug}/
 ### This repository's structure
 
 ```
-server/          # gRPC server (Rust + tonic); exposes AmelisoService (19 RPCs)
+server/          # gRPC server (Rust + tonic); exposes AmelisoService (20 RPCs)
 server/proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
-mcp/             # MCP server (Rust + rmcp); stdio transport; 20 tools
+mcp/             # MCP server (Rust + rmcp); stdio transport; 21 tools
 cli/             # CLI (Rust + clap); calls repo logic directly
+web/             # React browser client (Vite + TypeScript); talks gRPC-Web to server
 ```
 
 ---
@@ -58,6 +59,7 @@ Available tools:
 | `create_suite` | Create a new suite |
 | `update_suite` | Patch-style update: all fields optional — omit any to keep existing value |
 | `delete_suite` | Delete a suite file |
+| `bulk_record_results` | Record multiple case results in one call; returns per-result confirmation + progress |
 | `get_affected_cases` | Cases that may need re-running based on git changes; shows title/priority/tags |
 | `get_pending_cases` | Cases in a run's scope with no result yet; sorted high→medium→low priority |
 
@@ -160,7 +162,9 @@ Notes go here (optional).
 - `create_run` returns the full list of cases to test sorted by priority — no separate `get_pending_cases` call needed at the start.
 
 ### Recording results
-Use `record_result` (MCP) or `ameliso runs record` (CLI).
+Use `record_result` (MCP) or `ameliso runs record` (CLI) for individual results.
+Use `bulk_record_results` (MCP / gRPC) when you have multiple results ready — it's a
+single call instead of N calls and returns overall progress.
 Both reject writes to a `completed` or `aborted` run.
 Both reject results for case paths that don't exist (use exact paths from `get_pending_cases`).
 
@@ -172,7 +176,7 @@ if the run was created with `--suite`; otherwise all cases in the repo.
 Typical agent workflow:
 1. `repo_status` → see all active runs with pending counts (or `list_runs --status in-progress` to get just IDs)
 2. `get_pending_cases` → which cases still need results (sorted high→medium→low priority)
-3. `record_result` for each pending case (add `notes` for failures)
+3. `bulk_record_results` for all ready results in one call (or `record_result` one at a time)
 4. When all done: `finalize_run` (warns if any cases still pending)
 
 ### Updating cases and suites
