@@ -538,6 +538,46 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
     }
 
     #[tokio::test]
+    async fn get_repo_errors_on_http_failure() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/missing"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let result = get_repo("owner/missing", "tok").await;
+        assert!(result.is_err());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn list_app_installations_errors_on_http_failure() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/app/installations"))
+            .respond_with(ResponseTemplate::new(401).set_body_string("Unauthorized"))
+            .mount(&server)
+            .await;
+
+        let result = list_app_installations("bad-jwt").await;
+        assert!(result.is_err());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
     async fn compare_errors_on_http_failure() {
         let _g = ENV_LOCK.lock().unwrap();
         let server = MockServer::start().await;
