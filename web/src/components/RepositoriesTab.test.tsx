@@ -401,6 +401,15 @@ describe("RepositoriesTab", () => {
     expect(screen.getByText("org/beta")).toBeInTheDocument();
   });
 
+  it("does not show search bar or Refresh All button when repo list is empty", async () => {
+    // default mock: listRepositories returns []
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("No repositories connected")).toBeInTheDocument());
+    // search bar and Refresh All are conditionally rendered only when repos.length > 0
+    expect(screen.queryByPlaceholderText("Search repositories…")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Refresh All/)).not.toBeInTheDocument();
+  });
+
   it("does not show Active badge when repo is not the active repo", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="other/repo" />);
