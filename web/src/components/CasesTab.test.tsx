@@ -44,6 +44,13 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());
   });
 
+  it("shows plural case count when multiple cases", async () => {
+    const mockCase2 = { ...mockCase, path: "auth/signup", title: "User Signup" } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, mockCase2] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("2 cases")).toBeInTheDocument());
+  });
+
   it("expands case body on click", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
