@@ -108,7 +108,7 @@
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #334155;
+  color: var(--color-ink-hover);
 }
 
 .emptyDesc {
@@ -172,7 +172,7 @@
   margin-left: 8px;
   font-size: 10px;
   font-weight: 400;
-  color: #93c5fd;
+  color: var(--color-primary-light);
 }
 
 .goToRunsBtn {
@@ -196,7 +196,7 @@
   padding: 12px;
   background: white;
   border-radius: 6px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--color-primary-faint);
   display: flex;
   align-items: center;
   gap: 10px;

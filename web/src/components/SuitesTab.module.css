@@ -229,7 +229,7 @@
   border: 1px solid var(--color-border);
   font-size: 14px;
   font-family: monospace;
-  color: #334155;
+  color: var(--color-ink-hover);
 }
 
 .noCase {
@@ -290,7 +290,7 @@
 .btnOutlineSm {
   background: none;
   border: 1px solid var(--color-border);
-  color: #334155;
+  color: var(--color-ink-hover);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;

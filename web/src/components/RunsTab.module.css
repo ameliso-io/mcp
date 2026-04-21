@@ -107,7 +107,7 @@
 
 .inputErr {
   composes: input;
-  border-color: #fca5a5;
+  border-color: var(--color-danger-border-light);
 }
 
 .errorCard {
@@ -460,7 +460,7 @@
 
 .btnBlueSm {
   padding: 6px 14px;
-  background: #0ea5e9;
+  background: var(--color-sky);
   color: white;
   border: none;
   border-radius: 6px;
@@ -469,7 +469,7 @@
 }
 
 .btnBlueSm:hover:not(:disabled) {
-  background: #0284c7;
+  background: var(--color-sky-hover);
 }
 
 .btnRedSm {

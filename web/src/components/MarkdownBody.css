@@ -1,7 +1,7 @@
 .md-body {
   font-size: 13px;
   line-height: 1.6;
-  color: #1e293b;
+  color: var(--color-ink);
   overflow-y: auto;
 }
 
@@ -15,7 +15,7 @@
 
 .md-body h1 { font-size: 1.2em; }
 .md-body h2 { font-size: 1.05em; }
-.md-body h3 { font-size: 0.95em; color: #334155; }
+.md-body h3 { font-size: 0.95em; color: var(--color-ink-hover); }
 
 .md-body p { margin: 0.3em 0; }
 
@@ -28,7 +28,7 @@
 .md-body li { margin: 0.15em 0; }
 
 .md-body code {
-  background: #f1f5f9;
+  background: var(--color-surface-alt);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 0.9em;
@@ -36,7 +36,7 @@
 }
 
 .md-body pre {
-  background: #f1f5f9;
+  background: var(--color-surface-alt);
   padding: 10px 14px;
   border-radius: 6px;
   overflow-x: auto;
@@ -53,6 +53,6 @@
 
 .md-body hr {
   border: none;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
   margin: 0.5em 0;
 }

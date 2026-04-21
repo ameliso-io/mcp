@@ -34,7 +34,7 @@
 
 .link:hover {
   color: var(--color-border);
-  background-color: #293548;
+  background-color: var(--color-ink-active);
 }
 
 .linkActive {
