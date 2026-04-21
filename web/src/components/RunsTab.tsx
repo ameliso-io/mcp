@@ -622,10 +622,10 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                       </div>
                     )}
                     <div className={styles.pendingHeader}>
-                      <p className={styles.pendingLabel}>
+                      <h3 className={styles.pendingLabel}>
                         {pendingCases.length} pending
                         <span className={styles.refreshHint}>auto-refresh 30s</span>
-                      </p>
+                      </h3>
                       {run.status === RunStatus.IN_PROGRESS && (
                         <div className={styles.pendingActions}>
                           {pendingCases.length > 0 &&

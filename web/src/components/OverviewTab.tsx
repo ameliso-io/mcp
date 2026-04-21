@@ -170,10 +170,10 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
           {activeRuns.length > 0 && (
             <div className={styles.activeRunsCard}>
               <div className={styles.activeRunsHeader}>
-                <p className={styles.activeRunsLabel}>
+                <h3 className={styles.activeRunsLabel}>
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
-                </p>
+                </h3>
                 {onGoToRuns && (
                   <button onClick={onGoToRuns} className={styles.goToRunsBtn}>
                     Go to Runs
@@ -196,9 +196,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
           )}
 
           <div className={styles.card}>
-            <p className={`${styles.label} ${styles.sectionLabel}`}>
+            <h3 className={`${styles.label} ${styles.sectionLabel}`}>
               Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
-            </p>
+            </h3>
             <ul className={styles.coverageList} role="list">
               {[...entries]
                 .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))
@@ -235,8 +235,12 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
       {repoId && (
         <div className={styles.card}>
-          <p className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</p>
-          <form aria-label="Check affected cases by git diff" onSubmit={handleAffected} className={styles.affectedForm}>
+          <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
+          <form
+            aria-label="Check affected cases by git diff"
+            onSubmit={handleAffected}
+            className={styles.affectedForm}
+          >
             <input
               type="text"
               aria-label="Git ref to compare from (leave empty to use last run commit)"
