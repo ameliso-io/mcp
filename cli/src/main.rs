@@ -41,8 +41,10 @@ enum CasesCmd {
         repo: PathBuf,
         #[arg(long, help = "Comma-separated tags to filter by")]
         tags: Option<String>,
-        #[arg(long, help = "Full-text query")]
+        #[arg(long, help = "Full-text query (searches title, description, body, path)")]
         query: Option<String>,
+        #[arg(long, help = "Filter by priority: low | medium | high")]
+        priority: Option<String>,
     },
     #[command(about = "Show a single test case")]
     Get {
@@ -96,7 +98,11 @@ enum RunsCmd {
     List {
         #[arg(long, env = "AMELISO_REPO")]
         repo: PathBuf,
-        #[arg(long, value_name = "STATUS", help = "Filter by status: in-progress | completed | aborted")]
+        #[arg(
+            long,
+            value_name = "STATUS",
+            help = "Filter by status: in-progress | completed | aborted"
+        )]
         status: Option<String>,
     },
     #[command(about = "Show a single run with results")]
@@ -196,7 +202,12 @@ fn main() -> Result<()> {
 
 fn run_cases(cmd: CasesCmd) -> Result<()> {
     match cmd {
-        CasesCmd::List { repo, tags, query } => {
+        CasesCmd::List {
+            repo,
+            tags,
+            query,
+            priority,
+        } => {
             let mut cases = repo::list_cases(&repo)?;
             if let Some(t) = &tags {
                 let filter: Vec<&str> = t.split(',').map(|s| s.trim()).collect();
@@ -212,7 +223,11 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
                     c.fm.title.to_lowercase().contains(&q)
                         || c.fm.description.to_lowercase().contains(&q)
                         || c.case_path.to_lowercase().contains(&q)
+                        || c.body.to_lowercase().contains(&q)
                 });
+            }
+            if let Some(p) = &priority {
+                cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(p));
             }
             if cases.is_empty() {
                 println!("No cases found.");
