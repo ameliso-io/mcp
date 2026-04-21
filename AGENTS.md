@@ -96,6 +96,7 @@ ameliso suites update smoke --name "Smoke Suite" --cases auth/login,billing/chec
 
 # Reports
 ameliso coverage
+ameliso coverage --status never
 ameliso affected
 ameliso affected --since HEAD~10
 ```

@@ -422,7 +422,9 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::GetCoverageReportRequest>,
     ) -> Result<Response<pb::GetCoverageReportResponse>, Status> {
-        let repo = PathBuf::from(&request.into_inner().repo_path);
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+        let status_filter = req.status_filter;
         let cases = repo::list_cases(&repo).map_err(repo_err)?;
         let runs = repo::list_runs(&repo).map_err(repo_err)?;
 
@@ -443,19 +445,25 @@ impl AmelisoService for AmelisoServer {
             }
         }
 
-        let entries = cases
+        let entries: Vec<_> = cases
             .iter()
-            .map(|c| {
+            .filter_map(|c| {
                 let (status, last_run_id, last_run_date) = latest
                     .get(&c.case_path)
                     .cloned()
                     .unwrap_or_else(|| ("never".to_owned(), String::new(), String::new()));
-                pb::CoverageEntry {
+                let status_i32 = result_status_to_i32(&status);
+                if status_filter != pb::ResultStatus::Unspecified as i32
+                    && status_i32 != status_filter
+                {
+                    return None;
+                }
+                Some(pb::CoverageEntry {
                     case: Some(case_to_pb(c)),
-                    latest_status: result_status_to_i32(&status),
+                    latest_status: status_i32,
                     last_run_id,
                     last_run_date,
-                }
+                })
             })
             .collect();
 

@@ -130,6 +130,15 @@ struct AffectedRequest {
     since_ref: Option<String>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct CoverageReportRequest {
+    repo_path: String,
+    #[schemars(
+        description = "Optional status filter: never | passed | failed | blocked | skipped. Omit to return all."
+    )]
+    status_filter: Option<String>,
+}
+
 // ---------------------------------------------------------------------------
 // MCP server
 // ---------------------------------------------------------------------------
@@ -230,8 +239,10 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Get a coverage report showing the latest test status for every case.")]
-    fn coverage_report(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+    #[tool(
+        description = "Get a coverage report showing the latest test status for every case. Optionally filter by status: never | passed | failed | blocked | skipped."
+    )]
+    fn coverage_report(&self, Parameters(req): Parameters<CoverageReportRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let cases = match repo::list_cases(&repo) {
             Ok(c) => c,
@@ -258,6 +269,11 @@ impl AmelisoMcp {
                 .get(&c.case_path)
                 .cloned()
                 .unwrap_or_else(|| ("never".to_owned(), String::new()));
+            if let Some(ref f) = req.status_filter {
+                if status != *f {
+                    continue;
+                }
+            }
             let run_ref = if run_id.is_empty() {
                 String::new()
             } else {
@@ -268,7 +284,9 @@ impl AmelisoMcp {
         lines.join("\n")
     }
 
-    #[tool(description = "List all test runs in the repository. Optionally filter by status: in-progress | completed | aborted.")]
+    #[tool(
+        description = "List all test runs in the repository. Optionally filter by status: in-progress | completed | aborted."
+    )]
     fn list_runs(&self, Parameters(req): Parameters<ListRunsRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::list_runs(&repo) {

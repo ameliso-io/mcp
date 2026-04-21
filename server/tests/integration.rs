@@ -361,7 +361,7 @@ async fn coverage_never_for_unrun_cases() {
     write_case(tmp.path(), "billing/invoice", "Invoice");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp, status_filter: 0 }))
         .await
         .unwrap()
         .into_inner();
@@ -390,7 +390,7 @@ async fn coverage_shows_latest_run_status() {
     write_result(tmp.path(), "2026-01-02-run2", "auth/login", "failed");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp, status_filter: 0 }))
         .await
         .unwrap()
         .into_inner();
@@ -404,6 +404,55 @@ async fn coverage_shows_latest_run_status() {
 // ---------------------------------------------------------------------------
 // Tests — Suites
 // ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn coverage_report_status_filter() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/invoice", "Invoice");
+    write_run(tmp.path(), "2026-01-01-r1", "completed");
+    write_result(tmp.path(), "2026-01-01-r1", "auth/login", "passed");
+    // billing/invoice has no result → "never"
+
+    // No filter — both entries
+    let all = c
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp.clone(),
+            status_filter: 0,
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(all.entries.len(), 2);
+
+    // Filter: never — only invoice
+    let never = c
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp.clone(),
+            status_filter: pb::ResultStatus::Never as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(never.entries.len(), 1);
+    assert_eq!(never.entries[0].case.as_ref().unwrap().path, "billing/invoice");
+
+    // Filter: passed — only login
+    let passed = c
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp,
+            status_filter: pb::ResultStatus::Passed as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(passed.entries.len(), 1);
+    assert_eq!(passed.entries[0].case.as_ref().unwrap().path, "auth/login");
+}
 
 // ---------------------------------------------------------------------------
 // Tests — Affected cases

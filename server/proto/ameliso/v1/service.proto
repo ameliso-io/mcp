@@ -255,6 +255,8 @@ message FinalizeRunResponse {
 
 message GetCoverageReportRequest {
   string repo_path = 1;
+  // Optional: return only entries with this latest status. Unspecified = return all.
+  ResultStatus status_filter = 2;
 }
 
 message GetCoverageReportResponse {

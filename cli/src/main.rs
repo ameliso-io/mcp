@@ -23,6 +23,8 @@ enum Commands {
     Coverage {
         #[arg(long, env = "AMELISO_REPO", help = "Path to the test repository")]
         repo: PathBuf,
+        #[arg(long, help = "Filter by status: never | passed | failed | blocked | skipped")]
+        status: Option<String>,
     },
     #[command(about = "Show which cases need re-running after recent code changes")]
     Affected {
@@ -41,7 +43,10 @@ enum CasesCmd {
         repo: PathBuf,
         #[arg(long, help = "Comma-separated tags to filter by")]
         tags: Option<String>,
-        #[arg(long, help = "Full-text query (searches title, description, body, path)")]
+        #[arg(
+            long,
+            help = "Full-text query (searches title, description, body, path)"
+        )]
         query: Option<String>,
         #[arg(long, help = "Filter by priority: low | medium | high")]
         priority: Option<String>,
@@ -195,7 +200,7 @@ fn main() -> Result<()> {
         Commands::Cases(cmd) => run_cases(cmd),
         Commands::Runs(cmd) => run_runs(cmd),
         Commands::Suites(cmd) => run_suites(cmd),
-        Commands::Coverage { repo } => run_coverage(&repo),
+        Commands::Coverage { repo, status } => run_coverage(&repo, status.as_deref()),
         Commands::Affected { repo, since } => run_affected(&repo, since.as_deref()),
     }
 }
@@ -435,7 +440,7 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
     Ok(())
 }
 
-fn run_coverage(repo: &std::path::Path) -> Result<()> {
+fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<()> {
     let cases = repo::list_cases(repo)?;
     let runs = repo::list_runs(repo)?;
     let mut latest: std::collections::HashMap<String, (String, String)> =
@@ -465,9 +470,14 @@ fn run_coverage(repo: &std::path::Path) -> Result<()> {
         if status == "never" {
             never_count += 1;
         }
+        if let Some(f) = status_filter {
+            if status != f {
+                continue;
+            }
+        }
         println!("{:40} {:8} {}", c.case_path, status, run_id);
     }
-    if never_count > 0 {
+    if never_count > 0 && status_filter.is_none() {
         println!("\n{never_count} case(s) never run.");
     }
     Ok(())
