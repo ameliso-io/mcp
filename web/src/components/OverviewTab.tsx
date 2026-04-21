@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
-import type { AffectedCase, CoverageEntry } from '../gen/ameliso/v1/types_pb'
-import { ResultStatus } from '../gen/ameliso/v1/types_pb'
+import type { AffectedCase, CoverageEntry, RunMeta } from '../gen/ameliso/v1/types_pb'
+import { ResultStatus, RunStatus } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
   repoPath: string
   onRepoPathChange: (p: string) => void
+  onGoToRuns?: () => void
 }
 
 const card = {
@@ -48,12 +49,15 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
+export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: Props) {
   const [inputPath, setInputPath] = useState(repoPath)
   const [entries, setEntries] = useState<CoverageEntry[]>([])
   const [runCount, setRunCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [activeRuns, setActiveRuns] = useState<RunMeta[]>([])
+  const [runPending, setRunPending] = useState<Record<string, { pending: number; total: number }>>({})
 
   const [sinceRef, setSinceRef] = useState('')
   const [affected, setAffected] = useState<AffectedCase[] | null>(null)
@@ -65,9 +69,26 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const res = await client.getCoverageReport({ repoPath: path })
-      setEntries(res.entries)
-      setRunCount(res.runCount)
+      const [coverageRes, runsRes] = await Promise.all([
+        client.getCoverageReport({ repoPath: path }),
+        client.listRuns({ repoPath: path }),
+      ])
+      setEntries(coverageRes.entries)
+      setRunCount(coverageRes.runCount)
+      const inProgress = runsRes.runs.filter(r => r.status === RunStatus.IN_PROGRESS)
+      setActiveRuns(inProgress)
+      // fetch pending counts in parallel (typically few active runs)
+      const pendingResults = await Promise.allSettled(
+        inProgress.map(r => client.getPendingCases({ repoPath: path, runId: r.id }))
+      )
+      const pending: Record<string, { pending: number; total: number }> = {}
+      inProgress.forEach((r, i) => {
+        const res = pendingResults[i]
+        if (res.status === 'fulfilled') {
+          pending[r.id] = { pending: res.value.cases.length, total: res.value.totalInScope }
+        }
+      })
+      setRunPending(pending)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -179,6 +200,79 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
               </div>
             ))}
           </div>
+
+          {activeRuns.length > 0 && (
+            <div style={{ ...card, border: '1px solid #bfdbfe', background: '#eff6ff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <p style={{ ...label, color: '#3b82f6', margin: 0 }}>
+                  Active Runs ({activeRuns.length})
+                </p>
+                {onGoToRuns && (
+                  <button
+                    onClick={onGoToRuns}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #bfdbfe',
+                      color: '#3b82f6',
+                      borderRadius: '6px',
+                      padding: '4px 12px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                    }}
+                  >
+                    Go to Runs
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {activeRuns.map(run => {
+                  const p = runPending[run.id]
+                  const done = p ? p.total - p.pending : null
+                  const pct = p && p.total > 0 ? Math.round((done! / p.total) * 100) : null
+                  return (
+                    <div
+                      key={run.id}
+                      style={{
+                        padding: '12px',
+                        background: 'white',
+                        borderRadius: '6px',
+                        border: '1px solid #dbeafe',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: p ? '8px' : 0 }}>
+                        <span style={{ fontWeight: '600', fontSize: '14px', flex: 1, fontFamily: 'monospace' }}>{run.id}</span>
+                        {run.suite && (
+                          <span style={{ fontSize: '11px', background: '#eff6ff', color: '#3b82f6', padding: '2px 7px', borderRadius: '4px', fontWeight: '600' }}>{run.suite}</span>
+                        )}
+                        {run.tester && (
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>{run.tester}</span>
+                        )}
+                        {p && (
+                          <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            {done} / {p.total} done
+                          </span>
+                        )}
+                      </div>
+                      {p && p.total > 0 && (
+                        <div style={{ height: '4px', background: '#dbeafe', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${pct}%`,
+                              background: '#3b82f6',
+                              borderRadius: '2px',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           <div style={card}>
             <p style={{ ...label, marginBottom: '12px' }}>Coverage ({runCount} run{runCount !== 1 ? 's' : ''})</p>

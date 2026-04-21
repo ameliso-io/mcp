@@ -105,7 +105,11 @@ export default function App() {
           />
         )}
         {tab === 'overview' && (
-          <OverviewTab repoPath={repoPath} onRepoPathChange={handleRepoPathChange} />
+          <OverviewTab
+            repoPath={repoPath}
+            onRepoPathChange={handleRepoPathChange}
+            onGoToRuns={() => setTab('runs')}
+          />
         )}
         {tab === 'cases' && <CasesTab repoPath={repoPath} />}
         {tab === 'suites' && <SuitesTab repoPath={repoPath} />}
