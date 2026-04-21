@@ -777,57 +777,6 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
-    async fn sync_installations(
-        &self,
-        _request: Request<pb::SyncInstallationsRequest>,
-    ) -> Result<Response<pb::SyncInstallationsResponse>, Status> {
-        let cfg = crate::github::config().ok_or_else(|| {
-            Status::failed_precondition(
-                "GitHub App not configured (set GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY)",
-            )
-        })?;
-
-        let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let installations = crate::github::list_app_installations(&jwt)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-        let mut result = Vec::new();
-
-        for inst in &installations {
-            let installation_id = inst.id.to_string();
-            let token = crate::github::get_installation_token(&installation_id, &jwt)
-                .await
-                .map_err(|e| Status::internal(e.to_string()))?;
-
-            let gh_repos = crate::github::list_installation_repos(&token)
-                .await
-                .map_err(|e| Status::internal(e.to_string()))?;
-
-            for gh_repo in &gh_repos {
-                let stored = crate::repos_store::StoredRepo {
-                    id: gh_repo.full_name.clone(),
-                    name: gh_repo.name.clone(),
-                    full_name: gh_repo.full_name.clone(),
-                    html_url: gh_repo.html_url.clone(),
-                    installation_id: installation_id.clone(),
-                    added_at: now.clone(),
-                };
-                crate::repos_store::add_or_update(&self.pool, &stored)
-                    .await
-                    .map_err(|e| Status::internal(e.to_string()))?;
-                result.push(stored_to_pb(&stored));
-            }
-        }
-
-        Ok(Response::new(pb::SyncInstallationsResponse {
-            repositories: result,
-        }))
-    }
-
     async fn list_repositories(
         &self,
         _request: Request<pb::ListRepositoriesRequest>,

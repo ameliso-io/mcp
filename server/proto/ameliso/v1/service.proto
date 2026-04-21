@@ -40,8 +40,6 @@ service AmelisoService {
   // --- GitHub App ---
   rpc GetGitHubInstallUrl(GetGitHubInstallUrlRequest) returns (GetGitHubInstallUrlResponse);
   rpc HandleGitHubCallback(HandleGitHubCallbackRequest) returns (HandleGitHubCallbackResponse);
-  // Import all existing installations of the GitHub App from the GitHub API.
-  rpc SyncInstallations(SyncInstallationsRequest) returns (SyncInstallationsResponse);
   rpc ListRepositories(ListRepositoriesRequest) returns (ListRepositoriesResponse);
   rpc SyncRepository(SyncRepositoryRequest) returns (SyncRepositoryResponse);
   rpc RemoveRepository(RemoveRepositoryRequest) returns (RemoveRepositoryResponse);
@@ -272,12 +270,6 @@ message HandleGitHubCallbackRequest {
 }
 
 message HandleGitHubCallbackResponse {
-  repeated Repository repositories = 1;
-}
-
-message SyncInstallationsRequest {}
-
-message SyncInstallationsResponse {
   repeated Repository repositories = 1;
 }
 

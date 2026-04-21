@@ -19,6 +19,34 @@ fn load_env() {
     }
 }
 
+async fn sync_installations(pool: &sqlx::PgPool) -> anyhow::Result<()> {
+    let cfg = match ameliso_server::github::config() {
+        Some(c) => c,
+        None => return Ok(()),
+    };
+    let jwt = ameliso_server::github::generate_jwt(&cfg.app_id, &cfg.private_key)?;
+    let installations = ameliso_server::github::list_app_installations(&jwt).await?;
+    let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    for inst in &installations {
+        let installation_id = inst.id.to_string();
+        let token = ameliso_server::github::get_installation_token(&installation_id, &jwt).await?;
+        let repos = ameliso_server::github::list_installation_repos(&token).await?;
+        for gh_repo in &repos {
+            let stored = ameliso_server::repos_store::StoredRepo {
+                id: gh_repo.full_name.clone(),
+                name: gh_repo.name.clone(),
+                full_name: gh_repo.full_name.clone(),
+                html_url: gh_repo.html_url.clone(),
+                installation_id: installation_id.clone(),
+                added_at: now.clone(),
+            };
+            ameliso_server::repos_store::add_or_update(pool, &stored).await?;
+        }
+    }
+    eprintln!("startup installation sync complete ({} installation(s))", installations.len());
+    Ok(())
+}
+
 fn validate_env() {
     let required = [
         (
@@ -59,6 +87,10 @@ async fn main() -> Result<()> {
 
     ameliso_server::db::run_migrations(&pool).await?;
     eprintln!("database schema ready");
+
+    if let Err(e) = sync_installations(&pool).await {
+        eprintln!("warning: startup installation sync failed: {e}");
+    }
 
     let port = std::env::var("AMELISO_PORT")
         .ok()
