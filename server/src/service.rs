@@ -893,14 +893,23 @@ mod tests {
 
     #[test]
     fn run_status_to_i32_known_values() {
-        assert_eq!(run_status_to_i32("in-progress"), pb::RunStatus::InProgress as i32);
-        assert_eq!(run_status_to_i32("completed"), pb::RunStatus::Completed as i32);
+        assert_eq!(
+            run_status_to_i32("in-progress"),
+            pb::RunStatus::InProgress as i32
+        );
+        assert_eq!(
+            run_status_to_i32("completed"),
+            pb::RunStatus::Completed as i32
+        );
         assert_eq!(run_status_to_i32("aborted"), pb::RunStatus::Aborted as i32);
     }
 
     #[test]
     fn run_status_to_i32_unknown_maps_to_unspecified() {
-        assert_eq!(run_status_to_i32("bogus"), pb::RunStatus::Unspecified as i32);
+        assert_eq!(
+            run_status_to_i32("bogus"),
+            pb::RunStatus::Unspecified as i32
+        );
         assert_eq!(run_status_to_i32(""), pb::RunStatus::Unspecified as i32);
     }
 
@@ -908,28 +917,64 @@ mod tests {
 
     #[test]
     fn result_status_to_i32_known_values() {
-        assert_eq!(result_status_to_i32("passed"), pb::ResultStatus::Passed as i32);
-        assert_eq!(result_status_to_i32("failed"), pb::ResultStatus::Failed as i32);
-        assert_eq!(result_status_to_i32("blocked"), pb::ResultStatus::Blocked as i32);
-        assert_eq!(result_status_to_i32("skipped"), pb::ResultStatus::Skipped as i32);
-        assert_eq!(result_status_to_i32("never"), pb::ResultStatus::Never as i32);
+        assert_eq!(
+            result_status_to_i32("passed"),
+            pb::ResultStatus::Passed as i32
+        );
+        assert_eq!(
+            result_status_to_i32("failed"),
+            pb::ResultStatus::Failed as i32
+        );
+        assert_eq!(
+            result_status_to_i32("blocked"),
+            pb::ResultStatus::Blocked as i32
+        );
+        assert_eq!(
+            result_status_to_i32("skipped"),
+            pb::ResultStatus::Skipped as i32
+        );
+        assert_eq!(
+            result_status_to_i32("never"),
+            pb::ResultStatus::Never as i32
+        );
     }
 
     #[test]
     fn result_status_to_i32_unknown_maps_to_unspecified() {
-        assert_eq!(result_status_to_i32("bogus"), pb::ResultStatus::Unspecified as i32);
+        assert_eq!(
+            result_status_to_i32("bogus"),
+            pb::ResultStatus::Unspecified as i32
+        );
     }
 
     // ── result_status_from_i32 ───────────────────────────────────────────────
 
     #[test]
     fn result_status_from_i32_round_trips() {
-        assert_eq!(result_status_from_i32(pb::ResultStatus::Passed as i32), "passed");
-        assert_eq!(result_status_from_i32(pb::ResultStatus::Failed as i32), "failed");
-        assert_eq!(result_status_from_i32(pb::ResultStatus::Blocked as i32), "blocked");
-        assert_eq!(result_status_from_i32(pb::ResultStatus::Skipped as i32), "skipped");
-        assert_eq!(result_status_from_i32(pb::ResultStatus::Never as i32), "never");
-        assert_eq!(result_status_from_i32(pb::ResultStatus::Unspecified as i32), "unspecified");
+        assert_eq!(
+            result_status_from_i32(pb::ResultStatus::Passed as i32),
+            "passed"
+        );
+        assert_eq!(
+            result_status_from_i32(pb::ResultStatus::Failed as i32),
+            "failed"
+        );
+        assert_eq!(
+            result_status_from_i32(pb::ResultStatus::Blocked as i32),
+            "blocked"
+        );
+        assert_eq!(
+            result_status_from_i32(pb::ResultStatus::Skipped as i32),
+            "skipped"
+        );
+        assert_eq!(
+            result_status_from_i32(pb::ResultStatus::Never as i32),
+            "never"
+        );
+        assert_eq!(
+            result_status_from_i32(pb::ResultStatus::Unspecified as i32),
+            "unspecified"
+        );
     }
 
     #[test]
@@ -941,10 +986,22 @@ mod tests {
 
     #[test]
     fn run_status_from_i32_round_trips() {
-        assert_eq!(run_status_from_i32(pb::RunStatus::InProgress as i32), "in-progress");
-        assert_eq!(run_status_from_i32(pb::RunStatus::Completed as i32), "completed");
-        assert_eq!(run_status_from_i32(pb::RunStatus::Aborted as i32), "aborted");
-        assert_eq!(run_status_from_i32(pb::RunStatus::Unspecified as i32), "unspecified");
+        assert_eq!(
+            run_status_from_i32(pb::RunStatus::InProgress as i32),
+            "in-progress"
+        );
+        assert_eq!(
+            run_status_from_i32(pb::RunStatus::Completed as i32),
+            "completed"
+        );
+        assert_eq!(
+            run_status_from_i32(pb::RunStatus::Aborted as i32),
+            "aborted"
+        );
+        assert_eq!(
+            run_status_from_i32(pb::RunStatus::Unspecified as i32),
+            "unspecified"
+        );
     }
 
     #[test]
@@ -957,7 +1014,10 @@ mod tests {
     #[test]
     fn priority_from_i32_known_values() {
         assert_eq!(priority_from_i32(pb::Priority::Low as i32), Some("low"));
-        assert_eq!(priority_from_i32(pb::Priority::Medium as i32), Some("medium"));
+        assert_eq!(
+            priority_from_i32(pb::Priority::Medium as i32),
+            Some("medium")
+        );
         assert_eq!(priority_from_i32(pb::Priority::High as i32), Some("high"));
         assert_eq!(priority_from_i32(pb::Priority::Unspecified as i32), None);
     }

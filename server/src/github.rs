@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn github_api_base() -> String {
-    std::env::var("AMELISO_GITHUB_API")
-        .unwrap_or_else(|_| "https://api.github.com".to_owned())
+    std::env::var("AMELISO_GITHUB_API").unwrap_or_else(|_| "https://api.github.com".to_owned())
 }
 
 pub struct GitHubConfig {
@@ -405,7 +404,9 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
             std::env::set_var("AMELISO_GITHUB_API", server.uri());
         }
         // First page: 100 repos (triggers pagination)
-        let page1: Vec<_> = (0..100).map(|i| fake_repo_json(&format!("repo-{i}"))).collect();
+        let page1: Vec<_> = (0..100)
+            .map(|i| fake_repo_json(&format!("repo-{i}")))
+            .collect();
         Mock::given(method("GET"))
             .and(path("/installation/repositories"))
             .and(query_param("page", "1"))
@@ -442,9 +443,7 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
         }
         Mock::given(method("GET"))
             .and(path("/repos/owner/my-repo"))
-            .respond_with(
-                ResponseTemplate::new(200).set_body_json(fake_repo_json("my-repo")),
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_json(fake_repo_json("my-repo")))
             .mount(&server)
             .await;
 
@@ -465,8 +464,7 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
         Mock::given(method("GET"))
             .and(path("/app/installations"))
             .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_json(serde_json::json!([{"id": 7}, {"id": 8}])),
+                ResponseTemplate::new(200).set_body_json(serde_json::json!([{"id": 7}, {"id": 8}])),
             )
             .mount(&server)
             .await;
@@ -516,9 +514,7 @@ pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result
     let client = reqwest::Client::new();
     let api = github_api_base();
     let resp: CompareResponse = client
-        .get(format!(
-            "{api}/repos/{owner}/{repo}/compare/{base}...HEAD"
-        ))
+        .get(format!("{api}/repos/{owner}/{repo}/compare/{base}...HEAD"))
         .header("Authorization", format!("token {token}"))
         .header("Accept", "application/vnd.github.v3+json")
         .header("User-Agent", "ameliso/1.0")
