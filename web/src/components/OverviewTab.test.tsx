@@ -515,4 +515,62 @@ describe("OverviewTab", () => {
     expect(screen.getByText("carol")).toBeInTheDocument();
     expect(screen.getByText("2026-02-01")).toBeInTheDocument();
   });
+
+  it("polling timer callback triggers reload when active runs present", async () => {
+    const activeRun = {
+      id: "run-timer",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    let capturedCallback: (() => void) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    expect(capturedCallback).not.toBeNull();
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    expect(client.getCoverageReport).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+
+  it("polling timer callback shows error banner when load fails", async () => {
+    const activeRun = {
+      id: "run-poll-err",
+      tester: "bob",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getCoverageReport)
+      .mockResolvedValueOnce({ entries: coverageEntries, runCount: 5 } as never)
+      .mockRejectedValueOnce(new Error("poll error"));
+    let capturedCallback: (() => void) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    await waitFor(() => expect(screen.getByText("poll error")).toBeInTheDocument());
+    spy.mockRestore();
+  });
 });

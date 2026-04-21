@@ -64,4 +64,32 @@ describe("MarkdownBody", () => {
     render(<MarkdownBody body="plain paragraph" />);
     expect(screen.getByText("plain paragraph")).toBeInTheDocument();
   });
+
+  it("renders markdown h2 and h3 headings", () => {
+    const { container } = render(<MarkdownBody body={"## Section\n### Sub"} />);
+    expect(container.querySelector("h2")).toBeInTheDocument();
+    expect(container.querySelector("h3")).toBeInTheDocument();
+  });
+
+  it("renders ordered list", () => {
+    const { container } = render(<MarkdownBody body={"1. first\n2. second"} />);
+    expect(container.querySelector("ol")).toBeInTheDocument();
+    const items = container.querySelectorAll("li");
+    expect(items.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders italic text", () => {
+    const { container } = render(<MarkdownBody body="*emphasis*" />);
+    expect(container.querySelector("em")).toBeInTheDocument();
+  });
+
+  it("renders fenced code block", () => {
+    const { container } = render(<MarkdownBody body={"```\nconst x = 1;\n```"} />);
+    expect(container.querySelector("pre")).toBeInTheDocument();
+  });
+
+  it("renders horizontal rule", () => {
+    const { container } = render(<MarkdownBody body={"---"} />);
+    expect(container.querySelector("hr")).toBeInTheDocument();
+  });
 });
