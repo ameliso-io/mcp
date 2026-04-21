@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Repository } from "../gen/ameliso/v1/types_pb";
@@ -20,6 +20,8 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const prevActiveRef = useRef(activeRepoId);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,6 +90,17 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (activeRepoId === prevActiveRef.current) return;
+    prevActiveRef.current = activeRepoId;
+    if (activeRepoId) {
+      const repo = repos.find((r) => r.id === activeRepoId);
+      if (repo) setAnnouncement(`${repo.fullName} selected`);
+    } else {
+      setAnnouncement("Repository deselected");
+    }
+  }, [activeRepoId, repos]);
+
   async function handleSync(id: string) {
     setSyncing(id);
     setError(null);
@@ -123,6 +136,9 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className={styles.srOnly}>
+        {announcement}
+      </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Repositories</h2>
         <div className={styles.headerActions}>

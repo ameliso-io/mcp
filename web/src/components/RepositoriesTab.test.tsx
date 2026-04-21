@@ -263,4 +263,26 @@ describe("RepositoriesTab", () => {
     await userEvent.click(screen.getByText("↻ Refresh All"));
     await waitFor(() => expect(screen.getByText("refresh failed")).toBeInTheDocument());
   });
+
+  it("announces repo selection via live region when activeRepoId changes", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    const { rerender } = render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("owner/repo"));
+    rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("owner/repo selected")
+    );
+  });
+
+  it("announces deselection via live region when activeRepoId is cleared", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    const { rerender } = render(
+      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />
+    );
+    await waitFor(() => screen.getByText("owner/repo"));
+    rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Repository deselected")
+    );
+  });
 });
