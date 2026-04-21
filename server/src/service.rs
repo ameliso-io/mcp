@@ -1994,6 +1994,21 @@ mod tests {
             .contains("status must be completed or aborted"));
     }
 
+    #[tokio::test]
+    async fn finalize_run_aborted_passes_validation() {
+        // "aborted" is a valid finalize status — validation must pass, producing a DB error.
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                status: pb::RunStatus::Aborted as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
