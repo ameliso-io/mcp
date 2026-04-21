@@ -190,4 +190,47 @@ describe('OverviewTab', () => {
     const titles = screen.getAllByText(/Priority/)
     expect(titles[0].textContent).toBe('High Priority')
   })
+
+  it('sorts AffectedCase with null case field to end (null first)', async () => {
+    const nullCaseAffected = { case: undefined, reason: 'unknown' } as unknown as AffectedCase
+    const knownCase = {
+      case: { path: 'auth/login', title: 'Known', priority: 'high', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'modified',
+    } as unknown as AffectedCase
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [nullCaseAffected, knownCase], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('Known')).toBeInTheDocument())
+  })
+
+  it('sorts AffectedCase with null case field to end (null second)', async () => {
+    const nullCaseAffected = { case: undefined, reason: 'unknown' } as unknown as AffectedCase
+    const knownCase = {
+      case: { path: 'auth/login', title: 'Known2', priority: 'high', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'modified',
+    } as unknown as AffectedCase
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [knownCase, nullCaseAffected], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('Known2')).toBeInTheDocument())
+  })
+
+  it('shows Blocked, Skipped, Never, and Unknown status labels in coverage', async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry('a', 'A', 'high', ResultStatus.BLOCKED),
+        makeCovEntry('b', 'B', 'high', ResultStatus.SKIPPED),
+        makeCovEntry('c', 'C', 'high', ResultStatus.NEVER),
+        makeCovEntry('d', 'D', 'high', ResultStatus.UNSPECIFIED),
+      ],
+      runCount: 1,
+    } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => expect(screen.getByText('Blocked')).toBeInTheDocument())
+    expect(screen.getByText('Skipped')).toBeInTheDocument()
+    expect(screen.getByText('Never run')).toBeInTheDocument()
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
+  })
 })
