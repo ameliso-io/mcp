@@ -4,30 +4,16 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
 import { client } from "../client";
 import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
-import type { AffectedCase, CoverageEntry, RunMeta } from "../gen/ameliso/v1/types_pb";
+import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factories";
 
 vi.mock("../client");
 
-const makeCovEntry = (
-  path: string,
-  title: string,
-  priority: string,
-  status: ResultStatus
-): CoverageEntry =>
-  ({
-    case: {
-      path,
-      title,
-      description: "",
-      tags: [],
-      priority,
-      createdAt: "",
-      updatedAt: "",
-    } as never,
+const makeCovEntry = (path: string, title: string, priority: string, status: ResultStatus) =>
+  makeCoverageEntry({
+    case: { path, title, priority },
     latestStatus: status,
-    lastRunId: "run-1",
     lastRunDate: "2026-01-01",
-  }) as unknown as CoverageEntry;
+  });
 
 const coverageEntries = [
   makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED),
@@ -69,14 +55,7 @@ describe("OverviewTab", () => {
   });
 
   it("shows active runs panel when in-progress runs exist", async () => {
-    const activeRun = {
-      id: "run-abc",
-      tester: "alice",
-      environment: "staging",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-abc", tester: "alice", environment: "staging" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
@@ -103,18 +82,10 @@ describe("OverviewTab", () => {
   });
 
   it("shows affected cases list when diff returns cases", async () => {
-    const affectedCase = {
-      case: {
-        path: "auth/login",
-        title: "User Login",
-        priority: "high",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    const affectedCase = makeAffectedCase({
+      case: { path: "auth/login", title: "User Login", priority: "high" },
       reason: "modified",
-    } as unknown as AffectedCase;
+    });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [affectedCase],
       reason: "",
@@ -126,14 +97,7 @@ describe("OverviewTab", () => {
   });
 
   it("calls onGoToRuns when Go to Runs clicked", async () => {
-    const activeRun = {
-      id: "run-xyz",
-      tester: "bob",
-      environment: "prod",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     const onGoToRuns = vi.fn();
     render(<OverviewTab repoId="owner/repo" onGoToRuns={onGoToRuns} />);
@@ -157,30 +121,14 @@ describe("OverviewTab", () => {
   });
 
   it("sorts affected cases high before low", async () => {
-    const highCase = {
-      case: {
-        path: "auth/login",
-        title: "High Priority",
-        priority: "high",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    const highCase = makeAffectedCase({
+      case: { path: "auth/login", title: "High Priority", priority: "high" },
       reason: "modified",
-    } as unknown as AffectedCase;
-    const lowCase = {
-      case: {
-        path: "auth/logout",
-        title: "Low Priority",
-        priority: "low",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    });
+    const lowCase = makeAffectedCase({
+      case: { path: "auth/logout", title: "Low Priority", priority: "low" },
       reason: "added",
-    } as unknown as AffectedCase;
+    });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [lowCase, highCase],
       reason: "",
@@ -204,18 +152,10 @@ describe("OverviewTab", () => {
   });
 
   it("shows medium priority dot for medium priority affected case", async () => {
-    const mediumCase = {
-      case: {
-        path: "auth/reset",
-        title: "Medium Priority",
-        priority: "medium",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    const mediumCase = makeAffectedCase({
+      case: { path: "auth/reset", title: "Medium Priority", priority: "medium" },
       reason: "changed",
-    } as unknown as AffectedCase;
+    });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [mediumCase],
       reason: "",
@@ -256,30 +196,14 @@ describe("OverviewTab", () => {
   });
 
   it("sorts unknown priority to end in affected cases", async () => {
-    const knownCase = {
-      case: {
-        path: "auth/login",
-        title: "High Priority",
-        priority: "high",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    const knownCase = makeAffectedCase({
+      case: { path: "auth/login", title: "High Priority", priority: "high" },
       reason: "modified",
-    } as unknown as AffectedCase;
-    const unknownCase = {
-      case: {
-        path: "other/thing",
-        title: "Unknown Priority",
-        priority: "",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    });
+    const unknownCase = makeAffectedCase({
+      case: { path: "other/thing", title: "Unknown Priority", priority: "" },
       reason: "added",
-    } as unknown as AffectedCase;
+    });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [unknownCase, knownCase],
       reason: "",
@@ -293,19 +217,11 @@ describe("OverviewTab", () => {
   });
 
   it("sorts AffectedCase with null case field to end (null first)", async () => {
-    const nullCaseAffected = { case: undefined, reason: "unknown" } as unknown as AffectedCase;
-    const knownCase = {
-      case: {
-        path: "auth/login",
-        title: "Known",
-        priority: "high",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    const nullCaseAffected = makeAffectedCase({ reason: "unknown" });
+    const knownCase = makeAffectedCase({
+      case: { path: "auth/login", title: "Known", priority: "high" },
       reason: "modified",
-    } as unknown as AffectedCase;
+    });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [nullCaseAffected, knownCase],
       reason: "",
@@ -317,14 +233,7 @@ describe("OverviewTab", () => {
   });
 
   it("clears existing poll interval when rerendered with new repoId while active runs exist", async () => {
-    const activeRun = {
-      id: "run-poll",
-      tester: "alice",
-      environment: "staging",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     const { rerender } = render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
@@ -339,19 +248,11 @@ describe("OverviewTab", () => {
   });
 
   it("sorts AffectedCase with null case field to end (null second)", async () => {
-    const nullCaseAffected = { case: undefined, reason: "unknown" } as unknown as AffectedCase;
-    const knownCase = {
-      case: {
-        path: "auth/login",
-        title: "Known2",
-        priority: "high",
-        tags: [],
-        description: "",
-        createdAt: "",
-        updatedAt: "",
-      },
+    const nullCaseAffected = makeAffectedCase({ reason: "unknown" });
+    const knownCase = makeAffectedCase({
+      case: { path: "auth/login", title: "Known2", priority: "high" },
       reason: "modified",
-    } as unknown as AffectedCase;
+    });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [knownCase, nullCaseAffected],
       reason: "",
@@ -412,14 +313,7 @@ describe("OverviewTab", () => {
   });
 
   it("unmounts cleanly when polling interval is active", async () => {
-    const activeRun = {
-      id: "run-unmount",
-      tester: "alice",
-      environment: "staging",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-unmount", tester: "alice", environment: "staging" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     const { unmount } = render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());

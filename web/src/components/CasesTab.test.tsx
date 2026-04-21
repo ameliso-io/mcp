@@ -3,19 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import CasesTab from "./CasesTab";
 import { client } from "../client";
-import type { Case } from "../gen/ameliso/v1/types_pb";
+import { makeCase } from "../test/factories";
 
 vi.mock("../client");
 
-const mockCase = {
-  path: "auth/login",
-  title: "User Login",
+const mockCase = makeCase({
   description: "Verify login flow",
   tags: ["auth", "smoke"],
-  priority: "high",
   createdAt: "2026-01-01",
   updatedAt: "2026-01-01",
-} as unknown as Case;
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -141,12 +138,7 @@ describe("CasesTab", () => {
   });
 
   it("changes sort order when Sort: Path selected", async () => {
-    const secondCase = {
-      ...mockCase,
-      path: "auth/logout",
-      title: "User Logout",
-      priority: "low",
-    } as unknown as Case;
+    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -248,12 +240,7 @@ describe("CasesTab", () => {
   });
 
   it("sorts by priority with path tiebreaker for equal-priority cases", async () => {
-    const case2 = {
-      ...mockCase,
-      path: "auth/logout",
-      title: "User Logout",
-      priority: "high",
-    } as unknown as Case;
+    const case2 = makeCase({ path: "auth/logout", title: "User Logout", priority: "high" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [case2, mockCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
@@ -263,12 +250,7 @@ describe("CasesTab", () => {
   });
 
   it("sorts unknown priority cases to end", async () => {
-    const unknownCase = {
-      ...mockCase,
-      path: "other/thing",
-      title: "Unknown",
-      priority: "",
-    } as unknown as Case;
+    const unknownCase = makeCase({ path: "other/thing", title: "Unknown", priority: "" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase, mockCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
@@ -279,12 +261,7 @@ describe("CasesTab", () => {
   });
 
   it("sorts known before unknown priority from reversed order", async () => {
-    const unknownCase = {
-      ...mockCase,
-      path: "other/thing",
-      title: "Unknown",
-      priority: "",
-    } as unknown as Case;
+    const unknownCase = makeCase({ path: "other/thing", title: "Unknown", priority: "" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, unknownCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
@@ -310,7 +287,7 @@ describe("CasesTab", () => {
   });
 
   it("filters by tag when tag select changed", async () => {
-    const taggedCase = { ...mockCase, tags: ["smoke"] } as unknown as Case;
+    const taggedCase = makeCase({ tags: ["smoke"] });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [taggedCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -375,12 +352,7 @@ describe("CasesTab", () => {
   });
 
   it("shows medium priority label and opens edit for medium priority case", async () => {
-    const mediumCase = {
-      ...mockCase,
-      priority: "medium",
-      path: "auth/reset",
-      title: "Reset Password",
-    } as unknown as Case;
+    const mediumCase = makeCase({ priority: "medium", path: "auth/reset", title: "Reset Password" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mediumCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Reset Password")).toBeInTheDocument());
@@ -390,12 +362,7 @@ describe("CasesTab", () => {
   });
 
   it("opens edit for low priority case", async () => {
-    const lowCase = {
-      ...mockCase,
-      priority: "low",
-      path: "auth/logout",
-      title: "Logout",
-    } as unknown as Case;
+    const lowCase = makeCase({ priority: "low", path: "auth/logout", title: "Logout" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [lowCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
@@ -404,12 +371,7 @@ describe("CasesTab", () => {
   });
 
   it("opens edit for case with unknown priority (default branch)", async () => {
-    const unknownCase = {
-      ...mockCase,
-      priority: "",
-      path: "other/thing",
-      title: "Unknown Priority",
-    } as unknown as Case;
+    const unknownCase = makeCase({ priority: "", path: "other/thing", title: "Unknown Priority" });
     vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));

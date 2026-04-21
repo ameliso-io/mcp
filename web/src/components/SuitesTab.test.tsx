@@ -3,42 +3,23 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
 import { client } from "../client";
-import type { Suite } from "../gen/ameliso/v1/types_pb";
-import type { Case } from "../gen/ameliso/v1/types_pb";
+import { makeCase, makeSuite } from "../test/factories";
 
 vi.mock("../client");
 
-const mockSuite = {
-  slug: "smoke",
-  name: "Smoke Tests",
+const mockSuite = makeSuite({
   description: "Critical path checks",
   cases: ["auth/login", "auth/logout"],
-} as unknown as Suite;
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite] } as never);
   vi.mocked(client.listCases).mockResolvedValue({
     cases: [
-      {
-        path: "auth/login",
-        title: "User Login",
-        description: "",
-        tags: ["auth"],
-        priority: "high",
-        createdAt: "",
-        updatedAt: "",
-      },
-      {
-        path: "auth/logout",
-        title: "User Logout",
-        description: "",
-        tags: [],
-        priority: "low",
-        createdAt: "",
-        updatedAt: "",
-      },
-    ] as unknown as Case[],
+      makeCase({ path: "auth/login", title: "User Login", tags: ["auth"], priority: "high" }),
+      makeCase({ path: "auth/logout", title: "User Logout", tags: [], priority: "low" }),
+    ],
   } as never);
   vi.mocked(client.createSuite).mockResolvedValue({
     suite: mockSuite,
@@ -155,7 +136,7 @@ describe("SuitesTab", () => {
   });
 
   it('shows "No cases in this suite" for suite with no cases', async () => {
-    const emptySuite = { ...mockSuite, cases: [] } as unknown as Suite;
+    const emptySuite = makeSuite({ description: "Critical path checks", cases: [] });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [emptySuite] } as never);
     vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
     render(<SuitesTab repoId="owner/repo" />);
@@ -204,7 +185,7 @@ describe("SuitesTab", () => {
   });
 
   it('shows singular "case" label when suite has exactly one case', async () => {
-    const singleCaseSuite = { ...mockSuite, cases: ["auth/login"] } as unknown as Suite;
+    const singleCaseSuite = makeSuite({ description: "Critical path checks", cases: ["auth/login"] });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [singleCaseSuite] } as never);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());
@@ -212,17 +193,7 @@ describe("SuitesTab", () => {
 
   it("shows medium priority dot when case has medium priority", async () => {
     vi.mocked(client.listCases).mockResolvedValue({
-      cases: [
-        {
-          path: "auth/login",
-          title: "User Login",
-          description: "",
-          tags: [],
-          priority: "medium",
-          createdAt: "",
-          updatedAt: "",
-        },
-      ] as unknown as Case[],
+      cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
     } as never);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
@@ -359,7 +330,9 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Smoke Tests"));
     const suiteRow = screen.getByRole("button", { name: /Smoke Tests/ });
     await userEvent.type(suiteRow, "{Enter}");
-    await waitFor(() => expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" })));
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
+    );
   });
 
   it("expands suite on Space key", async () => {
@@ -368,6 +341,8 @@ describe("SuitesTab", () => {
     const suiteRow = screen.getByRole("button", { name: /Smoke Tests/ });
     suiteRow.focus();
     await userEvent.keyboard(" ");
-    await waitFor(() => expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" })));
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
+    );
   });
 });
