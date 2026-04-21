@@ -69,8 +69,8 @@ enum CasesCmd {
         case_path: String,
         #[arg(long)]
         title: String,
-        #[arg(long)]
-        description: String,
+        #[arg(long, help = "One-line description (optional)")]
+        description: Option<String>,
         #[arg(long, help = "Comma-separated tags")]
         tags: Option<String>,
         #[arg(long, default_value = "medium", help = "low | medium | high")]
@@ -305,11 +305,12 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             body,
         } => {
             let tag_list = parse_tags(tags.as_deref());
+            let desc = description.as_deref().unwrap_or("");
             let c = repo::create_case(
                 &repo,
                 &case_path,
                 &title,
-                &description,
+                desc,
                 tag_list,
                 &priority,
                 body.as_deref(),
