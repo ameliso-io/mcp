@@ -172,4 +172,22 @@ describe('OverviewTab', () => {
     render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
     await waitFor(() => expect(screen.getByText('No cases found in this repository.')).toBeInTheDocument())
   })
+
+  it('sorts unknown priority to end in affected cases', async () => {
+    const knownCase = {
+      case: { path: 'auth/login', title: 'High Priority', priority: 'high', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'modified',
+    } as unknown as AffectedCase
+    const unknownCase = {
+      case: { path: 'other/thing', title: 'Unknown Priority', priority: '', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'added',
+    } as unknown as AffectedCase
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [unknownCase, knownCase], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('High Priority')).toBeInTheDocument())
+    const titles = screen.getAllByText(/Priority/)
+    expect(titles[0].textContent).toBe('High Priority')
+  })
 })
