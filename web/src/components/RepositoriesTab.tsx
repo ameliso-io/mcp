@@ -52,6 +52,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [configured, setConfigured] = useState(false)
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState<string | null>(null)
+  const [syncingInstallations, setSyncingInstallations] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -114,7 +115,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   }
 
   async function handleRemove(id: string) {
-    if (!confirm('Remove this repository connection? The local clone will not be deleted.')) return
+    if (!confirm('Remove this repository connection?')) return
     setError(null)
     try {
       await client.removeRepository({ id })
@@ -124,25 +125,59 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     }
   }
 
+  async function handleSyncInstallations() {
+    setSyncingInstallations(true)
+    setError(null)
+    try {
+      const res = await client.syncInstallations({})
+      setRepos(prev => {
+        const ids = new Set(res.repositories.map(r => r.id))
+        return [...prev.filter(r => !ids.has(r.id)), ...res.repositories]
+      })
+    } catch (e) {
+      setError(errorMessage(e))
+    } finally {
+      setSyncingInstallations(false)
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '700' }}>Repositories</h2>
         {configured && installUrl ? (
-          <a
-            href={installUrl}
-            style={{
-              padding: '8px 16px',
-              background: '#1e293b',
-              color: 'white',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          >
-            + Connect GitHub Repo
-          </a>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleSyncInstallations}
+              disabled={syncingInstallations}
+              style={{
+                padding: '8px 16px',
+                background: '#f1f5f9',
+                color: '#475569',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
+            >
+              {syncingInstallations ? 'Importing…' : 'Import existing'}
+            </button>
+            <a
+              href={installUrl}
+              style={{
+                padding: '8px 16px',
+                background: '#1e293b',
+                color: 'white',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
+            >
+              + Connect GitHub Repo
+            </a>
+          </div>
         ) : (
           <div style={{ fontSize: '13px', color: '#94a3b8' }}>
             Set <code>GITHUB_APP_ID</code> + <code>GITHUB_APP_PRIVATE_KEY</code> to enable GitHub integration

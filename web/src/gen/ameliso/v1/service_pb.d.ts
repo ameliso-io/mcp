@@ -940,6 +940,34 @@ export declare type HandleGitHubCallbackResponse = Message<"ameliso.v1.HandleGit
 export declare const HandleGitHubCallbackResponseSchema: GenMessage<HandleGitHubCallbackResponse>;
 
 /**
+ * @generated from message ameliso.v1.SyncInstallationsRequest
+ */
+export declare type SyncInstallationsRequest = Message<"ameliso.v1.SyncInstallationsRequest"> & {
+};
+
+/**
+ * Describes the message ameliso.v1.SyncInstallationsRequest.
+ * Use `create(SyncInstallationsRequestSchema)` to create a new message.
+ */
+export declare const SyncInstallationsRequestSchema: GenMessage<SyncInstallationsRequest>;
+
+/**
+ * @generated from message ameliso.v1.SyncInstallationsResponse
+ */
+export declare type SyncInstallationsResponse = Message<"ameliso.v1.SyncInstallationsResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Repository repositories = 1;
+   */
+  repositories: Repository[];
+};
+
+/**
+ * Describes the message ameliso.v1.SyncInstallationsResponse.
+ * Use `create(SyncInstallationsResponseSchema)` to create a new message.
+ */
+export declare const SyncInstallationsResponseSchema: GenMessage<SyncInstallationsResponse>;
+
+/**
  * @generated from message ameliso.v1.ListRepositoriesRequest
  */
 export declare type ListRepositoriesRequest = Message<"ameliso.v1.ListRepositoriesRequest"> & {
@@ -1213,6 +1241,16 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof HandleGitHubCallbackRequestSchema;
     output: typeof HandleGitHubCallbackResponseSchema;
+  },
+  /**
+   * Import all existing installations of the GitHub App from the GitHub API.
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.SyncInstallations
+   */
+  syncInstallations: {
+    methodKind: "unary";
+    input: typeof SyncInstallationsRequestSchema;
+    output: typeof SyncInstallationsResponseSchema;
   },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
