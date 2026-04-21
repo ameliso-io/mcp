@@ -390,7 +390,10 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
               <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>No cases affected by this diff.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {affected.map(ac => (
+                {[...affected].sort((a, b) => {
+                  const order = { high: 0, medium: 1, low: 2 } as Record<string, number>
+                  return (order[a.case?.priority ?? ''] ?? 3) - (order[b.case?.priority ?? ''] ?? 3)
+                }).map(ac => (
                   <div
                     key={ac.case?.path}
                     style={{
@@ -402,6 +405,17 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
                       borderRadius: '6px',
                     }}
                   >
+                    {ac.case?.priority && (
+                      <span
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: ac.case.priority === 'high' ? '#ef4444' : ac.case.priority === 'medium' ? '#f97316' : '#22c55e',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
                     <span style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace' }}>{ac.case?.path}</span>
                     <span style={{ fontSize: '13px', color: '#64748b' }}>{ac.case?.title}</span>
                     <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>{ac.reason}</span>
