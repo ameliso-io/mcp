@@ -40,8 +40,8 @@ Available tools:
 
 | Tool | Description |
 |------|-------------|
-| `repo_status` | **Start here**: overview of cases by priority, coverage stats, active runs, and suites in one call |
-| `list_cases` | List cases; filter by tags, priority, or full-text query |
+| `repo_status` | **Start here**: overview of cases by priority, coverage stats, active runs (with pending counts), and suites in one call |
+| `list_cases` | List cases; filter by tags, priority, full-text query, or suite slug |
 | `get_case` | Get full case details including steps and body |
 | `create_case` | Create a new case file; priority must be low\|medium\|high |
 | `update_case` | Patch-style update: all fields optional — omit any to keep existing value |
@@ -76,6 +76,7 @@ export AMELISO_REPO=/path/to/project
 ameliso cases list
 ameliso cases list --tags auth --query login
 ameliso cases list --priority high
+ameliso cases list --suite smoke
 ameliso cases get auth/login
 ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
 ameliso cases create auth/login --title "User Login" --description "..." \
@@ -169,7 +170,7 @@ which cases in the run's scope still need results recorded. Scope = suite cases
 if the run was created with `--suite`; otherwise all cases in the repo.
 
 Typical agent workflow:
-1. `list_runs --status in-progress` → find the active run_id
+1. `repo_status` → see all active runs with pending counts (or `list_runs --status in-progress` to get just IDs)
 2. `get_pending_cases` → which cases still need results (sorted high→medium→low priority)
 3. `record_result` for each pending case (add `notes` for failures)
 4. When all done: `finalize_run` (warns if any cases still pending)

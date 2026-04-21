@@ -250,15 +250,10 @@ impl AmelisoMcp {
                     .filter(|s| !s.is_empty())
                     .map(|s| format!(" suite: {s}"))
                     .unwrap_or_default();
-                let pending_part =
-                    match repo::get_pending_cases(&repo, &r.id) {
-                        Ok((pending, total)) => format!(
-                            " ({}/{} pending)",
-                            pending.len(),
-                            total
-                        ),
-                        Err(_) => String::new(),
-                    };
+                let pending_part = match repo::get_pending_cases(&repo, &r.id) {
+                    Ok((pending, total)) => format!(" ({}/{} pending)", pending.len(), total),
+                    Err(_) => String::new(),
+                };
                 lines.push(format!(
                     "  [{}] tester: {}{}{}",
                     r.id, r.tester, suite_part, pending_part

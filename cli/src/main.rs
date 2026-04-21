@@ -53,6 +53,8 @@ enum CasesCmd {
         query: Option<String>,
         #[arg(long, help = "Filter by priority: low | medium | high")]
         priority: Option<String>,
+        #[arg(long, help = "Filter to cases in this suite slug")]
+        suite: Option<String>,
     },
     #[command(about = "Show a single test case")]
     Get {
@@ -233,6 +235,7 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             tags,
             query,
             priority,
+            suite,
         } => {
             let mut cases = repo::list_cases(&repo)?;
             if let Some(t) = &tags {
@@ -254,6 +257,12 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             }
             if let Some(p) = &priority {
                 cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(p));
+            }
+            if let Some(suite_slug) = &suite {
+                let s = repo::get_suite(&repo, suite_slug)?;
+                let suite_set: std::collections::HashSet<&str> =
+                    s.cases.iter().map(|p| p.as_str()).collect();
+                cases.retain(|c| suite_set.contains(c.case_path.as_str()));
             }
             if cases.is_empty() {
                 println!("No cases found.");
