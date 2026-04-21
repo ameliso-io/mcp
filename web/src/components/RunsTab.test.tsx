@@ -353,6 +353,89 @@ describe('RunsTab', () => {
     await waitFor(() => expect(screen.getByText('finalize failed')).toBeInTheDocument())
   })
 
+  it('does not finalize run when confirm cancelled', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Complete Run'))
+    await userEvent.click(screen.getByText('Complete Run'))
+    expect(client.finalizeRun).not.toHaveBeenCalled()
+  })
+
+  it('opens record form even when getCase fails to fetch body', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.getCase).mockRejectedValue(new Error('body unavailable'))
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('Record'))
+    await waitFor(() => expect(screen.getByText('Save Result')).toBeInTheDocument())
+  })
+
+  it('does not call recordResult when bulk pass confirm cancelled', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('All Passed (1)'))
+    await userEvent.click(screen.getByText('All Passed (1)'))
+    expect(client.recordResult).not.toHaveBeenCalled()
+  })
+
+  it('does not delete run when confirm cancelled', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    expect(client.deleteRun).not.toHaveBeenCalled()
+  })
+
+  it('shows Blocked styling and placeholder in record form', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('Record'))
+    await waitFor(() => screen.getByText('Save Result'))
+    const statusSelect = screen.getByDisplayValue('Passed')
+    await userEvent.selectOptions(statusSelect, 'Blocked')
+    await waitFor(() => expect(screen.getByPlaceholderText('Describe what is blocking…')).toBeInTheDocument())
+  })
+
+  it('toggles result filter off when same filter clicked twice', async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
+    const mockResult = { casePath: 'auth/login', status: ResultStatus.PASSED, notes: '' } as unknown as CaseResult
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
+    vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [mockResult] } } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('1 Passed'))
+    await userEvent.click(screen.getByText('1 Passed'))
+    await waitFor(() => screen.getByText('Show all'))
+    await userEvent.click(screen.getByText('1 Passed'))
+    await waitFor(() => expect(screen.queryByText('Show all')).not.toBeInTheDocument())
+  })
+
+  it('shows FAILED styling in record form when status changed to failed', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Record'))
+    await userEvent.click(screen.getByText('Record'))
+    await waitFor(() => screen.getByText('Save Result'))
+    const statusSelect = screen.getByDisplayValue('Passed')
+    await userEvent.selectOptions(statusSelect, 'Failed')
+    expect(screen.getByText(/Notes \*/)).toBeInTheDocument()
+  })
+
   it('polling timer callback updates pending cases on success', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     let capturedCallback: (() => Promise<void>) | null = null
