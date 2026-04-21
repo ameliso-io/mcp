@@ -2182,6 +2182,158 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    // ── passes-validation paths for simple handlers ───────────────────────────
+
+    #[tokio::test]
+    async fn get_case_passes_validation() {
+        // Valid repo_id + any case_path passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .get_case(Request::new(pb::GetCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn delete_case_passes_validation() {
+        // Both required fields present — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .delete_case(Request::new(pb::DeleteCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn delete_suite_passes_validation() {
+        // Both required fields present — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .delete_suite(Request::new(pb::DeleteSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn delete_run_passes_validation() {
+        // Both required fields present — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .delete_run(Request::new(pb::DeleteRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_run_passes_validation() {
+        // Both required fields present — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .get_run(Request::new(pb::GetRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_pending_cases_passes_validation() {
+        // Both required fields present — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn list_suites_passes_validation() {
+        // Non-empty repo_id passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .list_suites(Request::new(pb::ListSuitesRequest {
+                repo_id: "owner/repo".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_suite_with_description_passes_validation() {
+        // Non-empty description takes the Some(desc) branch — passes validation → DB error.
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                name: "Smoke Suite".to_owned(),
+                description: "Covers the happy path".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_with_environment_and_suite_passes_validation() {
+        // Non-empty environment and suite take the Some(...) branches — passes validation → DB error.
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                tester: "alice".to_owned(),
+                environment: "staging".to_owned(),
+                suite: "smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_case_with_optional_fields_passes_validation() {
+        // Non-empty title/tags/body take the Some(...) branches — passes validation → DB error.
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login Flow".to_owned(),
+                description: "Updated desc".to_owned(),
+                tags: vec!["smoke".to_owned()],
+                body: "## Steps\n\n1. Navigate to /login".to_owned(),
+                priority: pb::Priority::High as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
