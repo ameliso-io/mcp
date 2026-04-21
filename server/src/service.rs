@@ -2414,6 +2414,35 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    #[tokio::test]
+    async fn update_suite_passes_validation() {
+        // repo_id + slug non-empty passes all validation gates → DB error.
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_coverage_report_passes_validation() {
+        // Non-empty repo_id with default (Unspecified) filter passes validation → DB error.
+        let s = server();
+        let err = s
+            .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+                repo_id: "owner/repo".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
