@@ -800,6 +800,14 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                             ? "Describe what is blocking…"
                                             : "Optional notes…"
                                       }
+                                      required={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                      }
+                                      aria-required={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                      }
                                       className={
                                         recordStatus === ResultStatus.FAILED ||
                                         recordStatus === ResultStatus.BLOCKED
