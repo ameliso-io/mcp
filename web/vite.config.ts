@@ -23,8 +23,8 @@ export default defineConfig({
       exclude: ['src/gen/**', 'src/test-setup.ts', 'src/**/*.test.{ts,tsx}', 'src/__mocks__/**', 'src/client.ts', 'src/main.tsx'],
       thresholds: {
         statements: 99,
-        branches: 85,
-        functions: 75,
+        branches: 88,
+        functions: 77,
         lines: 99,
       },
     },

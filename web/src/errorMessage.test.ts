@@ -23,4 +23,11 @@ describe('errorMessage', () => {
     expect(errorMessage(42)).toBe('42')
     expect(errorMessage(null)).toBe('null')
   })
+
+  it('falls back to String(e) when message and rawMessage are both empty', () => {
+    const err = new ConnectError('fallback', Code.Unknown)
+    Object.defineProperty(err, 'message', { value: '' })
+    Object.defineProperty(err, 'rawMessage', { value: '' })
+    expect(errorMessage(err)).toBe(String(err))
+  })
 })
