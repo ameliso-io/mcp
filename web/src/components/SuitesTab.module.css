@@ -18,7 +18,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -186,7 +186,7 @@
 
 .caseRow {
   padding: 10px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
   display: flex;
@@ -227,7 +227,7 @@
 
 .casePathOnly {
   padding: 8px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
   font-size: 14px;
@@ -250,7 +250,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -264,7 +264,7 @@
 .btnGreen {
   padding: 8px 20px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -278,7 +278,7 @@
 .btnGreenSm {
   background: var(--color-success);
   border: none;
-  color: white;
+  color: var(--color-on-primary);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
@@ -321,7 +321,7 @@
 .btnSaveSm {
   padding: 6px 16px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;

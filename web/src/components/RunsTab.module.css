@@ -34,7 +34,7 @@
 .filterBtnActive {
   composes: filterBtn;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: 1px solid var(--color-ink);
 }
 
@@ -54,7 +54,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -296,7 +296,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
 }
@@ -387,7 +387,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
 }
@@ -404,7 +404,7 @@
 }
 
 .recordPanel {
-  background: white;
+  background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   border-top: none;
   border-bottom-left-radius: 6px;
@@ -439,7 +439,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -453,7 +453,7 @@
 .btnGreen {
   padding: 8px 20px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -467,7 +467,7 @@
 .btnGreenSm {
   padding: 6px 14px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -481,7 +481,7 @@
 .btnBlueSm {
   padding: 6px 14px;
   background: var(--color-sky);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -495,7 +495,7 @@
 .btnRedSm {
   padding: 6px 14px;
   background: var(--color-danger);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -509,7 +509,7 @@
 .btnRecordSm {
   padding: 5px 12px;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -537,7 +537,7 @@
 .btnSaveResult {
   padding: 8px 16px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;

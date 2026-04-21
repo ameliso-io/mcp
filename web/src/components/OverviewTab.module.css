@@ -6,7 +6,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -38,7 +38,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -198,7 +198,7 @@
 
 .runRow {
   padding: 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-primary-faint);
   display: flex;

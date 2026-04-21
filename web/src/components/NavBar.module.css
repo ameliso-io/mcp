@@ -1,6 +1,6 @@
 .header {
   background-color: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   padding: 0 24px;
   display: flex;
   align-items: center;
@@ -39,5 +39,5 @@
 
 .linkActive {
   background-color: var(--color-ink-hover);
-  color: white;
+  color: var(--color-on-primary);
 }
