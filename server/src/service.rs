@@ -1060,6 +1060,57 @@ mod tests {
     // ── record_result handler validation ─────────────────────────────────────
 
     #[tokio::test]
+    async fn record_result_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Passed as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn record_result_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Passed as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn record_result_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "".to_owned(),
+                status: pb::ResultStatus::Passed as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path is required"));
+    }
+
+    #[tokio::test]
     async fn record_result_rejects_failed_without_notes() {
         let s = server();
         let req = Request::new(pb::RecordResultRequest {
@@ -1165,6 +1216,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn finalize_run_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                status: pb::RunStatus::Completed as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
     async fn finalize_run_rejects_empty_run_id() {
         let s = server();
         let err = s
@@ -1177,6 +1243,20 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_pending_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
     }
 
     #[tokio::test]
@@ -1325,6 +1405,25 @@ mod tests {
     }
 
     // ── bulk_record_results validation ───────────────────────────────────────
+
+    #[tokio::test]
+    async fn bulk_record_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
 
     #[tokio::test]
     async fn bulk_record_rejects_empty_run_id() {
