@@ -58,6 +58,10 @@ service AmelisoService {
   // Idempotent: calling again with a different status overwrites the previous result.
   rpc RecordResult(RecordResultRequest) returns (RecordResultResponse);
 
+  // Record multiple case results in one call. More efficient than N sequential RecordResult calls.
+  // Idempotent per case: later entries for the same case_path overwrite earlier ones.
+  rpc BulkRecordResults(BulkRecordResultsRequest) returns (BulkRecordResultsResponse);
+
   // Mark a run as completed or aborted. Validates all expected cases have results.
   rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
 
@@ -248,6 +252,24 @@ message RecordResultRequest {
 
 message RecordResultResponse {
   CaseResult result = 1;
+}
+
+message BulkResultEntry {
+  string case_path = 1;
+  ResultStatus status = 2;
+  string notes = 3;
+}
+
+message BulkRecordResultsRequest {
+  string repo_path = 1;
+  string run_id = 2;
+  repeated BulkResultEntry results = 3;
+}
+
+message BulkRecordResultsResponse {
+  repeated CaseResult results = 1;
+  int32 pending_count = 2;
+  int32 total_count = 3;
 }
 
 message FinalizeRunRequest {

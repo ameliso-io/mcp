@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, ListCasesRequest, ListCasesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
+import { BulkRecordResultsRequest, BulkRecordResultsResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, ListCasesRequest, ListCasesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -170,6 +170,18 @@ export declare const AmelisoService: {
       readonly name: "RecordResult",
       readonly I: typeof RecordResultRequest,
       readonly O: typeof RecordResultResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Record multiple case results in one call. More efficient than N sequential RecordResult calls.
+     * Idempotent per case: later entries for the same case_path overwrite earlier ones.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
+     */
+    readonly bulkRecordResults: {
+      readonly name: "BulkRecordResults",
+      readonly I: typeof BulkRecordResultsRequest,
+      readonly O: typeof BulkRecordResultsResponse,
       readonly kind: MethodKind.Unary,
     },
     /**

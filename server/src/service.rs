@@ -449,6 +449,35 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn bulk_record_results(
+        &self,
+        request: Request<pb::BulkRecordResultsRequest>,
+    ) -> Result<Response<pb::BulkRecordResultsResponse>, Status> {
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+        let mut pb_results = Vec::new();
+        for entry in &req.results {
+            let status = result_status_from_i32(entry.status);
+            if status == "unspecified" {
+                return Err(invalid(format!(
+                    "status is required for case {}",
+                    entry.case_path
+                )));
+            }
+            let (result, _) =
+                repo::record_result(&repo, &req.run_id, &entry.case_path, status, &entry.notes)
+                    .map_err(repo_err)?;
+            pb_results.push(result_to_pb(&result));
+        }
+        let (pending, total_in_scope) =
+            repo::get_pending_cases(&repo, &req.run_id).map_err(repo_err)?;
+        Ok(Response::new(pb::BulkRecordResultsResponse {
+            results: pb_results,
+            pending_count: pending.len() as i32,
+            total_count: total_in_scope as i32,
+        }))
+    }
+
     async fn finalize_run(
         &self,
         request: Request<pb::FinalizeRunRequest>,
