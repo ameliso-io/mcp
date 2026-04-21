@@ -226,6 +226,32 @@ describe('RunsTab', () => {
     await waitFor(() => expect(screen.queryByText('Show all')).not.toBeInTheDocument())
   })
 
+  it('shows error banner when listRuns fails', async () => {
+    vi.mocked(client.listRuns).mockRejectedValue(new Error('fetch error'))
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('fetch error')).toBeInTheDocument())
+  })
+
+  it('shows "No results recorded" for completed run with empty results', async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
+    vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [] } } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(screen.getByText('No results recorded.')).toBeInTheDocument())
+  })
+
+  it('shows error when deleteRun fails', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.deleteRun).mockRejectedValue(new Error('delete error'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    await waitFor(() => expect(screen.getByText('delete error')).toBeInTheDocument())
+  })
+
   it('shows "all cases recorded" message when pending is empty', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 1 } as never)
