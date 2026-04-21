@@ -408,4 +408,29 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("Cancel"));
     expect(client.updateSuite).not.toHaveBeenCalled();
   });
+
+  it("calls onExpandedChange with slug when suite expanded", async () => {
+    const onExpandedChange = vi.fn();
+    render(<SuitesTab repoId="owner/repo" onExpandedChange={onExpandedChange} />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    expect(onExpandedChange).toHaveBeenCalledWith("smoke");
+  });
+
+  it("calls onExpandedChange with null when suite collapsed", async () => {
+    const onExpandedChange = vi.fn();
+    render(<SuitesTab repoId="owner/repo" onExpandedChange={onExpandedChange} />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("auto-expands suite from initialExpanded prop after suites load", async () => {
+    vi.mocked(client.listCases).mockResolvedValue({
+      cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
+    } as never);
+    render(<SuitesTab repoId="owner/repo" initialExpanded="smoke" />);
+    await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
+  });
 });

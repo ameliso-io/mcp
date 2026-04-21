@@ -10,9 +10,16 @@ import styles from "./SuitesTab.module.css";
 interface Props {
   repoId: string;
   onRunSuite?: (slug: string) => void;
+  initialExpanded?: string;
+  onExpandedChange?: (slug: string | null) => void;
 }
 
-export default function SuitesTab({ repoId, onRunSuite }: Props) {
+export default function SuitesTab({
+  repoId,
+  onRunSuite,
+  initialExpanded,
+  onExpandedChange,
+}: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +37,13 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
+  const initialExpandedRef = useRef(initialExpanded);
+  const onExpandedChangeRef = useRef(onExpandedChange);
+  const toggleExpandRef = useRef<(slug: string) => void>(() => {});
+  useEffect(() => {
+    onExpandedChangeRef.current = onExpandedChange;
+    toggleExpandRef.current = toggleExpand;
+  });
   const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
@@ -45,11 +59,13 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       setExpanded(null);
       setExpandedCases([]);
       expandingRef.current = null;
+      onExpandedChangeRef.current?.(null);
       return;
     }
     setExpanded(slug);
     setExpandedCases([]);
     expandingRef.current = slug;
+    onExpandedChangeRef.current?.(slug);
     setExpandedCasesLoading(true);
     try {
       const res = await client.listCases({ repoId, suite: slug });
@@ -86,6 +102,16 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-expand suite from URL param after first load
+  useEffect(() => {
+    const slug = initialExpandedRef.current;
+    if (!slug || suites.length === 0) return;
+    if (suites.some((s) => s.slug === slug)) {
+      initialExpandedRef.current = null;
+      toggleExpandRef.current(slug);
+    }
+  }, [suites]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
