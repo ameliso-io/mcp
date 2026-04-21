@@ -90,6 +90,17 @@ describe("RunsTab", () => {
     expect(screen.getByText("Completed")).toBeInTheDocument();
   });
 
+  it("status filter group has aria-label and All is pressed by default", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("No runs found."));
+    expect(screen.getByRole("group", { name: "Filter by status" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "In Progress" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+
   it("filters runs by status", async () => {
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("In Progress"));
@@ -211,7 +222,11 @@ describe("RunsTab", () => {
   });
 
   it("shows result badges for completed run", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     const mockResult = makeCaseResult();
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
@@ -224,7 +239,11 @@ describe("RunsTab", () => {
   });
 
   it("shows case title and notes in completed run results", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     const mockResult = makeCaseResult({ notes: "looks good" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
@@ -239,7 +258,11 @@ describe("RunsTab", () => {
   });
 
   it("filters results by status and shows Show all button", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     const mockResult = makeCaseResult();
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
@@ -262,7 +285,11 @@ describe("RunsTab", () => {
   });
 
   it('shows "No results recorded" for completed run with empty results', async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
       run: { meta: completedRun, results: [] },
@@ -440,7 +467,11 @@ describe("RunsTab", () => {
   });
 
   it("handles getRun response with no results field", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun } } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -496,7 +527,11 @@ describe("RunsTab", () => {
   });
 
   it("toggles result filter off when same filter clicked twice", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     const mockResult = makeCaseResult();
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({
@@ -617,21 +652,33 @@ describe("RunsTab", () => {
   });
 
   it("renders aborted run with correct label", async () => {
-    const abortedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.ABORTED });
+    const abortedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.ABORTED,
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [abortedRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Aborted")).toBeInTheDocument());
   });
 
   it("renders run with unknown status using default label and color", async () => {
-    const unknownRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.UNSPECIFIED });
+    const unknownRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.UNSPECIFIED,
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [unknownRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
 
   it("shows FAILED, BLOCKED, and SKIPPED result status labels", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     const results = [
       makeCaseResult({ casePath: "auth/login", status: ResultStatus.FAILED }),
       makeCaseResult({ casePath: "auth/logout", status: ResultStatus.BLOCKED }),
@@ -650,7 +697,11 @@ describe("RunsTab", () => {
   });
 
   it("shows Unknown label for result with unspecified status", async () => {
-    const completedRun = makeRunMeta({ tester: "alice", environment: "staging", status: RunStatus.COMPLETED });
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
     const results = [makeCaseResult({ status: ResultStatus.UNSPECIFIED })];
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
     vi.mocked(client.getRun).mockResolvedValue({

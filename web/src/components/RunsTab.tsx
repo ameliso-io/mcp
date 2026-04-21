@@ -297,24 +297,27 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2 className={styles.title}>Runs</h2>
-          {(
-            [
-              { label: "All", value: RunStatus.UNSPECIFIED },
-              { label: "In Progress", value: RunStatus.IN_PROGRESS },
-              { label: "Completed", value: RunStatus.COMPLETED },
-              { label: "Aborted", value: RunStatus.ABORTED },
-            ] as { label: string; value: RunStatus }[]
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setStatusFilter(opt.value)}
-              className={
-                statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
+          <div role="group" aria-label="Filter by status">
+            {(
+              [
+                { label: "All", value: RunStatus.UNSPECIFIED },
+                { label: "In Progress", value: RunStatus.IN_PROGRESS },
+                { label: "Completed", value: RunStatus.COMPLETED },
+                { label: "Aborted", value: RunStatus.ABORTED },
+              ] as { label: string; value: RunStatus }[]
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setStatusFilter(opt.value)}
+                aria-pressed={statusFilter === opt.value}
+                className={
+                  statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
         <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
           {showCreate ? "Cancel" : "+ New Run"}
@@ -380,7 +383,11 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg} role="status">Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && runs.length === 0 && !error && (
         <div className={styles.emptyCard}>No runs found.</div>
