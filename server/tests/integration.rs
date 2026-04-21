@@ -922,7 +922,7 @@ async fn get_pending_cases_returns_unrecorded() {
         .unwrap()
         .into_inner();
     assert_eq!(resp.total_in_scope, 2);
-    assert_eq!(resp.case_paths.len(), 2);
+    assert_eq!(resp.cases.len(), 2);
 
     // Record one result
     write_result(tmp.path(), "2026-01-01-smoke", "auth/login", "passed");
@@ -937,8 +937,9 @@ async fn get_pending_cases_returns_unrecorded() {
         .unwrap()
         .into_inner();
     assert_eq!(resp2.total_in_scope, 2);
-    assert_eq!(resp2.case_paths.len(), 1);
-    assert_eq!(resp2.case_paths[0], "billing/invoice");
+    assert_eq!(resp2.cases.len(), 1);
+    assert_eq!(resp2.cases[0].path, "billing/invoice");
+    assert_eq!(resp2.cases[0].title, "Invoice");
 }
 
 #[tokio::test]
@@ -988,7 +989,8 @@ async fn get_pending_cases_respects_suite_scope() {
         .unwrap()
         .into_inner();
     assert_eq!(resp.total_in_scope, 2);
-    assert_eq!(resp.case_paths.len(), 2);
+    assert_eq!(resp.cases.len(), 2);
     // payments/checkout NOT in scope (not in suite)
-    assert!(!resp.case_paths.contains(&"payments/checkout".to_owned()));
+    let pending_paths: Vec<&str> = resp.cases.iter().map(|c| c.path.as_str()).collect();
+    assert!(!pending_paths.contains(&"payments/checkout"));
 }

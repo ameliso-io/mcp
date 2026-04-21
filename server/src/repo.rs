@@ -503,33 +503,39 @@ pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml>
 
 /// Return (pending_case_paths, total_in_scope).
 /// Scope = suite cases if run has a suite set; otherwise all cases in repo.
-pub fn get_pending_cases(repo: &Path, run_id: &str) -> RResult<(Vec<String>, usize)> {
+pub fn get_pending_cases(repo: &Path, run_id: &str) -> RResult<(Vec<LoadedCase>, usize)> {
     validate_slug_path(run_id, "run")?;
     let run = get_run(repo, run_id)?;
     let recorded: std::collections::HashSet<String> =
         run.results.iter().map(|r| r.case_path.clone()).collect();
 
-    let scope: Vec<String> = if let Some(ref suite_slug) = run.meta.suite {
+    // Build scope as LoadedCase objects for rich metadata.
+    let all_cases = list_cases(repo)?;
+    let scope: Vec<LoadedCase> = if let Some(ref suite_slug) = run.meta.suite {
         if suite_slug.is_empty() {
-            list_cases(repo)?.into_iter().map(|c| c.case_path).collect()
+            all_cases
         } else {
             match get_suite(repo, suite_slug) {
-                Ok(s) => s.cases.clone(),
-                Err(RepoError::NotFound(_)) => {
-                    // Suite was deleted; fall back to all cases
-                    list_cases(repo)?.into_iter().map(|c| c.case_path).collect()
+                Ok(s) => {
+                    let suite_set: std::collections::HashSet<&str> =
+                        s.cases.iter().map(|p| p.as_str()).collect();
+                    all_cases
+                        .into_iter()
+                        .filter(|c| suite_set.contains(c.case_path.as_str()))
+                        .collect()
                 }
+                Err(RepoError::NotFound(_)) => all_cases,
                 Err(e) => return Err(e),
             }
         }
     } else {
-        list_cases(repo)?.into_iter().map(|c| c.case_path).collect()
+        all_cases
     };
 
     let total = scope.len();
-    let pending: Vec<String> = scope
+    let pending: Vec<LoadedCase> = scope
         .into_iter()
-        .filter(|p| !recorded.contains(p))
+        .filter(|c| !recorded.contains(&c.case_path))
         .collect();
     Ok((pending, total))
 }

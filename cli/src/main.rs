@@ -421,8 +421,16 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                     pending.len(),
                     total
                 );
-                for p in &pending {
-                    println!("  {p}");
+                for c in &pending {
+                    let tags = if c.fm.tags.is_empty() {
+                        String::new()
+                    } else {
+                        format!(", tags: {}", c.fm.tags.join(", "))
+                    };
+                    println!(
+                        "  {} — {} (priority: {}{})",
+                        c.case_path, c.fm.title, c.fm.priority, tags
+                    );
                 }
             }
         }

@@ -279,8 +279,7 @@ impl AmelisoMcp {
             }
         }
         let mut entry_lines = Vec::new();
-        let mut counts: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
+        let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
         for c in &cases {
             let (status, run_id) = latest
                 .get(&c.case_path)
@@ -399,8 +398,16 @@ impl AmelisoMcp {
                         pending.len(),
                         total
                     )];
-                    for p in &pending {
-                        lines.push(format!("  {p}"));
+                    for c in &pending {
+                        let tags = if c.fm.tags.is_empty() {
+                            String::new()
+                        } else {
+                            format!(", tags: {}", c.fm.tags.join(", "))
+                        };
+                        lines.push(format!(
+                            "  {} — {} (priority: {}{})",
+                            c.case_path, c.fm.title, c.fm.priority, tags
+                        ));
                     }
                     lines.join("\n")
                 }

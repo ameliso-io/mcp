@@ -424,10 +424,9 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::GetPendingCasesResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let (pending, total) =
-            repo::get_pending_cases(&repo, &req.run_id).map_err(repo_err)?;
+        let (pending, total) = repo::get_pending_cases(&repo, &req.run_id).map_err(repo_err)?;
         Ok(Response::new(pb::GetPendingCasesResponse {
-            case_paths: pending,
+            cases: pending.iter().map(case_to_pb).collect(),
             total_in_scope: total as i32,
         }))
     }

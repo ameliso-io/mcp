@@ -261,8 +261,8 @@ message GetPendingCasesRequest {
 }
 
 message GetPendingCasesResponse {
-  // Case paths that are in scope but have no result recorded yet.
-  repeated string case_paths = 1;
+  // Cases in scope that have no result recorded yet (includes metadata).
+  repeated Case cases = 1;
   // Total scope size (suite or all cases).
   int32 total_in_scope = 2;
 }
