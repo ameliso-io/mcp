@@ -217,4 +217,39 @@ describe('CasesTab', () => {
     expect(paths[0].textContent).toBe('auth/login')
     expect(paths[1].textContent).toBe('auth/logout')
   })
+
+  it('sorts unknown priority cases to end', async () => {
+    const unknownCase = { ...mockCase, path: 'other/thing', title: 'Unknown', priority: '' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase, mockCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
+    const paths = screen.getAllByText(/\//)
+    const loginIdx = paths.findIndex(el => el.textContent === 'auth/login')
+    const otherIdx = paths.findIndex(el => el.textContent === 'other/thing')
+    expect(loginIdx).toBeLessThan(otherIdx)
+  })
+
+  it('sorts known before unknown priority from reversed order', async () => {
+    const unknownCase = { ...mockCase, path: 'other/thing', title: 'Unknown', priority: '' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, unknownCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
+    const paths = screen.getAllByText(/\//)
+    const loginIdx = paths.findIndex(el => el.textContent === 'auth/login')
+    const otherIdx = paths.findIndex(el => el.textContent === 'other/thing')
+    expect(loginIdx).toBeLessThan(otherIdx)
+  })
+
+  it('collapses expanded case when it is deleted', async () => {
+    vi.mocked(client.deleteCase).mockResolvedValue({ filePath: 'cases/auth/login.md' } as never)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    await userEvent.click(screen.getByText('User Login'))
+    await waitFor(() => screen.getByText(/Go to \/login/))
+    await userEvent.click(screen.getByText('Delete'))
+    await waitFor(() => expect(client.deleteCase).toHaveBeenCalledWith(
+      expect.objectContaining({ casePath: 'auth/login' })
+    ))
+  })
 })
