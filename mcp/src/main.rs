@@ -32,6 +32,8 @@ struct ListCasesRequest {
     query: Option<String>,
     #[schemars(description = "Filter by priority: low | medium | high (optional)")]
     priority: Option<String>,
+    #[schemars(description = "Suite slug to restrict results to cases in that suite (optional)")]
+    suite: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -248,7 +250,19 @@ impl AmelisoMcp {
                     .filter(|s| !s.is_empty())
                     .map(|s| format!(" suite: {s}"))
                     .unwrap_or_default();
-                lines.push(format!("  [{}] tester: {}{}", r.id, r.tester, suite_part));
+                let pending_part =
+                    match repo::get_pending_cases(&repo, &r.id) {
+                        Ok((pending, total)) => format!(
+                            " ({}/{} pending)",
+                            pending.len(),
+                            total
+                        ),
+                        Err(_) => String::new(),
+                    };
+                lines.push(format!(
+                    "  [{}] tester: {}{}{}",
+                    r.id, r.tester, suite_part, pending_part
+                ));
             }
         }
 
@@ -256,7 +270,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "List test cases in a repo. Filter by tags, priority, or full-text query. Results sorted high→medium→low priority."
+        description = "List test cases in a repo. Filter by tags, priority, full-text query, or suite slug. Results sorted high→medium→low priority."
     )]
     fn list_cases(&self, Parameters(req): Parameters<ListCasesRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -283,6 +297,16 @@ impl AmelisoMcp {
         }
         if let Some(p) = &req.priority {
             cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(p));
+        }
+        if let Some(suite_slug) = &req.suite {
+            match repo::get_suite(&repo, suite_slug) {
+                Ok(suite) => {
+                    let suite_set: std::collections::HashSet<&str> =
+                        suite.cases.iter().map(|p| p.as_str()).collect();
+                    cases.retain(|c| suite_set.contains(c.case_path.as_str()));
+                }
+                Err(e) => return format!("error loading suite '{suite_slug}': {e}"),
+            }
         }
         if cases.is_empty() {
             return "No cases found.".to_owned();
