@@ -57,13 +57,13 @@ Available tools:
 | `list_suites` | List all suites |
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
-| `update_suite` | Patch-style update: all fields optional — omit any to keep existing value |
+| `update_suite` | Patch-style update: all fields optional — omit any to keep existing value. Pass `cases` to replace the full case list (including empty to clear all). |
 | `delete_suite` | Delete a suite file |
 | `bulk_record_results` | Record multiple case results in one call; returns per-result confirmation + progress |
 | `get_affected_cases` | Cases that may need re-running based on git changes; shows title/priority/tags |
 | `get_pending_cases` | Cases in a run's scope with no result yet; sorted high→medium→low priority |
 
-All tools accept `repo_path` — the absolute path to the controlled repository.
+All tools accept `repo_id` — the repository identifier (e.g. `owner/repo`).
 
 ---
 
