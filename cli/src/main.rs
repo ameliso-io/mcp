@@ -23,7 +23,10 @@ enum Commands {
     Coverage {
         #[arg(long, env = "AMELISO_REPO", help = "Path to the test repository")]
         repo: PathBuf,
-        #[arg(long, help = "Filter by status: never | passed | failed | blocked | skipped")]
+        #[arg(
+            long,
+            help = "Filter by status: never | passed | failed | blocked | skipped"
+        )]
         status: Option<String>,
     },
     #[command(about = "Show which cases need re-running after recent code changes")]
@@ -331,6 +334,18 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             if let Some(env) = &run.meta.environment {
                 println!("env:    {env}");
             }
+            let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
+            let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
+            let blocked = run.results.iter().filter(|r| r.fm.status == "blocked").count();
+            let skipped = run.results.iter().filter(|r| r.fm.status == "skipped").count();
+            println!(
+                "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                passed,
+                failed,
+                blocked,
+                skipped,
+                run.results.len()
+            );
             println!("\nResults ({}):", run.results.len());
             for r in &run.results {
                 println!("  {:40} {}", r.case_path, r.fm.status);

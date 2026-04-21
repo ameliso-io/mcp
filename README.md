@@ -43,6 +43,7 @@ export AMELISO_REPO=/path/to/your/project
 # Cases
 ameliso cases list
 ameliso cases list --tags auth --query login
+ameliso cases list --priority high
 ameliso cases get auth/login
 ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
 ameliso cases create auth/login --title "User Login" --description "..." --body "## Steps\n\n1. ..."

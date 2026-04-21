@@ -388,7 +388,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Get full details of a test run including all results.")]
+    #[tool(description = "Get full details of a test run including all results and a summary of pass/fail counts.")]
     fn get_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_run(&repo, &req.run_id) {
@@ -402,6 +402,14 @@ impl AmelisoMcp {
                 if let Some(env) = &run.meta.environment {
                     lines.push(format!("env:    {env}"));
                 }
+                let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
+                let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
+                let blocked = run.results.iter().filter(|r| r.fm.status == "blocked").count();
+                let skipped = run.results.iter().filter(|r| r.fm.status == "skipped").count();
+                lines.push(format!(
+                    "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                    passed, failed, blocked, skipped, run.results.len()
+                ));
                 lines.push(format!("\nResults ({}):", run.results.len()));
                 for r in &run.results {
                     lines.push(format!("  {:40} {}", r.case_path, r.fm.status));
