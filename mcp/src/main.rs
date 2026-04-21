@@ -256,7 +256,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "List test cases in a repo. Filter by tags, priority, or full-text query."
+        description = "List test cases in a repo. Filter by tags, priority, or full-text query. Results sorted high→medium→low priority."
     )]
     fn list_cases(&self, Parameters(req): Parameters<ListCasesRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -287,6 +287,17 @@ impl AmelisoMcp {
         if cases.is_empty() {
             return "No cases found.".to_owned();
         }
+        let priority_rank = |p: &str| match p {
+            "high" => 0u8,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        };
+        cases.sort_by(|a, b| {
+            priority_rank(&a.fm.priority)
+                .cmp(&priority_rank(&b.fm.priority))
+                .then_with(|| a.case_path.cmp(&b.case_path))
+        });
         cases
             .iter()
             .map(|c| {

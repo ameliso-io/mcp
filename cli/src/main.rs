@@ -252,6 +252,17 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             if cases.is_empty() {
                 println!("No cases found.");
             } else {
+                let priority_rank = |p: &str| match p {
+                    "high" => 0u8,
+                    "medium" => 1,
+                    "low" => 2,
+                    _ => 3,
+                };
+                cases.sort_by(|a, b| {
+                    priority_rank(&a.fm.priority)
+                        .cmp(&priority_rank(&b.fm.priority))
+                        .then_with(|| a.case_path.cmp(&b.case_path))
+                });
                 for c in &cases {
                     println!("{:40} {:6}  {}", c.case_path, c.fm.priority, c.fm.title);
                 }
