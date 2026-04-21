@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { AffectedCase, Case, CaseResult, CoverageEntry, Priority, ResultStatus, Run, RunMeta, RunStatus, Suite } from "./types_pb";
+import type { AffectedCase, Case, CaseResult, CoverageEntry, Priority, Repository, ResultStatus, Run, RunMeta, RunStatus, Suite } from "./types_pb";
 
 /**
  * Describes the file ameliso/v1/service.proto.
@@ -911,6 +911,159 @@ export declare type GetAffectedCasesResponse = Message<"ameliso.v1.GetAffectedCa
 export declare const GetAffectedCasesResponseSchema: GenMessage<GetAffectedCasesResponse>;
 
 /**
+ * @generated from message ameliso.v1.GetGitHubInstallUrlRequest
+ */
+export declare type GetGitHubInstallUrlRequest = Message<"ameliso.v1.GetGitHubInstallUrlRequest"> & {
+};
+
+/**
+ * Describes the message ameliso.v1.GetGitHubInstallUrlRequest.
+ * Use `create(GetGitHubInstallUrlRequestSchema)` to create a new message.
+ */
+export declare const GetGitHubInstallUrlRequestSchema: GenMessage<GetGitHubInstallUrlRequest>;
+
+/**
+ * @generated from message ameliso.v1.GetGitHubInstallUrlResponse
+ */
+export declare type GetGitHubInstallUrlResponse = Message<"ameliso.v1.GetGitHubInstallUrlResponse"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * @generated from field: bool configured = 2;
+   */
+  configured: boolean;
+};
+
+/**
+ * Describes the message ameliso.v1.GetGitHubInstallUrlResponse.
+ * Use `create(GetGitHubInstallUrlResponseSchema)` to create a new message.
+ */
+export declare const GetGitHubInstallUrlResponseSchema: GenMessage<GetGitHubInstallUrlResponse>;
+
+/**
+ * @generated from message ameliso.v1.HandleGitHubCallbackRequest
+ */
+export declare type HandleGitHubCallbackRequest = Message<"ameliso.v1.HandleGitHubCallbackRequest"> & {
+  /**
+   * @generated from field: string installation_id = 1;
+   */
+  installationId: string;
+};
+
+/**
+ * Describes the message ameliso.v1.HandleGitHubCallbackRequest.
+ * Use `create(HandleGitHubCallbackRequestSchema)` to create a new message.
+ */
+export declare const HandleGitHubCallbackRequestSchema: GenMessage<HandleGitHubCallbackRequest>;
+
+/**
+ * @generated from message ameliso.v1.HandleGitHubCallbackResponse
+ */
+export declare type HandleGitHubCallbackResponse = Message<"ameliso.v1.HandleGitHubCallbackResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Repository repositories = 1;
+   */
+  repositories: Repository[];
+};
+
+/**
+ * Describes the message ameliso.v1.HandleGitHubCallbackResponse.
+ * Use `create(HandleGitHubCallbackResponseSchema)` to create a new message.
+ */
+export declare const HandleGitHubCallbackResponseSchema: GenMessage<HandleGitHubCallbackResponse>;
+
+/**
+ * @generated from message ameliso.v1.ListRepositoriesRequest
+ */
+export declare type ListRepositoriesRequest = Message<"ameliso.v1.ListRepositoriesRequest"> & {
+};
+
+/**
+ * Describes the message ameliso.v1.ListRepositoriesRequest.
+ * Use `create(ListRepositoriesRequestSchema)` to create a new message.
+ */
+export declare const ListRepositoriesRequestSchema: GenMessage<ListRepositoriesRequest>;
+
+/**
+ * @generated from message ameliso.v1.ListRepositoriesResponse
+ */
+export declare type ListRepositoriesResponse = Message<"ameliso.v1.ListRepositoriesResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Repository repositories = 1;
+   */
+  repositories: Repository[];
+};
+
+/**
+ * Describes the message ameliso.v1.ListRepositoriesResponse.
+ * Use `create(ListRepositoriesResponseSchema)` to create a new message.
+ */
+export declare const ListRepositoriesResponseSchema: GenMessage<ListRepositoriesResponse>;
+
+/**
+ * @generated from message ameliso.v1.SyncRepositoryRequest
+ */
+export declare type SyncRepositoryRequest = Message<"ameliso.v1.SyncRepositoryRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message ameliso.v1.SyncRepositoryRequest.
+ * Use `create(SyncRepositoryRequestSchema)` to create a new message.
+ */
+export declare const SyncRepositoryRequestSchema: GenMessage<SyncRepositoryRequest>;
+
+/**
+ * @generated from message ameliso.v1.SyncRepositoryResponse
+ */
+export declare type SyncRepositoryResponse = Message<"ameliso.v1.SyncRepositoryResponse"> & {
+  /**
+   * @generated from field: ameliso.v1.Repository repository = 1;
+   */
+  repository?: Repository;
+};
+
+/**
+ * Describes the message ameliso.v1.SyncRepositoryResponse.
+ * Use `create(SyncRepositoryResponseSchema)` to create a new message.
+ */
+export declare const SyncRepositoryResponseSchema: GenMessage<SyncRepositoryResponse>;
+
+/**
+ * @generated from message ameliso.v1.RemoveRepositoryRequest
+ */
+export declare type RemoveRepositoryRequest = Message<"ameliso.v1.RemoveRepositoryRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message ameliso.v1.RemoveRepositoryRequest.
+ * Use `create(RemoveRepositoryRequestSchema)` to create a new message.
+ */
+export declare const RemoveRepositoryRequestSchema: GenMessage<RemoveRepositoryRequest>;
+
+/**
+ * @generated from message ameliso.v1.RemoveRepositoryResponse
+ */
+export declare type RemoveRepositoryResponse = Message<"ameliso.v1.RemoveRepositoryResponse"> & {
+};
+
+/**
+ * Describes the message ameliso.v1.RemoveRepositoryResponse.
+ * Use `create(RemoveRepositoryResponseSchema)` to create a new message.
+ */
+export declare const RemoveRepositoryResponseSchema: GenMessage<RemoveRepositoryResponse>;
+
+/**
  * AmelisoService manages test cases and runs in a git-native controlled repository.
  * All operations accept a repo_path that points to the root of the controlled repository.
  *
@@ -1110,6 +1263,57 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetAffectedCasesRequestSchema;
     output: typeof GetAffectedCasesResponseSchema;
+  },
+  /**
+   * Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.GetGitHubInstallUrl
+   */
+  getGitHubInstallUrl: {
+    methodKind: "unary";
+    input: typeof GetGitHubInstallUrlRequestSchema;
+    output: typeof GetGitHubInstallUrlResponseSchema;
+  },
+  /**
+   * Called after GitHub redirects back with an installation_id.
+   * Fetches repos for the installation, clones them, and persists the connection.
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
+   */
+  handleGitHubCallback: {
+    methodKind: "unary";
+    input: typeof HandleGitHubCallbackRequestSchema;
+    output: typeof HandleGitHubCallbackResponseSchema;
+  },
+  /**
+   * List all connected repositories.
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
+   */
+  listRepositories: {
+    methodKind: "unary";
+    input: typeof ListRepositoriesRequestSchema;
+    output: typeof ListRepositoriesResponseSchema;
+  },
+  /**
+   * Pull latest changes for a connected repository.
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
+   */
+  syncRepository: {
+    methodKind: "unary";
+    input: typeof SyncRepositoryRequestSchema;
+    output: typeof SyncRepositoryResponseSchema;
+  },
+  /**
+   * Remove a connected repository from the store (does not delete the local clone).
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
+   */
+  removeRepository: {
+    methodKind: "unary";
+    input: typeof RemoveRepositoryRequestSchema;
+    output: typeof RemoveRepositoryResponseSchema;
   },
 }>;
 

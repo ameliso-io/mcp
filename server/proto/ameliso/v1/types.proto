@@ -83,3 +83,15 @@ enum Priority {
   PRIORITY_MEDIUM = 2;
   PRIORITY_HIGH = 3;
 }
+
+// A GitHub repository connected via the GitHub App installation.
+message Repository {
+  string id = 1;              // "owner/repo"
+  string name = 2;            // "repo"
+  string full_name = 3;       // "owner/repo"
+  string html_url = 4;        // "https://github.com/owner/repo"
+  string local_path = 5;      // absolute path to local clone
+  string installation_id = 6;
+  bool cloned = 7;
+  string added_at = 8;
+}

@@ -597,4 +597,179 @@ impl AmelisoService for AmelisoServer {
             reason: result.reason,
         }))
     }
+
+    async fn get_git_hub_install_url(
+        &self,
+        _request: Request<pb::GetGitHubInstallUrlRequest>,
+    ) -> Result<Response<pb::GetGitHubInstallUrlResponse>, Status> {
+        match crate::github::config() {
+            Some(cfg) => Ok(Response::new(pb::GetGitHubInstallUrlResponse {
+                url: cfg.installation_url,
+                configured: true,
+            })),
+            None => Ok(Response::new(pb::GetGitHubInstallUrlResponse {
+                url: String::new(),
+                configured: false,
+            })),
+        }
+    }
+
+    async fn handle_git_hub_callback(
+        &self,
+        request: Request<pb::HandleGitHubCallbackRequest>,
+    ) -> Result<Response<pb::HandleGitHubCallbackResponse>, Status> {
+        let req = request.into_inner();
+        if req.installation_id.is_empty() {
+            return Err(invalid("installation_id is required"));
+        }
+
+        let cfg = crate::github::config().ok_or_else(|| {
+            Status::failed_precondition(
+                "GitHub App not configured (set GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY)",
+            )
+        })?;
+
+        let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let token = crate::github::get_installation_token(&req.installation_id, &jwt)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let gh_repos = crate::github::list_installation_repos(&token)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let repos_base = crate::repos_store::repos_dir();
+        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+        let mut result = Vec::new();
+
+        for gh_repo in &gh_repos {
+            let local_path = repos_base.join(&gh_repo.full_name);
+            let token_clone = token.clone();
+            let gh_repo_clone = gh_repo.clone();
+            let local_path_clone = local_path.clone();
+            let cloned = tokio::task::spawn_blocking(move || {
+                crate::github::clone_or_update(&gh_repo_clone, &local_path_clone, &token_clone)
+                    .unwrap_or(false)
+            })
+            .await
+            .unwrap_or(false);
+
+            let stored = crate::repos_store::StoredRepo {
+                id: gh_repo.full_name.clone(),
+                name: gh_repo.name.clone(),
+                full_name: gh_repo.full_name.clone(),
+                html_url: gh_repo.html_url.clone(),
+                local_path: local_path.to_string_lossy().into_owned(),
+                installation_id: req.installation_id.clone(),
+                cloned,
+                added_at: now.clone(),
+            };
+            crate::repos_store::add_or_update(stored.clone());
+            result.push(pb::Repository {
+                id: stored.id,
+                name: stored.name,
+                full_name: stored.full_name,
+                html_url: stored.html_url,
+                local_path: stored.local_path,
+                installation_id: stored.installation_id,
+                cloned: stored.cloned,
+                added_at: stored.added_at,
+            });
+        }
+
+        Ok(Response::new(pb::HandleGitHubCallbackResponse {
+            repositories: result,
+        }))
+    }
+
+    async fn list_repositories(
+        &self,
+        _request: Request<pb::ListRepositoriesRequest>,
+    ) -> Result<Response<pb::ListRepositoriesResponse>, Status> {
+        let repositories = crate::repos_store::load()
+            .into_iter()
+            .map(|r| pb::Repository {
+                id: r.id,
+                name: r.name,
+                full_name: r.full_name,
+                html_url: r.html_url,
+                local_path: r.local_path,
+                installation_id: r.installation_id,
+                cloned: r.cloned,
+                added_at: r.added_at,
+            })
+            .collect();
+        Ok(Response::new(pb::ListRepositoriesResponse { repositories }))
+    }
+
+    async fn sync_repository(
+        &self,
+        request: Request<pb::SyncRepositoryRequest>,
+    ) -> Result<Response<pb::SyncRepositoryResponse>, Status> {
+        let req = request.into_inner();
+        if req.id.is_empty() {
+            return Err(invalid("id is required"));
+        }
+
+        let mut repos = crate::repos_store::load();
+        let stored = repos
+            .iter_mut()
+            .find(|r| r.id == req.id)
+            .ok_or_else(|| Status::not_found(format!("repository {} not found", req.id)))?;
+
+        let cfg = crate::github::config()
+            .ok_or_else(|| Status::failed_precondition("GitHub App not configured"))?;
+        let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
+            .map_err(|e| Status::internal(e.to_string()))?;
+        let token = crate::github::get_installation_token(&stored.installation_id, &jwt)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let local_path = std::path::PathBuf::from(&stored.local_path);
+        let gh_repo = crate::github::GitHubRepo {
+            id: 0,
+            name: stored.name.clone(),
+            full_name: stored.full_name.clone(),
+            html_url: stored.html_url.clone(),
+            clone_url: format!("https://github.com/{}.git", stored.full_name),
+            private: false,
+        };
+
+        let cloned = tokio::task::spawn_blocking(move || {
+            crate::github::clone_or_update(&gh_repo, &local_path, &token).unwrap_or(false)
+        })
+        .await
+        .unwrap_or(false);
+
+        stored.cloned = cloned;
+        let result = pb::Repository {
+            id: stored.id.clone(),
+            name: stored.name.clone(),
+            full_name: stored.full_name.clone(),
+            html_url: stored.html_url.clone(),
+            local_path: stored.local_path.clone(),
+            installation_id: stored.installation_id.clone(),
+            cloned: stored.cloned,
+            added_at: stored.added_at.clone(),
+        };
+        crate::repos_store::save(&repos);
+
+        Ok(Response::new(pb::SyncRepositoryResponse {
+            repository: Some(result),
+        }))
+    }
+
+    async fn remove_repository(
+        &self,
+        request: Request<pb::RemoveRepositoryRequest>,
+    ) -> Result<Response<pb::RemoveRepositoryResponse>, Status> {
+        let req = request.into_inner();
+        if req.id.is_empty() {
+            return Err(invalid("id is required"));
+        }
+        crate::repos_store::remove(&req.id);
+        Ok(Response::new(pb::RemoveRepositoryResponse {}))
+    }
 }

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, ListCasesRequest, ListCasesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
+import { CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -226,6 +226,62 @@ export const AmelisoService = {
       name: "GetAffectedCases",
       I: GetAffectedCasesRequest,
       O: GetAffectedCasesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.GetGitHubInstallUrl
+     */
+    getGitHubInstallUrl: {
+      name: "GetGitHubInstallUrl",
+      I: GetGitHubInstallUrlRequest,
+      O: GetGitHubInstallUrlResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Called after GitHub redirects back with an installation_id.
+     * Fetches repos for the installation, clones them, and persists the connection.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
+     */
+    handleGitHubCallback: {
+      name: "HandleGitHubCallback",
+      I: HandleGitHubCallbackRequest,
+      O: HandleGitHubCallbackResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * List all connected repositories.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
+     */
+    listRepositories: {
+      name: "ListRepositories",
+      I: ListRepositoriesRequest,
+      O: ListRepositoriesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Pull latest changes for a connected repository.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
+     */
+    syncRepository: {
+      name: "SyncRepository",
+      I: SyncRepositoryRequest,
+      O: SyncRepositoryResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Remove a connected repository from the store (does not delete the local clone).
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
+     */
+    removeRepository: {
+      name: "RemoveRepository",
+      I: RemoveRepositoryRequest,
+      O: RemoveRepositoryResponse,
       kind: MethodKind.Unary,
     },
   }
