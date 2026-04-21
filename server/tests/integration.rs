@@ -703,5 +703,5 @@ async fn create_case_rejects_path_traversal() {
         .await
         .unwrap_err();
 
-    assert_eq!(err.code(), tonic::Code::Internal);
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
 }

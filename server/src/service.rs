@@ -10,6 +10,7 @@ fn repo_err(e: RepoError) -> Status {
         RepoError::NotFound(msg) => Status::not_found(msg),
         RepoError::AlreadyExists(msg) => Status::already_exists(msg),
         RepoError::ClosedRun(msg) => Status::failed_precondition(msg),
+        RepoError::InvalidArg(msg) => Status::invalid_argument(msg),
         RepoError::Other(e) => Status::internal(e.to_string()),
     }
 }

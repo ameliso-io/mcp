@@ -21,6 +21,8 @@ pub enum RepoError {
     AlreadyExists(String),
     #[error("closed run: {0}")]
     ClosedRun(String),
+    #[error("invalid argument: {0}")]
+    InvalidArg(String),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -210,10 +212,10 @@ fn to_case_path(cases_dir: &Path, file: &Path) -> Option<String> {
 
 fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
     if path.is_empty() {
-        return Err(RepoError::NotFound(format!("{} path is empty", kind)));
+        return Err(RepoError::InvalidArg(format!("{} path is empty", kind)));
     }
     if path.contains("..") || path.starts_with('/') || path.starts_with('\\') {
-        return Err(RepoError::Other(anyhow::anyhow!(
+        return Err(RepoError::InvalidArg(format!(
             "invalid {} path: must not contain '..' or start with '/'",
             kind
         )));
