@@ -556,7 +556,11 @@ impl AmelisoService for AmelisoServer {
         let mut skipped = 0i32;
         let mut never_run = 0i32;
         for c in &cases {
-            match latest.get(&c.case_path).map(|s| s.as_str()).unwrap_or("never") {
+            match latest
+                .get(&c.case_path)
+                .map(|s| s.as_str())
+                .unwrap_or("never")
+            {
                 "passed" => passed += 1,
                 "failed" => failed += 1,
                 "blocked" => blocked += 1,
@@ -569,10 +573,9 @@ impl AmelisoService for AmelisoServer {
             .iter()
             .filter(|r| r.status == "in-progress")
             .map(|r| {
-                let (pending_count, total_in_scope) =
-                    repo::get_pending_cases(&repo, &r.id)
-                        .map(|(p, t)| (p.len() as i32, t as i32))
-                        .unwrap_or((0, 0));
+                let (pending_count, total_in_scope) = repo::get_pending_cases(&repo, &r.id)
+                    .map(|(p, t)| (p.len() as i32, t as i32))
+                    .unwrap_or((0, 0));
                 pb::ActiveRunSummary {
                     run_id: r.id.clone(),
                     tester: r.tester.clone(),
