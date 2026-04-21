@@ -395,8 +395,9 @@ impl AmelisoService for AmelisoServer {
         if status == "unspecified" {
             return Err(invalid("status is required"));
         }
-        let result = repo::record_result(&repo, &req.run_id, &req.case_path, status, &req.notes)
-            .map_err(repo_err)?;
+        let (result, _) =
+            repo::record_result(&repo, &req.run_id, &req.case_path, status, &req.notes)
+                .map_err(repo_err)?;
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
         }))

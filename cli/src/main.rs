@@ -417,14 +417,18 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             status,
             notes,
         } => {
-            repo::record_result(
+            let (_, prev) = repo::record_result(
                 &repo,
                 &run_id,
                 &case_path,
                 &status,
                 notes.as_deref().unwrap_or(""),
             )?;
-            println!("Recorded: {case_path} = {status} in run {run_id}");
+            if let Some(old) = prev {
+                println!("Updated: {case_path} = {status} in run {run_id} (was: {old})");
+            } else {
+                println!("Recorded: {case_path} = {status} in run {run_id}");
+            }
         }
         RunsCmd::Finalize {
             repo,
@@ -475,12 +479,11 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
         }
         SuitesCmd::Get { repo, slug } => {
             let s = repo::get_suite(&repo, &slug)?;
-            let case_titles: std::collections::HashMap<String, String> =
-                repo::list_cases(&repo)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|c| (c.case_path, c.fm.title))
-                    .collect();
+            let case_titles: std::collections::HashMap<String, String> = repo::list_cases(&repo)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|c| (c.case_path, c.fm.title))
+                .collect();
             println!("slug:        {slug}");
             println!("name:        {}", s.name);
             if let Some(d) = &s.description {

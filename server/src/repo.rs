@@ -457,13 +457,14 @@ pub fn create_run(
     Ok((meta, dir_path))
 }
 
+/// Returns `(result, previous_status)` where `previous_status` is `Some(s)` if a prior result was overwritten.
 pub fn record_result(
     repo: &Path,
     run_id: &str,
     case_path: &str,
     status: &str,
     notes: &str,
-) -> RResult<LoadedResult> {
+) -> RResult<(LoadedResult, Option<String>)> {
     if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
         return Err(RepoError::InvalidArg(format!(
             "invalid result status '{}'; must be one of: passed, failed, blocked, skipped",
@@ -495,14 +496,25 @@ pub fn record_result(
         )));
     }
     let result_file = result_file_path(repo, run_id, case_path);
+    let previous_status: Option<String> = if result_file.exists() {
+        std::fs::read_to_string(&result_file)
+            .ok()
+            .and_then(|c| parse_fm::<ResultFm>(&c).ok())
+            .map(|(fm, _)| fm.status)
+    } else {
+        None
+    };
     write_result_file(&result_file, status, notes)?;
-    Ok(LoadedResult {
-        fm: ResultFm {
-            status: status.to_owned(),
-        },
+    Ok((
+        LoadedResult {
+            fm: ResultFm {
+                status: status.to_owned(),
+            },
         notes: notes.to_owned(),
         case_path: case_path.to_owned(),
-    })
+        },
+        previous_status,
+    ))
 }
 
 pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml> {

@@ -380,10 +380,19 @@ impl AmelisoMcp {
         let repo = PathBuf::from(&req.repo_path);
         let notes = req.notes.as_deref().unwrap_or("");
         match repo::record_result(&repo, &req.run_id, &req.case_path, &req.status, notes) {
-            Ok(_) => format!(
-                "recorded: {} = {} in run {}",
-                req.case_path, req.status, req.run_id
-            ),
+            Ok((_, prev)) => {
+                if let Some(old) = prev {
+                    format!(
+                        "updated: {} = {} in run {} (was: {})",
+                        req.case_path, req.status, req.run_id, old
+                    )
+                } else {
+                    format!(
+                        "recorded: {} = {} in run {}",
+                        req.case_path, req.status, req.run_id
+                    )
+                }
+            }
             Err(e) => format!("error: {e}"),
         }
     }
