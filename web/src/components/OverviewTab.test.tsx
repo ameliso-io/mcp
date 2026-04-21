@@ -190,13 +190,7 @@ describe("OverviewTab", () => {
   });
 
   it("active runs panel not shown when coverage entries empty even with active runs", async () => {
-    const activeRun = {
-      id: "run-active",
-      tester: "alice",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-active", tester: "alice", suite: "smoke", date: "2026-01-01" });
     vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
@@ -476,13 +470,7 @@ describe("OverviewTab", () => {
   });
 
   it('shows "auto-refresh 30s" label in active runs panel', async () => {
-    const activeRun = {
-      id: "run-ar",
-      tester: "dave",
-      suite: "",
-      date: "2026-03-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-ar", tester: "dave", suite: "", date: "2026-03-01" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/auto-refresh 30s/)).toBeInTheDocument());
@@ -500,13 +488,7 @@ describe("OverviewTab", () => {
   });
 
   it("shows suite badge and tester in active runs panel", async () => {
-    const activeRun = {
-      id: "run-badge",
-      tester: "carol",
-      suite: "e2e",
-      date: "2026-02-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-badge", tester: "carol", suite: "e2e", date: "2026-02-01" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("e2e")).toBeInTheDocument());
@@ -515,13 +497,7 @@ describe("OverviewTab", () => {
   });
 
   it("polling timer callback triggers reload when active runs present", async () => {
-    const activeRun = {
-      id: "run-timer",
-      tester: "alice",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-timer", tester: "alice", suite: "smoke", date: "2026-01-01" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     let capturedCallback: (() => void) | null = null;
     const spy = vi
@@ -543,13 +519,7 @@ describe("OverviewTab", () => {
   });
 
   it("Go to Runs button not shown when onGoToRuns prop is not provided", async () => {
-    const activeRun = {
-      id: "run-no-goto",
-      tester: "alice",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-no-goto", tester: "alice", suite: "smoke", date: "2026-01-01" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
@@ -557,13 +527,7 @@ describe("OverviewTab", () => {
   });
 
   it("does not show suite badge or tester span when active run has empty suite and tester", async () => {
-    const bareRun = {
-      id: "run-bare",
-      tester: "",
-      suite: "",
-      date: "2026-04-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const bareRun = makeRunMeta({ id: "run-bare", tester: "", suite: "", date: "2026-04-01" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [bareRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("run-bare")).toBeInTheDocument());
@@ -573,13 +537,7 @@ describe("OverviewTab", () => {
   });
 
   it("polling timer callback shows error banner when load fails", async () => {
-    const activeRun = {
-      id: "run-poll-err",
-      tester: "bob",
-      suite: "smoke",
-      date: "2026-01-01",
-      status: RunStatus.IN_PROGRESS,
-    } as unknown as RunMeta;
+    const activeRun = makeRunMeta({ id: "run-poll-err", tester: "bob", suite: "smoke", date: "2026-01-01" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     vi.mocked(client.getCoverageReport)
       .mockResolvedValueOnce({ entries: coverageEntries, runCount: 5 } as never)

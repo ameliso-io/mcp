@@ -472,20 +472,30 @@ describe("RepositoriesTab", () => {
     );
   });
 
-  it("shows error when initial GitHub callback from URL fails", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-err&setup_action=install");
+  it("shows error when initial GitHub callback fails via installationId prop", async () => {
     vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("callback failed"));
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-err"
+        setupAction="install"
+      />
+    );
     await waitFor(() => expect(screen.getByText("callback failed")).toBeInTheDocument());
-    window.history.replaceState({}, "", "/");
   });
 
-  it("does not call handleGitHubCallback when setup_action is an unknown value", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-xyz&setup_action=delete");
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+  it("does not call handleGitHubCallback when setupAction is an unknown value", async () => {
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-xyz"
+        setupAction="delete"
+      />
+    );
     await waitFor(() => expect(client.listRepositories).toHaveBeenCalled());
     expect(client.handleGitHubCallback).not.toHaveBeenCalled();
-    window.history.replaceState({}, "", "/");
   });
 
   it("Refresh All deduplicates installationIds — calls handleGitHubCallback once when two repos share same installation", async () => {
