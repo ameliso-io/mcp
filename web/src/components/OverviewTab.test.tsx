@@ -112,6 +112,12 @@ describe('OverviewTab', () => {
     await waitFor(() => expect(screen.getByText('network error')).toBeInTheDocument())
   })
 
+  it('shows error banner when getCoverageReport fails', async () => {
+    vi.mocked(client.getCoverageReport).mockRejectedValue(new Error('coverage failed'))
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => expect(screen.getByText('coverage failed')).toBeInTheDocument())
+  })
+
   it('loads repo on form submit', async () => {
     const onRepoPathChange = vi.fn()
     render(<OverviewTab repoPath="" onRepoPathChange={onRepoPathChange} />)

@@ -135,6 +135,25 @@ describe('CasesTab', () => {
     ))
   })
 
+  it('shows error when deleteCase fails', async () => {
+    vi.mocked(client.deleteCase).mockRejectedValue(new Error('delete failed'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    await waitFor(() => expect(screen.getByText('delete failed')).toBeInTheDocument())
+  })
+
+  it('shows error when updateCase fails', async () => {
+    vi.mocked(client.updateCase).mockRejectedValue(new Error('update failed'))
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(screen.getByText('update failed')).toBeInTheDocument())
+  })
+
   it('shows no-body placeholder when body is empty', async () => {
     vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '' } as never)
     render(<CasesTab repoPath="/repo" />)

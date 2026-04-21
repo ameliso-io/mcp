@@ -131,6 +131,36 @@ describe('SuitesTab', () => {
     await waitFor(() => expect(screen.getByText('No cases in this suite.')).toBeInTheDocument())
   })
 
+  it('shows error when createSuite fails', async () => {
+    vi.mocked(client.createSuite).mockRejectedValue(new Error('create failed'))
+    render(<SuitesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Suite'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'regression')
+    await userEvent.type(inputs[1], 'Regression')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Suite' }))
+    await waitFor(() => expect(screen.getByText('create failed')).toBeInTheDocument())
+  })
+
+  it('shows error when deleteSuite fails', async () => {
+    vi.mocked(client.deleteSuite).mockRejectedValue(new Error('delete failed'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    await waitFor(() => expect(screen.getByText('delete failed')).toBeInTheDocument())
+  })
+
+  it('shows error when updateSuite fails', async () => {
+    vi.mocked(client.updateSuite).mockRejectedValue(new Error('update failed'))
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(screen.getByText('update failed')).toBeInTheDocument())
+  })
+
   it('collapses expanded suite when clicked again', async () => {
     render(<SuitesTab repoPath="/repo" />)
     await waitFor(() => screen.getByText('Smoke Tests'))
