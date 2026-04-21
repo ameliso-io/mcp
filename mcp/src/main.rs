@@ -655,8 +655,7 @@ impl AmelisoMcp {
                         .ok()
                         .filter(|(p, _)| !p.is_empty())
                         .map(|(p, total)| {
-                            let paths: Vec<&str> =
-                                p.iter().map(|c| c.case_path.as_str()).collect();
+                            let paths: Vec<&str> = p.iter().map(|c| c.case_path.as_str()).collect();
                             format!(
                                 "\nwarning: {}/{} case(s) have no result recorded: {}",
                                 p.len(),
@@ -758,7 +757,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Get full details of a test run: metadata, pass/fail/blocked/skipped summary, and result list with case titles and notes."
+        description = "Get full details of a test run: metadata, pass/fail/blocked/skipped summary, result list with case titles and notes. For in-progress runs, also shows how many cases are still pending."
     )]
     fn get_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -812,6 +811,17 @@ impl AmelisoMcp {
                     skipped,
                     run.results.len()
                 ));
+                if run.meta.status == "in-progress" {
+                    if let Ok((pending, total)) =
+                        repo::get_pending_cases(&repo, &run.meta.id)
+                    {
+                        lines.push(format!(
+                            "pending: {}/{} cases still need results",
+                            pending.len(),
+                            total
+                        ));
+                    }
+                }
                 lines.push(format!("\nResults ({}):", run.results.len()));
                 for r in &run.results {
                     let title = case_titles
