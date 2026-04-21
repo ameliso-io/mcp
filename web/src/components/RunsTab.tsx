@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
-import type { RunMeta, Case } from '../gen/ameliso/v1/types_pb'
+import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
 import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
@@ -22,6 +22,26 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '6px',
   fontSize: '14px',
   boxSizing: 'border-box',
+}
+
+function statusColor(s: ResultStatus): string {
+  switch (s) {
+    case ResultStatus.PASSED: return '#22c55e'
+    case ResultStatus.FAILED: return '#ef4444'
+    case ResultStatus.BLOCKED: return '#f97316'
+    case ResultStatus.SKIPPED: return '#94a3b8'
+    default: return '#e2e8f0'
+  }
+}
+
+function statusLabel(s: ResultStatus): string {
+  switch (s) {
+    case ResultStatus.PASSED: return 'Passed'
+    case ResultStatus.FAILED: return 'Failed'
+    case ResultStatus.BLOCKED: return 'Blocked'
+    case ResultStatus.SKIPPED: return 'Skipped'
+    default: return 'Unknown'
+  }
 }
 
 function runStatusLabel(s: RunStatus): string {
@@ -55,11 +75,12 @@ export default function RunsTab({ repoPath }: Props) {
   const [newSuite, setNewSuite] = useState('')
   const [creating, setCreating] = useState(false)
 
-  // Selected run for recording results
+  // Selected run for recording results or viewing results
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [pendingCases, setPendingCases] = useState<Case[]>([])
   const [totalInScope, setTotalInScope] = useState(0)
   const [loadingPending, setLoadingPending] = useState(false)
+  const [recordedResults, setRecordedResults] = useState<CaseResult[]>([])
 
   // Record result form
   const [recordingCase, setRecordingCase] = useState<string | null>(null)
@@ -108,18 +129,26 @@ export default function RunsTab({ repoPath }: Props) {
     }
   }
 
-  async function selectRun(runId: string) {
+  async function selectRun(runId: string, status: RunStatus) {
     if (selectedRunId === runId) {
       setSelectedRunId(null)
       setPendingCases([])
+      setRecordedResults([])
       return
     }
     setSelectedRunId(runId)
     setLoadingPending(true)
+    setPendingCases([])
+    setRecordedResults([])
     try {
-      const res = await client.getPendingCases({ repoPath, runId })
-      setPendingCases(res.cases)
-      setTotalInScope(res.totalInScope)
+      if (status === RunStatus.IN_PROGRESS) {
+        const res = await client.getPendingCases({ repoPath, runId })
+        setPendingCases(res.cases)
+        setTotalInScope(res.totalInScope)
+      } else {
+        const res = await client.getRun({ repoPath, runId })
+        setRecordedResults(res.run?.results ?? [])
+      }
     } catch (e) {
       setError(String(e))
     } finally {
@@ -282,7 +311,7 @@ export default function RunsTab({ repoPath }: Props) {
                 cursor: 'pointer',
                 borderColor: selectedRunId === run.id ? '#3b82f6' : '#e2e8f0',
               }}
-              onClick={() => selectRun(run.id)}
+              onClick={() => selectRun(run.id, run.status)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span
@@ -325,7 +354,51 @@ export default function RunsTab({ repoPath }: Props) {
             {selectedRunId === run.id && (
               <div style={{ ...card, marginTop: 0, borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0, background: '#f8fafc' }}>
                 {loadingPending ? (
-                  <div style={{ color: '#64748b', padding: '12px 0' }}>Loading pending cases…</div>
+                  <div style={{ color: '#64748b', padding: '12px 0' }}>Loading…</div>
+                ) : run.status !== RunStatus.IN_PROGRESS ? (
+                  <div>
+                    <p style={{ margin: '0 0 12px', fontSize: '14px', color: '#64748b' }}>
+                      {recordedResults.length} result{recordedResults.length !== 1 ? 's' : ''} recorded
+                    </p>
+                    {recordedResults.length === 0 ? (
+                      <p style={{ color: '#64748b', fontSize: '14px' }}>No results recorded.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {recordedResults.map(r => (
+                          <div
+                            key={r.casePath}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '10px 12px',
+                              background: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #e2e8f0',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                color: statusColor(r.status),
+                                background: statusColor(r.status) + '18',
+                                padding: '2px 7px',
+                                borderRadius: '4px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {statusLabel(r.status)}
+                            </span>
+                            <span style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace' }}>{r.casePath}</span>
+                            {r.notes && (
+                              <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>{r.notes}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
