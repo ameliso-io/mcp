@@ -366,10 +366,16 @@ describe("SuitesTab", () => {
     let resolveSecond!: (v: unknown) => void;
     vi.mocked(client.listCases)
       .mockImplementationOnce(
-        () => new Promise((res) => { resolveFirst = res; })
+        () =>
+          new Promise((res) => {
+            resolveFirst = res;
+          })
       )
       .mockImplementationOnce(
-        () => new Promise((res) => { resolveSecond = res; })
+        () =>
+          new Promise((res) => {
+            resolveSecond = res;
+          })
       );
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));

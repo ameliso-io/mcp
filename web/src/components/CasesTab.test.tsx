@@ -551,7 +551,9 @@ describe("CasesTab", () => {
     vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
 
     let resolveFirst!: (v: unknown) => void;
-    const firstPromise = new Promise((res) => { resolveFirst = res; });
+    const firstPromise = new Promise((res) => {
+      resolveFirst = res;
+    });
     vi.mocked(client.getCase)
       .mockImplementationOnce(() => firstPromise as never)
       .mockResolvedValue({ case: secondCase, body: "second body" } as never);
