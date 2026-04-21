@@ -3,6 +3,7 @@ import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
 import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
+import MarkdownBody from './MarkdownBody'
 
 interface Props {
   repoPath: string
@@ -656,21 +657,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                                   {caseBodyLoading ? (
                                     <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Loading steps…</p>
                                   ) : (
-                                    <pre
-                                      style={{
-                                        margin: 0,
-                                        fontFamily: 'monospace',
-                                        fontSize: '12px',
-                                        color: '#1e293b',
-                                        whiteSpace: 'pre-wrap',
-                                        wordBreak: 'break-word',
-                                        lineHeight: '1.6',
-                                        maxHeight: '200px',
-                                        overflowY: 'auto',
-                                      }}
-                                    >
-                                      {caseBody}
-                                    </pre>
+                                    caseBody && <MarkdownBody body={caseBody} maxHeight="200px" />
                                   )}
                                 </div>
                               )}

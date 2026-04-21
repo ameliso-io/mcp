@@ -3,6 +3,7 @@ import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { Case } from '../gen/ameliso/v1/types_pb'
 import { Priority } from '../gen/ameliso/v1/types_pb'
+import MarkdownBody from './MarkdownBody'
 
 interface Props {
   repoPath: string
@@ -495,19 +496,7 @@ export default function CasesTab({ repoPath }: Props) {
                 {bodyLoading ? (
                   <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Loading…</p>
                 ) : expandedBody ? (
-                  <pre
-                    style={{
-                      margin: 0,
-                      fontFamily: 'monospace',
-                      fontSize: '13px',
-                      color: '#1e293b',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      lineHeight: '1.6',
-                    }}
-                  >
-                    {expandedBody}
-                  </pre>
+                  <MarkdownBody body={expandedBody} />
                 ) : (
                   <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0, fontStyle: 'italic' }}>No body.</p>
                 )}
