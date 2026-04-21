@@ -154,6 +154,11 @@
   composes: card;
   margin-bottom: 0;
   cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.runCard:hover {
+  border-color: var(--color-muted);
 }
 
 .runCardSelected {
@@ -161,6 +166,7 @@
   margin-bottom: 0;
   cursor: pointer;
   border-color: var(--color-primary);
+  transition: border-color 0.15s;
 }
 
 .runRow {
