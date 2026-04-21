@@ -3,22 +3,19 @@ use std::path::PathBuf;
 use tonic::{Request, Response, Status};
 
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
-use crate::repo;
+use crate::repo::{self, RepoError};
 
-fn internal(e: anyhow::Error) -> Status {
-    Status::internal(e.to_string())
-}
-
-fn not_found(msg: impl Into<String>) -> Status {
-    Status::not_found(msg.into())
+fn repo_err(e: RepoError) -> Status {
+    match e {
+        RepoError::NotFound(msg) => Status::not_found(msg),
+        RepoError::AlreadyExists(msg) => Status::already_exists(msg),
+        RepoError::ClosedRun(msg) => Status::failed_precondition(msg),
+        RepoError::Other(e) => Status::internal(e.to_string()),
+    }
 }
 
 fn invalid(msg: impl Into<String>) -> Status {
     Status::invalid_argument(msg.into())
-}
-
-fn already_exists(msg: impl Into<String>) -> Status {
-    Status::already_exists(msg.into())
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +125,7 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::ListCasesResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let mut cases = repo::list_cases(&repo).map_err(internal)?;
+        let mut cases = repo::list_cases(&repo).map_err(repo_err)?;
 
         if !req.tags.is_empty() {
             cases.retain(|c| {
@@ -160,7 +157,7 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::GetCaseResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let case = repo::get_case(&repo, &req.case_path).map_err(|_| not_found(&req.case_path))?;
+        let case = repo::get_case(&repo, &req.case_path).map_err(repo_err)?;
         Ok(Response::new(pb::GetCaseResponse {
             case: Some(case_to_pb(&case)),
         }))
@@ -187,13 +184,7 @@ impl AmelisoService for AmelisoServer {
             req.tags,
             priority,
         )
-        .map_err(|e| {
-            if e.to_string().contains("already exists") {
-                already_exists(e.to_string())
-            } else {
-                internal(e)
-            }
-        })?;
+        .map_err(repo_err)?;
         let file_path = format!("cases/{}.md", req.case_path);
         Ok(Response::new(pb::CreateCaseResponse {
             case: Some(case_to_pb(&case)),
@@ -216,13 +207,7 @@ impl AmelisoService for AmelisoServer {
             req.tags,
             priority,
         )
-        .map_err(|e| {
-            if e.to_string().contains("not found") {
-                not_found(e.to_string())
-            } else {
-                internal(e)
-            }
-        })?;
+        .map_err(repo_err)?;
         Ok(Response::new(pb::UpdateCaseResponse {
             case: Some(case_to_pb(&case)),
         }))
@@ -233,7 +218,7 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListSuitesRequest>,
     ) -> Result<Response<pb::ListSuitesResponse>, Status> {
         let repo = PathBuf::from(&request.into_inner().repo_path);
-        let suites = repo::list_suites(&repo).map_err(internal)?;
+        let suites = repo::list_suites(&repo).map_err(repo_err)?;
         let pb_suites = suites
             .iter()
             .map(|(slug, s)| suite_to_pb(slug, s))
@@ -247,7 +232,7 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::GetSuiteResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let suite = repo::get_suite(&repo, &req.slug).map_err(|_| not_found(&req.slug))?;
+        let suite = repo::get_suite(&repo, &req.slug).map_err(repo_err)?;
         Ok(Response::new(pb::GetSuiteResponse {
             suite: Some(suite_to_pb(&req.slug, &suite)),
         }))
@@ -265,13 +250,7 @@ impl AmelisoService for AmelisoServer {
             Some(req.description.clone())
         };
         let suite =
-            repo::create_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(|e| {
-                if e.to_string().contains("already exists") {
-                    already_exists(e.to_string())
-                } else {
-                    internal(e)
-                }
-            })?;
+            repo::create_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(repo_err)?;
         let file_path = format!("suites/{}.yaml", req.slug);
         Ok(Response::new(pb::CreateSuiteResponse {
             suite: Some(suite_to_pb(&req.slug, &suite)),
@@ -284,7 +263,7 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListRunsRequest>,
     ) -> Result<Response<pb::ListRunsResponse>, Status> {
         let repo = PathBuf::from(&request.into_inner().repo_path);
-        let runs = repo::list_runs(&repo).map_err(internal)?;
+        let runs = repo::list_runs(&repo).map_err(repo_err)?;
         let pb_runs = runs.iter().map(run_meta_to_pb).collect();
         Ok(Response::new(pb::ListRunsResponse { runs: pb_runs }))
     }
@@ -295,7 +274,7 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::GetRunResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let run = repo::get_run(&repo, &req.run_id).map_err(|_| not_found(&req.run_id))?;
+        let run = repo::get_run(&repo, &req.run_id).map_err(repo_err)?;
         let pb_run = pb::Run {
             meta: Some(run_meta_to_pb(&run.meta)),
             results: run.results.iter().map(result_to_pb).collect(),
@@ -328,13 +307,7 @@ impl AmelisoService for AmelisoServer {
             req.tester
         };
         let (meta, dir_path) =
-            repo::create_run(&repo, &req.slug, &tester, env, suite).map_err(|e| {
-                if e.to_string().contains("already exists") {
-                    already_exists(e.to_string())
-                } else {
-                    internal(e)
-                }
-            })?;
+            repo::create_run(&repo, &req.slug, &tester, env, suite).map_err(repo_err)?;
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
@@ -352,15 +325,7 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("status is required"));
         }
         let result = repo::record_result(&repo, &req.run_id, &req.case_path, status, &req.notes)
-            .map_err(|e| {
-                if e.to_string().contains("not found") {
-                    not_found(e.to_string())
-                } else if e.to_string().contains("closed run") {
-                    Status::failed_precondition(e.to_string())
-                } else {
-                    internal(e)
-                }
-            })?;
+            .map_err(repo_err)?;
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
         }))
@@ -376,7 +341,7 @@ impl AmelisoService for AmelisoServer {
         if status == "unspecified" {
             return Err(invalid("status must be completed or aborted"));
         }
-        let meta = repo::finalize_run(&repo, &req.run_id, status).map_err(internal)?;
+        let meta = repo::finalize_run(&repo, &req.run_id, status).map_err(repo_err)?;
         Ok(Response::new(pb::FinalizeRunResponse {
             run: Some(run_meta_to_pb(&meta)),
         }))
@@ -387,15 +352,15 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCoverageReportRequest>,
     ) -> Result<Response<pb::GetCoverageReportResponse>, Status> {
         let repo = PathBuf::from(&request.into_inner().repo_path);
-        let cases = repo::list_cases(&repo).map_err(internal)?;
-        let runs = repo::list_runs(&repo).map_err(internal)?;
+        let cases = repo::list_cases(&repo).map_err(repo_err)?;
+        let runs = repo::list_runs(&repo).map_err(repo_err)?;
 
         // Build latest-status map: case_path -> (status, run_id, run_date)
         let mut latest: std::collections::HashMap<String, (String, String, String)> =
             std::collections::HashMap::new();
         // Runs are newest-first; first write wins = latest
         for run_meta in &runs {
-            let run = repo::get_run(&repo, &run_meta.id).map_err(internal)?;
+            let run = repo::get_run(&repo, &run_meta.id).map_err(repo_err)?;
             for result in &run.results {
                 latest.entry(result.case_path.clone()).or_insert_with(|| {
                     (
@@ -438,7 +403,7 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
 
-        let cases = repo::list_cases(&repo).map_err(internal)?;
+        let cases = repo::list_cases(&repo).map_err(repo_err)?;
         let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
         let case_map: std::collections::HashMap<String, &repo::LoadedCase> =
             cases.iter().map(|c| (c.case_path.clone(), c)).collect();
@@ -448,7 +413,8 @@ impl AmelisoService for AmelisoServer {
         } else {
             Some(req.since_ref.as_str())
         };
-        let result = git::find_affected(&repo, since, &known_paths).map_err(internal)?;
+        let result = git::find_affected(&repo, since, &known_paths)
+            .map_err(|e| repo_err(RepoError::Other(e)))?;
 
         let affected = result
             .case_paths
