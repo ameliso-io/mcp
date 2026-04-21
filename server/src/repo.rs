@@ -887,6 +887,15 @@ mod tests {
     }
 
     #[test]
+    fn slug_path_embedded_backslash_returns_invalid_arg() {
+        // Embedded '\' is not caught by starts_with('\\'), but the segment
+        // character check rejects it since '\' is not a-z/0-9/hyphen/underscore.
+        let err = validate_slug_path("auth\\login", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("a-z, 0-9"));
+    }
+
+    #[test]
     fn slug_path_single_dot_segment_returns_invalid_arg() {
         // "." as a path: not ".." so the double-dot check passes, but the segment
         // character validation rejects it because '.' is not a-z/0-9/hyphen/underscore.
