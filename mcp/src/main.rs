@@ -580,7 +580,7 @@ impl AmelisoMcp {
         let notes = req.notes.as_deref().unwrap_or("");
         match repo::record_result(&repo, &req.run_id, &req.case_path, &req.status, notes) {
             Ok((_, prev)) => {
-                if let Some(old) = prev {
+                let base = if let Some(old) = prev {
                     format!(
                         "updated: {} = {} in run {} (was: {})",
                         req.case_path, req.status, req.run_id, old
@@ -590,7 +590,22 @@ impl AmelisoMcp {
                         "recorded: {} = {} in run {}",
                         req.case_path, req.status, req.run_id
                     )
-                }
+                };
+                let progress = repo::get_pending_cases(&repo, &req.run_id)
+                    .ok()
+                    .map(|(pending, total)| {
+                        if pending.is_empty() {
+                            format!("\nprogress: {total}/{total} done — all cases recorded; ready to finalize")
+                        } else {
+                            format!(
+                                "\nprogress: {}/{total} done, {} remaining",
+                                total - pending.len(),
+                                pending.len()
+                            )
+                        }
+                    })
+                    .unwrap_or_default();
+                format!("{base}{progress}")
             }
             Err(e) => format!("error: {e}"),
         }
@@ -640,10 +655,13 @@ impl AmelisoMcp {
                         .ok()
                         .filter(|(p, _)| !p.is_empty())
                         .map(|(p, total)| {
+                            let paths: Vec<&str> =
+                                p.iter().map(|c| c.case_path.as_str()).collect();
                             format!(
-                                "\nwarning: {} of {} case(s) in scope have no result recorded",
+                                "\nwarning: {}/{} case(s) have no result recorded: {}",
                                 p.len(),
-                                total
+                                total,
+                                paths.join(", ")
                             )
                         })
                         .unwrap_or_default()
