@@ -16,8 +16,10 @@ struct ListCasesRequest {
     repo_path: String,
     #[schemars(description = "Comma-separated tag filter (optional)")]
     tags: Option<String>,
-    #[schemars(description = "Full-text query (optional)")]
+    #[schemars(description = "Full-text query against title, description, body, and path (optional)")]
     query: Option<String>,
+    #[schemars(description = "Filter by priority: low | medium | high (optional)")]
+    priority: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -149,7 +151,7 @@ struct AmelisoMcp;
 #[tool_router(server_handler)]
 impl AmelisoMcp {
     #[tool(
-        description = "List test cases in a repo. Filter by comma-separated tags or full-text query."
+        description = "List test cases in a repo. Filter by tags, priority, or full-text query."
     )]
     fn list_cases(&self, Parameters(req): Parameters<ListCasesRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -173,6 +175,9 @@ impl AmelisoMcp {
                     || c.body.to_lowercase().contains(&q)
                     || c.case_path.to_lowercase().contains(&q)
             });
+        }
+        if let Some(p) = &req.priority {
+            cases.retain(|c| c.fm.priority.eq_ignore_ascii_case(p));
         }
         if cases.is_empty() {
             return "No cases found.".to_owned();
@@ -388,7 +393,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Get full details of a test run including all results and a summary of pass/fail counts.")]
+    #[tool(
+        description = "Get full details of a test run including all results and a summary of pass/fail counts."
+    )]
     fn get_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_run(&repo, &req.run_id) {
@@ -402,13 +409,33 @@ impl AmelisoMcp {
                 if let Some(env) = &run.meta.environment {
                     lines.push(format!("env:    {env}"));
                 }
-                let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
-                let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
-                let blocked = run.results.iter().filter(|r| r.fm.status == "blocked").count();
-                let skipped = run.results.iter().filter(|r| r.fm.status == "skipped").count();
+                let passed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "passed")
+                    .count();
+                let failed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "failed")
+                    .count();
+                let blocked = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "blocked")
+                    .count();
+                let skipped = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "skipped")
+                    .count();
                 lines.push(format!(
                     "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
-                    passed, failed, blocked, skipped, run.results.len()
+                    passed,
+                    failed,
+                    blocked,
+                    skipped,
+                    run.results.len()
                 ));
                 lines.push(format!("\nResults ({}):", run.results.len()));
                 for r in &run.results {
