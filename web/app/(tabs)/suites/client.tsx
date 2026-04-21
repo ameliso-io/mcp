@@ -30,7 +30,6 @@ function SuitesInner() {
   return (
     <SuitesTab
       repoId={repoId}
-      onRunSuite={(slug) => router.push(`/runs?suite=${encodeURIComponent(slug)}`)}
       initialExpanded={initialExpanded}
       onExpandedChange={handleExpandedChange}
     />

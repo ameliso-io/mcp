@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
@@ -6,6 +7,11 @@ import { client } from "../client";
 import { makeCase, makeSuite } from "../test/factories";
 
 vi.mock("../client");
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: unknown }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+}));
 
 const mockSuite = makeSuite({
   description: "Critical path checks",
@@ -50,12 +56,11 @@ describe("SuitesTab", () => {
     expect(screen.getByText("User Logout")).toBeInTheDocument();
   });
 
-  it("calls onRunSuite when Run button clicked", async () => {
-    const onRunSuite = vi.fn();
-    render(<SuitesTab repoId="owner/repo" onRunSuite={onRunSuite} />);
+  it("renders Run link pointing to /runs?suite=<slug>", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
-    await userEvent.click(screen.getByText("Run"));
-    expect(onRunSuite).toHaveBeenCalledWith("smoke");
+    const runLink = screen.getByRole("link", { name: "Run smoke" });
+    expect(runLink).toHaveAttribute("href", "/runs?suite=smoke");
   });
 
   it("opens create form", async () => {

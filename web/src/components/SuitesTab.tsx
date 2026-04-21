@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Suite, Case } from "../gen/ameliso/v1/types_pb";
@@ -9,14 +10,12 @@ import styles from "./SuitesTab.module.css";
 
 interface Props {
   repoId: string;
-  onRunSuite?: (slug: string) => void;
   initialExpanded?: string;
   onExpandedChange?: (slug: string | null) => void;
 }
 
 export default function SuitesTab({
   repoId,
-  onRunSuite,
   initialExpanded,
   onExpandedChange,
 }: Props) {
@@ -389,16 +388,13 @@ export default function SuitesTab({
                         {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
                       </span>
                     </button>
-                    {onRunSuite && (
-                      <button
-                        type="button"
-                        onClick={() => onRunSuite(suite.slug)}
-                        aria-label={`Run ${suite.slug}`}
-                        className={styles.btnGreenSm}
-                      >
-                        Run
-                      </button>
-                    )}
+                    <Link
+                      href={`/runs?suite=${encodeURIComponent(suite.slug)}`}
+                      aria-label={`Run ${suite.slug}`}
+                      className={styles.btnGreenSm}
+                    >
+                      Run
+                    </Link>
                     <button
                       type="button"
                       onClick={() => startEdit(suite)}
