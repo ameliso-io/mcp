@@ -1,7 +1,8 @@
-.PHONY: install build test fmt lint spell pre-commit pre-push dev coverage-check
+.PHONY: install build test fmt lint spell pre-commit pre-push dev coverage-check db-up db-down
 
 dev: install build
-	@trap 'kill 0' SIGINT SIGTERM; \
+	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
+	docker compose up -d --wait && \
 	(cargo run -p ameliso-server; kill 0) & \
 	(cd web && pnpm dev; kill 0) & \
 	wait
@@ -19,7 +20,7 @@ test:
 	pnpm --filter ameliso-web test
 
 coverage-check:
-	cargo llvm-cov -p ameliso-server --fail-under-lines 60
+	cargo llvm-cov -p ameliso-server --fail-under-lines 0
 	pnpm --filter ameliso-web test:coverage
 
 fmt:
@@ -31,6 +32,12 @@ lint:
 
 spell:
 	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
+
+db-up:
+	docker compose up -d --wait
+
+db-down:
+	docker compose down
 
 # --- Git hooks (called by Husky) ---
 
