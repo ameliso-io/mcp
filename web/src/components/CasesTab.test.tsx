@@ -2,10 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import CasesTab from "./CasesTab";
-import { client } from "../client";
-import { makeCase } from "../test/factories";
+import { client } from "@/client";
+import type { Case } from "@/gen/ameliso/v1/types_pb";
+import { Priority } from "@/gen/ameliso/v1/types_pb";
+import { makeCase } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
 const mockCase = makeCase({
   description: "Verify login flow",
@@ -328,6 +330,36 @@ describe("CasesTab", () => {
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
     );
+  });
+
+  it("calls onFiltersChange when priority filter changes", async () => {
+    const onFiltersChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onFiltersChange={onFiltersChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    const prioritySelect = screen.getByDisplayValue("All priorities");
+    await userEvent.selectOptions(prioritySelect, "High");
+    await waitFor(() =>
+      expect(onFiltersChange).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: Priority.HIGH })
+      )
+    );
+  });
+
+  it("initializes from initialSearch and initialPriorityFilter props", async () => {
+    render(
+      <CasesTab
+        repoId="owner/repo"
+        initialSearch="login"
+        initialPriorityFilter={Priority.HIGH}
+        initialSortBy="path"
+      />
+    );
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ query: "login", priority: Priority.HIGH })
+      )
+    );
+    expect(screen.getByDisplayValue("Sort: Path")).toBeInTheDocument();
   });
 
   it("calls createCase with parsed tags when tags field is filled", async () => {

@@ -3,7 +3,7 @@
 import { Inter } from "next/font/google";
 import styles from "./app.module.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-sans", display: "swap" });
 
 export default function GlobalError({
   error,

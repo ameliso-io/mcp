@@ -1,11 +1,28 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
-import { client } from "../client";
-import { makeCase, makeSuite } from "../test/factories";
+import { client } from "@/client";
+import { makeCase, makeSuite } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
+vi.mock("next/link", () => ({
+  useLinkStatus: () => ({ pending: false }),
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 const mockSuite = makeSuite({
   description: "Critical path checks",
@@ -50,12 +67,11 @@ describe("SuitesTab", () => {
     expect(screen.getByText("User Logout")).toBeInTheDocument();
   });
 
-  it("calls onRunSuite when Run button clicked", async () => {
-    const onRunSuite = vi.fn();
-    render(<SuitesTab repoId="owner/repo" onRunSuite={onRunSuite} />);
+  it("renders Run link pointing to /runs?suite=<slug>", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
-    await userEvent.click(screen.getByText("Run"));
-    expect(onRunSuite).toHaveBeenCalledWith("smoke");
+    const runLink = screen.getByRole("link", { name: "Run smoke" });
+    expect(runLink).toHaveAttribute("href", "/runs?suite=smoke");
   });
 
   it("opens create form", async () => {
@@ -399,8 +415,10 @@ describe("SuitesTab", () => {
   it("ignores stale listCases response when suite clicked twice rapidly", async () => {
     const suite2 = makeSuite({ slug: "regression", name: "Regression", cases: [] });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
-    let resolveFirst!: (v: unknown) => void;
-    let resolveSecond!: (v: unknown) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveFirst!: (v: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveSecond!: (v: any) => void;
     vi.mocked(client.listCases)
       .mockImplementationOnce(
         () =>
@@ -559,5 +577,30 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     expect(screen.queryByText("Critical path checks")).not.toBeInTheDocument();
+  });
+
+  it("calls onExpandedChange with slug when suite expanded", async () => {
+    const onExpandedChange = vi.fn();
+    render(<SuitesTab repoId="owner/repo" onExpandedChange={onExpandedChange} />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    expect(onExpandedChange).toHaveBeenCalledWith("smoke");
+  });
+
+  it("calls onExpandedChange with null when suite collapsed", async () => {
+    const onExpandedChange = vi.fn();
+    render(<SuitesTab repoId="owner/repo" onExpandedChange={onExpandedChange} />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("auto-expands suite from initialExpanded prop after suites load", async () => {
+    vi.mocked(client.listCases).mockResolvedValue({
+      cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
+    } as never);
+    render(<SuitesTab repoId="owner/repo" initialExpanded="smoke" />);
+    await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
   });
 });

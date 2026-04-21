@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import { useAnnounce } from "../hooks/useAnnounce";
-import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
-import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import { useAnnounce } from "@/hooks/useAnnounce";
+import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
+import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
 
@@ -15,6 +15,8 @@ interface Props {
   repoId: string;
   initialSuite?: string;
   onInitialSuiteConsumed?: () => void;
+  initialStatusFilter?: RunStatus;
+  onStatusFilterChange?: (s: RunStatus) => void;
 }
 
 function statusLabel(s: ResultStatus): string {
@@ -45,11 +47,19 @@ function runStatusLabel(s: RunStatus): string {
   }
 }
 
-export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }: Props) {
+export default function RunsTab({
+  repoId,
+  initialSuite,
+  onInitialSuiteConsumed,
+  initialStatusFilter,
+  onStatusFilterChange,
+}: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<RunStatus>(RunStatus.UNSPECIFIED);
+  const [statusFilter, setStatusFilter] = useState<RunStatus>(
+    initialStatusFilter ?? RunStatus.UNSPECIFIED
+  );
 
   // Create run form
   const [showCreate, setShowCreate] = useState(false);
@@ -336,7 +346,10 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setStatusFilter(opt.value)}
+                onClick={() => {
+                  setStatusFilter(opt.value);
+                  onStatusFilterChange?.(opt.value);
+                }}
                 aria-pressed={statusFilter === opt.value}
                 className={
                   statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive

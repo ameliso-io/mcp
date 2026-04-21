@@ -1,27 +1,19 @@
-import { ImageResponse } from "next/og";
+import { renderIcon } from "./ameliso-icon";
 
-export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
-export default function Icon() {
-  return new ImageResponse(
-    <div
-      style={{
-        width: 32,
-        height: 32,
-        background: "#1e293b",
-        borderRadius: 6,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: 700,
-        fontFamily: "sans-serif",
-      }}
-    >
-      A
-    </div>,
-    { ...size }
-  );
+const SIZES = [32, 192, 512] as const;
+type Size = (typeof SIZES)[number];
+
+export function generateImageMetadata() {
+  return SIZES.map((s) => ({
+    id: String(s),
+    contentType,
+    size: { width: s, height: s },
+  }));
+}
+
+export default function Icon({ id }: { id: string }) {
+  const s = (Number(id) as Size) || 32;
+  return renderIcon(s);
 }

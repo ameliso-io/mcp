@@ -1,12 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
 import OverviewTab from "@/components/OverviewTab";
 import { useRepoId } from "@/hooks/useRepoId";
+import LoadingSpinner from "@/components/LoadingSpinner";
+
+function OverviewInner() {
+  const [repoId] = useRepoId();
+  return <OverviewTab repoId={repoId} />;
+}
 
 export default function OverviewPageClient() {
-  const router = useRouter();
-  const [repoId] = useRepoId();
-
-  return <OverviewTab repoId={repoId} onGoToRuns={() => router.push("/runs")} />;
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <OverviewInner />
+    </Suspense>
+  );
 }

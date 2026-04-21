@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
 import MarkdownBody from "./MarkdownBody";
+import styles from "./MarkdownBody.module.css";
 
 beforeEach(() => {
   document.getElementById("ameliso-md-styles")?.remove();
@@ -69,6 +70,11 @@ describe("MarkdownBody", () => {
     const { container } = render(<MarkdownBody body={"## Section\n### Sub"} />);
     expect(container.querySelector("h2")).toBeInTheDocument();
     expect(container.querySelector("h3")).toBeInTheDocument();
+  });
+
+  it("applies body CSS module class", () => {
+    const { container } = render(<MarkdownBody body="text" />);
+    expect(container.firstChild).toHaveClass(styles.body);
   });
 
   it("renders ordered list", () => {

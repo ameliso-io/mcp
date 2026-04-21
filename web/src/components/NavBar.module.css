@@ -44,3 +44,7 @@
   background-color: var(--color-ink-hover);
   color: var(--color-on-primary);
 }
+
+.navLinkLabel[data-pending="true"] {
+  opacity: 0.6;
+}

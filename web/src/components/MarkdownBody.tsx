@@ -3,7 +3,7 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { useMemo } from "react";
-import "./MarkdownBody.css";
+import styles from "./MarkdownBody.module.css";
 
 interface Props {
   body: string;
@@ -17,7 +17,7 @@ export default function MarkdownBody({ body, maxHeight }: Props) {
   }, [body]);
   return (
     <div
-      className="md-body"
+      className={styles.body}
       dangerouslySetInnerHTML={{ __html: html }}
       style={maxHeight ? ({ "--md-max-height": maxHeight } as React.CSSProperties) : undefined}
     />

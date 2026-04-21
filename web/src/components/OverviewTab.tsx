@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { AffectedCase, CoverageEntry, RunMeta } from "../gen/ameliso/v1/types_pb";
-import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
-import { useAnnounce } from "../hooks/useAnnounce";
+import Link from "next/link";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/types_pb";
+import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
+import { useAnnounce } from "@/hooks/useAnnounce";
 import styles from "./OverviewTab.module.css";
 
 interface Props {
   repoId: string;
-  onGoToRuns?: () => void;
 }
 
 function statusSortOrder(s: ResultStatus): number {
@@ -47,7 +47,7 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoId, onGoToRuns }: Props) {
+export default function OverviewTab({ repoId }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -62,7 +62,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
   const [announcement, announce] = useAnnounce();
 
   const load = useCallback(
-    async (path: string) => {
+    async (path: string, silent = false) => {
       /* v8 ignore next 2 — useEffect guards !path before calling load */
       if (!path) return;
       setLoading(true);
@@ -75,8 +75,10 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
         setActiveRuns(activeRunsRes.runs);
-        const n = coverageRes.entries.length;
-        announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
+        if (!silent) {
+          const n = coverageRes.entries.length;
+          announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
+        }
       } catch (e) {
         setError(errorMessage(e));
       } finally {
@@ -94,11 +96,11 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
     }
   }, [repoId, load]);
 
-  // Auto-refresh every 30s while there are active runs
+  // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => load(repoId), 30_000);
+      pollRef.current = setInterval(() => load(repoId, true), 30_000);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -189,11 +191,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
-                {onGoToRuns && (
-                  <button type="button" onClick={onGoToRuns} className={styles.goToRunsBtn}>
-                    Go to Runs
-                  </button>
-                )}
+                <Link href="/runs" className={styles.goToRunsBtn}>
+                  Go to Runs
+                </Link>
               </div>
               <ul className={styles.runList} role="list">
                 {activeRuns.map((run) => (

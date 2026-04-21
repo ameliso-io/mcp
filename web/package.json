@@ -6,13 +6,15 @@
   "scripts": {
     "dev": "next dev --port 5173",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:typecheck": "tsc --project tsconfig.test.json --noEmit",
     "test:coverage": "vitest run --coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "lint": "npx eslint src/",
-    "lint:fix": "eslint . --fix",
+    "lint": "npx eslint src/ app/ middleware.ts",
+    "lint:fix": "eslint src/ app/ middleware.ts --fix",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check ."
   },
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@next/bundle-analyzer": "^16.2.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

@@ -2,11 +2,28 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
-import { client } from "../client";
-import { ResultStatus } from "../gen/ameliso/v1/types_pb";
-import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factories";
+import { client } from "@/client";
+import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
+import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
+
+vi.mock("next/link", () => ({
+  useLinkStatus: () => ({ pending: false }),
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
+}));
 
 const makeCovEntry = (path: string, title: string, priority: string, status: ResultStatus) =>
   makeCoverageEntry({
@@ -96,14 +113,12 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("modified")).toBeInTheDocument());
   });
 
-  it("calls onGoToRuns when Go to Runs clicked", async () => {
+  it("renders Go to Runs link pointing to /runs", async () => {
     const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
-    const onGoToRuns = vi.fn();
-    render(<OverviewTab repoId="owner/repo" onGoToRuns={onGoToRuns} />);
+    render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Go to Runs"));
-    await userEvent.click(screen.getByText("Go to Runs"));
-    expect(onGoToRuns).toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute("href", "/runs");
   });
 
   it("shows affectedError when getAffectedCases throws", async () => {
@@ -366,6 +381,20 @@ describe("OverviewTab", () => {
     const { unmount } = render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     unmount();
+  });
+
+  it("getCoverageReport call count matches render cycle — poll uses silent=true so no extra announce", async () => {
+    const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    // Spy on announce by verifying only one announcement fires for the initial load
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("2 cases loaded"))
+      ).toBe(true)
+    );
+    // Only one getCoverageReport call for the initial load — poll hasn't fired (no timer advance)
+    expect(client.getCoverageReport).toHaveBeenCalledTimes(1);
   });
 
   it("announces singular '1 case loaded' when exactly one coverage entry returned", async () => {

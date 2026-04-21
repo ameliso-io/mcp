@@ -2,11 +2,12 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RunsTab from "./RunsTab";
-import { client } from "../client";
-import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
-import { makeCase, makeCaseResult, makeRunMeta } from "../test/factories";
+import { client } from "@/client";
+import type { Case, RunMeta } from "@/gen/ameliso/v1/types_pb";
+import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
+import { makeCase, makeCaseResult, makeRunMeta } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
 const mockRun = makeRunMeta({ tester: "alice", environment: "staging" });
 
@@ -154,6 +155,24 @@ describe("RunsTab", () => {
         expect.objectContaining({ status: RunStatus.UNSPECIFIED })
       )
     );
+  });
+
+  it("calls onStatusFilterChange when filter button clicked", async () => {
+    const onStatusFilterChange = vi.fn();
+    render(<RunsTab repoId="owner/repo" onStatusFilterChange={onStatusFilterChange} />);
+    await waitFor(() => screen.getByText("No runs found."));
+    await userEvent.click(screen.getByRole("button", { name: "Completed" }));
+    expect(onStatusFilterChange).toHaveBeenCalledWith(RunStatus.COMPLETED);
+  });
+
+  it("initializes statusFilter from initialStatusFilter prop", async () => {
+    render(<RunsTab repoId="owner/repo" initialStatusFilter={RunStatus.ABORTED} />);
+    await waitFor(() =>
+      expect(client.listRuns).toHaveBeenCalledWith(
+        expect.objectContaining({ status: RunStatus.ABORTED })
+      )
+    );
+    expect(screen.getByRole("button", { name: "Aborted" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("expands in-progress run and shows pending cases", async () => {

@@ -2,10 +2,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RepositoriesTab from "./RepositoriesTab";
-import { client } from "../client";
-import { makeRepository } from "../test/factories";
+import { client } from "@/client";
+import { makeRepository } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
 const makeRepo = (overrides = {}) => makeRepository({ installationId: "inst-1", ...overrides });
 
@@ -119,16 +119,21 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText("network error")).not.toBeInTheDocument();
   });
 
-  it("calls handleGitHubCallback when installation_id present in URL", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-42&setup_action=install");
+  it("calls handleGitHubCallback when installationId prop present with setup_action=install", async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-42"
+        setupAction="install"
+      />
+    );
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-42" })
     );
-    window.history.replaceState({}, "", "/");
   });
 
   it("shows error when syncRepository fails", async () => {
@@ -151,35 +156,62 @@ describe("RepositoriesTab", () => {
   });
 
   it("calls handleGitHubCallback for setup_action=update", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-99&setup_action=update");
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-99"
+        setupAction="update"
+      />
+    );
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-99" })
     );
-    window.history.replaceState({}, "", "/");
   });
 
   it("does not call handleGitHubCallback when setup_action=request_install", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-bad&setup_action=request_install");
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-bad"
+        setupAction="request_install"
+      />
+    );
     await waitFor(() => screen.getByText("No repositories connected"));
     expect(client.handleGitHubCallback).not.toHaveBeenCalled();
-    window.history.replaceState({}, "", "/");
   });
 
-  it("calls handleGitHubCallback when installation_id present without setup_action", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-no-action");
+  it("calls handleGitHubCallback when installationId present without setupAction", async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-no-action" />
+    );
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-no-action" })
     );
-    window.history.replaceState({}, "", "/");
+  });
+
+  it("calls onInstallationHandled after processing GitHub callback", async () => {
+    const onInstallationHandled = vi.fn();
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-42"
+        setupAction="install"
+        onInstallationHandled={onInstallationHandled}
+      />
+    );
+    await waitFor(() => expect(onInstallationHandled).toHaveBeenCalled());
   });
 
   it("handles syncRepository with no repository in response", async () => {
@@ -228,16 +260,14 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText("org/beta")).not.toBeInTheDocument();
   });
 
-  it("calls handleGitHubCallback when installation_id present with no setup_action", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-55");
+  it("calls handleGitHubCallback when installationId present with no setupAction (refresh-all path)", async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-55" />);
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-55" })
     );
-    window.history.replaceState({}, "", "/");
   });
 
   it("does not update repo list when syncRepository returns no repository", async () => {

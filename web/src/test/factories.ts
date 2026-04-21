@@ -8,8 +8,8 @@ import {
   RepositorySchema,
   RunMetaSchema,
   SuiteSchema,
-} from "../gen/ameliso/v1/types_pb";
-import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
+} from "@/gen/ameliso/v1/types_pb";
+import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
 
 export function makeCase(init: MessageInitShape<typeof CaseSchema> = {}) {
   return create(CaseSchema, {
