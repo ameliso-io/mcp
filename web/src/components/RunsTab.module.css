@@ -1,0 +1,478 @@
+.noRepo {
+  color: #64748b;
+  padding: 40px;
+  text-align: center;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.filterBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.filterBtnActive {
+  composes: filterBtn;
+  background: #1e293b;
+  color: white;
+  border: 1px solid #1e293b;
+}
+
+.filterBtnInactive {
+  composes: filterBtn;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.fullCol {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 13px;
+  color: #64748b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.labelSm {
+  font-size: 12px;
+  color: #64748b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.inputAuto {
+  composes: input;
+  width: auto;
+}
+
+.inputErr {
+  composes: input;
+  border-color: #fca5a5;
+}
+
+.errorCard {
+  composes: card;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.errorDismiss {
+  background: none;
+  border: none;
+  color: #991b1b;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 0 0 12px;
+  flex-shrink: 0;
+}
+
+.loadingMsg {
+  text-align: center;
+  color: #64748b;
+  padding: 40px;
+}
+
+.emptyCard {
+  composes: card;
+  color: #64748b;
+  text-align: center;
+  padding: 40px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.runCard {
+  composes: card;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.runCardSelected {
+  composes: card;
+  margin-bottom: 0;
+  cursor: pointer;
+  border-color: #3b82f6;
+}
+
+.runRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.runStatusBadge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.resultStatusBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.runId {
+  font-weight: 600;
+  font-size: 15px;
+  flex: 1;
+}
+
+.suiteBadge {
+  font-size: 11px;
+  background: #eff6ff;
+  color: #3b82f6;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.runTester {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.runEnv {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.runDate {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.expandedPanel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.panelLoading {
+  color: #64748b;
+  padding: 12px 0;
+}
+
+.resultFilters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.noResults {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resultRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.resultPath {
+  font-size: 13px;
+  font-family: monospace;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.resultTitle {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.resultNotes {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.progressWrap {
+  margin-bottom: 12px;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.progressTrack {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #16a34a;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.pendingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pendingLabel {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.refreshHint {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.pendingActions {
+  display: flex;
+  gap: 8px;
+}
+
+.allDone {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.pendingList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pendingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.pendingPath {
+  flex: 1;
+  font-size: 14px;
+  font-family: monospace;
+}
+
+.pendingTitle {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.recordPanel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.recordSteps {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.stepsLoading {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.recordForm {
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.notesWrap {
+  flex: 1;
+  min-width: 160px;
+}
+
+.btn {
+  padding: 8px 16px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btnGreen {
+  padding: 8px 20px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btnGreenSm {
+  padding: 6px 14px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btnBlueSm {
+  padding: 6px 14px;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btnRedSm {
+  padding: 6px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btnRecordSm {
+  padding: 5px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btnDangerSm {
+  background: none;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btnSaveResult {
+  padding: 8px 16px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.showAllBtn {
+  font-size: 12px;
+  color: #64748b;
+  background: none;
+  border: 1px solid #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
