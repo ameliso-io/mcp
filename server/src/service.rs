@@ -592,6 +592,11 @@ impl AmelisoService for AmelisoServer {
                 "status must be one of: passed, failed, blocked, skipped",
             ));
         }
+        if matches!(status, "failed" | "blocked") && req.notes.trim().is_empty() {
+            return Err(invalid(
+                "notes are required when status is failed or blocked",
+            ));
+        }
         let (result, _) = repo::record_result(
             &self.pool,
             &req.repo_id,
@@ -978,6 +983,170 @@ mod tests {
     use super::*;
     use crate::repo::RepoError;
     use anyhow::anyhow;
+
+    /// Returns a lazy pool that never actually connects.
+    /// Safe to use in tests where validation fires before any DB access.
+    fn lazy_pool() -> PgPool {
+        sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
+            .expect("lazy pool creation should not fail")
+    }
+
+    fn server() -> AmelisoServer {
+        AmelisoServer { pool: lazy_pool() }
+    }
+
+    // ── record_result handler validation ─────────────────────────────────────
+
+    #[tokio::test]
+    async fn record_result_rejects_failed_without_notes() {
+        let s = server();
+        let req = Request::new(pb::RecordResultRequest {
+            repo_id: "owner/repo".to_owned(),
+            run_id: "2026-01-01-smoke".to_owned(),
+            case_path: "auth/login".to_owned(),
+            status: pb::ResultStatus::Failed as i32,
+            notes: "".to_owned(),
+        });
+        let err = s.record_result(req).await.unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes are required"));
+    }
+
+    #[tokio::test]
+    async fn record_result_rejects_blocked_without_notes() {
+        let s = server();
+        let req = Request::new(pb::RecordResultRequest {
+            repo_id: "owner/repo".to_owned(),
+            run_id: "2026-01-01-smoke".to_owned(),
+            case_path: "auth/login".to_owned(),
+            status: pb::ResultStatus::Blocked as i32,
+            notes: "   ".to_owned(), // whitespace-only
+        });
+        let err = s.record_result(req).await.unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes are required"));
+    }
+
+    // ── handler required-field validation ─────────────────────────────────────
+
+    #[tokio::test]
+    async fn update_case_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path is required"));
+    }
+
+    #[tokio::test]
+    async fn get_suite_rejects_empty_slug() {
+        let s = server();
+        let err = s
+            .get_suite(Request::new(pb::GetSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug is required"));
+    }
+
+    #[tokio::test]
+    async fn update_suite_rejects_empty_slug() {
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug is required"));
+    }
+
+    #[tokio::test]
+    async fn get_run_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .get_run(Request::new(pb::GetRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn finalize_run_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+                status: pb::RunStatus::Completed as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_pending_cases_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn finalize_run_rejects_invalid_status() {
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                status: pb::RunStatus::InProgress as i32, // not a valid finalize status
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn record_result_rejects_invalid_status() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Unspecified as i32,
+                notes: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("status must be one of"));
+    }
 
     // ── invalid helper ────────────────────────────────────────────────────────
 
