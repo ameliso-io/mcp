@@ -553,8 +553,10 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("repo_id is required"));
         }
         let status = result_status_from_i32(req.status);
-        if status == "unspecified" {
-            return Err(invalid("status is required"));
+        if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
+            return Err(invalid(
+                "status must be one of: passed, failed, blocked, skipped",
+            ));
         }
         let (result, _) = repo::record_result(
             &self.pool,
