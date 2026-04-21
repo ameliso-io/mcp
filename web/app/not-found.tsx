@@ -1,10 +1,8 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/metadata";
 import styles from "./app.module.css";
 
-export const metadata: Metadata = {
-  title: "Not Found",
-};
+export const metadata = pageMetadata("Not Found", "The page you requested could not be found");
 
 export default function NotFound() {
   return (
