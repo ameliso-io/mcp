@@ -146,6 +146,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListCasesRequest>,
     ) -> Result<Response<pb::ListCasesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let mut cases = repo::list_cases(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
@@ -196,6 +199,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCaseRequest>,
     ) -> Result<Response<pb::GetCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let case = repo::get_case(&self.pool, &req.repo_id, &req.case_path)
             .await
             .map_err(repo_err)?;
@@ -211,6 +217,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateCaseRequest>,
     ) -> Result<Response<pb::CreateCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
@@ -247,6 +256,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::UpdateCaseRequest>,
     ) -> Result<Response<pb::UpdateCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let priority = priority_from_i32(req.priority);
         let title = if req.title.is_empty() {
             None
@@ -290,6 +302,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::DeleteCaseRequest>,
     ) -> Result<Response<pb::DeleteCaseResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
@@ -306,6 +321,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListSuitesRequest>,
     ) -> Result<Response<pb::ListSuitesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let suites = repo::list_suites(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
@@ -319,6 +337,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetSuiteRequest>,
     ) -> Result<Response<pb::GetSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let suite = repo::get_suite(&self.pool, &req.repo_id, &req.slug)
             .await
             .map_err(repo_err)?;
@@ -332,6 +353,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateSuiteRequest>,
     ) -> Result<Response<pb::CreateSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let desc = if req.description.is_empty() {
             None
         } else {
@@ -358,6 +382,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::UpdateSuiteRequest>,
     ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let name = if req.name.is_empty() {
             None
         } else {
@@ -393,6 +420,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::DeleteSuiteRequest>,
     ) -> Result<Response<pb::DeleteSuiteResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
@@ -409,6 +439,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::ListRunsRequest>,
     ) -> Result<Response<pb::ListRunsResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status_filter = req.status;
         let runs = repo::list_runs(&self.pool, &req.repo_id)
             .await
@@ -429,6 +462,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetRunRequest>,
     ) -> Result<Response<pb::GetRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
@@ -444,6 +480,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::CreateRunRequest>,
     ) -> Result<Response<pb::CreateRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
@@ -477,6 +516,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::RecordResultRequest>,
     ) -> Result<Response<pb::RecordResultResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status = result_status_from_i32(req.status);
         if status == "unspecified" {
             return Err(invalid("status is required"));
@@ -501,6 +543,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::FinalizeRunRequest>,
     ) -> Result<Response<pb::FinalizeRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status = run_status_from_i32(req.status);
         if status == "unspecified" {
             return Err(invalid("status must be completed or aborted"));
@@ -518,6 +563,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::DeleteRunRequest>,
     ) -> Result<Response<pb::DeleteRunResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
@@ -533,6 +581,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetPendingCasesRequest>,
     ) -> Result<Response<pb::GetPendingCasesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
@@ -547,6 +598,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetCoverageReportRequest>,
     ) -> Result<Response<pb::GetCoverageReportResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
         let status_filter = req.status_filter;
         let (entries, run_count) = repo::get_coverage_report(&self.pool, &req.repo_id)
             .await
@@ -590,6 +644,9 @@ impl AmelisoService for AmelisoServer {
         request: Request<pb::GetAffectedCasesRequest>,
     ) -> Result<Response<pb::GetAffectedCasesResponse>, Status> {
         let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
 
         let cases = repo::list_cases(&self.pool, &req.repo_id)
             .await
