@@ -25,8 +25,8 @@ runs/{YYYY-MM-DD}-{slug}/
 ### This repository's structure
 
 ```
-server/   # gRPC server (Rust + tonic); exposes AmelisoService (13 RPCs)
-mcp/      # MCP server (Rust + rmcp); stdio transport; 8 tools
+server/   # gRPC server (Rust + tonic); exposes AmelisoService (15 RPCs)
+mcp/      # MCP server (Rust + rmcp); stdio transport; 15 tools
 cli/      # CLI (Rust + clap); calls repo logic directly
 proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
 ```
@@ -41,13 +41,20 @@ Available tools:
 | Tool | Description |
 |------|-------------|
 | `list_cases` | List cases; filter by tags or query |
-| `get_case` | Get full case details including steps |
-| `create_case` | Create a new case file |
+| `get_case` | Get full case details including steps and body |
+| `create_case` | Create a new case file; optionally supply body |
+| `update_case` | Update case metadata and optionally replace body |
+| `delete_case` | Delete a case file |
 | `coverage_report` | Latest status per case across all runs |
 | `list_runs` | List test runs |
+| `get_run` | Get a run with all its results |
 | `create_run` | Start a new test run |
 | `record_result` | Record a case result (passed/failed/blocked/skipped) |
 | `finalize_run` | Mark a run completed or aborted |
+| `list_suites` | List all suites |
+| `get_suite` | Get a suite by slug |
+| `create_suite` | Create a new suite |
+| `get_affected_cases` | Cases that may need re-running based on git changes |
 
 All tools accept `repo_path` — the absolute path to the controlled repository.
 
@@ -60,23 +67,32 @@ All tools accept `repo_path` — the absolute path to the controlled repository.
 cargo build --release
 
 # Cases
-./target/release/ameliso cases list   --repo /path/to/project
-./target/release/ameliso cases get    --repo /path/to/project auth/login
-./target/release/ameliso cases create --repo /path/to/project auth/login \
-    --title "User Login" --description "Verify login flow" --priority high
+export AMELISO_REPO=/path/to/project
+ameliso cases list
+ameliso cases list --tags auth --query login
+ameliso cases get auth/login
+ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
+ameliso cases create auth/login --title "User Login" --description "..." \
+    --body "## Steps\n\n1. Navigate to /login\n"
+ameliso cases update auth/login --title "User Login Flow" --description "..."
+ameliso cases delete auth/login
 
 # Runs
-./target/release/ameliso runs list     --repo /path/to/project
-./target/release/ameliso runs create   --repo /path/to/project smoke
-./target/release/ameliso runs record   --repo /path/to/project 2026-04-21-smoke auth/login passed
-./target/release/ameliso runs finalize --repo /path/to/project 2026-04-21-smoke completed
+ameliso runs list
+ameliso runs get 2026-04-21-smoke
+ameliso runs create smoke --tester alice --environment staging
+ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
+ameliso runs finalize 2026-04-21-smoke completed
 
-# Coverage
-./target/release/ameliso coverage --repo /path/to/project
+# Suites
+ameliso suites list
+ameliso suites get smoke
+ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/checkout
 
-# AMELISO_REPO env var avoids repeating --repo
-export AMELISO_REPO=/path/to/project
-./target/release/ameliso cases list
+# Reports
+ameliso coverage
+ameliso affected
+ameliso affected --since HEAD~10
 ```
 
 ---

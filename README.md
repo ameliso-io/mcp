@@ -45,7 +45,9 @@ ameliso cases list
 ameliso cases list --tags auth --query login
 ameliso cases get auth/login
 ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
+ameliso cases create auth/login --title "User Login" --description "..." --body "## Steps\n\n1. ..."
 ameliso cases update auth/login --title "User Login Flow" --description "..."
+ameliso cases delete auth/login
 
 # Runs
 ameliso runs list
@@ -78,13 +80,13 @@ Add to your Claude Code / MCP host configuration (`.mcp.json` is pre-configured 
 }
 ```
 
-Available tools: `list_cases`, `get_case`, `create_case`, `update_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `list_suites`, `get_suite`, `create_suite`, `get_affected_cases`.
+Available tools: `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `list_suites`, `get_suite`, `create_suite`, `get_affected_cases`.
 
 See [AGENTS.md](AGENTS.md) for full agent usage guide.
 
 ### gRPC server
 
-The gRPC server exposes all 13 RPCs defined in `server/proto/ameliso/v1/service.proto`.
+The gRPC server exposes all 15 RPCs defined in `server/proto/ameliso/v1/service.proto`.
 
 ```sh
 ameliso-server         # listens on [::1]:50051
