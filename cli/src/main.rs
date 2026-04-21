@@ -412,6 +412,9 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             let (meta, dir_path) = repo::create_run(&repo, &slug, &tester, environment, suite)?;
             println!("Created run: {}", meta.id);
             println!("Directory:   {dir_path}");
+            if let Ok((_, total)) = repo::get_pending_cases(&repo, &meta.id) {
+                println!("Scope:       {total} case(s) to test");
+            }
         }
         RunsCmd::Record {
             repo,
