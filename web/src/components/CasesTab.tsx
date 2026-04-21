@@ -6,6 +6,7 @@ import { errorMessage } from "../errorMessage";
 import type { Case } from "../gen/ameliso/v1/types_pb";
 import { Priority } from "../gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./CasesTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
@@ -54,7 +55,8 @@ export default function CasesTab({ repoId }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
-  const [filterAnnouncement, setFilterAnnouncement] = useState("");
+  const [filterAnnouncement, announceFilter] = useAnnounce();
+  const [actionAnnouncement, announceAction] = useAnnounce();
   const prevCountRef = useRef<number | null>(null);
 
   // Create case form
@@ -155,7 +157,7 @@ export default function CasesTab({ repoId }: Props) {
     if (loading) return;
     const count = deferredCases.length;
     if (prevCountRef.current !== null && prevCountRef.current !== count) {
-      setFilterAnnouncement(`${count} case${count !== 1 ? "s" : ""} found`);
+      announceFilter(`${count} case${count !== 1 ? "s" : ""} found`);
     }
     prevCountRef.current = count;
   }, [deferredCases.length, loading]);
@@ -185,6 +187,7 @@ export default function CasesTab({ repoId }: Props) {
       setNewDesc("");
       setNewTags("");
       setNewBody("");
+      announceAction("Case created");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -198,6 +201,7 @@ export default function CasesTab({ repoId }: Props) {
       await client.deleteCase({ repoId, casePath });
       if (expandedPath === casePath) setExpandedPath(null);
       setConfirmingDelete(null);
+      announceAction("Case deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -224,6 +228,7 @@ export default function CasesTab({ repoId }: Props) {
         body: editBody,
       });
       setEditingPath(null);
+      announceAction("Case updated");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -243,6 +248,9 @@ export default function CasesTab({ repoId }: Props) {
     <div>
       <div role="status" aria-live="polite" className="sr-only">
         {filterAnnouncement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
       </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Cases</h2>

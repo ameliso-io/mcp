@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Suite, Case } from "../gen/ameliso/v1/types_pb";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./SuitesTab.module.css";
 
 interface Props {
@@ -28,7 +29,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   const [creating, setCreating] = useState(false);
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
-
+  const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   // Edit suite state
@@ -105,6 +106,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       setNewName("");
       setNewDesc("");
       setNewCases("");
+      announce("Suite created");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -118,6 +120,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       await client.deleteSuite({ repoId, slug });
       if (expanded === slug) setExpanded(null);
       setConfirmingDelete(null);
+      announce("Suite deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -142,6 +145,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
           : [],
       });
       setEditingSlug(null);
+      announce("Suite updated");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -156,6 +160,9 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Suites</h2>
         <button

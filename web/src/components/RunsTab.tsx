@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
+import { useAnnounce } from "../hooks/useAnnounce";
 import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
@@ -82,7 +83,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
     status: RunStatus;
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
-  const [actionAnnouncement, setActionAnnouncement] = useState("");
+  const [actionAnnouncement, announce] = useAnnounce();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
@@ -151,7 +152,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setNewTester("");
       setNewEnv("");
       setNewSuite("");
-      setActionAnnouncement("Run created");
+      announce("Run created");
       await load();
       // Auto-expand the newly created run
       if (created.run) {
@@ -212,7 +213,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setRecordingCase(null);
       setRecordNotes("");
       setCaseBody(null);
-      setActionAnnouncement("Result recorded");
+      announce("Result recorded");
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
       setPendingCases(res.cases);
@@ -250,7 +251,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       await client.finalizeRun({ repoId, runId, status });
       setSelectedRunId(null);
       setPendingCases([]);
-      setActionAnnouncement(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
+      announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -289,7 +290,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         setPendingCases([]);
       }
       setConfirmingDeleteRun(null);
-      setActionAnnouncement("Run deleted");
+      announce("Run deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
