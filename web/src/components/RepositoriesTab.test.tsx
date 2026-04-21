@@ -341,9 +341,15 @@ describe("RepositoriesTab", () => {
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() =>
-      expect(
-        screen.getByText(/Click.*Connect GitHub Repo.*to install/i)
-      ).toBeInTheDocument()
+      expect(screen.getByText(/Click.*Connect GitHub Repo.*to install/i)).toBeInTheDocument()
     );
+  });
+
+  it("shows error when initial GitHub callback from URL fails", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-err&setup_action=install");
+    vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("callback failed"));
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("callback failed")).toBeInTheDocument());
+    window.history.replaceState({}, "", "/");
   });
 });
