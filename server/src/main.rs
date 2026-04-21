@@ -25,6 +25,10 @@ fn load_env() {
 fn validate_env() {
     let required = [
         (
+            "DATABASE_URL",
+            "PostgreSQL connection string, e.g. postgres://user:pass@host/db",
+        ),
+        (
             "GITHUB_APP_ID",
             "numeric GitHub App ID from the app settings page",
         ),
@@ -50,16 +54,27 @@ async fn main() -> Result<()> {
     load_env();
     validate_env();
 
+    let database_url = std::env::var("DATABASE_URL").unwrap();
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(10)
+        .connect(&database_url)
+        .await?;
+
+    ameliso_server::db::run_migrations(&pool).await?;
+    eprintln!("database schema ready");
+
     let port = std::env::var("AMELISO_PORT")
         .ok()
         .and_then(|p| p.parse::<u16>().ok())
         .unwrap_or(50052);
-    let addr: SocketAddr = format!("127.0.0.1:{port}").parse()?;
+    let addr: SocketAddr = format!("0.0.0.0:{port}").parse()?;
     println!("ameliso-server listening on {}", addr);
 
     Server::builder()
         .accept_http1(true)
-        .add_service(tonic_web::enable(AmelisoServiceServer::new(AmelisoServer)))
+        .add_service(tonic_web::enable(AmelisoServiceServer::new(
+            AmelisoServer { pool },
+        )))
         .serve(addr)
         .await?;
 

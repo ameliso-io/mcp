@@ -1,4 +1,4 @@
-pub mod git;
+pub mod db;
 pub mod github;
 pub mod proto;
 pub mod repo;

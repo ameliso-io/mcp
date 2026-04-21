@@ -48,6 +48,8 @@
     "rustfmt",
     "schemars",
     "serde",
+    "splitn",
+    "sqlx",
     "thiserror",
     "tokio",
     "tonic",
