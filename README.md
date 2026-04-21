@@ -80,13 +80,13 @@ Add to your Claude Code / MCP host configuration (`.mcp.json` is pre-configured 
 }
 ```
 
-Available tools: `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `get_affected_cases`.
+Available tools: `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
 
 See [AGENTS.md](AGENTS.md) for full agent usage guide.
 
 ### gRPC server
 
-The gRPC server exposes all 16 RPCs defined in `server/proto/ameliso/v1/service.proto`.
+The gRPC server exposes all 17 RPCs defined in `server/proto/ameliso/v1/service.proto`.
 
 ```sh
 ameliso-server         # listens on [::1]:50051

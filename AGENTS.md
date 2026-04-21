@@ -25,8 +25,8 @@ runs/{YYYY-MM-DD}-{slug}/
 ### This repository's structure
 
 ```
-server/   # gRPC server (Rust + tonic); exposes AmelisoService (16 RPCs)
-mcp/      # MCP server (Rust + rmcp); stdio transport; 16 tools
+server/   # gRPC server (Rust + tonic); exposes AmelisoService (17 RPCs)
+mcp/      # MCP server (Rust + rmcp); stdio transport; 17 tools
 cli/      # CLI (Rust + clap); calls repo logic directly
 proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
 ```
@@ -55,6 +55,7 @@ Available tools:
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
 | `update_suite` | Update a suite's name, description, or case list |
+| `delete_suite` | Delete a suite file |
 | `get_affected_cases` | Cases that may need re-running based on git changes |
 
 All tools accept `repo_path` — the absolute path to the controlled repository.
