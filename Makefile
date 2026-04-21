@@ -1,7 +1,14 @@
-.PHONY: install build test fmt lint spell pre-commit pre-push
+.PHONY: install build test fmt lint spell pre-commit pre-push dev
+
+dev: install build
+	@trap 'kill 0' SIGINT SIGTERM; \
+	(cargo run -p ameliso-server; kill 0) & \
+	(cd web && pnpm dev; kill 0) & \
+	wait
 
 install:
 	pnpm install
+	cd web && pnpm install
 	cargo fetch
 
 build:
