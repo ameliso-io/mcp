@@ -51,11 +51,7 @@ const STAT_COLORS: Record<string, string> = {
   'Never Run': '#94a3b8',
 }
 
-const PRIORITY_COLOR: Record<string, string> = {
-  high: '#ef4444',
-  medium: '#f97316',
-  low: '#22c55e',
-}
+
 
 export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: Props) {
   const [inputPath, setInputPath] = useState(repoPath)
@@ -253,7 +249,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
                 }).map(ac => (
                   <div key={ac.case?.path} className={styles.affectedRow}>
                     {ac.case?.priority && (
-                      <span className={styles.priorityDot} style={{ background: PRIORITY_COLOR[ac.case.priority] ?? '#22c55e' }} />
+                      <span className={styles.priorityDot} data-priority={ac.case.priority} />
                     )}
                     <span className={styles.affectedPath}>{ac.case?.path}</span>
                     <span className={styles.affectedTitle}>{ac.case?.title}</span>

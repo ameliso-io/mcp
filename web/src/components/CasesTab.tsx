@@ -21,14 +21,6 @@ function stringToPriority(p: string): Priority {
   }
 }
 
-function priorityColor(p: string): string {
-  switch (p) {
-    case 'high': return '#ef4444'
-    case 'medium': return '#f97316'
-    case 'low': return '#22c55e'
-    default: return '#94a3b8'
-  }
-}
 
 function priorityLabel(p: string): string {
   switch (p) {
@@ -270,8 +262,7 @@ export default function CasesTab({ repoPath }: Props) {
           placeholder="Search cases…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className={styles.input}
-          style={{ flex: 1, minWidth: '200px' }}
+          className={styles.searchInput}
         />
         <select
           value={priorityFilter}
@@ -357,11 +348,11 @@ export default function CasesTab({ repoPath }: Props) {
                 </form>
               ) : (
                 <div className={styles.caseRow} onClick={() => toggleExpand(c.path)}>
-                  <div className={styles.priorityDot} style={{ background: priorityColor(c.priority) }} />
+                  <div className={styles.priorityDot} data-priority={c.priority} />
                   <div className={styles.caseInfo}>
                     <div className={styles.caseMeta}>
                       <span className={styles.casePath}>{c.path}</span>
-                      <span className={styles.priorityBadge} style={{ color: priorityColor(c.priority) }}>{priorityLabel(c.priority)}</span>
+                      <span className={styles.priorityBadge} data-priority={c.priority}>{priorityLabel(c.priority)}</span>
                       {c.tags.map(t => <span key={t} className={styles.tag}>{t}</span>)}
                     </div>
                     <p className={styles.caseTitle}>{c.title}</p>

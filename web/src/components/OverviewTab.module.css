@@ -297,7 +297,10 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--color-priority-low);
 }
+.priorityDot[data-priority="high"] { background: var(--color-priority-high); }
+.priorityDot[data-priority="medium"] { background: var(--color-priority-medium); }
 
 .affectedPath {
   flex: 1;

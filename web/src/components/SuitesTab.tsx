@@ -9,11 +9,7 @@ interface Props {
   onRunSuite?: (slug: string) => void
 }
 
-const PRIORITY_COLOR: Record<string, string> = {
-  high: '#ef4444',
-  medium: '#f97316',
-  low: '#22c55e',
-}
+
 
 export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [suites, setSuites] = useState<Suite[]>([])
@@ -234,7 +230,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
                       <div className={styles.caseList}>
                         {expandedCases.map(c => (
                           <div key={c.path} className={styles.caseRow}>
-                            <span className={styles.caseDot} style={{ background: PRIORITY_COLOR[c.priority] ?? '#22c55e' }} />
+                            <span className={styles.caseDot} data-priority={c.priority} />
                             <span className={styles.casePath}>{c.path}</span>
                             <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map(t => <span key={t} className={styles.tag}>{t}</span>)}
