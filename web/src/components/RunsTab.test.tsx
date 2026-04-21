@@ -738,6 +738,41 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
 
+  it("resets notes and status when switching to a different case", async () => {
+    const case2 = {
+      path: "auth/logout",
+      title: "User Logout",
+      description: "",
+      tags: [],
+      priority: "medium",
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    } as unknown as Case;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase, case2],
+      totalInScope: 2,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    // Open record form for first case
+    const recordBtns = await screen.findAllByText("Record");
+    await userEvent.click(recordBtns[0]);
+    await waitFor(() => screen.getByRole("combobox"));
+    // Set FAILED and add notes
+    await userEvent.selectOptions(screen.getByRole("combobox"), String(ResultStatus.FAILED));
+    await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "broken");
+    // Now click Record on the second case — form should switch and reset
+    const btns2 = screen.getAllByText("Record");
+    await userEvent.click(btns2[btns2.length - 1]);
+    await waitFor(() => {
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
+      expect(select.value).toBe(String(ResultStatus.PASSED));
+    });
+    expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
+  });
+
   it("resets recordStatus to PASSED after recording a result", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);

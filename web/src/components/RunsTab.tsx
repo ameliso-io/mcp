@@ -264,6 +264,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       return;
     }
     setRecordingCase(casePath);
+    setRecordNotes("");
+    setRecordStatus(ResultStatus.PASSED);
     setCaseBody(null);
     setCaseBodyLoading(true);
     try {
