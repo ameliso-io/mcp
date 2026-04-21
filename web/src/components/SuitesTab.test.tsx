@@ -5,6 +5,9 @@ import SuitesTab from "./SuitesTab";
 import { client } from "@/client";
 import { makeCase, makeSuite } from "@/test/factories";
 import type { Suite } from "@/gen/ameliso/v1/types_pb";
+import { create } from "@bufbuild/protobuf";
+import type { ListCasesResponse } from "@/gen/ameliso/v1/service_pb";
+import { ListCasesResponseSchema } from "@/gen/ameliso/v1/service_pb";
 
 vi.mock("@/client");
 vi.mock("next/link", () => ({
@@ -417,10 +420,8 @@ describe("SuitesTab", () => {
   it("ignores stale listCases response when suite clicked twice rapidly", async () => {
     const suite2 = makeSuite({ slug: "regression", name: "Regression", cases: [] });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let resolveFirst!: (v: any) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let resolveSecond!: (v: any) => void;
+    let resolveFirst!: (v: ListCasesResponse) => void;
+    let resolveSecond!: (v: ListCasesResponse) => void;
     vi.mocked(client.listCases)
       .mockImplementationOnce(
         () =>
@@ -439,10 +440,10 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByRole("button", { name: /Smoke Tests/ }));
     await userEvent.click(screen.getByRole("button", { name: /Regression/ }));
     // Resolve second fetch first (out of order)
-    resolveSecond({ cases: [makeCase({ path: "reg/test", title: "Regression Test" })] });
+    resolveSecond(create(ListCasesResponseSchema, { cases: [makeCase({ path: "reg/test", title: "Regression Test" })] }));
     await waitFor(() => screen.getByText("Regression Test"));
     // Now resolve first fetch — stale result must be discarded
-    resolveFirst({ cases: [makeCase({ path: "auth/login", title: "Should Not Appear" })] });
+    resolveFirst(create(ListCasesResponseSchema, { cases: [makeCase({ path: "auth/login", title: "Should Not Appear" })] }));
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText("Should Not Appear")).not.toBeInTheDocument();
     expect(screen.getByText("Regression Test")).toBeInTheDocument();
