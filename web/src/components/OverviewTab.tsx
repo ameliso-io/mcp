@@ -189,6 +189,20 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
         </div>
       )}
 
+      {!repoPath && !loading && (
+        <div style={{ ...card, color: '#64748b', padding: '32px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: '600', color: '#334155' }}>
+            Enter a repository path to get started
+          </p>
+          <p style={{ margin: '0 0 16px', fontSize: '14px' }}>
+            Point Ameliso at a repository that contains a <code style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>cases/</code> directory.
+          </p>
+          <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>
+            Or use the Repositories tab to connect a GitHub repository.
+          </p>
+        </div>
+      )}
+
       {loading && (
         <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>
           Loading…
