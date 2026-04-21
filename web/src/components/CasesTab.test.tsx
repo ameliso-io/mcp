@@ -260,4 +260,77 @@ describe('CasesTab', () => {
       expect.objectContaining({ casePath: 'auth/login' })
     ))
   })
+
+  it('calls createCase with parsed tags when tags field is filled', async () => {
+    vi.mocked(client.createCase).mockResolvedValue({ case: mockCase, filePath: 'cases/auth/new.md' } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Case'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'auth/new')
+    await userEvent.type(inputs[1], 'New Case Title')
+    await userEvent.type(inputs[3], 'auth, smoke')
+    await userEvent.click(screen.getByText('Create'))
+    await waitFor(() => expect(client.createCase).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: expect.arrayContaining(['auth', 'smoke']) })
+    ))
+  })
+
+  it('calls updateCase with empty tags when tags field is cleared', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const tagsInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'auth, smoke') as HTMLInputElement
+    await userEvent.clear(tagsInput)
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: [] })
+    ))
+  })
+
+  it('filters by tag when tag select changed', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    const tagSelect = await waitFor(() => screen.getByDisplayValue('All tags'))
+    await userEvent.selectOptions(tagSelect, 'auth')
+    await waitFor(() => expect(client.listCases).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: ['auth'] })
+    ))
+  })
+
+  it('clears debounce timeout on rapid search input', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    const searchInput = screen.getByPlaceholderText('Search cases…')
+    await userEvent.type(searchInput, 'lo')
+    await waitFor(() => expect(client.listCases).toHaveBeenCalled())
+  })
+
+  it('shows medium priority label and opens edit for medium priority case', async () => {
+    const mediumCase = { ...mockCase, priority: 'medium', path: 'auth/reset', title: 'Reset Password' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mediumCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('Reset Password')).toBeInTheDocument())
+    expect(screen.getAllByText('Medium').length).toBeGreaterThan(0)
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+  })
+
+  it('opens edit for low priority case', async () => {
+    const lowCase = { ...mockCase, priority: 'low', path: 'auth/logout', title: 'Logout' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [lowCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+  })
+
+  it('opens edit for case with unknown priority (default branch)', async () => {
+    const unknownCase = { ...mockCase, priority: '', path: 'other/thing', title: 'Unknown Priority' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [unknownCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+  })
 })
