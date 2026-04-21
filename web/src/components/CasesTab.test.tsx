@@ -18,8 +18,10 @@ const mockCase = {
 } as unknown as Case
 
 beforeEach(() => {
+  vi.clearAllMocks()
   vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never)
   vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '## Steps\n\n1. Go to /login' } as never)
+  vi.mocked(client.updateCase).mockResolvedValue({ case: mockCase } as never)
 })
 
 describe('CasesTab', () => {
@@ -74,5 +76,43 @@ describe('CasesTab', () => {
     await waitFor(() => expect(client.deleteCase).toHaveBeenCalledWith(
       expect.objectContaining({ casePath: 'auth/login' })
     ))
+  })
+
+  it('opens edit form with pre-filled values when Edit clicked', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => {
+      const titleInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'User Login')
+      expect(titleInput).toBeDefined()
+    })
+  })
+
+  it('calls updateCase when edit form submitted', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ repoPath: '/repo', casePath: 'auth/login', title: 'User Login' })
+    ))
+  })
+
+  it('collapses expanded case when clicked again', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    await userEvent.click(screen.getByText('User Login'))
+    await waitFor(() => expect(screen.getByText(/Go to \/login/)).toBeInTheDocument())
+    await userEvent.click(screen.getByText('User Login'))
+    await waitFor(() => expect(screen.queryByText(/Go to \/login/)).not.toBeInTheDocument())
+  })
+
+  it('shows no-body placeholder when body is empty', async () => {
+    vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '' } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    await userEvent.click(screen.getByText('User Login'))
+    await waitFor(() => expect(screen.getByText('No body.')).toBeInTheDocument())
   })
 })
