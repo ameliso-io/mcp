@@ -33,6 +33,16 @@
   --color-priority-high: #ef4444;
   --color-priority-medium: #f97316;
   --color-priority-low: #22c55e;
+
+  --color-run-status-in-progress: var(--color-primary);
+  --color-run-status-completed: var(--color-priority-low);
+  --color-run-status-aborted: var(--color-danger);
+  --color-run-status-default: var(--color-subtle);
+
+  --color-result-passed: var(--color-priority-low);
+  --color-result-failed: var(--color-danger);
+  --color-result-blocked: var(--color-priority-medium);
+  --color-result-skipped: var(--color-subtle);
 }
 
 button:disabled {

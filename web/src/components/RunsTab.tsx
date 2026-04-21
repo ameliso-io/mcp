@@ -14,15 +14,6 @@ interface Props {
   onInitialSuiteConsumed?: () => void
 }
 
-function statusColor(s: ResultStatus): string {
-  switch (s) {
-    case ResultStatus.PASSED: return '#22c55e'
-    case ResultStatus.FAILED: return '#ef4444'
-    case ResultStatus.BLOCKED: return '#f97316'
-    case ResultStatus.SKIPPED: return '#94a3b8'
-    default: return '#e2e8f0'
-  }
-}
 
 function statusLabel(s: ResultStatus): string {
   switch (s) {
@@ -43,14 +34,7 @@ function runStatusLabel(s: RunStatus): string {
   }
 }
 
-function runStatusColor(s: RunStatus): string {
-  switch (s) {
-    case RunStatus.IN_PROGRESS: return '#3b82f6'
-    case RunStatus.COMPLETED: return '#22c55e'
-    case RunStatus.ABORTED: return '#ef4444'
-    default: return '#94a3b8'
-  }
-}
+
 
 export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([])
@@ -359,7 +343,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
               <div className={styles.runRow}>
                 <span
                   className={styles.runStatusBadge}
-                  style={{ color: runStatusColor(run.status), background: runStatusColor(run.status) + '18' }}
+                  data-status={RunStatus[run.status]}
                 >
                   {runStatusLabel(run.status)}
                 </span>
@@ -426,7 +410,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                           <div key={r.casePath} className={styles.resultRow}>
                             <span
                               className={styles.resultStatusBadge}
-                              style={{ color: statusColor(r.status), background: statusColor(r.status) + '18' }}
+                              data-status={ResultStatus[r.status]}
                             >
                               {statusLabel(r.status)}
                             </span>
