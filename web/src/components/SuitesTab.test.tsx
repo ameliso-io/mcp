@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import SuitesTab from './SuitesTab'
 import { client } from '../client'
+import type { Suite, Case } from '../gen/ameliso/v1/types_pb'
 
 vi.mock('../client')
 
@@ -11,16 +12,16 @@ const mockSuite = {
   name: 'Smoke Tests',
   description: 'Critical path checks',
   cases: ['auth/login', 'auth/logout'],
-}
+} as unknown as Suite
 
 beforeEach(() => {
-  vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite] })
+  vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite] } as never)
   vi.mocked(client.listCases).mockResolvedValue({ cases: [
     { path: 'auth/login', title: 'User Login', description: '', tags: ['auth'], priority: 'high', createdAt: '', updatedAt: '' },
     { path: 'auth/logout', title: 'User Logout', description: '', tags: [], priority: 'low', createdAt: '', updatedAt: '' },
-  ] })
-  vi.mocked(client.createSuite).mockResolvedValue({ suite: mockSuite, filePath: 'suites/smoke.yaml' })
-  vi.mocked(client.deleteSuite).mockResolvedValue({ filePath: 'suites/smoke.yaml' })
+  ] as unknown as Case[] } as never)
+  vi.mocked(client.createSuite).mockResolvedValue({ suite: mockSuite, filePath: 'suites/smoke.yaml' } as never)
+  vi.mocked(client.deleteSuite).mockResolvedValue({ filePath: 'suites/smoke.yaml' } as never)
 })
 
 describe('SuitesTab', () => {

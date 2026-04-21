@@ -4,8 +4,17 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import OverviewTab from './OverviewTab'
 import { client } from '../client'
 import { ResultStatus } from '../gen/ameliso/v1/types_pb'
+import type { CoverageEntry } from '../gen/ameliso/v1/types_pb'
+import type { ActiveRunSummary } from '../gen/ameliso/v1/service_pb'
 
 vi.mock('../client')
+
+const makeCovEntry = (path: string, title: string, priority: string, status: ResultStatus): CoverageEntry => ({
+  case: { path, title, description: '', tags: [], priority, createdAt: '', updatedAt: '' } as never,
+  latestStatus: status,
+  lastRunId: 'run-1',
+  lastRunDate: '2026-01-01',
+} as unknown as CoverageEntry)
 
 const baseStatus = {
   totalCases: 3,
@@ -21,14 +30,14 @@ const baseStatus = {
   totalRuns: 5,
   totalSuites: 2,
   coverageEntries: [
-    { case: { path: 'auth/login', title: 'User Login', description: '', tags: [], priority: 'high', createdAt: '', updatedAt: '' }, latestStatus: ResultStatus.PASSED, lastRunId: 'run-1', lastRunDate: '2026-01-01' },
-    { case: { path: 'auth/logout', title: 'User Logout', description: '', tags: [], priority: 'low', createdAt: '', updatedAt: '' }, latestStatus: ResultStatus.FAILED, lastRunId: 'run-1', lastRunDate: '2026-01-01' },
+    makeCovEntry('auth/login', 'User Login', 'high', ResultStatus.PASSED),
+    makeCovEntry('auth/logout', 'User Logout', 'low', ResultStatus.FAILED),
   ],
 }
 
 beforeEach(() => {
-  vi.mocked(client.getRepoStatus).mockResolvedValue(baseStatus)
-  vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: '' })
+  vi.mocked(client.getRepoStatus).mockResolvedValue(baseStatus as never)
+  vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: '' } as never)
 })
 
 describe('OverviewTab', () => {
@@ -48,7 +57,6 @@ describe('OverviewTab', () => {
     render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
     await waitFor(() => screen.getByText('auth/login'))
     const entries = screen.getAllByText(/auth\//)
-    // Failed (auth/logout) should appear before passed (auth/login) due to sort
     expect(entries[0].textContent).toBe('auth/logout')
   })
 
@@ -58,10 +66,14 @@ describe('OverviewTab', () => {
   })
 
   it('shows active runs panel when runs are active', async () => {
+    const activeRun = {
+      runId: 'run-abc', tester: 'alice', environment: 'staging',
+      suite: 'smoke', date: '2026-01-01', pendingCount: 3, totalInScope: 5,
+    } as unknown as ActiveRunSummary
     vi.mocked(client.getRepoStatus).mockResolvedValue({
       ...baseStatus,
-      activeRuns: [{ runId: 'run-abc', tester: 'alice', environment: 'staging', suite: 'smoke', date: '2026-01-01', pendingCount: 3, totalInScope: 5 }],
-    })
+      activeRuns: [activeRun],
+    } as never)
     render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument())
     expect(screen.getByText('run-abc')).toBeInTheDocument()

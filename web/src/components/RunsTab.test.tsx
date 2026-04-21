@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import RunsTab from './RunsTab'
 import { client } from '../client'
 import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
+import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
 
 vi.mock('../client')
 
@@ -14,7 +15,7 @@ const mockRun = {
   status: RunStatus.IN_PROGRESS,
   environment: 'staging',
   suite: 'smoke',
-}
+} as unknown as RunMeta
 
 const mockCase = {
   path: 'auth/login',
@@ -24,16 +25,16 @@ const mockCase = {
   priority: 'high',
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01',
-}
+} as unknown as Case
 
 beforeEach(() => {
-  vi.mocked(client.listRuns).mockResolvedValue({ runs: [] })
-  vi.mocked(client.createRun).mockResolvedValue({ run: mockRun, dirPath: 'runs/2026-01-01-smoke' })
-  vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [mockCase], totalInScope: 1 })
-  vi.mocked(client.listCases).mockResolvedValue({ cases: [] })
-  vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '## Steps\n\n1. Login' })
-  vi.mocked(client.recordResult).mockResolvedValue({ result: undefined })
-  vi.mocked(client.finalizeRun).mockResolvedValue({ run: { ...mockRun, status: RunStatus.COMPLETED } })
+  vi.mocked(client.listRuns).mockResolvedValue({ runs: [] } as never)
+  vi.mocked(client.createRun).mockResolvedValue({ run: mockRun, dirPath: 'runs/2026-01-01-smoke' } as never)
+  vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [mockCase], totalInScope: 1 } as never)
+  vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never)
+  vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '## Steps\n\n1. Login' } as never)
+  vi.mocked(client.recordResult).mockResolvedValue({ result: undefined } as never)
+  vi.mocked(client.finalizeRun).mockResolvedValue({ run: { ...mockRun, status: RunStatus.COMPLETED } } as never)
 })
 
 describe('RunsTab', () => {
@@ -48,7 +49,7 @@ describe('RunsTab', () => {
   })
 
   it('shows runs from list', async () => {
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] })
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     render(<RunsTab repoPath="/repo" />)
     await waitFor(() => expect(screen.getByText('2026-01-01-smoke')).toBeInTheDocument())
   })
@@ -67,7 +68,7 @@ describe('RunsTab', () => {
   })
 
   it('creates run and auto-expands on submit', async () => {
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] })
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     render(<RunsTab repoPath="/repo" />)
     await userEvent.click(screen.getByText('+ New Run'))
     const inputs = screen.getAllByRole('textbox')
@@ -95,14 +96,12 @@ describe('RunsTab', () => {
   })
 
   it('shows result badges for completed run', async () => {
-    const completedRun = { ...mockRun, status: RunStatus.COMPLETED }
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] })
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
+    const mockResult = { casePath: 'auth/login', status: ResultStatus.PASSED, notes: '' } as unknown as CaseResult
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
     vi.mocked(client.getRun).mockResolvedValue({
-      run: {
-        meta: completedRun,
-        results: [{ casePath: 'auth/login', status: ResultStatus.PASSED, notes: '' }],
-      },
-    })
+      run: { meta: completedRun, results: [mockResult] },
+    } as never)
     render(<RunsTab repoPath="/repo" />)
     await waitFor(() => screen.getByText('2026-01-01-smoke'))
     await userEvent.click(screen.getByText('2026-01-01-smoke'))

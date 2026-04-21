@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import CasesTab from './CasesTab'
 import { client } from '../client'
+import type { Case } from '../gen/ameliso/v1/types_pb'
 
 vi.mock('../client')
 
@@ -14,11 +15,11 @@ const mockCase = {
   priority: 'high',
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01',
-}
+} as unknown as Case
 
 beforeEach(() => {
-  vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] })
-  vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '## Steps\n\n1. Go to /login' })
+  vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never)
+  vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '## Steps\n\n1. Go to /login' } as never)
 })
 
 describe('CasesTab', () => {
@@ -52,10 +53,9 @@ describe('CasesTab', () => {
   })
 
   it('calls createCase on form submit', async () => {
-    vi.mocked(client.createCase).mockResolvedValue({ case: mockCase, filePath: 'cases/auth/login.md' })
+    vi.mocked(client.createCase).mockResolvedValue({ case: mockCase, filePath: 'cases/auth/login.md' } as never)
     render(<CasesTab repoPath="/repo" />)
     await userEvent.click(screen.getByText('+ New Case'))
-    // inputs are rendered in order: Path, Title, Description, Tags, body textarea
     const inputs = screen.getAllByRole('textbox')
     await userEvent.type(inputs[0], 'auth/new')
     await userEvent.type(inputs[1], 'New Case Title')
@@ -66,7 +66,7 @@ describe('CasesTab', () => {
   })
 
   it('calls deleteCase when delete confirmed', async () => {
-    vi.mocked(client.deleteCase).mockResolvedValue({ filePath: 'cases/auth/login.md' })
+    vi.mocked(client.deleteCase).mockResolvedValue({ filePath: 'cases/auth/login.md' } as never)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<CasesTab repoPath="/repo" />)
     await waitFor(() => screen.getByText('User Login'))
