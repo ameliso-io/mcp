@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { client } from "@/client";
@@ -387,7 +388,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       </span>
                     </button>
                     <Link
-                      href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as `${string}/runs${string}`}
+                      href={
+                        `${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route<string>
+                      }
                       aria-label={`Run ${suite.slug}`}
                       className={styles.btnGreenSm}
                     >

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { client } from "@/client";
@@ -192,7 +193,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
-                <Link href={`${basePath}/runs` as `${string}/runs`} className={styles.goToRunsBtn}>
+                <Link href={`${basePath}/runs` as Route<string>} className={styles.goToRunsBtn}>
                   Go to Runs
                 </Link>
               </div>
