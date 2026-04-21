@@ -302,12 +302,16 @@ impl AmelisoMcp {
         let never = counts.get("never").copied().unwrap_or(0);
         let passed = counts.get("passed").copied().unwrap_or(0);
         let failed = counts.get("failed").copied().unwrap_or(0);
+        let blocked = counts.get("blocked").copied().unwrap_or(0);
+        let skipped = counts.get("skipped").copied().unwrap_or(0);
         let summary = format!(
-            "Coverage report ({} run(s), {} total: {} passed, {} failed, {} never run)",
+            "Coverage report ({} run(s), {} total: {} passed, {} failed, {} blocked, {} skipped, {} never run)",
             runs.len(),
             total,
             passed,
             failed,
+            blocked,
+            skipped,
             never
         );
         let mut lines = vec![summary];
