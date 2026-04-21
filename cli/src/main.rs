@@ -1004,36 +1004,25 @@ async fn run_affected(channel: Channel, repo_id: &str, since: Option<&str>) -> R
 // ---------------------------------------------------------------------------
 
 async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
-    let mut c = client(channel.clone());
-    let cov = c
-        .get_coverage_report(pb::GetCoverageReportRequest {
+    let mut c1 = client(channel.clone());
+    let mut c2 = client(channel.clone());
+    let mut c3 = client(channel.clone());
+    let (cov_res, suites_res, runs_res) = tokio::join!(
+        c1.get_coverage_report(pb::GetCoverageReportRequest {
             repo_id: repo_id.to_owned(),
             status_filter: pb::ResultStatus::Unspecified as i32,
-        })
-        .await
-        .map_err(grpc_err)?
-        .into_inner();
-
-    let mut c2 = client(channel.clone());
-    let suites = c2
-        .list_suites(pb::ListSuitesRequest {
+        }),
+        c2.list_suites(pb::ListSuitesRequest {
             repo_id: repo_id.to_owned(),
-        })
-        .await
-        .map_err(grpc_err)?
-        .into_inner()
-        .suites;
-
-    let mut c3 = client(channel.clone());
-    let runs = c3
-        .list_runs(pb::ListRunsRequest {
+        }),
+        c3.list_runs(pb::ListRunsRequest {
             repo_id: repo_id.to_owned(),
             status: pb::RunStatus::Unspecified as i32,
-        })
-        .await
-        .map_err(grpc_err)?
-        .into_inner()
-        .runs;
+        }),
+    );
+    let cov = cov_res.map_err(grpc_err)?.into_inner();
+    let suites = suites_res.map_err(grpc_err)?.into_inner().suites;
+    let runs = runs_res.map_err(grpc_err)?.into_inner().runs;
 
     let total = cov.entries.len();
     let mut high = 0usize;
