@@ -751,4 +751,39 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.getByText("Unknown Priority Case")).toBeInTheDocument());
     expect(screen.getByText("—")).toBeInTheDocument();
   });
+
+  it("sort by path orders cases alphabetically when switched from priority", async () => {
+    const caseA = {
+      ...mockCase,
+      path: "z/zebra",
+      title: "Zebra Case",
+      priority: "high",
+    } as unknown as Case;
+    const caseB = {
+      ...mockCase,
+      path: "a/apple",
+      title: "Apple Case",
+      priority: "low",
+    } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [caseA, caseB] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Zebra Case")).toBeInTheDocument());
+    const sortSelect = screen.getByDisplayValue("Sort: Priority");
+    await userEvent.selectOptions(sortSelect, "path");
+    await waitFor(() => expect(screen.getByDisplayValue("Sort: Path")).toBeInTheDocument());
+    const body = document.body.innerHTML;
+    expect(body.indexOf("Apple Case")).toBeLessThan(body.indexOf("Zebra Case"));
+  });
+
+  it("opens edit form with empty body when fetchBody throws during startEdit", async () => {
+    vi.mocked(client.getCase).mockRejectedValue(new Error("fetch failed"));
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => expect(screen.getByText("Save")).toBeInTheDocument());
+    const bodyTextarea = screen
+      .getAllByRole("textbox")
+      .find((i) => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement;
+    expect(bodyTextarea.value).toBe("");
+  });
 });
