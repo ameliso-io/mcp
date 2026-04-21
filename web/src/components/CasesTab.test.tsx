@@ -545,4 +545,28 @@ describe("CasesTab", () => {
     await userEvent.keyboard(" ");
     await waitFor(() => expect(client.getCase).toHaveBeenCalled());
   });
+
+  it("discards stale getCase response when a second expand fires before first resolves", async () => {
+    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
+
+    let resolveFirst!: (v: unknown) => void;
+    const firstPromise = new Promise((res) => { resolveFirst = res; });
+    vi.mocked(client.getCase)
+      .mockImplementationOnce(() => firstPromise as never)
+      .mockResolvedValue({ case: secondCase, body: "second body" } as never);
+
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+
+    await userEvent.click(screen.getByRole("button", { name: /User Login/ }));
+    await userEvent.click(screen.getByRole("button", { name: /User Logout/ }));
+    await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
+
+    // resolve stale first fetch — should not overwrite second body
+    resolveFirst({ case: mockCase, body: "first body" });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText("first body")).not.toBeInTheDocument();
+    expect(screen.getByText("second body")).toBeInTheDocument();
+  });
 });

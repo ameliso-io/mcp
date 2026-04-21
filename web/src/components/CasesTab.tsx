@@ -54,6 +54,7 @@ export default function CasesTab({ repoId }: Props) {
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const expandingRef = useRef<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [actionAnnouncement, announceAction] = useAnnounce();
@@ -92,18 +93,23 @@ export default function CasesTab({ repoId }: Props) {
     if (expandedPath === casePath) {
       setExpandedPath(null);
       setExpandedBody("");
+      expandingRef.current = null;
       return;
     }
     setExpandedPath(casePath);
     setExpandedBody("");
+    expandingRef.current = casePath;
     setBodyLoading(true);
     try {
-      setExpandedBody(await fetchBody(casePath));
+      const body = await fetchBody(casePath);
+      if (expandingRef.current === casePath) setExpandedBody(body);
     } catch (e) {
-      setError(errorMessage(e));
-      setExpandedPath(null);
+      if (expandingRef.current === casePath) {
+        setError(errorMessage(e));
+        setExpandedPath(null);
+      }
     } finally {
-      setBodyLoading(false);
+      if (expandingRef.current === casePath) setBodyLoading(false);
     }
   }
 
