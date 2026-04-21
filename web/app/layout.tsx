@@ -28,6 +28,14 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Ameliso",
   },
+  twitter: {
+    card: "summary",
+    title: {
+      default: "Ameliso",
+      template: "%s | Ameliso",
+    },
+    description: "Test coverage and quality management",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
