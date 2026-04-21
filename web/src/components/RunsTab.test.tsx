@@ -1051,6 +1051,19 @@ describe("RunsTab", () => {
     expect(screen.queryByText("staging")).not.toBeInTheDocument();
   });
 
+  it("hides body section in record form when case has no body", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: "" } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
+    // Body section is hidden when body is empty; "Loading steps…" never appears
+    expect(screen.queryByText("Loading steps…")).not.toBeInTheDocument();
+  });
+
   it("renders case body markdown when record form opened and body is loaded", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getCase).mockResolvedValue({
