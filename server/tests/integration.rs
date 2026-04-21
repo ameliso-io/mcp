@@ -574,3 +574,39 @@ async fn delete_case_removes_file() {
         .unwrap_err();
     assert_eq!(err.code(), tonic::Code::NotFound);
 }
+
+#[tokio::test]
+async fn update_case_preserves_body_when_omitted() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "User Login");
+
+    c.update_case(Request::new(pb::UpdateCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "auth/login".to_owned(),
+        title: "Updated Title".to_owned(),
+        description: "new desc".to_owned(),
+        body: String::new(), // empty = preserve
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "auth/login".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.case.unwrap().title, "Updated Title");
+    assert!(
+        resp.body.contains("Steps"),
+        "original body preserved after update"
+    );
+}
