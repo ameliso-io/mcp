@@ -405,6 +405,7 @@ pub fn create_run(
     environment: Option<String>,
     suite: Option<String>,
 ) -> RResult<(RunYaml, String)> {
+    validate_slug_path(slug, "run slug")?;
     let today = Local::now().format("%Y-%m-%d").to_string();
     let run_id = format!("{}-{}", today, slug);
     let dir = run_dir_path(repo, &run_id);
@@ -436,6 +437,7 @@ pub fn record_result(
     status: &str,
     notes: &str,
 ) -> RResult<LoadedResult> {
+    validate_slug_path(case_path, "case")?;
     let run_dir = run_dir_path(repo, run_id);
     if !run_dir.exists() {
         return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
