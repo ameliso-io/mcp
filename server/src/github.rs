@@ -640,6 +640,31 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
             std::env::remove_var("AMELISO_GITHUB_API");
         }
     }
+
+    #[tokio::test]
+    async fn compare_with_missing_files_field_defaults_to_empty() {
+        // The `files` field has #[serde(default)] so it tolerates absent keys.
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/compare/abc123...HEAD"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "commits": [{"commit": {"message": "only commits, no files key"}}]
+            })))
+            .mount(&server)
+            .await;
+
+        let result = compare("owner", "repo", "abc123", "tok").await;
+        let cr = result.expect("should succeed even without files key");
+        assert_eq!(cr.commit_messages, vec!["only commits, no files key"]);
+        assert!(cr.changed_files.is_empty());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
 }
 
 pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result<CompareResult> {
