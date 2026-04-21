@@ -1,11 +1,14 @@
-.PHONY: install dev build test coverage-check fmt lint spell pre-commit pre-push
+.PHONY: install build test fmt lint spell pre-commit pre-push dev coverage-check
+
+dev: install build
+	@trap 'kill 0' SIGINT SIGTERM; \
+	(cargo run -p ameliso-server; kill 0) & \
+	(cd web && pnpm dev; kill 0) & \
+	wait
 
 install:
 	pnpm install
 	cargo fetch
-
-dev:
-	pnpm dev
 
 build:
 	cargo build --release
@@ -16,6 +19,7 @@ test:
 	pnpm --filter ameliso-web test
 
 coverage-check:
+	cargo llvm-cov -p ameliso-server --fail-under-lines 60
 	pnpm --filter ameliso-web test:coverage
 
 fmt:
