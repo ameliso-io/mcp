@@ -416,7 +416,11 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             if pending.is_empty() {
                 println!("All {} case(s) in scope have results recorded.", total);
             } else {
-                println!("Pending ({}/{} cases still need results):", pending.len(), total);
+                println!(
+                    "Pending ({}/{} cases still need results):",
+                    pending.len(),
+                    total
+                );
                 for p in &pending {
                     println!("  {p}");
                 }
@@ -502,22 +506,37 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
             }
         }
     }
+    let mut passed = 0usize;
+    let mut failed = 0usize;
+    let mut blocked = 0usize;
+    let mut skipped = 0usize;
+    let mut never_count = 0usize;
+    for c in &cases {
+        match latest.get(&c.case_path).map(|(s, _)| s.as_str()) {
+            Some("passed") => passed += 1,
+            Some("failed") => failed += 1,
+            Some("blocked") => blocked += 1,
+            Some("skipped") => skipped += 1,
+            _ => never_count += 1,
+        }
+    }
     println!(
-        "Coverage ({} run(s), {} case(s))\n",
+        "Coverage ({} run(s), {} total: {} passed, {} failed, {} blocked, {} skipped, {} never run)\n",
         runs.len(),
-        cases.len()
+        cases.len(),
+        passed,
+        failed,
+        blocked,
+        skipped,
+        never_count,
     );
     println!("{:40} {:8} LAST RUN", "CASE", "STATUS");
     println!("{}", "-".repeat(70));
-    let mut never_count = 0usize;
     for c in &cases {
         let (status, run_id) = latest
             .get(&c.case_path)
             .cloned()
             .unwrap_or_else(|| ("never".to_owned(), String::new()));
-        if status == "never" {
-            never_count += 1;
-        }
         if let Some(f) = status_filter {
             if status != f {
                 continue;
