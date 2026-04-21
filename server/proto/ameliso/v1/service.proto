@@ -40,6 +40,9 @@ service AmelisoService {
   // Update an existing suite's name, description, or case list.
   rpc UpdateSuite(UpdateSuiteRequest) returns (UpdateSuiteResponse);
 
+  // Delete a suite file from the repository.
+  rpc DeleteSuite(DeleteSuiteRequest) returns (DeleteSuiteResponse);
+
   // --- Runs ---
 
   // List all runs, newest first.
@@ -179,6 +182,15 @@ message UpdateSuiteRequest {
 
 message UpdateSuiteResponse {
   Suite suite = 1;
+}
+
+message DeleteSuiteRequest {
+  string repo_path = 1;
+  string slug = 2;
+}
+
+message DeleteSuiteResponse {
+  string file_path = 1;
 }
 
 // --- Runs ---

@@ -304,6 +304,21 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn delete_suite(
+        &self,
+        request: Request<pb::DeleteSuiteRequest>,
+    ) -> Result<Response<pb::DeleteSuiteResponse>, Status> {
+        let req = request.into_inner();
+        if req.slug.is_empty() {
+            return Err(invalid("slug is required"));
+        }
+        let repo = PathBuf::from(&req.repo_path);
+        repo::delete_suite(&repo, &req.slug).map_err(repo_err)?;
+        Ok(Response::new(pb::DeleteSuiteResponse {
+            file_path: format!("suites/{}.yaml", req.slug),
+        }))
+    }
+
     async fn list_runs(
         &self,
         request: Request<pb::ListRunsRequest>,

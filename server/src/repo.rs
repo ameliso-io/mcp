@@ -521,6 +521,16 @@ pub fn create_suite(
     Ok(suite)
 }
 
+pub fn delete_suite(repo: &Path, slug: &str) -> RResult<()> {
+    let path = suites_dir(repo).join(format!("{}.yaml", slug));
+    if !path.exists() {
+        return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
+    }
+    std::fs::remove_file(&path)
+        .with_context(|| format!("deleting suite {}", slug))?;
+    Ok(())
+}
+
 pub fn update_suite(
     repo: &Path,
     slug: &str,

@@ -173,6 +173,12 @@ enum SuitesCmd {
         #[arg(long, help = "Comma-separated case paths")]
         cases: String,
     },
+    #[command(about = "Delete a suite")]
+    Delete {
+        #[arg(long, env = "AMELISO_REPO")]
+        repo: PathBuf,
+        slug: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -398,6 +404,10 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
                 .collect();
             repo::update_suite(&repo, &slug, &name, description, case_list)?;
             println!("Updated: suites/{slug}.yaml");
+        }
+        SuitesCmd::Delete { repo, slug } => {
+            repo::delete_suite(&repo, &slug)?;
+            println!("Deleted: suites/{slug}.yaml");
         }
     }
     Ok(())

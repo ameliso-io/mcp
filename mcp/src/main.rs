@@ -446,6 +446,15 @@ impl AmelisoMcp {
         }
     }
 
+    #[tool(description = "Delete a test suite file from the repository.")]
+    fn delete_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::delete_suite(&repo, &req.slug) {
+            Ok(()) => format!("deleted: suites/{}.yaml", req.slug),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
     #[tool(description = "Show which test cases need re-running after recent code changes.")]
     fn get_affected_cases(&self, Parameters(req): Parameters<AffectedRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);

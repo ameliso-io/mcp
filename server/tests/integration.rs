@@ -653,3 +653,34 @@ async fn update_suite_changes_cases() {
     assert_eq!(suite.cases.len(), 2);
     assert!(suite.cases.contains(&"billing/checkout".to_owned()));
 }
+
+#[tokio::test]
+async fn list_cases_filter_by_priority() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    std::fs::create_dir_all(tmp.path().join("cases/auth")).unwrap();
+    std::fs::write(
+        tmp.path().join("cases/auth/login.md"),
+        "---\ntitle: Login\ndescription: d\ntags: []\npriority: high\n\
+         created_at: 2026-01-01\nupdated_at: 2026-01-01\n---\n\n## Steps\n\n1.\n",
+    )
+    .unwrap();
+    write_case(tmp.path(), "billing/invoice", "Invoice"); // priority: medium
+
+    let cases = c
+        .list_cases(Request::new(pb::ListCasesRequest {
+            repo_path: rp,
+            priority: pb::Priority::High as i32,
+            ..Default::default()
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .cases;
+
+    assert_eq!(cases.len(), 1);
+    assert_eq!(cases[0].path, "auth/login");
+}
