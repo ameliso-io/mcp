@@ -462,14 +462,23 @@ export default function CasesTab({ repoId }: Props) {
         )}
         <select
           value={sortBy}
-          onChange={(e) => startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))}
+          onChange={(e) =>
+            startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))
+          }
           style={{ ...inputStyle, width: "auto" }}
         >
           <option value="priority">Sort: Priority</option>
           <option value="path">Sort: Path</option>
         </select>
         {!loading && deferredCases.length > 0 && (
-          <span style={{ fontSize: "13px", color: "#94a3b8", whiteSpace: "nowrap", ...(isStale ? { opacity: 0.5 } : {}) }}>
+          <span
+            style={{
+              fontSize: "13px",
+              color: "#94a3b8",
+              whiteSpace: "nowrap",
+              ...(isStale ? { opacity: 0.5 } : {}),
+            }}
+          >
             {deferredCases.length} case{deferredCases.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -516,7 +525,14 @@ export default function CasesTab({ repoId }: Props) {
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", ...(isStale ? { opacity: 0.6, pointerEvents: "none" as const } : {}) }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          ...(isStale ? { opacity: 0.6, pointerEvents: "none" as const } : {}),
+        }}
+      >
         {[...deferredCases]
           .sort((a, b) => {
             if (sortBy === "priority") {

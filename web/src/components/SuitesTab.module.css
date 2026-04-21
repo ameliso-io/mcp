@@ -113,7 +113,9 @@
   composes: card;
   margin-bottom: 0;
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .suiteCard:hover {
@@ -125,7 +127,9 @@
   margin-bottom: 0;
   cursor: pointer;
   border-color: var(--color-primary);
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .suiteRow {
