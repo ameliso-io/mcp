@@ -620,4 +620,12 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("poll error")).toBeInTheDocument());
     spy.mockRestore();
   });
+
+  it("active runs panel not shown when coverage entries exist but no active runs", async () => {
+    // default mocks: entries=[2 entries], listRuns=[] — activeRuns is empty
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // active runs panel only shown when activeRuns.length > 0
+    expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
+  });
 });
