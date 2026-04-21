@@ -223,6 +223,16 @@ fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
     Ok(())
 }
 
+fn validate_priority(priority: &str) -> RResult<()> {
+    if !matches!(priority, "low" | "medium" | "high") {
+        return Err(RepoError::InvalidArg(format!(
+            "invalid priority '{}'; must be one of: low, medium, high",
+            priority
+        )));
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -272,6 +282,7 @@ pub fn create_case(
     body: Option<&str>,
 ) -> RResult<LoadedCase> {
     validate_slug_path(case_path, "case")?;
+    validate_priority(priority)?;
     let file = case_file_path(repo, case_path);
     if file.exists() {
         return Err(RepoError::AlreadyExists(format!(
@@ -308,6 +319,7 @@ pub fn update_case(
     body: Option<&str>,
 ) -> RResult<LoadedCase> {
     validate_slug_path(case_path, "case")?;
+    validate_priority(priority)?;
     let file = case_file_path(repo, case_path);
     let content = std::fs::read_to_string(&file)
         .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
