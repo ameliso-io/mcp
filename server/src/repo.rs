@@ -281,6 +281,53 @@ pub async fn delete_case(pool: &PgPool, repo_id: &str, case_path: &str) -> RResu
     Ok(())
 }
 
+pub async fn delete_case_if_exists(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<()> {
+    validate_slug_path(case_path, "case")?;
+    sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
+        .bind(repo_id)
+        .bind(case_path)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    Ok(()) // no error if not found
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn upsert_case(
+    pool: &PgPool,
+    repo_id: &str,
+    case_path: &str,
+    title: &str,
+    description: &str,
+    tags: Vec<String>,
+    priority: &str,
+    body: &str,
+    created_at: &str,
+    updated_at: &str,
+) -> RResult<()> {
+    validate_slug_path(case_path, "case")?;
+    validate_priority(priority)?;
+    sqlx::query(
+        "INSERT INTO cases (repo_id, case_path, title, description, tags, priority, body, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (repo_id, case_path) DO UPDATE SET
+             title=$3, description=$4, tags=$5, priority=$6, body=$7, updated_at=$9",
+    )
+    .bind(repo_id)
+    .bind(case_path)
+    .bind(title)
+    .bind(description)
+    .bind(&tags)
+    .bind(priority)
+    .bind(body)
+    .bind(created_at)
+    .bind(updated_at)
+    .execute(pool)
+    .await
+    .map_err(map_db)?;
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Suites
 // ---------------------------------------------------------------------------
@@ -937,5 +984,34 @@ mod tests {
         let inner = anyhow::anyhow!("something broke");
         let err = RepoError::Other(inner);
         assert!(err.to_string().contains("something broke"));
+    }
+
+    // -----------------------------------------------------------------------
+    // delete_case_if_exists unit tests (validation only — no DB)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn delete_case_if_exists_with_invalid_path_returns_error() {
+        // validate_slug_path rejects paths with ".."
+        let err = validate_slug_path("../etc", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    // -----------------------------------------------------------------------
+    // upsert_case unit tests (validation only — no DB)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn upsert_case_with_invalid_priority_returns_error() {
+        let err = validate_priority("critical").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("critical"));
+    }
+
+    #[test]
+    fn upsert_case_with_invalid_path_returns_error() {
+        let err = validate_slug_path("", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("case path is empty"));
     }
 }
