@@ -12,6 +12,13 @@
   color: var(--color-danger-hover);
 }
 
+.digest {
+  font-size: 11px;
+  color: var(--color-muted);
+  font-family: monospace;
+  margin: 0;
+}
+
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
