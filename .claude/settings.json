@@ -7,7 +7,11 @@
       "Bash(git show *)",
       "Skill(ralph-loop:ralph-loop)",
       "Bash(git *)",
-      "Skill(centy:mcp-usage)"
+      "Skill(centy:mcp-usage)",
+      "Bash(centy list *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm cspell *)",
+      "Bash(make spell *)"
     ]
   }
 }
