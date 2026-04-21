@@ -25,10 +25,10 @@ runs/{YYYY-MM-DD}-{slug}/
 ### This repository's structure
 
 ```
-server/   # gRPC server (Rust + tonic); exposes AmelisoService (19 RPCs)
-mcp/      # MCP server (Rust + rmcp); stdio transport; 20 tools
-cli/      # CLI (Rust + clap); calls repo logic directly
-proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
+server/          # gRPC server (Rust + tonic); exposes AmelisoService (19 RPCs)
+server/proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
+mcp/             # MCP server (Rust + rmcp); stdio transport; 20 tools
+cli/             # CLI (Rust + clap); calls repo logic directly
 ```
 
 ---

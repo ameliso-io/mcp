@@ -515,6 +515,13 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             } else {
                 println!("Recorded: {case_path} = {status} in run {run_id}");
             }
+            if let Ok((pending, total)) = repo::get_pending_cases(&repo, &run_id) {
+                if pending.is_empty() {
+                    println!("Progress: {total}/{total} done — all cases recorded");
+                } else {
+                    println!("Progress: {}/{total} done, {} remaining", total - pending.len(), pending.len());
+                }
+            }
         }
         RunsCmd::Finalize {
             repo,

@@ -812,9 +812,7 @@ impl AmelisoMcp {
                     run.results.len()
                 ));
                 if run.meta.status == "in-progress" {
-                    if let Ok((pending, total)) =
-                        repo::get_pending_cases(&repo, &run.meta.id)
-                    {
+                    if let Ok((pending, total)) = repo::get_pending_cases(&repo, &run.meta.id) {
                         lines.push(format!(
                             "pending: {}/{} cases still need results",
                             pending.len(),
