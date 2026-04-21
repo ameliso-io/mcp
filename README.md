@@ -44,19 +44,23 @@ export AMELISO_REPO=/path/to/your/project
 ameliso cases list
 ameliso cases list --tags auth --query login
 ameliso cases list --priority high
+ameliso cases list --suite smoke
 ameliso cases get auth/login
-ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
-ameliso cases create auth/login --title "User Login" --description "..." --body "## Steps\n\n1. ..."
-ameliso cases update auth/login --title "User Login Flow" --description "..."
+ameliso cases create auth/login --title "User Login" --priority high
+ameliso cases create auth/login --title "User Login" --description "Verify login" --body "## Steps\n\n1. ..."
+ameliso cases update auth/login --title "User Login Flow"    # patch: change only title
+ameliso cases update auth/login --priority high               # patch: change only priority
 ameliso cases delete auth/login
 
 # Runs
 ameliso runs list
 ameliso runs list --status in-progress
 ameliso runs create smoke --tester alice --environment staging
+ameliso runs get 2026-04-21-smoke
+ameliso runs pending 2026-04-21-smoke
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
 ameliso runs finalize 2026-04-21-smoke completed
-ameliso runs get 2026-04-21-smoke
+ameliso runs delete 2026-04-21-smoke
 
 # Suites
 ameliso suites list
@@ -82,13 +86,13 @@ Add to your Claude Code / MCP host configuration (`.mcp.json` is pre-configured 
 }
 ```
 
-Available tools: `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
+Available tools: `repo_status`, `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `finalize_run`, `delete_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
 
 See [AGENTS.md](AGENTS.md) for full agent usage guide.
 
 ### gRPC server
 
-The gRPC server exposes all 18 RPCs defined in `server/proto/ameliso/v1/service.proto`.
+The gRPC server exposes all 19 RPCs defined in `server/proto/ameliso/v1/service.proto`.
 
 ```sh
 ameliso-server         # listens on [::1]:50051
