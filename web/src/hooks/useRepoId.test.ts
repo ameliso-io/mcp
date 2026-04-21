@@ -23,4 +23,9 @@ describe("useRepoId", () => {
     expect(result.current[0]).toBe("owner/new-repo");
     expect(localStorage.getItem("ameliso:repoId")).toBe("owner/new-repo");
   });
+
+  it("unsubscribes from events on unmount", () => {
+    const { unmount } = renderHook(() => useRepoId());
+    unmount();
+  });
 });

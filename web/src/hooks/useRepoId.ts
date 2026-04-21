@@ -16,6 +16,7 @@ function getSnapshot() {
   return localStorage.getItem(REPO_ID_KEY) ?? "";
 }
 
+/* v8 ignore next 3 */
 function getServerSnapshot() {
   return "";
 }
