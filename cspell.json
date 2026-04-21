@@ -60,7 +60,8 @@
     "isready",
     "postgres",
     "worktree",
-    "worktrees"
+    "worktrees",
+    "turbopack"
   ],
   "flagWords": []
 }

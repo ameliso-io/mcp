@@ -138,7 +138,7 @@ All steps completed. Verified on Chrome 124.
 A browser UI for human testers. Talks gRPC-Web to `ameliso-server`.
 
 ```sh
-pnpm dev        # starts both gRPC server + Vite dev server (http://localhost:5173)
+pnpm dev        # starts both gRPC server + Next.js dev server (http://localhost:3000)
 ```
 
 Tabs: **Overview** (coverage stats, affected cases by git diff), **Cases** (list/create/edit/delete), **Suites** (list/create/edit/delete), **Runs** (create/record results/finalize).
