@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import type { Client } from "@connectrpc/connect";
-import type { AmelisoService } from "../gen/ameliso/v1/service_pb";
+import type { AmelisoService } from "@/gen/ameliso/v1/service_pb";
 
 // satisfies ensures TypeScript catches missing/extra methods when the proto changes
 export const client = {
