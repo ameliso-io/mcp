@@ -747,10 +747,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("Record"));
     await waitFor(() => screen.getByRole("combobox"));
     // Change status to FAILED
-    await userEvent.selectOptions(
-      screen.getByRole("combobox"),
-      String(ResultStatus.FAILED)
-    );
+    await userEvent.selectOptions(screen.getByRole("combobox"), String(ResultStatus.FAILED));
     // Fill notes (required for FAILED; placeholder changes per status)
     await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "blocker");
     await userEvent.click(screen.getByText("Save Result"));

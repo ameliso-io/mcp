@@ -252,7 +252,10 @@ pub async fn update_case(
     .map_err(map_db)?
     .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("case not found: {}", case_path)));
+        return Err(RepoError::NotFound(format!(
+            "case not found: {}",
+            case_path
+        )));
     }
 
     Ok(LoadedCase {
