@@ -1052,4 +1052,102 @@ mod tests {
         .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
+
+    // -----------------------------------------------------------------------
+    // get_case / create_case / update_case / delete_case / get_suite pre-DB
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn get_case_invalid_path_returns_invalid_arg() {
+        let err = get_case(&lazy_pool(), "owner/repo", "../escape")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_case_invalid_path_returns_invalid_arg() {
+        let err = create_case(
+            &lazy_pool(),
+            "owner/repo",
+            "../escape",
+            "title",
+            "",
+            vec![],
+            "medium",
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_case_invalid_priority_returns_invalid_arg() {
+        let err = create_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            "title",
+            "",
+            vec![],
+            "ultra",
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("invalid priority"));
+    }
+
+    #[tokio::test]
+    async fn update_case_invalid_path_returns_invalid_arg() {
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "bad path!",
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_case_invalid_priority_returns_invalid_arg() {
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            None,
+            None,
+            None,
+            Some("turbo"),
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("invalid priority"));
+    }
+
+    #[tokio::test]
+    async fn delete_case_invalid_path_returns_invalid_arg() {
+        let err = delete_case(&lazy_pool(), "owner/repo", "../traversal")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_suite_invalid_slug_returns_invalid_arg() {
+        let err = get_suite(&lazy_pool(), "owner/repo", "bad slug!")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
 }
