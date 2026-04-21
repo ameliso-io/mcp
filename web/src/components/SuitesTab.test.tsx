@@ -576,7 +576,7 @@ describe("SuitesTab", () => {
 
   it("calls onExpandedChange with slug when suite expanded", async () => {
     const onExpandedChange = vi.fn();
-    render(<SuitesTab repoId="owner/repo" onExpandedChange={onExpandedChange} />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" onExpandedChange={onExpandedChange} />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
     expect(onExpandedChange).toHaveBeenCalledWith("smoke");
@@ -584,7 +584,7 @@ describe("SuitesTab", () => {
 
   it("calls onExpandedChange with null when suite collapsed", async () => {
     const onExpandedChange = vi.fn();
-    render(<SuitesTab repoId="owner/repo" onExpandedChange={onExpandedChange} />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" onExpandedChange={onExpandedChange} />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
@@ -595,7 +595,7 @@ describe("SuitesTab", () => {
     vi.mocked(client.listCases).mockResolvedValue({
       cases: [makeCase({ path: "auth/login", title: "User Login", priority: "medium" })],
     } as never);
-    render(<SuitesTab repoId="owner/repo" initialExpanded="smoke" />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" initialExpanded="smoke" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
   });
 });

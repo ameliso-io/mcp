@@ -49,7 +49,7 @@ beforeEach(() => {
 
 describe("OverviewTab", () => {
   it("shows helpful empty state when no repo selected", () => {
-    render(<OverviewTab repoId="" />);
+    render(<OverviewTab repoId="" basePath="" />);
     expect(screen.getByText(/No repository selected/i)).toBeInTheDocument();
   });
 
@@ -118,7 +118,10 @@ describe("OverviewTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Go to Runs"));
-    expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute("href", "/repositories/owner/repo/runs");
+    expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute(
+      "href",
+      "/repositories/owner/repo/runs"
+    );
   });
 
   it("shows affectedError when getAffectedCases throws", async () => {
@@ -266,10 +269,12 @@ describe("OverviewTab", () => {
   it("clears existing poll interval when rerendered with new repoId while active runs exist", async () => {
     const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
-    const { rerender } = render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    const { rerender } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     await act(async () => {
-      rerender(<OverviewTab repoId="owner/new-repo" />);
+      rerender(<OverviewTab repoId="owner/new-repo" basePath="/repositories/owner/new-repo" />);
     });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenCalledWith(
@@ -377,7 +382,9 @@ describe("OverviewTab", () => {
   it("unmounts cleanly when polling interval is active", async () => {
     const activeRun = makeRunMeta({ id: "run-unmount", tester: "alice", environment: "staging" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
-    const { unmount } = render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    const { unmount } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     unmount();
   });
