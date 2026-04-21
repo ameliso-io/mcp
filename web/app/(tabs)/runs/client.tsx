@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
 import { useRepoId } from "@/hooks/useRepoId";
+import styles from "../app.module.css";
 
 function RunsInner() {
   const router = useRouter();
@@ -28,7 +29,7 @@ function RunsInner() {
 
 export default function RunsPageClient() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className={styles.centered}><div className={styles.spinner} /></div>}>
       <RunsInner />
     </Suspense>
   );
