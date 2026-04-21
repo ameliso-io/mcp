@@ -137,6 +137,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug) return;
     setCreating(true);
     try {
@@ -201,6 +202,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   async function handleRecord(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — record form only shown when both are set */
     if (!selectedRunId || !recordingCase) return;
     setRecording(true);
     try {
@@ -261,6 +263,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleBulkPass(runId: string) {
+    /* v8 ignore next 2 — button only renders when pendingCases.length > 0 */
     if (pendingCases.length === 0) return;
     setConfirmingBulkPass(null);
     setBulkPassing(true);

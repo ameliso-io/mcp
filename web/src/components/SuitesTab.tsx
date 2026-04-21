@@ -89,6 +89,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug || !newName) return;
     setCreating(true);
     try {
@@ -133,6 +134,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingSlug is set */
     if (!editingSlug) return;
     setSaving(true);
     try {

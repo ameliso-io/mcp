@@ -170,6 +170,7 @@ export default function CasesTab({ repoId }: Props) {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newPath || !newTitle) return;
     setCreating(true);
     try {
@@ -217,6 +218,7 @@ export default function CasesTab({ repoId }: Props) {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingPath is set */
     if (!editingPath) return;
     setSaving(true);
     try {

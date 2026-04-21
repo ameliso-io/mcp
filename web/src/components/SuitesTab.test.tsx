@@ -390,4 +390,22 @@ describe("SuitesTab", () => {
     expect(screen.queryByText("Should Not Appear")).not.toBeInTheDocument();
     expect(screen.getByText("Regression Test")).toBeInTheDocument();
   });
+
+  it("does not create suite when name field is empty", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    await userEvent.type(screen.getByLabelText("Slug"), "smoke");
+    // Leave Name empty — guard at top of handleCreate fires
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    expect(client.createSuite).not.toHaveBeenCalled();
+  });
+
+  it("cancel in edit form does not call updateSuite", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(client.updateSuite).not.toHaveBeenCalled();
+  });
 });

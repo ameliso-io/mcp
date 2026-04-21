@@ -60,6 +60,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
   const [affectedError, setAffectedError] = useState<string | null>(null);
 
   const load = useCallback(async (path: string) => {
+    /* v8 ignore next 2 — useEffect guards !path before calling load */
     if (!path) return;
     setLoading(true);
     setError(null);
@@ -99,6 +100,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — component returns early rendering when repoId is empty */
     if (!repoId) return;
     setAffectedLoading(true);
     setAffectedError(null);

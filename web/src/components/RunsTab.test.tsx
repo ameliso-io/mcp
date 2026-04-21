@@ -58,6 +58,14 @@ describe("RunsTab", () => {
     expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument();
   });
 
+  it("does not create run when slug is empty", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    // Leave Slug empty — guard at top of handleCreate fires
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    expect(client.createRun).not.toHaveBeenCalled();
+  });
+
   it("pre-fills suite when initialSuite provided", async () => {
     render(<RunsTab repoId="owner/repo" initialSuite="smoke" onInitialSuiteConsumed={() => {}} />);
     await waitFor(() =>

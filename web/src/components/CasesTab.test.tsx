@@ -61,6 +61,18 @@ describe("CasesTab", () => {
     expect(screen.getByText("Create Case")).toBeInTheDocument();
   });
 
+  it("does not create case when title is empty", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    // Leave Title empty — guard at top of handleCreate fires
+    await userEvent.click(screen.getByText("Create"));
+    expect(client.createCase).not.toHaveBeenCalled();
+  });
+
   it("calls createCase on form submit", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,

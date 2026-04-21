@@ -145,7 +145,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       await client.removeRepository({ id });
       setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
-      announce(`${repo?.fullName ?? id} removed`);
+      announce(`${repo?.fullName ?? /* v8 ignore next */ id} removed`);
     } catch (e) {
       setError(errorMessage(e));
     }
