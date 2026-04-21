@@ -87,6 +87,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   const [loadingPending, setLoadingPending] = useState(false)
   const [recordedResults, setRecordedResults] = useState<CaseResult[]>([])
   const [resultStatusFilter, setResultStatusFilter] = useState<ResultStatus | null>(null)
+  const [caseTitleMap, setCaseTitleMap] = useState<Map<string, Case>>(new Map())
 
   // Record result form
   const [recordingCase, setRecordingCase] = useState<string | null>(null)
@@ -190,8 +191,12 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
         setPendingCases(res.cases)
         setTotalInScope(res.totalInScope)
       } else {
-        const res = await client.getRun({ repoPath, runId })
-        setRecordedResults(res.run?.results ?? [])
+        const [runRes, casesRes] = await Promise.all([
+          client.getRun({ repoPath, runId }),
+          client.listCases({ repoPath }),
+        ])
+        setRecordedResults(runRes.run?.results ?? [])
+        setCaseTitleMap(new Map(casesRes.cases.map(c => [c.path, c])))
       }
     } catch (e) {
       setError(errorMessage(e))
@@ -550,7 +555,10 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                             >
                               {statusLabel(r.status)}
                             </span>
-                            <span style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace' }}>{r.casePath}</span>
+                            <span style={{ fontSize: '13px', fontFamily: 'monospace', color: '#64748b', flexShrink: 0 }}>{r.casePath}</span>
+                            {caseTitleMap.get(r.casePath)?.title && (
+                              <span style={{ flex: 1, fontSize: '14px', fontWeight: '500' }}>{caseTitleMap.get(r.casePath)!.title}</span>
+                            )}
                             {r.notes && (
                               <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>{r.notes}</span>
                             )}
