@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Repository } from "../gen/ameliso/v1/types_pb";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./RepositoriesTab.module.css";
 
 interface Props {
@@ -21,8 +22,10 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const prevActiveRef = useRef(activeRepoId);
+  const prevFilterCountRef = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -126,6 +129,15 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       )
     : repos;
 
+  useEffect(() => {
+    if (loading || !q) return;
+    const count = filteredRepos.length;
+    if (prevFilterCountRef.current !== null && prevFilterCountRef.current !== count) {
+      announceFilter(count === 1 ? "1 repository found" : `${count} repositories found`);
+    }
+    prevFilterCountRef.current = count;
+  }, [filteredRepos.length, loading, q, announceFilter]);
+
   async function handleRemove(id: string) {
     setError(null);
     const repo = repos.find((r) => r.id === id);
@@ -143,6 +155,9 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     <div>
       <div role="status" aria-live="polite" className="sr-only">
         {announcement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
       </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Repositories</h2>

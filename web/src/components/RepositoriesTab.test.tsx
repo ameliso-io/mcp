@@ -94,7 +94,11 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("owner/repo removed"));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("owner/repo removed"))
+      ).toBe(true)
+    );
   });
 
   it("does not call removeRepository when inline confirm cancelled", async () => {
@@ -274,7 +278,11 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByText("↻ Refresh All"));
     await userEvent.click(screen.getByText("↻ Refresh All"));
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Repositories refreshed")
+      expect(
+        screen
+          .getAllByRole("status")
+          .some((el) => el.textContent?.includes("Repositories refreshed"))
+      ).toBe(true)
     );
   });
 
@@ -293,7 +301,9 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByText("owner/repo"));
     rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />);
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("owner/repo selected")
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("owner/repo selected"))
+      ).toBe(true)
     );
   });
 
@@ -305,7 +315,11 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByText("owner/repo"));
     rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Repository deselected")
+      expect(
+        screen
+          .getAllByRole("status")
+          .some((el) => el.textContent?.includes("Repository deselected"))
+      ).toBe(true)
     );
   });
 
@@ -317,7 +331,31 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Sync completed for owner/repo")
+      expect(
+        screen
+          .getAllByRole("status")
+          .some((el) => el.textContent?.includes("Sync completed for owner/repo"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces filtered count via live region when search changes", async () => {
+    const repo2 = makeRepo({
+      id: "owner/other",
+      name: "other",
+      fullName: "owner/other",
+      htmlUrl: "https://github.com/owner/other",
+    });
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo(), repo2],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("owner/repo"));
+    await userEvent.type(screen.getByRole("searchbox"), "other");
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("1 repository found"))
+      ).toBe(true)
     );
   });
 });
