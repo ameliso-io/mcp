@@ -538,6 +538,33 @@ describe("CasesTab", () => {
     );
   });
 
+  it("shows loading state while fetching cases", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listCases).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ cases: [] });
+  });
+
+  it('shows "No cases found." when case list is empty', async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("No cases found.")).toBeInTheDocument());
+  });
+
+  it("cancels create form when Cancel button clicked", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    expect(screen.getByText("Create Case")).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByText("Create Case")).not.toBeInTheDocument();
+    expect(screen.getByText("+ New Case")).toBeInTheDocument();
+  });
+
   it("resets priority to Medium after creating a case with High priority", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,
