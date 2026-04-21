@@ -11,9 +11,14 @@ use std::process::Command;
 use anyhow::Result;
 
 fn git(repo: &Path, args: &[&str]) -> String {
+    // Strip GIT_DIR / GIT_WORK_TREE so git hooks don't bleed into child processes
+    // that are meant to operate on a different repository (e.g. integration tests).
     Command::new("git")
         .args(args)
         .current_dir(repo)
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
+        .env_remove("GIT_INDEX_FILE")
         .output()
         .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
         .unwrap_or_default()
