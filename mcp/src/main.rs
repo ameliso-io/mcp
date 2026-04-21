@@ -354,7 +354,13 @@ impl AmelisoMcp {
         let env = req.environment.filter(|s| !s.is_empty());
         let suite = req.suite.filter(|s| !s.is_empty());
         match repo::create_run(&repo, &req.slug, &tester, env, suite) {
-            Ok((meta, dir_path)) => format!("created run: {}\ndir: {}", meta.id, dir_path),
+            Ok((meta, dir_path)) => {
+                let scope_msg = match repo::get_pending_cases(&repo, &meta.id) {
+                    Ok((_, total)) => format!("\nscope: {total} case(s) to test"),
+                    Err(_) => String::new(),
+                };
+                format!("created run: {}\ndir: {}{}", meta.id, dir_path, scope_msg)
+            }
             Err(e) => format!("error: {e}"),
         }
     }

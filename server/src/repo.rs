@@ -533,10 +533,21 @@ pub fn get_pending_cases(repo: &Path, run_id: &str) -> RResult<(Vec<LoadedCase>,
     };
 
     let total = scope.len();
-    let pending: Vec<LoadedCase> = scope
+    let priority_rank = |p: &str| match p {
+        "high" => 0u8,
+        "medium" => 1,
+        "low" => 2,
+        _ => 3,
+    };
+    let mut pending: Vec<LoadedCase> = scope
         .into_iter()
         .filter(|c| !recorded.contains(&c.case_path))
         .collect();
+    pending.sort_by(|a, b| {
+        priority_rank(&a.fm.priority)
+            .cmp(&priority_rank(&b.fm.priority))
+            .then_with(|| a.case_path.cmp(&b.case_path))
+    });
     Ok((pending, total))
 }
 
