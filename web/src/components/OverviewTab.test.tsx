@@ -575,6 +575,22 @@ describe("OverviewTab", () => {
     expect(screen.queryByRole("button", { name: "Go to Runs" })).not.toBeInTheDocument();
   });
 
+  it("does not show suite badge or tester span when active run has empty suite and tester", async () => {
+    const bareRun = {
+      id: "run-bare",
+      tester: "",
+      suite: "",
+      date: "2026-04-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [bareRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("run-bare")).toBeInTheDocument());
+    // suite badge and tester span are conditionally rendered — must be absent
+    expect(screen.queryByText("smoke")).not.toBeInTheDocument();
+    expect(screen.queryByText("alice")).not.toBeInTheDocument();
+  });
+
   it("polling timer callback shows error banner when load fails", async () => {
     const activeRun = {
       id: "run-poll-err",
