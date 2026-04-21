@@ -13,7 +13,7 @@
 
 .connectBtn {
   padding: 8px 16px;
-  background: #1e293b;
+  background: var(--color-ink);
   color: white;
   border-radius: 6px;
   text-decoration: none;
@@ -22,27 +22,27 @@
 }
 
 .connectBtn:hover {
-  background: #334155;
+  background: var(--color-ink-hover);
 }
 
 .githubHint {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--color-subtle);
 }
 
 .card {
   background: white;
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   margin-bottom: 16px;
 }
 
 .errorCard {
   composes: card;
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #991b1b;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -51,7 +51,7 @@
 .errorDismiss {
   background: none;
   border: none;
-  color: #991b1b;
+  color: var(--color-danger-text);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -61,13 +61,13 @@
 
 .loadingMsg {
   text-align: center;
-  color: #64748b;
+  color: var(--color-muted);
   padding: 40px;
 }
 
 .emptyCard {
   composes: card;
-  color: #64748b;
+  color: var(--color-muted);
   text-align: center;
   padding: 48px;
 }
@@ -89,8 +89,8 @@
 
 .repoCardActive {
   composes: card;
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
 }
 
 .repoRow {
@@ -126,7 +126,7 @@
 
 .badgeActive {
   composes: badge;
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -144,17 +144,17 @@
 
 .repoUrl {
   font-size: 12px;
-  color: #64748b;
+  color: var(--color-muted);
   margin-bottom: 4px;
 }
 
 .repoUrlLink {
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .repoPath {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-subtle);
   font-family: monospace;
 }
 
@@ -167,7 +167,7 @@
 .label {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 12px;
@@ -184,26 +184,26 @@
 
 .btnPrimary {
   composes: btn;
-  background: #1e293b;
+  background: var(--color-ink);
   color: white;
 }
 
 .btnSecondary {
   composes: btn;
-  background: #f1f5f9;
+  background: var(--color-surface-alt);
   color: #475569;
 }
 
 .btnDanger {
   composes: btn;
-  background: #fef2f2;
+  background: var(--color-danger-bg);
   color: #dc2626;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-danger-border);
 }
 
 .btnOutline {
   composes: btn;
   background: white;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
 }

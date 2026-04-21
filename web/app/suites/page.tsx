@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import SuitesPageClient from './client'
 
 export const metadata: Metadata = {
-  title: 'Suites | Ameliso',
+  title: 'Suites',
 }
 
 export default function SuitesPage() {
