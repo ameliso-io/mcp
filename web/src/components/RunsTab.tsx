@@ -16,7 +16,6 @@ interface Props {
   onInitialSuiteConsumed?: () => void
 }
 
-
 function statusLabel(s: ResultStatus): string {
   switch (s) {
     case ResultStatus.PASSED: return 'Passed'
@@ -35,8 +34,6 @@ function runStatusLabel(s: RunStatus): string {
     default: return 'Unknown'
   }
 }
-
-
 
 export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([])

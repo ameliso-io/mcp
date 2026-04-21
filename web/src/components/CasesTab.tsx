@@ -23,7 +23,6 @@ function stringToPriority(p: string): Priority {
   }
 }
 
-
 function priorityLabel(p: string): string {
   switch (p) {
     case 'high': return 'High'

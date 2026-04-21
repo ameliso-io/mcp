@@ -11,8 +11,6 @@ interface Props {
   onRunSuite?: (slug: string) => void
 }
 
-
-
 export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(false)

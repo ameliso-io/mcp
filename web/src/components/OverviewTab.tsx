@@ -24,7 +24,6 @@ function statusSortOrder(s: ResultStatus): number {
   }
 }
 
-
 function statusLabel(s: ResultStatus): string {
   switch (s) {
     case ResultStatus.PASSED: return 'Passed'
@@ -35,9 +34,6 @@ function statusLabel(s: ResultStatus): string {
     default: return 'Unknown'
   }
 }
-
-
-
 
 export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: Props) {
   const [inputPath, setInputPath] = useState(repoPath)
