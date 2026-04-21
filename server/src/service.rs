@@ -3148,4 +3148,22 @@ mod tests {
         assert!(!is_doc_file("src/main.ts"));
         assert!(!is_doc_file("app.py"));
     }
+
+    #[test]
+    fn text_references_case_single_quote_prefix() {
+        // '\'' is in the prefix list — path led by a single-quote should match
+        assert!(text_references_case("'auth/login' was tested", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_single_quote_suffix() {
+        // '\'' in ends_cleanly — path at start of text followed by single-quote
+        assert!(text_references_case("auth/login'", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_open_paren_prefix() {
+        // '(' is in the prefix list — path inside parens should match when suffix is clean
+        assert!(text_references_case("see (auth/login) for details", "auth/login"));
+    }
 }
