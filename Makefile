@@ -13,6 +13,7 @@ build:
 
 test:
 	cargo test
+	pnpm --filter ameliso-web test
 
 fmt:
 	cargo fmt --all
