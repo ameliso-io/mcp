@@ -541,6 +541,9 @@ impl AmelisoMcp {
                         .map(|t| format!(" — {t}"))
                         .unwrap_or_default();
                     lines.push(format!("  {:40} {:8}{}", r.case_path, r.fm.status, title));
+                    if !r.notes.trim().is_empty() {
+                        lines.push(format!("    notes: {}", r.notes.trim()));
+                    }
                 }
                 lines.join("\n")
             }

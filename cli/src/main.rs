@@ -394,6 +394,9 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                     .map(|t| format!(" — {t}"))
                     .unwrap_or_default();
                 println!("  {:40} {:8}{}", r.case_path, r.fm.status, title);
+                if !r.notes.trim().is_empty() {
+                    println!("    notes: {}", r.notes.trim());
+                }
             }
         }
         RunsCmd::Create {
