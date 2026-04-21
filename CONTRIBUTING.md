@@ -28,7 +28,7 @@ Git hooks activate automatically after `pnpm install`:
 | `server/proto/` | Protobuf definitions for `AmelisoService`. |
 | `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 24 RPCs as 21 MCP tools. |
 | `cli/` | CLI binary (clap 4). Wraps all RPCs as subcommands. |
-| `web/` | Browser client (Vite + React + TypeScript). Talks gRPC-Web to the server. |
+| `web/` | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
 
 ## Engineering constraints
 
@@ -49,13 +49,13 @@ cargo test -p ameliso-server # server + integration tests only
 
 ## Web client development
 
-Run both the gRPC server and the Vite dev server together:
+Run both the gRPC server and the Next.js dev server together:
 
 ```sh
 pnpm dev       # or: make dev
 ```
 
-The web client is at http://localhost:5173 and proxies gRPC-Web calls to http://localhost:50051.
+The web client is at http://localhost:3000 and proxies gRPC-Web calls to http://localhost:50052 via `next.config.ts` rewrites.
 
 To regenerate the TypeScript proto bindings after proto changes:
 

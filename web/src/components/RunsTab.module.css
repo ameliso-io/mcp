@@ -34,7 +34,7 @@
 .filterBtnActive {
   composes: filterBtn;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: 1px solid var(--color-ink);
 }
 
@@ -54,7 +54,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -91,6 +91,11 @@
   margin-bottom: 4px;
 }
 
+.labelSmErr {
+  composes: labelSm;
+  color: var(--color-danger-hover);
+}
+
 .input {
   width: 100%;
   padding: 8px 12px;
@@ -107,7 +112,7 @@
 
 .inputErr {
   composes: input;
-  border-color: #fca5a5;
+  border-color: var(--color-danger-border-light);
 }
 
 .errorCard {
@@ -181,6 +186,20 @@
   padding: 3px 8px;
   border-radius: 4px;
   flex-shrink: 0;
+  color: var(--color-run-status-default);
+  background: color-mix(in srgb, var(--color-run-status-default) 10%, transparent);
+}
+.runStatusBadge[data-status="IN_PROGRESS"] {
+  color: var(--color-run-status-in-progress);
+  background: color-mix(in srgb, var(--color-run-status-in-progress) 10%, transparent);
+}
+.runStatusBadge[data-status="COMPLETED"] {
+  color: var(--color-run-status-completed);
+  background: color-mix(in srgb, var(--color-run-status-completed) 10%, transparent);
+}
+.runStatusBadge[data-status="ABORTED"] {
+  color: var(--color-run-status-aborted);
+  background: color-mix(in srgb, var(--color-run-status-aborted) 10%, transparent);
 }
 
 .resultStatusBadge {
@@ -189,6 +208,20 @@
   padding: 2px 7px;
   border-radius: 4px;
   flex-shrink: 0;
+  color: var(--color-result-skipped);
+  background: color-mix(in srgb, var(--color-result-skipped) 10%, transparent);
+}
+.resultStatusBadge[data-status="PASSED"] {
+  color: var(--color-result-passed);
+  background: color-mix(in srgb, var(--color-result-passed) 10%, transparent);
+}
+.resultStatusBadge[data-status="FAILED"] {
+  color: var(--color-result-failed);
+  background: color-mix(in srgb, var(--color-result-failed) 10%, transparent);
+}
+.resultStatusBadge[data-status="BLOCKED"] {
+  color: var(--color-result-blocked);
+  background: color-mix(in srgb, var(--color-result-blocked) 10%, transparent);
 }
 
 .runId {
@@ -247,17 +280,30 @@
 .resultFilterBtn {
   font-size: 13px;
   font-weight: 600;
-  color: var(--btn-color);
-  background: var(--btn-bg);
-  border: 1px solid var(--btn-color-alpha);
+  --_c: var(--color-subtle);
+  color: var(--_c);
+  background: color-mix(in srgb, var(--_c) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--_c) 20%, transparent);
   padding: 4px 10px;
   border-radius: 6px;
   cursor: pointer;
 }
+.resultFilterBtn[data-status="PASSED"] {
+  --_c: var(--color-result-passed);
+}
+.resultFilterBtn[data-status="FAILED"] {
+  --_c: var(--color-result-failed);
+}
+.resultFilterBtn[data-status="BLOCKED"] {
+  --_c: var(--color-result-blocked);
+}
+.resultFilterBtn[data-status="SKIPPED"] {
+  --_c: var(--color-result-skipped);
+}
 
 .resultFilterBtnActive {
-  background: var(--btn-color-alpha);
-  border-color: var(--btn-color);
+  background: color-mix(in srgb, var(--_c) 20%, transparent);
+  border-color: var(--_c);
 }
 
 .noResults {
@@ -276,7 +322,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
 }
@@ -367,7 +413,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
 }
@@ -384,7 +430,7 @@
 }
 
 .recordPanel {
-  background: white;
+  background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   border-top: none;
   border-bottom-left-radius: 6px;
@@ -419,7 +465,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -433,7 +479,7 @@
 .btnGreen {
   padding: 8px 20px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -447,7 +493,7 @@
 .btnGreenSm {
   padding: 6px 14px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -460,8 +506,8 @@
 
 .btnBlueSm {
   padding: 6px 14px;
-  background: #0ea5e9;
-  color: white;
+  background: var(--color-sky);
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -469,13 +515,13 @@
 }
 
 .btnBlueSm:hover:not(:disabled) {
-  background: #0284c7;
+  background: var(--color-sky-hover);
 }
 
 .btnRedSm {
   padding: 6px 14px;
   background: var(--color-danger);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -489,7 +535,7 @@
 .btnRecordSm {
   padding: 5px 12px;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -517,7 +563,7 @@
 .btnSaveResult {
   padding: 8px 16px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;

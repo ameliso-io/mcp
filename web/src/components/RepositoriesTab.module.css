@@ -14,7 +14,7 @@
 .connectBtn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border-radius: 6px;
   text-decoration: none;
   font-size: 14px;
@@ -31,7 +31,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -127,19 +127,19 @@
 .badgeActive {
   composes: badge;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
 }
 
 .badgeCloned {
   composes: badge;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badgeNotCloned {
   composes: badge;
-  background: #fef9c3;
-  color: #854d0e;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .repoUrl {
@@ -185,7 +185,7 @@
 .btnPrimary {
   composes: btn;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
 }
 
 .btnPrimary:hover {
@@ -195,7 +195,7 @@
 .btnSecondary {
   composes: btn;
   background: var(--color-surface-alt);
-  color: #475569;
+  color: var(--color-muted-dark);
 }
 
 .btnSecondary:hover:not(:disabled) {
@@ -205,17 +205,17 @@
 .btnDanger {
   composes: btn;
   background: var(--color-danger-bg);
-  color: #dc2626;
+  color: var(--color-danger-hover);
   border: 1px solid var(--color-danger-border);
 }
 
 .btnDanger:hover {
-  background: #fecaca;
+  background: var(--color-danger-border);
 }
 
 .btnOutline {
   composes: btn;
-  background: white;
+  background: var(--color-card-bg);
   color: var(--color-ink);
   border: 1px solid var(--color-border);
 }

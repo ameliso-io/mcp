@@ -61,7 +61,9 @@
     "postgres",
     "worktree",
     "worktrees",
-    "turbopack"
+    "turbopack",
+    "nosniff",
+    "SAMEORIGIN"
   ],
   "flagWords": []
 }
