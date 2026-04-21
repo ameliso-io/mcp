@@ -4,5 +4,7 @@
   "defaults": {},
   "priorityColors": {},
   "priorityLevels": 3,
-  "stateColors": {}
+  "stateColors": {},
+  "version": "0.13.0",
+  "workspace.updateStatusOnOpen": true
 }
