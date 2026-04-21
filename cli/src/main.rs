@@ -1127,23 +1127,32 @@ async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
         println!("Active:   none");
     } else {
         println!("Active runs ({}):", active.len());
-        let mut c4 = client(channel);
-        for r in &active {
+        let pending_futures: Vec<_> = active
+            .iter()
+            .map(|r| {
+                let mut c = client(channel.clone());
+                let repo_id = repo_id.to_owned();
+                let run_id = r.id.clone();
+                async move {
+                    c.get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
+                        .await
+                }
+            })
+            .collect();
+        let pending_results = futures::future::join_all(pending_futures).await;
+        for (r, pend_res) in active.iter().zip(pending_results) {
             let suite_part = if r.suite.is_empty() {
                 String::new()
             } else {
                 format!("  suite: {}", r.suite)
             };
-            let pending_part = match c4
-                .get_pending_cases(pb::GetPendingCasesRequest {
-                    repo_id: repo_id.to_owned(),
-                    run_id: r.id.clone(),
-                })
-                .await
-            {
+            let pending_part = match pend_res {
                 Ok(resp) => {
                     let resp = resp.into_inner();
-                    format!("  {}/{} pending", resp.cases.len(), resp.total_in_scope)
+                    let pending = resp.cases.len();
+                    let total = resp.total_in_scope as usize;
+                    let done = total.saturating_sub(pending);
+                    format!("  {done}/{total} done, {pending} pending")
                 }
                 Err(_) => String::new(),
             };
