@@ -53,4 +53,10 @@ describe("MarkdownBody", () => {
     const { container } = render(<MarkdownBody body="plain **bold** text" />);
     expect(container.querySelector("strong")).toHaveTextContent("bold");
   });
+
+  it("strips script tags via DOMPurify sanitization", () => {
+    const { container } = render(<MarkdownBody body="<script>alert(1)</script>safe" />);
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.textContent).toContain("safe");
+  });
 });
