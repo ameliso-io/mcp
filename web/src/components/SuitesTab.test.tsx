@@ -209,4 +209,13 @@ describe('SuitesTab', () => {
     await userEvent.click(screen.getByText('Save'))
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled())
   })
+
+  it('sets aria-expanded false by default and true after expand', async () => {
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    const card = screen.getByRole('button', { name: /smoke tests/i })
+    expect(card).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(card)
+    await waitFor(() => expect(card).toHaveAttribute('aria-expanded', 'true'))
+  })
 })
