@@ -1253,3 +1253,49 @@ async fn list_cases_filter_by_suite() {
     assert!(paths.contains(&"billing/checkout"));
     assert!(!paths.contains(&"auth/signup"));
 }
+
+#[tokio::test]
+async fn bulk_record_results_records_all() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "auth/signup", "Signup");
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+
+    let resp = c
+        .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+            repo_path: rp.clone(),
+            run_id: "2026-01-01-smoke".to_owned(),
+            results: vec![
+                pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "ok".to_owned(),
+                },
+                pb::BulkResultEntry {
+                    case_path: "auth/signup".to_owned(),
+                    status: pb::ResultStatus::Failed as i32,
+                    notes: "broke".to_owned(),
+                },
+            ],
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.results.len(), 2);
+    assert_eq!(resp.pending_count, 0);
+    assert_eq!(resp.total_count, 2);
+
+    assert!(tmp
+        .path()
+        .join("runs/2026-01-01-smoke/results/auth/login.md")
+        .exists());
+    assert!(tmp
+        .path()
+        .join("runs/2026-01-01-smoke/results/auth/signup.md")
+        .exists());
+}
