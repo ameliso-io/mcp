@@ -510,8 +510,8 @@ pub fn record_result(
             fm: ResultFm {
                 status: status.to_owned(),
             },
-        notes: notes.to_owned(),
-        case_path: case_path.to_owned(),
+            notes: notes.to_owned(),
+            case_path: case_path.to_owned(),
         },
         previous_status,
     ))
@@ -629,6 +629,20 @@ pub fn get_suite(repo: &Path, slug: &str) -> RResult<SuiteYaml> {
     Ok(serde_yaml::from_str(&content).context("parsing suite yaml")?)
 }
 
+fn validate_suite_cases(repo: &Path, cases: &[String]) -> RResult<()> {
+    for case_path in cases {
+        validate_slug_path(case_path, "case")?;
+        let file = case_file_path(repo, case_path);
+        if !file.exists() {
+            return Err(RepoError::NotFound(format!(
+                "case not found: {}",
+                case_path
+            )));
+        }
+    }
+    Ok(())
+}
+
 pub fn create_suite(
     repo: &Path,
     slug: &str,
@@ -637,6 +651,7 @@ pub fn create_suite(
     cases: Vec<String>,
 ) -> RResult<SuiteYaml> {
     validate_slug_path(slug, "suite")?;
+    validate_suite_cases(repo, &cases)?;
     let dir = suites_dir(repo);
     std::fs::create_dir_all(&dir).context("creating suites directory")?;
     let path = dir.join(format!("{}.yaml", slug));
@@ -674,6 +689,7 @@ pub fn update_suite(
     cases: Vec<String>,
 ) -> RResult<SuiteYaml> {
     validate_slug_path(slug, "suite")?;
+    validate_suite_cases(repo, &cases)?;
     let path = suites_dir(repo).join(format!("{}.yaml", slug));
     if !path.exists() {
         return Err(RepoError::NotFound(format!("suite not found: {}", slug)));

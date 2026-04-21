@@ -404,12 +404,26 @@ impl AmelisoMcp {
             Ok(meta) => {
                 let summary = repo::get_run(&repo, &meta.id)
                     .map(|run| {
-                        let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
-                        let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
-                        let blocked =
-                            run.results.iter().filter(|r| r.fm.status == "blocked").count();
-                        let skipped =
-                            run.results.iter().filter(|r| r.fm.status == "skipped").count();
+                        let passed = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "passed")
+                            .count();
+                        let failed = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "failed")
+                            .count();
+                        let blocked = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "blocked")
+                            .count();
+                        let skipped = run
+                            .results
+                            .iter()
+                            .filter(|r| r.fm.status == "skipped")
+                            .count();
                         format!(
                             "\nsummary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
                             passed,
@@ -420,7 +434,25 @@ impl AmelisoMcp {
                         )
                     })
                     .unwrap_or_default();
-                format!("finalized run {} as {}{}", meta.id, meta.status, summary)
+                let pending_warn = if meta.status == "completed" {
+                    repo::get_pending_cases(&repo, &meta.id)
+                        .ok()
+                        .filter(|(p, _)| !p.is_empty())
+                        .map(|(p, total)| {
+                            format!(
+                                "\nwarning: {} of {} case(s) in scope have no result recorded",
+                                p.len(),
+                                total
+                            )
+                        })
+                        .unwrap_or_default()
+                } else {
+                    String::new()
+                };
+                format!(
+                    "finalized run {} as {}{}{}",
+                    meta.id, meta.status, summary, pending_warn
+                )
             }
             Err(e) => format!("error: {e}"),
         }

@@ -524,6 +524,8 @@ async fn create_and_get_suite() {
     let tmp = TempDir::new().unwrap();
     let rp = repo_path(&tmp);
 
+    write_case(tmp.path(), "auth/login", "Login");
+
     c.create_suite(Request::new(pb::CreateSuiteRequest {
         repo_path: rp.clone(),
         slug: "smoke".to_owned(),
@@ -679,6 +681,9 @@ async fn update_suite_changes_cases() {
     let tmp = TempDir::new().unwrap();
     let rp = repo_path(&tmp);
 
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "billing/checkout", "Checkout");
+
     c.create_suite(Request::new(pb::CreateSuiteRequest {
         repo_path: rp.clone(),
         slug: "smoke".to_owned(),
@@ -721,6 +726,8 @@ async fn delete_suite_removes_file() {
     let mut c = client(addr).await;
     let tmp = TempDir::new().unwrap();
     let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
 
     c.create_suite(Request::new(pb::CreateSuiteRequest {
         repo_path: rp.clone(),
@@ -1031,6 +1038,29 @@ async fn create_run_rejects_nonexistent_suite() {
             slug: "smoke".to_owned(),
             tester: "alice".to_owned(),
             suite: "ghost-suite".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
+
+#[tokio::test]
+async fn create_suite_rejects_nonexistent_case() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    // "auth/typo" does not exist
+
+    let err = c
+        .create_suite(Request::new(pb::CreateSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+            name: "Smoke".to_owned(),
+            cases: vec!["auth/login".to_owned(), "auth/typo".to_owned()],
             ..Default::default()
         }))
         .await
