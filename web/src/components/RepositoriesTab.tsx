@@ -229,6 +229,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         </div>
       )}
 
+      <div aria-busy={loading}>
       {filteredRepos.map((repo) => {
         const isActive = activeRepoId === repo.id;
         return (
@@ -303,6 +304,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

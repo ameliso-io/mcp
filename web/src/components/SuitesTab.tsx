@@ -261,7 +261,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
-      <div className={styles.list}>
+      <div className={styles.list} aria-busy={loading}>
         {suites.map((suite) => (
           <div key={suite.slug}>
             {editingSlug === suite.slug ? (

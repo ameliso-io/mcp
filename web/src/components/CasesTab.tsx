@@ -424,7 +424,10 @@ export default function CasesTab({ repoId }: Props) {
         <div className={styles.emptyCard}>No cases found.</div>
       )}
 
-      <div className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}>
+      <div
+        className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading || isStale}
+      >
         {[...deferredCases]
           .sort((a, b) => {
             if (sortBy === "priority") {

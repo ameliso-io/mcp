@@ -421,7 +421,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
-      <div className={styles.list}>
+      <div className={styles.list} aria-busy={loading}>
         {runs.map((run) => (
           <div key={run.id}>
             <div
@@ -667,9 +667,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </span>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleFinalize(run.id, confirmingFinalize.status)
-                                }
+                                onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
                                 className={
                                   confirmingFinalize.status === RunStatus.COMPLETED
                                     ? styles.btnGreenSm
