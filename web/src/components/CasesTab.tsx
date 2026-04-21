@@ -172,6 +172,7 @@ export default function CasesTab({ repoId }: Props) {
       setNewDesc("");
       setNewTags("");
       setNewBody("");
+      setNewPriority(Priority.MEDIUM);
       load();
     } catch (e) {
       setError(errorMessage(e));

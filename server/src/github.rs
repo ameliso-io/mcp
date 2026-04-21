@@ -292,6 +292,25 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
     }
 
     #[test]
+    fn config_uses_custom_app_name_in_installation_url() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::set_var("GITHUB_APP_ID", "my-app");
+            std::env::set_var("GITHUB_APP_PRIVATE_KEY", "my-key");
+            std::env::remove_var("GITHUB_APP_INSTALLATION_URL");
+            std::env::set_var("GITHUB_APP_NAME", "my-custom-app");
+        }
+        let cfg = config().expect("config should be Some");
+        assert!(cfg.installation_url.contains("my-custom-app"));
+        assert!(!cfg.installation_url.contains("ameliso"));
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+            std::env::remove_var("GITHUB_APP_NAME");
+        }
+    }
+
+    #[test]
     fn generate_jwt_returns_err_for_invalid_key() {
         let result = generate_jwt("app-id", "not-a-valid-pem");
         assert!(result.is_err());

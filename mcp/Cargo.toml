@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "ameliso-mcp"
 version = "0.1.0"
@@ -13,3 +15,5 @@ rmcp = { version = "1.5", features = ["transport-io"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
+tonic = { version = "0.12", default-features = false, features = ["channel"] }
+futures = "0.3"

@@ -312,6 +312,37 @@ describe("OverviewTab", () => {
     expect(screen.queryByText("diff error")).not.toBeInTheDocument();
   });
 
+  it("shows loading state while fetching coverage data", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.getCoverageReport).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    vi.mocked(client.listRuns).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<OverviewTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ entries: [], runCount: 0, runs: [] });
+  });
+
+  it('shows "Checking…" on Check Diff button while loading', async () => {
+    let resolveAffected: (v: unknown) => void;
+    vi.mocked(client.getAffectedCases).mockReturnValue(
+      new Promise((res) => {
+        resolveAffected = res;
+      }) as never
+    );
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    expect(screen.getByText("Checking…")).toBeInTheDocument();
+    resolveAffected!({ cases: [], reason: "" });
+  });
+
   it("unmounts cleanly when polling interval is active", async () => {
     const activeRun = makeRunMeta({ id: "run-unmount", tester: "alice", environment: "staging" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);

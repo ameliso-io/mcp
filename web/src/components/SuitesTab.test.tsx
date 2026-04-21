@@ -231,7 +231,7 @@ describe("SuitesTab", () => {
     );
   });
 
-  it("calls updateSuite with empty cases array when cases field is cleared", async () => {
+  it("calls updateSuite with empty cases array and replaceCases=true when cases field is cleared", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -244,7 +244,9 @@ describe("SuitesTab", () => {
     }
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
-      expect(client.updateSuite).toHaveBeenCalledWith(expect.objectContaining({ cases: [] }))
+      expect(client.updateSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ cases: [], replaceCases: true })
+      )
     );
   });
 
@@ -347,5 +349,40 @@ describe("SuitesTab", () => {
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
     );
+  });
+
+  it("shows loading state while fetching suites", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listSuites).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ suites: [] });
+  });
+
+  it('shows "Creating…" on Create Suite button while creating', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.createSuite).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "regression");
+    await userEvent.type(inputs[1], "Regression Tests");
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    expect(screen.getByText("Creating…")).toBeInTheDocument();
+    resolve!({ suite: mockSuite, filePath: "suites/regression.yaml" });
+  });
+
+  it('shows "No suites found." when suites list is empty', async () => {
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [] } as never);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("No suites found.")).toBeInTheDocument());
   });
 });

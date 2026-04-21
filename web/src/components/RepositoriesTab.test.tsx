@@ -260,4 +260,68 @@ describe("RepositoriesTab", () => {
     await userEvent.click(screen.getByText("↻ Refresh All"));
     await waitFor(() => expect(screen.getByText("refresh failed")).toBeInTheDocument());
   });
+
+  it("shows addedAt date on repo card", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo({ addedAt: "2026-03-15" })],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("Added 2026-03-15")).toBeInTheDocument());
+  });
+
+  it("does not show addedAt line when addedAt is empty", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo({ addedAt: "" })],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("owner/repo"));
+    expect(screen.queryByText(/Added /)).not.toBeInTheDocument();
+  });
+
+  it('shows "Syncing…" on Sync button while sync in progress', async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.syncRepository).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("Sync"));
+    await userEvent.click(screen.getByText("Sync"));
+    expect(screen.getByText("Syncing…")).toBeInTheDocument();
+    resolve!({ repository: makeRepo() });
+  });
+
+  it('shows "Refreshing…" on Refresh All button while refreshing', async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.handleGitHubCallback).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    expect(screen.getByText("Refreshing…")).toBeInTheDocument();
+    resolve!({ repositories: [makeRepo()] });
+  });
+
+  it("shows loading state while fetching repos", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listRepositories).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    vi.mocked(client.getGitHubInstallUrl).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ repositories: [], runs: [] });
+  });
 });

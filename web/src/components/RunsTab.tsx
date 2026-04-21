@@ -161,6 +161,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setPendingCases([]);
       setRecordedResults([]);
       setResultStatusFilter(null);
+      setRecordingCase(null);
+      setCaseBody(null);
       return;
     }
     setSelectedRunId(runId);
@@ -168,6 +170,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
     setPendingCases([]);
     setRecordedResults([]);
     setResultStatusFilter(null);
+    setRecordingCase(null);
+    setCaseBody(null);
     try {
       if (status === RunStatus.IN_PROGRESS) {
         const res = await client.getPendingCases({ repoId, runId });
@@ -202,6 +206,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       });
       setRecordingCase(null);
       setRecordNotes("");
+      setRecordStatus(ResultStatus.PASSED);
       setCaseBody(null);
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
@@ -221,6 +226,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       return;
     }
     setRecordingCase(casePath);
+    setRecordNotes("");
+    setRecordStatus(ResultStatus.PASSED);
     setCaseBody(null);
     setCaseBodyLoading(true);
     try {
@@ -256,18 +263,19 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       return;
     setBulkPassing(true);
     try {
-      for (const c of pendingCases) {
-        await client.recordResult({
-          repoId,
-          runId,
+      const resp = await client.bulkRecordResults({
+        repoId,
+        runId,
+        results: pendingCases.map((c) => ({
           casePath: c.path,
           status: ResultStatus.PASSED,
           notes: "",
-        });
-      }
-      const pending = await client.getPendingCases({ repoId, runId });
-      setPendingCases(pending.cases);
-      setTotalInScope(pending.totalInScope);
+        })),
+      });
+      setPendingCases([]);
+      setTotalInScope(resp.totalInScope);
+      setRecordingCase(null);
+      setCaseBody(null);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -282,6 +290,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       if (selectedRunId === runId) {
         setSelectedRunId(null);
         setPendingCases([]);
+        setRecordingCase(null);
+        setCaseBody(null);
       }
       load();
     } catch (e) {
@@ -637,6 +647,10 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                   <input
                                     value={recordNotes}
                                     onChange={(e) => setRecordNotes(e.target.value)}
+                                    required={
+                                      recordStatus === ResultStatus.FAILED ||
+                                      recordStatus === ResultStatus.BLOCKED
+                                    }
                                     placeholder={
                                       recordStatus === ResultStatus.FAILED
                                         ? "Describe what failed…"

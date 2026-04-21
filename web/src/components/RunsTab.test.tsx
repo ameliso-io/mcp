@@ -178,20 +178,26 @@ describe("RunsTab", () => {
     );
   });
 
-  it("calls recordResult for each pending case when All Passed clicked", async () => {
+  it("calls bulkRecordResults when All Passed clicked", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.bulkRecordResults).mockResolvedValue({
+      results: [],
+      pendingCount: 0,
+      totalInScope: 1,
+    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText(/All Passed/));
     await userEvent.click(screen.getByText(/All Passed/));
     await waitFor(() =>
-      expect(client.recordResult).toHaveBeenCalledWith(
+      expect(client.bulkRecordResults).toHaveBeenCalledWith(
         expect.objectContaining({
           runId: "2026-01-01-smoke",
-          casePath: "auth/login",
-          status: ResultStatus.PASSED,
+          results: expect.arrayContaining([
+            expect.objectContaining({ casePath: "auth/login", status: ResultStatus.PASSED }),
+          ]),
         })
       )
     );
@@ -322,7 +328,7 @@ describe("RunsTab", () => {
 
   it("shows error when handleBulkPass fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.recordResult).mockRejectedValue(new Error("bulk error"));
+    vi.mocked(client.bulkRecordResults).mockRejectedValue(new Error("bulk error"));
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
@@ -480,7 +486,7 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
   });
 
-  it("does not call recordResult when bulk pass confirm cancelled", async () => {
+  it("does not call bulkRecordResults when bulk pass confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
@@ -488,7 +494,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("All Passed (1)"));
     await userEvent.click(screen.getByText("All Passed (1)"));
-    expect(client.recordResult).not.toHaveBeenCalled();
+    expect(client.bulkRecordResults).not.toHaveBeenCalled();
   });
 
   it("uses plural in bulk pass confirm when multiple cases pending", async () => {
@@ -533,6 +539,29 @@ describe("RunsTab", () => {
     await waitFor(() =>
       expect(screen.getByPlaceholderText("Describe what is blocking…")).toBeInTheDocument()
     );
+  });
+
+  it("notes input is required when status is Failed or Blocked", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    const statusSelect = screen.getByDisplayValue("Passed");
+
+    await userEvent.selectOptions(statusSelect, "Failed");
+    const notesInput = screen.getByPlaceholderText("Describe what failed…");
+    expect(notesInput).toBeRequired();
+
+    await userEvent.selectOptions(statusSelect, "Blocked");
+    const blockedInput = screen.getByPlaceholderText("Describe what is blocking…");
+    expect(blockedInput).toBeRequired();
+
+    await userEvent.selectOptions(statusSelect, "Passed");
+    const passedInput = screen.getByPlaceholderText("Optional notes…");
+    expect(passedInput).not.toBeRequired();
   });
 
   it("toggles result filter off when same filter clicked twice", async () => {
@@ -747,5 +776,125 @@ describe("RunsTab", () => {
         expect.objectContaining({ runId: "2026-01-01-smoke" })
       )
     );
+  });
+
+  it("resets notes and status when switching to a different case", async () => {
+    const case2 = {
+      path: "auth/logout",
+      title: "User Logout",
+      description: "",
+      tags: [],
+      priority: "medium",
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    } as unknown as Case;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase, case2],
+      totalInScope: 2,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    // Open record form for first case
+    const recordBtns = await screen.findAllByText("Record");
+    await userEvent.click(recordBtns[0]);
+    await waitFor(() => screen.getByRole("combobox"));
+    // Set FAILED and add notes
+    await userEvent.selectOptions(screen.getByRole("combobox"), String(ResultStatus.FAILED));
+    await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "broken");
+    // Now click Record on the second case — form should switch and reset
+    const btns2 = screen.getAllByText("Record");
+    await userEvent.click(btns2[btns2.length - 1]);
+    await waitFor(() => {
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
+      expect(select.value).toBe(String(ResultStatus.PASSED));
+    });
+    expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
+  });
+
+  it("closes record form when switching to a different run", async () => {
+    const run2 = {
+      ...mockRun,
+      id: "2026-01-02-regression",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun, run2] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase],
+      totalInScope: 1,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    // Expand first run and open record form
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    // Switch to second run — record form must close
+    await userEvent.click(screen.getByText("2026-01-02-regression"));
+    await waitFor(() => expect(screen.queryByText("Save Result")).not.toBeInTheDocument());
+  });
+
+  it("closes record form when selected run is deleted", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    // Delete the run
+    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() =>
+      expect(client.deleteRun).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
+    expect(screen.queryByText("Save Result")).not.toBeInTheDocument();
+  });
+
+  it("calls onInitialSuiteConsumed when initialSuite is provided", async () => {
+    const onConsumed = vi.fn();
+    render(
+      <RunsTab repoId="owner/repo" initialSuite="smoke" onInitialSuiteConsumed={onConsumed} />
+    );
+    await waitFor(() => expect(onConsumed).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows loading state while fetching runs", async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listRuns).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ runs: [] });
+  });
+
+  it("resets recordStatus to PASSED after recording a result", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByRole("combobox"));
+    // Change status to FAILED
+    await userEvent.selectOptions(screen.getByRole("combobox"), String(ResultStatus.FAILED));
+    // Fill notes (required for FAILED; placeholder changes per status)
+    await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "blocker");
+    await userEvent.click(screen.getByText("Save Result"));
+    // Record button reappears after success; open the form again
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    // Status should be reset to PASSED
+    await waitFor(() => {
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
+      expect(select.value).toBe(String(ResultStatus.PASSED));
+    });
   });
 });
