@@ -597,6 +597,26 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
     }
 
     #[tokio::test]
+    async fn list_installation_repos_errors_on_http_failure() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/installation/repositories"))
+            .respond_with(ResponseTemplate::new(403).set_body_string("Forbidden"))
+            .mount(&server)
+            .await;
+
+        let result = list_installation_repos("bad-tok").await;
+        assert!(result.is_err());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
     async fn compare_errors_on_http_failure() {
         let _g = ENV_LOCK.lock().unwrap();
         let server = MockServer::start().await;
