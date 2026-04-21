@@ -670,19 +670,19 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                     <input
                                       value={recordNotes}
                                       onChange={(e) => setRecordNotes(e.target.value)}
-                                    placeholder={
-                                      recordStatus === ResultStatus.FAILED
-                                        ? "Describe what failed…"
-                                        : recordStatus === ResultStatus.BLOCKED
-                                          ? "Describe what is blocking…"
-                                          : "Optional notes…"
-                                    }
-                                    className={
-                                      recordStatus === ResultStatus.FAILED ||
-                                      recordStatus === ResultStatus.BLOCKED
-                                        ? styles.inputErr
-                                        : styles.input
-                                    }
+                                      placeholder={
+                                        recordStatus === ResultStatus.FAILED
+                                          ? "Describe what failed…"
+                                          : recordStatus === ResultStatus.BLOCKED
+                                            ? "Describe what is blocking…"
+                                            : "Optional notes…"
+                                      }
+                                      className={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                          ? styles.inputErr
+                                          : styles.input
+                                      }
                                     />
                                   </label>
                                 </div>

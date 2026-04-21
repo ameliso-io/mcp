@@ -61,7 +61,10 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
     await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Case Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
@@ -197,7 +200,10 @@ describe("CasesTab", () => {
     vi.mocked(client.createCase).mockRejectedValue(new Error("create case error"));
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
     await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(screen.getByText("create case error")).toBeInTheDocument());
@@ -297,9 +303,15 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
     await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Case Title");
-    await userEvent.type(screen.getByRole("textbox", { name: "Tags (comma-separated)" }), "auth, smoke");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Tags (comma-separated)" }),
+      "auth, smoke"
+    );
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -384,10 +396,16 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
     await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.type(screen.getByRole("textbox", { name: "Description" }), "Some description");
-    await userEvent.type(screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }), "## Steps");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }),
+      "## Steps"
+    );
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -405,7 +423,10 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("+ New Case"));
     const prioritySelect = screen.getByDisplayValue("Medium");
     await userEvent.selectOptions(prioritySelect, "High");
-    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
     await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(client.createCase).toHaveBeenCalled());

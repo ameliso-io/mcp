@@ -233,7 +233,10 @@ describe("RepositoriesTab", () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByRole("searchbox", { name: "Search repositories" }));
-    await userEvent.type(screen.getByRole("searchbox", { name: "Search repositories" }), "no-match-xyz");
+    await userEvent.type(
+      screen.getByRole("searchbox", { name: "Search repositories" }),
+      "no-match-xyz"
+    );
     await waitFor(() => expect(screen.getByText(/No results for/)).toBeInTheDocument());
     await userEvent.click(screen.getByText("Clear search"));
     expect(screen.getByText("owner/repo")).toBeInTheDocument();
