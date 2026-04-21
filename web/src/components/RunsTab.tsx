@@ -449,7 +449,11 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             .length,
                         };
                         return (
-                          <div className={styles.resultFilters}>
+                          <div
+                            className={styles.resultFilters}
+                            role="group"
+                            aria-label="Filter by result status"
+                          >
                             {[
                               {
                                 label: "Passed",
@@ -481,6 +485,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                       rsf === s.status ? null : s.status
                                     )
                                   }
+                                  aria-pressed={resultStatusFilter === s.status}
                                   className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
                                   data-status={ResultStatus[s.status]}
                                 >
