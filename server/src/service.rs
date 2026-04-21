@@ -1594,6 +1594,39 @@ mod tests {
         assert!(err.message().contains("case_path is required"));
     }
 
+    #[tokio::test]
+    async fn create_case_valid_fields_pass_validation() {
+        // All required fields present — validation passes, DB produces an error.
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_case_with_custom_body_passes_validation() {
+        // Non-empty body uses Some(body) path — same validation, still reaches DB.
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login".to_owned(),
+                body: "## Custom Steps\n\n1. Go to /login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── create_suite validation ───────────────────────────────────────────────
 
     #[tokio::test]
@@ -2084,6 +2117,20 @@ mod tests {
             .list_runs(Request::new(pb::ListRunsRequest {
                 repo_id: "owner/repo".to_owned(),
                 status: pb::RunStatus::InProgress as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_coverage_report_with_status_filter_passes_validation() {
+        // A non-Unspecified status_filter is valid — passes validation → DB error.
+        let s = server();
+        let err = s
+            .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+                repo_id: "owner/repo".to_owned(),
+                status_filter: pb::ResultStatus::Failed as i32,
             }))
             .await
             .unwrap_err();
