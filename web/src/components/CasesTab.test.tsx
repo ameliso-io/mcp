@@ -605,6 +605,47 @@ describe("CasesTab", () => {
     resolve!({ case: mockCase, body: "" });
   });
 
+  it('shows "Creating…" on Create button while case creation is in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.createCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "auth/new");
+    await userEvent.type(inputs[1], "New Title");
+    await userEvent.click(screen.getByText("Create"));
+    expect(screen.getByText("Creating…")).toBeInTheDocument();
+    resolve!({ case: mockCase, filePath: "cases/auth/new.md" });
+  });
+
+  it('shows "Saving…" on Save button while case update is in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.updateCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Save"));
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+    resolve!({ case: mockCase });
+  });
+
+  it("does not show description paragraph when case description is empty", async () => {
+    const noDescCase = { ...mockCase, description: "" } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [noDescCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.queryByText("Verify login flow")).not.toBeInTheDocument();
+  });
+
   it("tag filter select is not shown when cases have no tags", async () => {
     const noTagCase = { ...mockCase, tags: [] } as unknown as Case;
     vi.mocked(client.listCases).mockResolvedValue({ cases: [noTagCase] } as never);
