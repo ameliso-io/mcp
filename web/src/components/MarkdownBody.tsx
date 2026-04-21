@@ -14,7 +14,7 @@ export default function MarkdownBody({ body, maxHeight }: Props) {
     <div
       className="md-body"
       dangerouslySetInnerHTML={{ __html: html }}
-      style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}
+      style={maxHeight ? { '--md-max-height': maxHeight } as React.CSSProperties : undefined}
     />
   )
 }

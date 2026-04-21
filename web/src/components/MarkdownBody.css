@@ -2,6 +2,7 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--color-ink);
+  max-height: var(--md-max-height, none);
   overflow-y: auto;
 }
 
