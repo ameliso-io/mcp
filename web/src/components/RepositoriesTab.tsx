@@ -104,6 +104,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     ) {
       // Clear the URL params so we don't reprocess on re-render
       window.history.replaceState({}, "", window.location.pathname);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       setError(null);
       client
@@ -120,6 +121,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -289,7 +291,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
           </p>
           {configured ? (
             <p style={{ margin: 0, fontSize: "14px" }}>
-              Click "Connect GitHub Repo" to install the GitHub App on your repositories.
+              Click &quot;Connect GitHub Repo&quot; to install the GitHub App on your repositories.
             </p>
           ) : (
             <p style={{ margin: 0, fontSize: "14px" }}>
@@ -302,7 +304,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       {!loading && repos.length > 0 && filteredRepos.length === 0 && (
         <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "48px" }}>
           <p style={{ margin: "0 0 8px", fontSize: "16px", fontWeight: "600" }}>
-            No results for "{search}"
+            {`No results for "${search}"`}
           </p>
           <button onClick={() => setSearch("")} style={{ ...btn("secondary"), marginTop: "4px" }}>
             Clear search

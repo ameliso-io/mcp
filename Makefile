@@ -34,6 +34,7 @@ fmt-check:
 lint:
 	cargo clippy --all -- -D warnings
 	cd server && buf lint
+	pnpm --filter ameliso-web lint
 
 spell:
 	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile

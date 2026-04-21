@@ -96,6 +96,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }, [repoId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 

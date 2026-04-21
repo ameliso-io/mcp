@@ -113,6 +113,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
   useEffect(() => {
     if (repoId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       load(repoId);
     }
   }, [repoId, load]);
@@ -191,7 +192,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             No repository selected
           </p>
           <p style={{ margin: 0, fontSize: "14px" }}>
-            Go to the Repositories tab and click "Use" on a connected repository.
+            Go to the Repositories tab and click &quot;Use&quot; on a connected repository.
           </p>
         </div>
       )}
