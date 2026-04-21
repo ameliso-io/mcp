@@ -5,6 +5,7 @@ import type { Suite } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
   repoPath: string
+  onRunSuite?: (slug: string) => void
 }
 
 const card: React.CSSProperties = {
@@ -31,7 +32,7 @@ const label: React.CSSProperties = {
   marginBottom: '4px',
 }
 
-export default function SuitesTab({ repoPath }: Props) {
+export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -277,6 +278,14 @@ export default function SuitesTab({ repoPath }: Props) {
                     <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
                       {suite.cases.length} case{suite.cases.length !== 1 ? 's' : ''}
                     </span>
+                    {onRunSuite && (
+                      <button
+                        onClick={ev => { ev.stopPropagation(); onRunSuite(suite.slug) }}
+                        style={{ background: '#16a34a', border: 'none', color: 'white', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
+                      >
+                        Run
+                      </button>
+                    )}
                     <button
                       onClick={ev => { ev.stopPropagation(); startEdit(suite) }}
                       style={{ background: 'none', border: '1px solid #e2e8f0', color: '#334155', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}

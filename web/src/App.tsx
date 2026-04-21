@@ -70,6 +70,7 @@ const initialTab = (): Tab => {
 export default function App() {
   const [tab, setTab] = useState<Tab>(initialTab)
   const [repoPath, setRepoPath] = useState(() => localStorage.getItem(REPO_PATH_KEY) ?? '')
+  const [runSuiteSlug, setRunSuiteSlug] = useState<string | undefined>(undefined)
 
   function handleRepoPathChange(p: string) {
     setRepoPath(p)
@@ -112,8 +113,19 @@ export default function App() {
           />
         )}
         {tab === 'cases' && <CasesTab repoPath={repoPath} />}
-        {tab === 'suites' && <SuitesTab repoPath={repoPath} />}
-        {tab === 'runs' && <RunsTab repoPath={repoPath} />}
+        {tab === 'suites' && (
+          <SuitesTab
+            repoPath={repoPath}
+            onRunSuite={slug => { setRunSuiteSlug(slug); setTab('runs') }}
+          />
+        )}
+        {tab === 'runs' && (
+          <RunsTab
+            repoPath={repoPath}
+            initialSuite={runSuiteSlug}
+            onInitialSuiteConsumed={() => setRunSuiteSlug(undefined)}
+          />
+        )}
       </main>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
@@ -6,6 +6,8 @@ import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
   repoPath: string
+  initialSuite?: string
+  onInitialSuiteConsumed?: () => void
 }
 
 const card = {
@@ -63,7 +65,7 @@ function runStatusColor(s: RunStatus): string {
   }
 }
 
-export default function RunsTab({ repoPath }: Props) {
+export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +92,16 @@ export default function RunsTab({ repoPath }: Props) {
   const [recording, setRecording] = useState(false)
   const [caseBody, setCaseBody] = useState<string | null>(null)
   const [caseBodyLoading, setCaseBodyLoading] = useState(false)
+
+  const consumedRef = useRef(false)
+  useEffect(() => {
+    if (initialSuite && !consumedRef.current) {
+      consumedRef.current = true
+      setNewSuite(initialSuite)
+      setShowCreate(true)
+      onInitialSuiteConsumed?.()
+    }
+  }, [initialSuite, onInitialSuiteConsumed])
 
   const load = useCallback(async () => {
     if (!repoPath) return
