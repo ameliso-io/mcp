@@ -109,6 +109,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       const res = await client.syncRepository({ id });
       if (res.repository) {
         setRepos((prev) => prev.map((r) => (r.id === id ? res.repository! : r)));
+        setAnnouncement(`Sync completed for ${res.repository.fullName}`);
       }
     } catch (e) {
       setError(errorMessage(e));

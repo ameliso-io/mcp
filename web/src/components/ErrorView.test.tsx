@@ -28,4 +28,10 @@ describe("ErrorView", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(reset).toHaveBeenCalledOnce();
   });
+
+  it("displays error digest when present", () => {
+    const error = Object.assign(new Error("crash"), { digest: "abc123" });
+    render(<ErrorView error={error} reset={vi.fn()} />);
+    expect(screen.getByText("Error ID: abc123")).toBeInTheDocument();
+  });
 });
