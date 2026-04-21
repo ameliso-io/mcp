@@ -2,10 +2,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RepositoriesTab from "./RepositoriesTab";
-import { client } from "../client";
-import { makeRepository } from "../test/factories";
+import { client } from "@/client";
+import { makeRepository } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
 const makeRepo = (overrides = {}) => makeRepository({ installationId: "inst-1", ...overrides });
 

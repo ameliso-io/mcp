@@ -2,11 +2,11 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
-import { client } from "../client";
-import { ResultStatus } from "../gen/ameliso/v1/types_pb";
-import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factories";
+import { client } from "@/client";
+import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
+import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),

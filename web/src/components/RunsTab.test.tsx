@@ -2,11 +2,11 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RunsTab from "./RunsTab";
-import { client } from "../client";
-import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
-import { makeCase, makeCaseResult, makeRunMeta } from "../test/factories";
+import { client } from "@/client";
+import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
+import { makeCase, makeCaseResult, makeRunMeta } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
 const mockRun = makeRunMeta({ tester: "alice", environment: "staging" });
 

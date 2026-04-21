@@ -3,10 +3,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
-import { client } from "../client";
-import { makeCase, makeSuite } from "../test/factories";
+import { client } from "@/client";
+import { makeCase, makeSuite } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
   default: ({
