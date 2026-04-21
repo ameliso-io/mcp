@@ -169,4 +169,21 @@ describe('SuitesTab', () => {
     await userEvent.click(screen.getByText('Smoke Tests'))
     await waitFor(() => expect(screen.queryByText('User Login')).not.toBeInTheDocument())
   })
+
+  it('shows singular "case" label when suite has exactly one case', async () => {
+    const singleCaseSuite = { ...mockSuite, cases: ['auth/login'] } as unknown as Suite
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [singleCaseSuite] } as never)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('1 case')).toBeInTheDocument())
+  })
+
+  it('shows medium priority dot when case has medium priority', async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [
+      { path: 'auth/login', title: 'User Login', description: '', tags: [], priority: 'medium', createdAt: '', updatedAt: '' },
+    ] as unknown as Case[] } as never)
+    render(<SuitesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Smoke Tests'))
+    await userEvent.click(screen.getByText('Smoke Tests'))
+    await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
+  })
 })
