@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
 import { client } from "../client";
-import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
+import { ResultStatus } from "../gen/ameliso/v1/types_pb";
 import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factories";
 
 vi.mock("../client");

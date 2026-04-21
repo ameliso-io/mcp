@@ -160,7 +160,7 @@ export default function CasesTab({ repoId }: Props) {
       announceFilter(`${count} case${count !== 1 ? "s" : ""} found`);
     }
     prevCountRef.current = count;
-  }, [deferredCases.length, loading]);
+  }, [deferredCases.length, loading, announceFilter]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
