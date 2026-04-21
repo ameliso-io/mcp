@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "Ameliso",
     short_name: "Ameliso",
     description: "Test coverage and quality management",
