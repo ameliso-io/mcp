@@ -684,3 +684,24 @@ async fn list_cases_filter_by_priority() {
     assert_eq!(cases.len(), 1);
     assert_eq!(cases[0].path, "auth/login");
 }
+
+#[tokio::test]
+async fn create_case_rejects_path_traversal() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let err = c
+        .create_case(Request::new(pb::CreateCaseRequest {
+            repo_path: rp,
+            case_path: "../../../etc/passwd".to_owned(),
+            title: "Malicious".to_owned(),
+            description: String::new(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::Internal);
+}

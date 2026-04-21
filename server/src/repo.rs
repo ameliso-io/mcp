@@ -205,6 +205,23 @@ fn to_case_path(cases_dir: &Path, file: &Path) -> Option<String> {
 }
 
 // ---------------------------------------------------------------------------
+// Validation helpers
+// ---------------------------------------------------------------------------
+
+fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
+    if path.is_empty() {
+        return Err(RepoError::NotFound(format!("{} path is empty", kind)));
+    }
+    if path.contains("..") || path.starts_with('/') || path.starts_with('\\') {
+        return Err(RepoError::Other(anyhow::anyhow!(
+            "invalid {} path: must not contain '..' or start with '/'",
+            kind
+        )));
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -231,6 +248,7 @@ pub fn list_cases(repo: &Path) -> RResult<Vec<LoadedCase>> {
 }
 
 pub fn get_case(repo: &Path, case_path: &str) -> RResult<LoadedCase> {
+    validate_slug_path(case_path, "case")?;
     let file = case_file_path(repo, case_path);
     let content = std::fs::read_to_string(&file)
         .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
@@ -251,6 +269,7 @@ pub fn create_case(
     priority: &str,
     body: Option<&str>,
 ) -> RResult<LoadedCase> {
+    validate_slug_path(case_path, "case")?;
     let file = case_file_path(repo, case_path);
     if file.exists() {
         return Err(RepoError::AlreadyExists(format!(
@@ -286,6 +305,7 @@ pub fn update_case(
     priority: &str,
     body: Option<&str>,
 ) -> RResult<LoadedCase> {
+    validate_slug_path(case_path, "case")?;
     let file = case_file_path(repo, case_path);
     let content = std::fs::read_to_string(&file)
         .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
@@ -305,6 +325,7 @@ pub fn update_case(
 }
 
 pub fn delete_case(repo: &Path, case_path: &str) -> RResult<()> {
+    validate_slug_path(case_path, "case")?;
     let file = case_file_path(repo, case_path);
     if !file.exists() {
         return Err(RepoError::NotFound(format!(
@@ -489,6 +510,7 @@ pub fn list_suites(repo: &Path) -> RResult<Vec<(String, SuiteYaml)>> {
 }
 
 pub fn get_suite(repo: &Path, slug: &str) -> RResult<SuiteYaml> {
+    validate_slug_path(slug, "suite")?;
     let path = suites_dir(repo).join(format!("{}.yaml", slug));
     let content = std::fs::read_to_string(&path)
         .map_err(|_| RepoError::NotFound(format!("suite not found: {}", slug)))?;
@@ -502,6 +524,7 @@ pub fn create_suite(
     description: Option<String>,
     cases: Vec<String>,
 ) -> RResult<SuiteYaml> {
+    validate_slug_path(slug, "suite")?;
     let dir = suites_dir(repo);
     std::fs::create_dir_all(&dir).context("creating suites directory")?;
     let path = dir.join(format!("{}.yaml", slug));
@@ -522,12 +545,12 @@ pub fn create_suite(
 }
 
 pub fn delete_suite(repo: &Path, slug: &str) -> RResult<()> {
+    validate_slug_path(slug, "suite")?;
     let path = suites_dir(repo).join(format!("{}.yaml", slug));
     if !path.exists() {
         return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
     }
-    std::fs::remove_file(&path)
-        .with_context(|| format!("deleting suite {}", slug))?;
+    std::fs::remove_file(&path).with_context(|| format!("deleting suite {}", slug))?;
     Ok(())
 }
 
@@ -538,6 +561,7 @@ pub fn update_suite(
     description: Option<String>,
     cases: Vec<String>,
 ) -> RResult<SuiteYaml> {
+    validate_slug_path(slug, "suite")?;
     let path = suites_dir(repo).join(format!("{}.yaml", slug));
     if !path.exists() {
         return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
