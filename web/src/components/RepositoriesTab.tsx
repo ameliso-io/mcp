@@ -127,10 +127,12 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
 
   async function handleRemove(id: string) {
     setError(null);
+    const repo = repos.find((r) => r.id === id);
     try {
       await client.removeRepository({ id });
       setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
+      setAnnouncement(`${repo?.fullName ?? id} removed`);
     } catch (e) {
       setError(errorMessage(e));
     }
