@@ -230,6 +230,22 @@
   flex-wrap: wrap;
 }
 
+.resultFilterBtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--btn-color);
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-color-alpha);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.resultFilterBtnActive {
+  background: var(--btn-color-alpha);
+  border-color: var(--btn-color);
+}
+
 .noResults {
   color: #64748b;
   font-size: 14px;

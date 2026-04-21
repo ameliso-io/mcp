@@ -398,16 +398,8 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                             <button
                               key={s.label}
                               onClick={() => setResultStatusFilter(rsf => rsf === s.status ? null : s.status)}
-                              style={{
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: s.color,
-                                background: resultStatusFilter === s.status ? s.color + '30' : s.bg,
-                                border: `1px solid ${resultStatusFilter === s.status ? s.color : s.color + '30'}`,
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                              }}
+                              className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ''}`}
+                              style={{ '--btn-color': s.color, '--btn-bg': s.bg, '--btn-color-alpha': s.color + '30' } as React.CSSProperties}
                             >
                               {s.count} {s.label}
                             </button>
