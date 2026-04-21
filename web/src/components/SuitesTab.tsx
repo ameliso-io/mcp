@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
-import type { Suite } from '../gen/ameliso/v1/types_pb'
+import type { Suite, Case } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
   repoPath: string
@@ -37,6 +37,8 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [expandedCases, setExpandedCases] = useState<Case[]>([])
+  const [expandedCasesLoading, setExpandedCasesLoading] = useState(false)
 
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
@@ -52,6 +54,25 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [editDesc, setEditDesc] = useState('')
   const [editCases, setEditCases] = useState('')
   const [saving, setSaving] = useState(false)
+
+  async function toggleExpand(slug: string) {
+    if (expanded === slug) {
+      setExpanded(null)
+      setExpandedCases([])
+      return
+    }
+    setExpanded(slug)
+    setExpandedCases([])
+    setExpandedCasesLoading(true)
+    try {
+      const res = await client.listCases({ repoPath, suite: slug })
+      setExpandedCases(res.cases)
+    } catch {
+      // silently fall back — suite.cases paths still visible
+    } finally {
+      setExpandedCasesLoading(false)
+    }
+  }
 
   function startEdit(suite: Suite) {
     setEditingSlug(suite.slug)
@@ -270,7 +291,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
                     cursor: 'pointer',
                     borderColor: expanded === suite.slug ? '#3b82f6' : '#e2e8f0',
                   }}
-                  onClick={() => setExpanded(expanded === suite.slug ? null : suite.slug)}
+                  onClick={() => toggleExpand(suite.slug)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span style={{ fontWeight: '600', fontSize: '15px', flex: 1 }}>{suite.name}</span>
@@ -304,15 +325,53 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
                   )}
                 </div>
 
-                {expanded === suite.slug && suite.cases.length > 0 && (
+                {expanded === suite.slug && (
                   <div style={{ ...card, marginTop: 0, borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0, background: '#f8fafc' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {suite.cases.map(casePath => (
-                        <div key={casePath} style={{ padding: '8px 12px', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: 'monospace', color: '#334155' }}>
-                          {casePath}
-                        </div>
-                      ))}
-                    </div>
+                    {expandedCasesLoading ? (
+                      <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Loading…</p>
+                    ) : expandedCases.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {expandedCases.map(c => (
+                          <div
+                            key={c.path}
+                            style={{
+                              padding: '10px 12px',
+                              background: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #e2e8f0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                background: c.priority === 'high' ? '#ef4444' : c.priority === 'medium' ? '#f97316' : '#22c55e',
+                                flexShrink: 0,
+                              }}
+                            />
+                            <span style={{ fontSize: '13px', fontFamily: 'monospace', color: '#64748b', flexShrink: 0 }}>{c.path}</span>
+                            <span style={{ fontSize: '14px', fontWeight: '500', flex: 1 }}>{c.title}</span>
+                            {c.tags.map(t => (
+                              <span key={t} style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px' }}>{t}</span>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    ) : suite.cases.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {suite.cases.map(casePath => (
+                          <div key={casePath} style={{ padding: '8px 12px', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: 'monospace', color: '#334155' }}>
+                            {casePath}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>No cases in this suite.</p>
+                    )}
                   </div>
                 )}
               </>
