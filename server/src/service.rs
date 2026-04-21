@@ -4,6 +4,36 @@ use tonic::{Request, Response, Status};
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
 use crate::repo::{self, RepoError};
 
+/// Returns true when `text` contains `case_path` as whole path segments.
+/// Prevents `auth/log` from matching inside `auth/login`.
+fn text_references_case(text: &str, case_path: &str) -> bool {
+    // After the path, only these chars indicate a clean boundary (not mid-segment)
+    let ends_cleanly = |s: &str| {
+        s.is_empty()
+            || s.starts_with('/')
+            || s.starts_with('.')
+            || s.starts_with(' ')
+            || s.starts_with('\t')
+            || s.starts_with('\n')
+            || s.starts_with('"')
+            || s.starts_with('\'')
+            || s.starts_with(')')
+    };
+    if text.starts_with(case_path) && ends_cleanly(&text[case_path.len()..]) {
+        return true;
+    }
+    // Match after any path separator or whitespace character
+    for prefix in ['/', ' ', '\t', '\n', '"', '\'', '('] {
+        let needle = format!("{prefix}{case_path}");
+        if let Some(idx) = text.find(&needle) {
+            if ends_cleanly(&text[idx + needle.len()..]) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn repo_err(e: RepoError) -> Status {
     match e {
         RepoError::NotFound(msg) => Status::not_found(msg),
@@ -702,7 +732,7 @@ impl AmelisoService for AmelisoServer {
 
         let all_text = compare.commit_messages.join("\n");
         for path in &known_paths {
-            if all_text.contains(path.as_str()) {
+            if text_references_case(&all_text, path) {
                 reasons.push(format!("commit messages reference: {}", path));
                 if !affected.contains(path) {
                     affected.push(path.clone());
@@ -712,7 +742,7 @@ impl AmelisoService for AmelisoServer {
 
         for file in &compare.changed_files {
             for path in &known_paths {
-                if file.contains(path.as_str()) {
+                if text_references_case(file, path) {
                     reasons.push(format!("file {} references {}", file, path));
                     if !affected.contains(path) {
                         affected.push(path.clone());
@@ -1227,5 +1257,50 @@ mod tests {
         assert_eq!(pb.html_url, "https://github.com/owner/repo");
         assert_eq!(pb.installation_id, "inst-1");
         assert_eq!(pb.added_at, "2026-01-01");
+    }
+
+    // ── text_references_case ──────────────────────────────────────────────────
+
+    #[test]
+    fn text_references_case_exact_match() {
+        assert!(text_references_case("cases/auth/login.md", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_false_positive_suffix() {
+        assert!(!text_references_case(
+            "cases/auth/login-mobile.md",
+            "auth/login"
+        ));
+    }
+
+    #[test]
+    fn text_references_case_commit_message_match() {
+        assert!(text_references_case("fix auth/login flow", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_false_positive_in_commit() {
+        assert!(!text_references_case("fix auth/login flow", "auth/log"));
+    }
+
+    #[test]
+    fn text_references_case_start_of_string() {
+        assert!(text_references_case("auth/login.ts", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_subdirectory() {
+        assert!(text_references_case("src/auth/login/form.ts", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_match() {
+        assert!(!text_references_case("src/auth/signup.md", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_trailing_slash_in_path() {
+        assert!(text_references_case("cases/auth/login/step1.md", "auth/login"));
     }
 }
