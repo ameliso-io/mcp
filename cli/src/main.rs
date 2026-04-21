@@ -519,7 +519,11 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                 if pending.is_empty() {
                     println!("Progress: {total}/{total} done — all cases recorded");
                 } else {
-                    println!("Progress: {}/{total} done, {} remaining", total - pending.len(), pending.len());
+                    println!(
+                        "Progress: {}/{total} done, {} remaining",
+                        total - pending.len(),
+                        pending.len()
+                    );
                 }
             }
         }
@@ -709,22 +713,43 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
         skipped,
         never_count,
     );
+    let status_rank = |s: &str| match s {
+        "failed" => 0u8,
+        "blocked" => 1,
+        "never" => 2,
+        "skipped" => 3,
+        "passed" => 4,
+        _ => 5,
+    };
+    let priority_rank = |p: &str| match p {
+        "high" => 0u8,
+        "medium" => 1,
+        "low" => 2,
+        _ => 3,
+    };
+    let mut rows: Vec<(&repo::LoadedCase, String, String)> = cases
+        .iter()
+        .map(|c| {
+            let (status, run_id) = latest
+                .get(&c.case_path)
+                .cloned()
+                .unwrap_or_else(|| ("never".to_owned(), String::new()));
+            (c, status, run_id)
+        })
+        .collect();
+    if let Some(f) = status_filter {
+        rows.retain(|(_, status, _)| status.eq_ignore_ascii_case(f));
+    }
+    rows.sort_by(|(a_c, a_s, _), (b_c, b_s, _)| {
+        status_rank(a_s)
+            .cmp(&status_rank(b_s))
+            .then_with(|| priority_rank(&a_c.fm.priority).cmp(&priority_rank(&b_c.fm.priority)))
+            .then_with(|| a_c.case_path.cmp(&b_c.case_path))
+    });
     println!("{:40} {:8} LAST RUN", "CASE", "STATUS");
     println!("{}", "-".repeat(70));
-    for c in &cases {
-        let (status, run_id) = latest
-            .get(&c.case_path)
-            .cloned()
-            .unwrap_or_else(|| ("never".to_owned(), String::new()));
-        if let Some(f) = status_filter {
-            if !status.eq_ignore_ascii_case(f) {
-                continue;
-            }
-        }
-        println!(
-            "{:40} {:8} {} — {}",
-            c.case_path, status, run_id, c.fm.title
-        );
+    for (c, status, run_id) in &rows {
+        println!("{:40} {:8} {} — {}", c.case_path, status, run_id, c.fm.title);
     }
     if never_count > 0 && status_filter.is_none() {
         println!("\n{never_count} case(s) never run.");
