@@ -289,6 +289,17 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
                 body.as_deref(),
             )?;
             println!("Created: cases/{}.md", c.case_path);
+            println!("title:       {}", c.fm.title);
+            println!("description: {}", c.fm.description);
+            println!("priority:    {}", c.fm.priority);
+            println!(
+                "tags:        {}",
+                if c.fm.tags.is_empty() {
+                    "(none)".to_owned()
+                } else {
+                    c.fm.tags.join(", ")
+                }
+            );
         }
         CasesCmd::Update {
             repo,
@@ -315,6 +326,17 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
                 body.as_deref(),
             )?;
             println!("Updated: cases/{}.md", c.case_path);
+            println!("title:       {}", c.fm.title);
+            println!("description: {}", c.fm.description);
+            println!("priority:    {}", c.fm.priority);
+            println!(
+                "tags:        {}",
+                if c.fm.tags.is_empty() {
+                    "(none)".to_owned()
+                } else {
+                    c.fm.tags.join(", ")
+                }
+            );
         }
         CasesCmd::Delete { repo, case_path } => {
             repo::delete_case(&repo, &case_path)?;

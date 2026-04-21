@@ -231,7 +231,7 @@ impl AmelisoMcp {
                 counts.get("failed").copied().unwrap_or(0),
                 counts.get("blocked").copied().unwrap_or(0),
                 counts.get("skipped").copied().unwrap_or(0),
-                counts.get("never").copied().unwrap_or(total - latest.len()),
+                counts.get("never").copied().unwrap_or(0),
             ),
             format!("Suites: {}", suites.len()),
             format!("Runs: {} total", runs.len()),
@@ -352,7 +352,18 @@ impl AmelisoMcp {
             pri,
             body,
         ) {
-            Ok(c) => format!("created: cases/{}.md\ntitle: {}", c.case_path, c.fm.title),
+            Ok(c) => format!(
+                "created: cases/{}.md\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
+                c.case_path,
+                c.fm.title,
+                c.fm.description,
+                c.fm.priority,
+                if c.fm.tags.is_empty() {
+                    "(none)".to_owned()
+                } else {
+                    c.fm.tags.join(", ")
+                }
+            ),
             Err(e) => format!("error: {e}"),
         }
     }
@@ -651,7 +662,18 @@ impl AmelisoMcp {
             req.priority.as_deref(),
             req.body.as_deref(),
         ) {
-            Ok(c) => format!("updated: cases/{}.md", c.case_path),
+            Ok(c) => format!(
+                "updated: cases/{}.md\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
+                c.case_path,
+                c.fm.title,
+                c.fm.description,
+                c.fm.priority,
+                if c.fm.tags.is_empty() {
+                    "(none)".to_owned()
+                } else {
+                    c.fm.tags.join(", ")
+                }
+            ),
             Err(e) => format!("error: {e}"),
         }
     }
