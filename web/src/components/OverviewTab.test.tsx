@@ -477,6 +477,30 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText(/Coverage \(5 runs\)/)).toBeInTheDocument());
   });
 
+  it('shows "auto-refresh 30s" label in active runs panel', async () => {
+    const activeRun = {
+      id: "run-ar",
+      tester: "dave",
+      suite: "",
+      date: "2026-03-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/auto-refresh 30s/)).toBeInTheDocument());
+  });
+
+  it("shows non-zero Never Run stat when entries include never-run cases", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [makeCovEntry("auth/never", "NeverCase", "low", ResultStatus.NEVER)],
+      runCount: 2,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Never Run")).toBeInTheDocument());
+    // stat card shows "1" for Never Run count
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+  });
+
   it("shows suite badge and tester in active runs panel", async () => {
     const activeRun = {
       id: "run-badge",
