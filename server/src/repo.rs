@@ -229,7 +229,7 @@ fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
         }
         if !segment
             .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
         {
             return Err(RepoError::InvalidArg(format!(
                 "invalid {} path '{}': each segment must contain only a-z, 0-9, hyphens, underscores",

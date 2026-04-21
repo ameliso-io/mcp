@@ -796,7 +796,10 @@ async fn update_suite_partial_preserves_unchanged_fields() {
         .suite
         .unwrap();
 
-    assert_eq!(suite.name, "Smoke Tests", "name preserved after partial update");
+    assert_eq!(
+        suite.name, "Smoke Tests",
+        "name preserved after partial update"
+    );
     assert_eq!(suite.description, "Basic smoke coverage");
     assert_eq!(suite.cases.len(), 1, "cases preserved after partial update");
 }
@@ -892,6 +895,32 @@ async fn create_case_rejects_path_traversal() {
         .unwrap_err();
 
     assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn create_case_rejects_invalid_slug_chars() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    for bad_path in &["auth/My Login", "auth/login!", "AUTH/LOGIN", "auth/log in"] {
+        let err = c
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_path: rp.clone(),
+                case_path: bad_path.to_string(),
+                title: "Test".to_owned(),
+                description: String::new(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(
+            err.code(),
+            tonic::Code::InvalidArgument,
+            "expected InvalidArgument for path: {bad_path}"
+        );
+    }
 }
 
 #[tokio::test]
