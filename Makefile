@@ -25,6 +25,11 @@ coverage-check:
 
 fmt:
 	cargo fmt --all
+	pnpm --filter ameliso-web fmt
+
+fmt-check:
+	cargo fmt --all -- --check
+	pnpm --filter ameliso-web fmt:check
 
 lint:
 	cargo clippy --all -- -D warnings
@@ -44,5 +49,5 @@ db-down:
 pre-commit: fmt lint spell
 	@echo "pre-commit: OK"
 
-pre-push: build test coverage-check
+pre-push: fmt-check build test coverage-check
 	@echo "pre-push: OK"
