@@ -191,4 +191,30 @@ describe('CasesTab', () => {
       expect(titleInput).toBeDefined()
     })
   })
+
+  it('calls updateCase with parsed tags when tags field is filled', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Edit'))
+    await userEvent.click(screen.getByText('Edit'))
+    await waitFor(() => screen.getByText('Save'))
+    const tagsInput = screen.getAllByRole('textbox').find(i => (i as HTMLInputElement).value === 'auth, smoke')
+    if (tagsInput) {
+      await userEvent.clear(tagsInput)
+      await userEvent.type(tagsInput, 'auth, smoke, regression')
+    }
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(client.updateCase).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: expect.arrayContaining(['auth', 'smoke', 'regression']) })
+    ))
+  })
+
+  it('sorts by priority with path tiebreaker for equal-priority cases', async () => {
+    const case2 = { ...mockCase, path: 'auth/logout', title: 'User Logout', priority: 'high' } as unknown as Case
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [case2, mockCase] } as never)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
+    const paths = screen.getAllByText(/auth\//)
+    expect(paths[0].textContent).toBe('auth/login')
+    expect(paths[1].textContent).toBe('auth/logout')
+  })
 })
