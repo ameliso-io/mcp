@@ -1,0 +1,209 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.connectBtn {
+  padding: 8px 16px;
+  background: #1e293b;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.connectBtn:hover {
+  background: #334155;
+}
+
+.githubHint {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.errorCard {
+  composes: card;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.errorDismiss {
+  background: none;
+  border: none;
+  color: #991b1b;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 0 0 12px;
+  flex-shrink: 0;
+}
+
+.loadingMsg {
+  text-align: center;
+  color: #64748b;
+  padding: 40px;
+}
+
+.emptyCard {
+  composes: card;
+  color: #64748b;
+  text-align: center;
+  padding: 48px;
+}
+
+.emptyTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.emptyDesc {
+  margin: 0;
+  font-size: 14px;
+}
+
+.repoCard {
+  composes: card;
+}
+
+.repoCardActive {
+  composes: card;
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.repoRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.repoInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.repoNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.repoName {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.badgeActive {
+  composes: badge;
+  background: #3b82f6;
+  color: white;
+}
+
+.badgeCloned {
+  composes: badge;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badgeNotCloned {
+  composes: badge;
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.repoUrl {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.repoUrlLink {
+  color: #3b82f6;
+}
+
+.repoPath {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.repoActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 12px;
+}
+
+.btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btnPrimary {
+  composes: btn;
+  background: #1e293b;
+  color: white;
+}
+
+.btnSecondary {
+  composes: btn;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btnDanger {
+  composes: btn;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btnOutline {
+  composes: btn;
+  background: white;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
