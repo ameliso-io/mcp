@@ -456,4 +456,24 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     unmount();
   });
+
+  it("does not show lastRunDate when it is empty", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        {
+          ...makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED),
+          lastRunDate: "",
+        },
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    expect(screen.queryByText("2026-01-01")).not.toBeInTheDocument();
+  });
+
+  it("shows plural runs in Coverage heading", async () => {
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Coverage \(5 runs\)/)).toBeInTheDocument());
+  });
 });
