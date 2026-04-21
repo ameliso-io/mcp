@@ -22,6 +22,7 @@ export const client = {
   getAffectedCases: vi.fn().mockResolvedValue({ cases: [], reason: '' }),
   getGitHubInstallUrl: vi.fn().mockResolvedValue({ url: '', configured: false }),
   handleGitHubCallback: vi.fn().mockResolvedValue({ repositories: [] }),
+  syncInstallations: vi.fn().mockResolvedValue({ repositories: [] }),
   listRepositories: vi.fn().mockResolvedValue({ repositories: [] }),
   syncRepository: vi.fn().mockResolvedValue({ repository: undefined }),
   removeRepository: vi.fn().mockResolvedValue({}),
