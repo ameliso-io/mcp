@@ -19,7 +19,10 @@ export const metadata: Metadata = {
   },
   description: "Test coverage and quality management",
   openGraph: {
-    title: "Ameliso",
+    title: {
+      default: "Ameliso",
+      template: "%s | Ameliso",
+    },
     description: "Test coverage and quality management",
     type: "website",
     siteName: "Ameliso",
