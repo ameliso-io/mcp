@@ -156,6 +156,17 @@ Notes go here (optional).
 Use `record_result` (MCP) or `ameliso runs record` (CLI).
 Both reject writes to a `completed` or `aborted` run.
 
+### Tracking progress in an active run
+Use `get_pending_cases` (MCP) or `ameliso runs pending <run_id>` (CLI) to see
+which cases in the run's scope still need results recorded. Scope = suite cases
+if the run was created with `--suite`; otherwise all cases in the repo.
+
+Typical agent workflow:
+1. `list_runs --status in-progress` → find the active run_id
+2. `get_pending_cases` → which cases still need results
+3. `record_result` for each pending case
+4. When all done: `finalize_run`
+
 ### After code changes
 Use `get_affected_cases` (MCP) or `ameliso affected` (CLI) to identify cases
 that need re-running. The tool compares git history since the last run commit.
