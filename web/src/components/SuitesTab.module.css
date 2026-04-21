@@ -1,0 +1,310 @@
+.noRepo {
+  color: #64748b;
+  padding: 40px;
+  text-align: center;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.cardTitleSm {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formGridSm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fullCol {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 13px;
+  color: #64748b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.errorCard {
+  composes: card;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.errorDismiss {
+  background: none;
+  border: none;
+  color: #991b1b;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 0 0 12px;
+  flex-shrink: 0;
+}
+
+.loadingMsg {
+  text-align: center;
+  color: #64748b;
+  padding: 40px;
+}
+
+.emptyCard {
+  composes: card;
+  color: #64748b;
+  text-align: center;
+  padding: 40px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suiteCard {
+  composes: card;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.suiteCardExpanded {
+  composes: card;
+  margin-bottom: 0;
+  cursor: pointer;
+  border-color: #3b82f6;
+}
+
+.suiteRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.suiteName {
+  font-weight: 600;
+  font-size: 15px;
+  flex: 1;
+}
+
+.suiteSlug {
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.caseCount {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.suiteDesc {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.expandedPanel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  margin-top: 0;
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background: #f8fafc;
+}
+
+.expandedLoading {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.caseList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.caseRow {
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.caseDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.casePath {
+  font-size: 13px;
+  font-family: monospace;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.caseTitle {
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.tag {
+  font-size: 11px;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.casePathOnly {
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  font-family: monospace;
+  color: #334155;
+}
+
+.noCase {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.formActions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btnGreen {
+  padding: 8px 20px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btnGreenSm {
+  background: #16a34a;
+  border: none;
+  color: white;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btnOutlineSm {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btnDangerSm {
+  background: none;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btnSaveSm {
+  padding: 6px 16px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btnCancelSm {
+  padding: 6px 16px;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
