@@ -443,6 +443,20 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
         } => {
             let meta = repo::finalize_run(&repo, &run_id, &status)?;
             println!("Finalized run {} as {}", meta.id, meta.status);
+            if let Ok(run) = repo::get_run(&repo, &meta.id) {
+                let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
+                let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
+                let blocked = run.results.iter().filter(|r| r.fm.status == "blocked").count();
+                let skipped = run.results.iter().filter(|r| r.fm.status == "skipped").count();
+                println!(
+                    "Summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                    passed,
+                    failed,
+                    blocked,
+                    skipped,
+                    run.results.len()
+                );
+            }
         }
         RunsCmd::Pending { repo, run_id } => {
             let (pending, total) = repo::get_pending_cases(&repo, &run_id)?;

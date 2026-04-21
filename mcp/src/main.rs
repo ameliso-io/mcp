@@ -401,7 +401,27 @@ impl AmelisoMcp {
     fn finalize_run(&self, Parameters(req): Parameters<FinalizeRunRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::finalize_run(&repo, &req.run_id, &req.status) {
-            Ok(meta) => format!("finalized run {} as {}", meta.id, meta.status),
+            Ok(meta) => {
+                let summary = repo::get_run(&repo, &meta.id)
+                    .map(|run| {
+                        let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
+                        let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
+                        let blocked =
+                            run.results.iter().filter(|r| r.fm.status == "blocked").count();
+                        let skipped =
+                            run.results.iter().filter(|r| r.fm.status == "skipped").count();
+                        format!(
+                            "\nsummary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                            passed,
+                            failed,
+                            blocked,
+                            skipped,
+                            run.results.len()
+                        )
+                    })
+                    .unwrap_or_default();
+                format!("finalized run {} as {}{}", meta.id, meta.status, summary)
+            }
             Err(e) => format!("error: {e}"),
         }
     }
