@@ -642,6 +642,31 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
     }
 
     #[tokio::test]
+    async fn compare_with_empty_commits_returns_empty_messages() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/compare/abc123...HEAD"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "commits": [],
+                "files": [{"filename": "src/lib.rs"}]
+            })))
+            .mount(&server)
+            .await;
+
+        let result = compare("owner", "repo", "abc123", "tok").await;
+        let cr = result.expect("should succeed with empty commits");
+        assert!(cr.commit_messages.is_empty());
+        assert_eq!(cr.changed_files, vec!["src/lib.rs"]);
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
     async fn compare_with_missing_files_field_defaults_to_empty() {
         // The `files` field has #[serde(default)] so it tolerates absent keys.
         let _g = ENV_LOCK.lock().unwrap();
