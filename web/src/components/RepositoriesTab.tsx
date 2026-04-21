@@ -53,6 +53,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -113,6 +114,11 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     }
   }
 
+  const q = search.trim().toLowerCase()
+  const filteredRepos = q
+    ? repos.filter(r => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q))
+    : repos
+
   async function handleRemove(id: string) {
     if (!confirm('Remove this repository connection?')) return
     setError(null)
@@ -150,6 +156,37 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         )}
       </div>
 
+      {repos.length > 0 && (
+        <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <input
+            type="search"
+            placeholder="Search repositories…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 36px',
+              fontSize: '14px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              outline: 'none',
+              boxSizing: 'border-box',
+              color: '#1e293b',
+              background: 'white',
+            }}
+          />
+          <span style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: '#94a3b8',
+            fontSize: '14px',
+            pointerEvents: 'none',
+          }}>⌕</span>
+        </div>
+      )}
+
       {error && (
         <div style={{ ...card, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <span>{error}</span>
@@ -171,7 +208,14 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         </div>
       )}
 
-      {repos.map(repo => {
+      {!loading && repos.length > 0 && filteredRepos.length === 0 && (
+        <div style={{ ...card, color: '#64748b', textAlign: 'center', padding: '48px' }}>
+          <p style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: '600' }}>No results for "{search}"</p>
+          <button onClick={() => setSearch('')} style={{ ...btn('secondary'), marginTop: '4px' }}>Clear search</button>
+        </div>
+      )}
+
+      {filteredRepos.map(repo => {
         const isActive = activeRepoId === repo.id
         return (
           <div
