@@ -375,6 +375,16 @@ describe('RunsTab', () => {
     await waitFor(() => expect(screen.getByText('Save Result')).toBeInTheDocument())
   })
 
+  it('handles getRun response with no results field', async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
+    vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun } } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(screen.getByText('No results recorded.')).toBeInTheDocument())
+  })
+
   it('shows no case body in record form when body is empty string', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
     vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: '' } as never)
