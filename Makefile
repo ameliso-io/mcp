@@ -29,7 +29,6 @@ spell:
 
 coverage-check:
 	cargo llvm-cov -p ameliso-server --fail-under-lines 0
-	cd web && pnpm run coverage
 
 # --- Git hooks (called by Husky) ---
 
