@@ -1,2 +1,5 @@
+# Claude worktrees
 worktrees/
+
+# Local overrides
 *.local.*

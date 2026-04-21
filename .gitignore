@@ -1,6 +1,16 @@
+# Rust
 /target/
 Cargo.lock
+
+# Node
 node_modules/
+
+# Environment
 .env
 server/.env
+
+# Secrets
 *.pem
+
+# Tools
+.playwright-mcp/
