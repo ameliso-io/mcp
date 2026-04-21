@@ -928,9 +928,7 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
-    await waitFor(() =>
-      expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0)
-    );
+    await waitFor(() => expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0));
     resolve!({ cases: [mockCase], totalInScope: 1 });
   });
 
@@ -949,5 +947,13 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("Record"));
     await waitFor(() => expect(screen.getByText("Loading steps…")).toBeInTheDocument());
     resolve!({ case: mockCase, body: "## Steps" });
+  });
+
+  it("shows suite badge, tester, and environment in run card", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("smoke")).toBeInTheDocument());
+    expect(screen.getByText("alice")).toBeInTheDocument();
+    expect(screen.getByText("staging")).toBeInTheDocument();
   });
 });
