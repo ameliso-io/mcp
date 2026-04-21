@@ -1,7 +1,7 @@
-import { marked } from 'marked'
-import { useEffect } from 'react'
+import { marked } from "marked";
+import { useEffect } from "react";
 
-const STYLE_ID = 'ameliso-md-styles'
+const STYLE_ID = "ameliso-md-styles";
 
 const CSS = `
 .md-body h1,.md-body h2,.md-body h3{margin:.6em 0 .3em;font-weight:700;line-height:1.3}
@@ -14,35 +14,35 @@ const CSS = `
 .md-body pre code{background:none;padding:0}
 .md-body strong{font-weight:700}.md-body em{font-style:italic}
 .md-body hr{border:none;border-top:1px solid #e2e8f0;margin:.5em 0}
-`
+`;
 
 function injectStyles() {
-  if (document.getElementById(STYLE_ID)) return
-  const s = document.createElement('style')
-  s.id = STYLE_ID
-  s.textContent = CSS
-  document.head.appendChild(s)
+  if (document.getElementById(STYLE_ID)) return;
+  const s = document.createElement("style");
+  s.id = STYLE_ID;
+  s.textContent = CSS;
+  document.head.appendChild(s);
 }
 
 interface Props {
-  body: string
-  maxHeight?: string
+  body: string;
+  maxHeight?: string;
 }
 
 export default function MarkdownBody({ body, maxHeight }: Props) {
-  useEffect(injectStyles, [])
-  const html = marked(body, { async: false }) as string
+  useEffect(injectStyles, []);
+  const html = marked(body, { async: false }) as string;
   return (
     <div
       className="md-body"
       dangerouslySetInnerHTML={{ __html: html }}
       style={{
-        fontSize: '13px',
-        lineHeight: '1.6',
-        color: '#1e293b',
-        maxHeight: maxHeight ?? 'none',
-        overflowY: maxHeight ? 'auto' : undefined,
+        fontSize: "13px",
+        lineHeight: "1.6",
+        color: "#1e293b",
+        maxHeight: maxHeight ?? "none",
+        overflowY: maxHeight ? "auto" : undefined,
       }}
     />
-  )
+  );
 }

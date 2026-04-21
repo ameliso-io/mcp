@@ -126,6 +126,33 @@ pub async fn get_repo(full_name: &str, token: &str) -> Result<GitHubRepo> {
 }
 
 // ---------------------------------------------------------------------------
+// App installations
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct AppInstallation {
+    pub id: u64,
+}
+
+pub async fn list_app_installations(jwt: &str) -> Result<Vec<AppInstallation>> {
+    let client = reqwest::Client::new();
+    let installations: Vec<AppInstallation> = client
+        .get("https://api.github.com/app/installations")
+        .header("Authorization", format!("Bearer {jwt}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .send()
+        .await
+        .context("request failed")?
+        .error_for_status()
+        .context("list app installations: bad status")?
+        .json()
+        .await
+        .context("list app installations: parse error")?;
+    Ok(installations)
+}
+
+// ---------------------------------------------------------------------------
 // Compare API for affected-cases analysis
 // ---------------------------------------------------------------------------
 
