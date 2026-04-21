@@ -117,6 +117,24 @@ describe("RunsTab", () => {
     );
   });
 
+  it("calls onStatusFilterChange when filter button clicked", async () => {
+    const onStatusFilterChange = vi.fn();
+    render(<RunsTab repoId="owner/repo" onStatusFilterChange={onStatusFilterChange} />);
+    await waitFor(() => screen.getByText("No runs found."));
+    await userEvent.click(screen.getByRole("button", { name: "Completed" }));
+    expect(onStatusFilterChange).toHaveBeenCalledWith(RunStatus.COMPLETED);
+  });
+
+  it("initializes statusFilter from initialStatusFilter prop", async () => {
+    render(<RunsTab repoId="owner/repo" initialStatusFilter={RunStatus.ABORTED} />);
+    await waitFor(() =>
+      expect(client.listRuns).toHaveBeenCalledWith(
+        expect.objectContaining({ status: RunStatus.ABORTED })
+      )
+    );
+    expect(screen.getByRole("button", { name: "Aborted" })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("expands in-progress run and shows pending cases", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);

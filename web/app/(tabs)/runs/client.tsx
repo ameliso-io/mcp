@@ -1,16 +1,31 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useCallback, Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
 import { useRepoId } from "@/hooks/useRepoId";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { RunStatus } from "@/gen/ameliso/v1/types_pb";
+
+const STATUS_SLUG: Record<string, RunStatus> = {
+  "in-progress": RunStatus.IN_PROGRESS,
+  completed: RunStatus.COMPLETED,
+  aborted: RunStatus.ABORTED,
+};
+
+const SLUG_BY_STATUS: Record<number, string> = {
+  [RunStatus.IN_PROGRESS]: "in-progress",
+  [RunStatus.COMPLETED]: "completed",
+  [RunStatus.ABORTED]: "aborted",
+};
 
 function RunsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [repoId] = useRepoId();
   const initialSuite = searchParams.get("suite") ?? undefined;
+  const initialStatusFilter =
+    STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
 
   function handleInitialSuiteConsumed() {
     const params = new URLSearchParams(searchParams.toString());
@@ -19,11 +34,28 @@ function RunsInner() {
     router.replace(qs ? `/runs?${qs}` : "/runs");
   }
 
+  const handleStatusFilterChange = useCallback(
+    (s: RunStatus) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const slug = SLUG_BY_STATUS[s];
+      if (slug) {
+        params.set("status", slug);
+      } else {
+        params.delete("status");
+      }
+      const qs = params.toString();
+      router.replace(qs ? `/runs?${qs}` : "/runs");
+    },
+    [router, searchParams]
+  );
+
   return (
     <RunsTab
       repoId={repoId}
       initialSuite={initialSuite}
       onInitialSuiteConsumed={handleInitialSuiteConsumed}
+      initialStatusFilter={initialStatusFilter}
+      onStatusFilterChange={handleStatusFilterChange}
     />
   );
 }
