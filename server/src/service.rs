@@ -1292,6 +1292,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_case_rejects_empty_case_path() {
+        // Empty case_path passes service validation but repo::get_case rejects it
+        // via validate_slug_path → InvalidArg.
+        let s = server();
+        let err = s
+            .get_case(Request::new(pb::GetCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn create_case_rejects_empty_repo_id() {
         let s = server();
         let err = s
@@ -3152,7 +3167,10 @@ mod tests {
     #[test]
     fn text_references_case_single_quote_prefix() {
         // '\'' is in the prefix list — path led by a single-quote should match
-        assert!(text_references_case("'auth/login' was tested", "auth/login"));
+        assert!(text_references_case(
+            "'auth/login' was tested",
+            "auth/login"
+        ));
     }
 
     #[test]
@@ -3164,6 +3182,9 @@ mod tests {
     #[test]
     fn text_references_case_open_paren_prefix() {
         // '(' is in the prefix list — path inside parens should match when suffix is clean
-        assert!(text_references_case("see (auth/login) for details", "auth/login"));
+        assert!(text_references_case(
+            "see (auth/login) for details",
+            "auth/login"
+        ));
     }
 }
