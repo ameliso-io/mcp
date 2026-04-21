@@ -61,6 +61,18 @@ describe("CasesTab", () => {
     expect(screen.getByText("Create Case")).toBeInTheDocument();
   });
 
+  it("does not create case when title is empty", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    // Leave Title empty — guard at top of handleCreate fires
+    await userEvent.click(screen.getByText("Create"));
+    expect(client.createCase).not.toHaveBeenCalled();
+  });
+
   it("calls createCase on form submit", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,
@@ -68,9 +80,11 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Case Title");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Case Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -81,10 +95,10 @@ describe("CasesTab", () => {
 
   it("calls deleteCase when delete confirmed", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: "cases/auth/login.md" } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
-    await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
     await waitFor(() =>
       expect(client.deleteCase).toHaveBeenCalledWith(
         expect.objectContaining({ casePath: "auth/login" })
@@ -92,12 +106,13 @@ describe("CasesTab", () => {
     );
   });
 
-  it("does not call deleteCase when confirm cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("does not call deleteCase when inline confirm cancelled", async () => {
     render(<CasesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel delete" }));
     expect(client.deleteCase).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete auth/login" })).toBeInTheDocument();
   });
 
   it("opens edit form with pre-filled values when Edit clicked", async () => {
@@ -105,10 +120,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => {
-      const titleInput = screen
-        .getAllByRole("textbox")
-        .find((i) => (i as HTMLInputElement).value === "User Login");
-      expect(titleInput).toBeDefined();
+      expect((screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement).value).toBe(
+        "User Login"
+      );
     });
   });
 
@@ -169,10 +183,10 @@ describe("CasesTab", () => {
 
   it("shows error when deleteCase fails", async () => {
     vi.mocked(client.deleteCase).mockRejectedValue(new Error("delete failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<CasesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
     await waitFor(() => expect(screen.getByText("delete failed")).toBeInTheDocument());
   });
 
@@ -206,9 +220,11 @@ describe("CasesTab", () => {
     vi.mocked(client.createCase).mockRejectedValue(new Error("create case error"));
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(screen.getByText("create case error")).toBeInTheDocument());
   });
@@ -219,10 +235,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => {
-      const titleInput = screen
-        .getAllByRole("textbox")
-        .find((i) => (i as HTMLInputElement).value === "User Login");
-      expect(titleInput).toBeDefined();
+      expect((screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement).value).toBe(
+        "User Login"
+      );
     });
   });
 
@@ -231,13 +246,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const tagsInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "auth, smoke");
-    if (tagsInput) {
-      await userEvent.clear(tagsInput);
-      await userEvent.type(tagsInput, "auth, smoke, regression");
-    }
+    const tagsInput = screen.getByRole("textbox", { name: "Tags (comma-separated)" });
+    await userEvent.clear(tagsInput);
+    await userEvent.type(tagsInput, "auth, smoke, regression");
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() =>
       expect(client.updateCase).toHaveBeenCalledWith(
@@ -280,12 +291,12 @@ describe("CasesTab", () => {
 
   it("collapses expanded case when it is deleted", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: "cases/auth/login.md" } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
     await waitFor(() => screen.getByText(/Go to \/login/));
-    await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
     await waitFor(() =>
       expect(client.deleteCase).toHaveBeenCalledWith(
         expect.objectContaining({ casePath: "auth/login" })
@@ -312,10 +323,15 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Case Title");
-    await userEvent.type(inputs[3], "auth, smoke");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Case Title");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Tags (comma-separated)" }),
+      "auth, smoke"
+    );
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -329,12 +345,7 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const tagsInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "auth, smoke");
-    if (tagsInput) {
-      await userEvent.clear(tagsInput);
-    }
+    await userEvent.clear(screen.getByRole("textbox", { name: "Tags (comma-separated)" }));
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() =>
       expect(client.updateCase).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
@@ -353,7 +364,7 @@ describe("CasesTab", () => {
   it("clears debounce timeout on rapid search input", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
-    const searchInput = screen.getByPlaceholderText("Search cases…");
+    const searchInput = screen.getByRole("searchbox", { name: "Search cases" });
     await userEvent.type(searchInput, "lo");
     await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
@@ -405,12 +416,16 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
-    await userEvent.type(inputs[2], "Some description");
-    const textarea = screen.getByPlaceholderText(/## Steps/);
-    await userEvent.type(textarea, "## Steps");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
+    await userEvent.type(screen.getByRole("textbox", { name: "Description" }), "Some description");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }),
+      "## Steps"
+    );
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -428,9 +443,11 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("+ New Case"));
     const prioritySelect = screen.getByDisplayValue("Medium");
     await userEvent.selectOptions(prioritySelect, "High");
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/new"
+    );
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(client.createCase).toHaveBeenCalled());
   });
@@ -440,9 +457,7 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const descInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Verify login flow") as HTMLInputElement;
+    const descInput = screen.getByRole("textbox", { name: "Description" }) as HTMLInputElement;
     await userEvent.clear(descInput);
     await userEvent.type(descInput, "Updated description");
     await userEvent.click(screen.getByText("Save"));
@@ -473,9 +488,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const bodyTextarea = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement;
+    const bodyTextarea = screen.getByRole("textbox", {
+      name: "Steps / Body (Markdown)",
+    }) as HTMLTextAreaElement;
     await userEvent.clear(bodyTextarea);
     await userEvent.type(bodyTextarea, "## New Steps");
     await userEvent.click(screen.getByText("Save"));
@@ -491,9 +506,7 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const titleInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "User Login") as HTMLInputElement;
+    const titleInput = screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement;
     await userEvent.clear(titleInput);
     await userEvent.type(titleInput, "Updated Login");
     await userEvent.click(screen.getByText("Save"));
@@ -502,6 +515,37 @@ describe("CasesTab", () => {
         expect.objectContaining({ title: "Updated Login" })
       )
     );
+  });
+
+  it("pressing Escape in create form cancels it", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    expect(screen.getByText("Create Case")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Create Case")).not.toBeInTheDocument();
+  });
+
+  it("pressing Escape in edit form cancels it", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Save")).not.toBeInTheDocument();
+  });
+
+  it("announces result count via live region when filter changes case count", async () => {
+    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
+    vi.mocked(client.listCases)
+      .mockResolvedValueOnce({ cases: [mockCase, secondCase] } as never)
+      .mockResolvedValue({ cases: [mockCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.selectOptions(screen.getByDisplayValue("All priorities"), "High");
+    await waitFor(() => {
+      const regions = screen.getAllByRole("status");
+      expect(regions.some((el) => el.textContent?.includes("1 case found"))).toBe(true);
+    });
   });
 
   it("expands case on Enter key", async () => {
@@ -565,5 +609,31 @@ describe("CasesTab", () => {
     // Reopen form — priority should be reset to Medium
     await userEvent.click(screen.getByText("+ New Case"));
     await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
+  });
+
+  it("discards stale getCase response when a second expand fires before first resolves", async () => {
+    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
+
+    let resolveFirst!: (v: unknown) => void;
+    const firstPromise = new Promise((res) => {
+      resolveFirst = res;
+    });
+    vi.mocked(client.getCase)
+      .mockImplementationOnce(() => firstPromise as never)
+      .mockResolvedValue({ case: secondCase, body: "second body" } as never);
+
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+
+    await userEvent.click(screen.getByRole("button", { name: /User Login/ }));
+    await userEvent.click(screen.getByRole("button", { name: /User Logout/ }));
+    await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
+
+    // resolve stale first fetch — should not overwrite second body
+    resolveFirst({ case: mockCase, body: "first body" });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText("first body")).not.toBeInTheDocument();
+    expect(screen.getByText("second body")).toBeInTheDocument();
   });
 });

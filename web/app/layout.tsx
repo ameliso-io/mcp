@@ -10,6 +10,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  colorScheme: "light",
+  themeColor: "#1e293b",
 };
 
 export const metadata: Metadata = {
@@ -30,9 +32,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <div className={styles.shell}>
           <NavBar />
-          <main className={styles.content}>{children}</main>
+          <main id="main-content" tabIndex={-1} className={styles.content}>
+            {children}
+          </main>
         </div>
       </body>
     </html>

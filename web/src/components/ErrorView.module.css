@@ -7,19 +7,16 @@
   padding: 48px;
 }
 
-.fullPage {
-  min-height: 100vh;
-}
-
-.heading {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
-
-.message {
+.errorMessage {
   font-size: 14px;
+  color: var(--color-danger-hover);
+}
+
+.digest {
+  font-size: 11px;
   color: var(--color-muted);
+  font-family: monospace;
+  margin: 0;
 }
 
 .btn {
@@ -34,21 +31,4 @@
 
 .btn:hover {
   background: var(--color-ink-hover);
-}
-
-.digest {
-  font-size: 11px;
-  color: var(--color-muted);
-  font-family: monospace;
-  margin: 0;
-}
-
-.link {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.link:hover {
-  text-decoration: underline;
 }

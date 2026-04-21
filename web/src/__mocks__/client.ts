@@ -1,5 +1,8 @@
 import { vi } from "vitest";
+import type { Client } from "@connectrpc/connect";
+import type { AmelisoService } from "../gen/ameliso/v1/service_pb";
 
+// satisfies ensures TypeScript catches missing/extra methods when the proto changes
 export const client = {
   listCases: vi.fn().mockResolvedValue({ cases: [] }),
   getCase: vi.fn().mockResolvedValue({ case: undefined, body: "" }),
@@ -26,4 +29,4 @@ export const client = {
   listRepositories: vi.fn().mockResolvedValue({ repositories: [] }),
   syncRepository: vi.fn().mockResolvedValue({ repository: undefined }),
   removeRepository: vi.fn().mockResolvedValue({}),
-};
+} satisfies Record<keyof Client<typeof AmelisoService>, unknown>;

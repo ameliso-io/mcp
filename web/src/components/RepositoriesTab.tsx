@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Repository } from "../gen/ameliso/v1/types_pb";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./RepositoriesTab.module.css";
 
 interface Props {
@@ -20,6 +21,11 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [announcement, announce] = useAnnounce();
+  const [filterAnnouncement, announceFilter] = useAnnounce();
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
+  const prevActiveRef = useRef(activeRepoId);
+  const prevFilterCountRef = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,12 +57,13 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       }
+      announce("Repositories refreshed");
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setRefreshing(false);
     }
-  }, [repos]);
+  }, [repos, announce]);
 
   // Handle GitHub callback: ?installation_id=... in URL
   useEffect(() => {
@@ -69,7 +76,6 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     ) {
       // Clear the URL params so we don't reprocess on re-render
       window.history.replaceState({}, "", window.location.pathname);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       setError(null);
       client
@@ -86,9 +92,19 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (activeRepoId === prevActiveRef.current) return;
+    prevActiveRef.current = activeRepoId;
+    if (activeRepoId) {
+      const repo = repos.find((r) => r.id === activeRepoId);
+      if (repo) announce(`${repo.fullName} selected`);
+    } else {
+      announce("Repository deselected");
+    }
+  }, [activeRepoId, repos, announce]);
 
   async function handleSync(id: string) {
     setSyncing(id);
@@ -97,6 +113,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       const res = await client.syncRepository({ id });
       if (res.repository) {
         setRepos((prev) => prev.map((r) => (r.id === id ? res.repository! : r)));
+        announce(`Sync completed for ${res.repository.fullName}`);
       }
     } catch (e) {
       setError(errorMessage(e));
@@ -112,12 +129,23 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       )
     : repos;
 
+  useEffect(() => {
+    if (loading || !q) return;
+    const count = filteredRepos.length;
+    if (prevFilterCountRef.current !== null && prevFilterCountRef.current !== count) {
+      announceFilter(count === 1 ? "1 repository found" : `${count} repositories found`);
+    }
+    prevFilterCountRef.current = count;
+  }, [filteredRepos.length, loading, q, announceFilter]);
+
   async function handleRemove(id: string) {
-    if (!confirm("Remove this repository connection?")) return;
     setError(null);
+    const repo = repos.find((r) => r.id === id);
     try {
       await client.removeRepository({ id });
+      setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
+      announce(`${repo?.fullName ?? /* v8 ignore next */ id} removed`);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -125,11 +153,23 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
+      </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Repositories</h2>
         <div className={styles.headerActions}>
           {repos.length > 0 && (
-            <button onClick={handleRefreshAll} disabled={refreshing} className={styles.btnOutline}>
+            <button
+              type="button"
+              onClick={handleRefreshAll}
+              disabled={refreshing}
+              aria-label="Refresh All"
+              className={styles.btnOutline}
+            >
               {refreshing ? "Refreshing…" : "↻ Refresh All"}
             </button>
           )}
@@ -156,25 +196,37 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <div className={styles.searchWrapper}>
           <input
             type="search"
+            aria-label="Search repositories"
             placeholder="Search repositories…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.searchInput}
           />
-          <span className={styles.searchIcon}>⌕</span>
+          <span className={styles.searchIcon} aria-hidden="true">
+            ⌕
+          </span>
         </div>
       )}
 
       {error && (
-        <div className={styles.errorCard}>
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg}>Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && repos.length === 0 && (
         <div className={styles.emptyCard}>
@@ -195,6 +247,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
+            type="button"
             onClick={() => setSearch("")}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >
@@ -203,53 +256,96 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         </div>
       )}
 
-      {filteredRepos.map((repo) => {
-        const isActive = activeRepoId === repo.id;
-        return (
-          <div key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
-            <div className={styles.repoRow}>
-              <div className={styles.repoInfo}>
-                <div className={styles.repoNameRow}>
-                  <span className={styles.repoName}>{repo.fullName}</span>
-                  {isActive && <span className={styles.badgeActive}>Active</span>}
+      <ul aria-busy={loading} role="list" className={styles.repoList}>
+        {filteredRepos.map((repo) => {
+          const isActive = activeRepoId === repo.id;
+          return (
+            <li key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
+              <div className={styles.repoRow}>
+                <div className={styles.repoInfo}>
+                  <div className={styles.repoNameRow}>
+                    <span className={styles.repoName}>{repo.fullName}</span>
+                    {isActive && <span className={styles.badgeActive}>Active</span>}
+                  </div>
+                  <div className={styles.repoUrl}>
+                    <a
+                      href={repo.htmlUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.repoUrlLink}
+                    >
+                      {repo.htmlUrl}
+                    </a>
+                  </div>
                 </div>
-                <div className={styles.repoUrl}>
-                  <a
-                    href={repo.htmlUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.repoUrlLink}
+                <div className={styles.repoActions}>
+                  {!isActive ? (
+                    <button
+                      type="button"
+                      className={styles.btnPrimary}
+                      onClick={() => onRepoSelect(repo.id)}
+                    >
+                      Use
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.btnOutline}
+                      onClick={() => onRepoSelect("")}
+                    >
+                      Deselect
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    disabled={syncing === repo.id}
+                    onClick={() => handleSync(repo.id)}
                   >
-                    {repo.htmlUrl}
-                  </a>
+                    {syncing === repo.id ? "Syncing…" : "Sync"}
+                  </button>
+                  {confirmingRemove === repo.id ? (
+                    <>
+                      <span className={styles.confirmText}>Remove?</span>
+                      <button
+                        type="button"
+                        className={styles.btnDanger}
+                        onClick={() => handleRemove(repo.id)}
+                        aria-label={`Confirm remove ${repo.fullName}`}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnOutline}
+                        onClick={() => setConfirmingRemove(null)}
+                        aria-label="Cancel remove"
+                        autoFocus
+                      >
+                        No
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.btnDanger}
+                      onClick={() => setConfirmingRemove(repo.id)}
+                      aria-label={`Remove ${repo.fullName}`}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className={styles.repoActions}>
-                {!isActive ? (
-                  <button className={styles.btnPrimary} onClick={() => onRepoSelect(repo.id)}>
-                    Use
-                  </button>
-                ) : (
-                  <button className={styles.btnOutline} onClick={() => onRepoSelect("")}>
-                    Deselect
-                  </button>
-                )}
-                <button
-                  className={styles.btnSecondary}
-                  disabled={syncing === repo.id}
-                  onClick={() => handleSync(repo.id)}
-                >
-                  {syncing === repo.id ? "Syncing…" : "Sync"}
-                </button>
-                <button className={styles.btnDanger} onClick={() => handleRemove(repo.id)}>
-                  Remove
-                </button>
-              </div>
-            </div>
-            {repo.addedAt && <div className={styles.label}>Added {repo.addedAt}</div>}
-          </div>
-        );
-      })}
+              {repo.addedAt && (
+                <div className={styles.label}>
+                  Added <time dateTime={repo.addedAt}>{repo.addedAt}</time>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

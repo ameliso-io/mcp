@@ -14,6 +14,7 @@
   letter-spacing: -0.5px;
   padding: 16px 0;
   color: var(--color-border);
+  text-decoration: none;
 }
 
 .nav {

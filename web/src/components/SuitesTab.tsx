@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Suite, Case } from "../gen/ameliso/v1/types_pb";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./SuitesTab.module.css";
 
 interface Props {
@@ -27,6 +28,11 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   const [newCases, setNewCases] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+  const expandingRef = useRef<string | null>(null);
+  const [actionAnnouncement, announce] = useAnnounce();
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
   // Edit suite state
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -38,22 +44,25 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
     if (expanded === slug) {
       setExpanded(null);
       setExpandedCases([]);
+      expandingRef.current = null;
       return;
     }
     setExpanded(slug);
     setExpandedCases([]);
+    expandingRef.current = slug;
     setExpandedCasesLoading(true);
     try {
       const res = await client.listCases({ repoId, suite: slug });
-      setExpandedCases(res.cases);
+      if (expandingRef.current === slug) setExpandedCases(res.cases);
     } catch {
       // silently fall back — suite.cases paths still visible
     } finally {
-      setExpandedCasesLoading(false);
+      if (expandingRef.current === slug) setExpandedCasesLoading(false);
     }
   }
 
   function startEdit(suite: Suite) {
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingSlug(suite.slug);
     setEditName(suite.name);
     setEditDesc(suite.description);
@@ -75,12 +84,12 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }, [repoId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug || !newName) return;
     setCreating(true);
     try {
@@ -97,10 +106,12 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
           : [],
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewSlug("");
       setNewName("");
       setNewDesc("");
       setNewCases("");
+      announce("Suite created");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -110,10 +121,11 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }
 
   async function handleDelete(slug: string) {
-    if (!confirm(`Delete suite "${slug}"?`)) return;
     try {
       await client.deleteSuite({ repoId, slug });
       if (expanded === slug) setExpanded(null);
+      setConfirmingDelete(null);
+      announce("Suite deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -122,6 +134,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingSlug is set */
     if (!editingSlug) return;
     setSaving(true);
     try {
@@ -139,6 +152,8 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         replaceCases: true,
       });
       setEditingSlug(null);
+      lastFocusRef.current?.focus();
+      announce("Suite updated");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -153,9 +168,19 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Suites</h2>
-        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
+        <button
+          type="button"
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
+          }}
+          className={styles.btn}
+        >
           {showCreate ? "Cancel" : "+ New Suite"}
         </button>
       </div>
@@ -163,43 +188,63 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       {showCreate && (
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Suite</h3>
-          <form onSubmit={handleCreate} className={styles.formGrid}>
+          <form
+            aria-label="Create Suite"
+            onSubmit={handleCreate}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+                lastFocusRef.current?.focus();
+              }
+            }}
+            className={styles.formGrid}
+          >
             <div>
-              <label className={styles.label}>Slug</label>
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                required
-                className={styles.input}
-                placeholder="e.g. smoke"
-              />
+              <label className={styles.label}>
+                Slug
+                <input
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  autoFocus
+                  className={styles.input}
+                  placeholder="e.g. smoke"
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Name</label>
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                required
-                className={styles.input}
-                placeholder="e.g. Smoke Tests"
-              />
+              <label className={styles.label}>
+                Name
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                  className={styles.input}
+                  placeholder="e.g. Smoke Tests"
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Description</label>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Description
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Cases (comma-separated paths)</label>
-              <input
-                value={newCases}
-                onChange={(e) => setNewCases(e.target.value)}
-                className={styles.input}
-                placeholder="auth/login, auth/logout"
-              />
+              <label className={styles.label}>
+                Cases (comma-separated paths)
+                <input
+                  value={newCases}
+                  onChange={(e) => setNewCases(e.target.value)}
+                  className={styles.input}
+                  placeholder="auth/login, auth/logout"
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
@@ -211,51 +256,78 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       )}
 
       {error && (
-        <div className={styles.errorCard}>
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg}>Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && suites.length === 0 && !error && (
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
-      <div className={styles.list}>
+      <ul className={styles.list} aria-busy={loading} role="list">
         {suites.map((suite) => (
-          <div key={suite.slug}>
+          <li key={suite.slug}>
             {editingSlug === suite.slug ? (
               <div className={styles.card}>
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
-                <form onSubmit={handleUpdate} className={styles.formGridSm}>
+                <form
+                  aria-label={`Edit suite ${suite.slug}`}
+                  onSubmit={handleUpdate}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setEditingSlug(null);
+                      lastFocusRef.current?.focus();
+                    }
+                  }}
+                  className={styles.formGridSm}
+                >
                   <div>
-                    <label className={styles.label}>Name</label>
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      required
-                      className={styles.input}
-                    />
+                    <label className={styles.label}>
+                      Name
+                      <input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                        autoFocus
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.label}>Description</label>
-                    <input
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      className={styles.input}
-                    />
+                    <label className={styles.label}>
+                      Description
+                      <input
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
                   <div className={styles.fullCol}>
-                    <label className={styles.label}>Cases (comma-separated paths)</label>
-                    <input
-                      value={editCases}
-                      onChange={(e) => setEditCases(e.target.value)}
-                      className={styles.input}
-                    />
+                    <label className={styles.label}>
+                      Cases (comma-separated paths)
+                      <input
+                        value={editCases}
+                        onChange={(e) => setEditCases(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
                   <div className={styles.formActions}>
                     <button type="submit" disabled={saving} className={styles.btnSaveSm}>
@@ -263,7 +335,10 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditingSlug(null)}
+                      onClick={() => {
+                        setEditingSlug(null);
+                        lastFocusRef.current?.focus();
+                      }}
                       className={styles.btnCancelSm}
                     >
                       Cancel
@@ -275,52 +350,69 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
               <>
                 <div
                   className={expanded === suite.slug ? styles.suiteCardExpanded : styles.suiteCard}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={expanded === suite.slug}
-                  onClick={() => toggleExpand(suite.slug)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      toggleExpand(suite.slug);
-                    }
-                  }}
                 >
                   <div className={styles.suiteRow}>
-                    <span className={styles.suiteName}>{suite.name}</span>
-                    <span className={styles.suiteSlug}>{suite.slug}</span>
-                    <span className={styles.caseCount}>
-                      {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
-                    </span>
+                    <button
+                      type="button"
+                      className={styles.suiteExpandBtn}
+                      onClick={() => toggleExpand(suite.slug)}
+                      aria-expanded={expanded === suite.slug}
+                    >
+                      <span className={styles.suiteName}>{suite.name}</span>
+                      <span className={styles.suiteSlug}>{suite.slug}</span>
+                      <span className={styles.caseCount}>
+                        {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
+                      </span>
+                    </button>
                     {onRunSuite && (
                       <button
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          onRunSuite(suite.slug);
-                        }}
+                        type="button"
+                        onClick={() => onRunSuite(suite.slug)}
+                        aria-label={`Run ${suite.slug}`}
                         className={styles.btnGreenSm}
                       >
                         Run
                       </button>
                     )}
                     <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        startEdit(suite);
-                      }}
+                      type="button"
+                      onClick={() => startEdit(suite)}
+                      aria-label={`Edit ${suite.slug}`}
                       className={styles.btnOutlineSm}
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        handleDelete(suite.slug);
-                      }}
-                      className={styles.btnDangerSm}
-                    >
-                      Delete
-                    </button>
+                    {confirmingDelete === suite.slug ? (
+                      <>
+                        <span className={styles.confirmText}>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(suite.slug)}
+                          aria-label={`Confirm delete ${suite.slug}`}
+                          className={styles.btnDangerSm}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDelete(null)}
+                          aria-label="Cancel delete"
+                          className={styles.btnOutlineSm}
+                          autoFocus
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(suite.slug)}
+                        aria-label={`Delete ${suite.slug}`}
+                        className={styles.btnDangerSm}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                   {suite.description && <p className={styles.suiteDesc}>{suite.description}</p>}
                 </div>
@@ -328,12 +420,19 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 {expanded === suite.slug && (
                   <div className={styles.expandedPanel}>
                     {expandedCasesLoading ? (
-                      <p className={styles.expandedLoading}>Loading…</p>
+                      <p className={styles.expandedLoading} role="status">
+                        Loading…
+                      </p>
                     ) : expandedCases.length > 0 ? (
-                      <div className={styles.caseList}>
+                      <ul className={styles.caseList} role="list">
                         {expandedCases.map((c) => (
-                          <div key={c.path} className={styles.caseRow}>
-                            <span className={styles.caseDot} data-priority={c.priority} />
+                          <li key={c.path} className={styles.caseRow}>
+                            <span
+                              className={styles.caseDot}
+                              data-priority={c.priority}
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">{c.priority} priority</span>
                             <span className={styles.casePath}>{c.path}</span>
                             <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map((t) => (
@@ -341,17 +440,17 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                                 {t}
                               </span>
                             ))}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : suite.cases.length > 0 ? (
-                      <div className={styles.caseList}>
+                      <ul className={styles.caseList} role="list">
                         {suite.cases.map((casePath) => (
-                          <div key={casePath} className={styles.casePathOnly}>
+                          <li key={casePath} className={styles.casePathOnly}>
                             {casePath}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : (
                       <p className={styles.noCase}>No cases in this suite.</p>
                     )}
@@ -359,9 +458,9 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 )}
               </>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

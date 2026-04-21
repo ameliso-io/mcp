@@ -10,7 +10,7 @@ export default function RepositoriesPageClient() {
 
   function handleRepoSelect(id: string) {
     setRepoId(id);
-    router.push("/overview");
+    if (id) router.push("/overview");
   }
 
   return <RepositoriesTab activeRepoId={repoId} onRepoSelect={handleRepoSelect} />;

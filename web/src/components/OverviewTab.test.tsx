@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
 import { client } from "../client";
-import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
+import { ResultStatus } from "../gen/ameliso/v1/types_pb";
 import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "../test/factories";
 
 vi.mock("../client");
@@ -291,7 +291,7 @@ describe("OverviewTab", () => {
   it("sets sinceRef when typing in diff input", async () => {
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
-    const sinceInput = screen.getByPlaceholderText(/Since ref/);
+    const sinceInput = screen.getByRole("textbox", { name: /Git ref to compare from/ });
     await userEvent.type(sinceInput, "HEAD~3");
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() =>
@@ -349,5 +349,63 @@ describe("OverviewTab", () => {
     const { unmount } = render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     unmount();
+  });
+
+  it("announces singular '1 case loaded' when exactly one coverage entry returned", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED)],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("1 case loaded"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces plural 'N cases loaded' when multiple coverage entries returned", async () => {
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("2 cases loaded"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces 'No cases found' when coverage is empty", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("No cases found"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces singular '1 case affected' when exactly one affected case returned", async () => {
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [makeAffectedCase({ case: { path: "auth/login", title: "Login", priority: "high" } })],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("1 case affected"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces 'No cases affected' when diff returns no cases", async () => {
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("No cases affected"))
+      ).toBe(true)
+    );
   });
 });

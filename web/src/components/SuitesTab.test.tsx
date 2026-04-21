@@ -65,10 +65,10 @@ describe("SuitesTab", () => {
   });
 
   it("calls deleteSuite when delete confirmed", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Delete"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
     await waitFor(() =>
       expect(client.deleteSuite).toHaveBeenCalledWith(expect.objectContaining({ slug: "smoke" }))
     );
@@ -77,9 +77,8 @@ describe("SuitesTab", () => {
   it("calls createSuite when create form submitted", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression Tests");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -97,19 +96,16 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     expect(screen.getByText("Edit: smoke")).toBeInTheDocument();
-    const nameInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Smoke Tests");
-    expect(nameInput).toBeDefined();
+    expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe(
+      "Smoke Tests"
+    );
   });
 
   it("calls updateSuite when edit form submitted", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
-    const nameInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Smoke Tests") as HTMLInputElement;
+    const nameInput = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Updated Smoke");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -149,19 +145,18 @@ describe("SuitesTab", () => {
     vi.mocked(client.createSuite).mockRejectedValue(new Error("create failed"));
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() => expect(screen.getByText("create failed")).toBeInTheDocument());
   });
 
   it("shows error when deleteSuite fails", async () => {
     vi.mocked(client.deleteSuite).mockRejectedValue(new Error("delete failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Delete"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
     await waitFor(() => expect(screen.getByText("delete failed")).toBeInTheDocument());
   });
 
@@ -205,12 +200,12 @@ describe("SuitesTab", () => {
   });
 
   it("collapses expanded suite when it is deleted", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
     await waitFor(() =>
       expect(client.deleteSuite).toHaveBeenCalledWith(expect.objectContaining({ slug: "smoke" }))
     );
@@ -219,10 +214,12 @@ describe("SuitesTab", () => {
   it("calls createSuite with parsed cases when cases field is filled", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression Tests");
-    await userEvent.type(inputs[3], "auth/login, auth/logout");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression Tests");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Cases (comma-separated paths)" }),
+      "auth/login, auth/logout"
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -236,12 +233,7 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const casesInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "auth/login, auth/logout");
-    if (casesInput) {
-      await userEvent.clear(casesInput);
-    }
+    await userEvent.clear(screen.getByRole("textbox", { name: "Cases (comma-separated paths)" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(client.updateSuite).toHaveBeenCalledWith(
@@ -255,20 +247,21 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const casesInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).placeholder?.includes("auth/login"));
-    if (casesInput) await userEvent.type(casesInput, "auth/login, auth/logout");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Cases (comma-separated paths)" }),
+      "auth/login, auth/logout"
+    );
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled());
   });
 
-  it("does not call deleteSuite when confirm cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("does not call deleteSuite when inline confirm cancelled", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Delete"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel delete" }));
     expect(client.deleteSuite).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete smoke" })).toBeInTheDocument();
   });
 
   it("handles listCases failure silently when suite expanded", async () => {
@@ -290,10 +283,12 @@ describe("SuitesTab", () => {
   it("fills description in create form", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "e2e");
-    await userEvent.type(inputs[1], "E2E Tests");
-    await userEvent.type(inputs[2], "End to end regression suite");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "e2e");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "E2E Tests");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Description" }),
+      "End to end regression suite"
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -307,9 +302,7 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const descInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Critical path checks") as HTMLInputElement;
+    const descInput = screen.getByRole("textbox", { name: "Description" }) as HTMLInputElement;
     await userEvent.clear(descInput);
     await userEvent.type(descInput, "Updated description");
     await userEvent.click(screen.getByText("Save"));
@@ -328,6 +321,23 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("Cancel"));
     expect(screen.queryByText("Save")).not.toBeInTheDocument();
     expect(screen.getByText("Edit")).toBeInTheDocument();
+  });
+
+  it("pressing Escape in create form cancels it", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    expect(screen.getByRole("heading", { name: "Create Suite" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("heading", { name: "Create Suite" })).not.toBeInTheDocument();
+  });
+
+  it("pressing Escape in edit form cancels it", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    expect(screen.getByText("Edit: smoke")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Edit: smoke")).not.toBeInTheDocument();
   });
 
   it("expands suite on Enter key", async () => {
@@ -384,5 +394,55 @@ describe("SuitesTab", () => {
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [] } as never);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("No suites found.")).toBeInTheDocument());
+  });
+
+  it("ignores stale listCases response when suite clicked twice rapidly", async () => {
+    const suite2 = makeSuite({ slug: "regression", name: "Regression", cases: [] });
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
+    let resolveFirst!: (v: unknown) => void;
+    let resolveSecond!: (v: unknown) => void;
+    vi.mocked(client.listCases)
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res;
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveSecond = res;
+          })
+      );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByRole("button", { name: /Smoke Tests/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Regression/ }));
+    // Resolve second fetch first (out of order)
+    resolveSecond({ cases: [makeCase({ path: "reg/test", title: "Regression Test" })] });
+    await waitFor(() => screen.getByText("Regression Test"));
+    // Now resolve first fetch — stale result must be discarded
+    resolveFirst({ cases: [makeCase({ path: "auth/login", title: "Should Not Appear" })] });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText("Should Not Appear")).not.toBeInTheDocument();
+    expect(screen.getByText("Regression Test")).toBeInTheDocument();
+  });
+
+  it("does not create suite when name field is empty", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    await userEvent.type(screen.getByLabelText("Slug"), "smoke");
+    // Leave Name empty — guard at top of handleCreate fires
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    expect(client.createSuite).not.toHaveBeenCalled();
+  });
+
+  it("cancel in edit form does not call updateSuite", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(client.updateSuite).not.toHaveBeenCalled();
   });
 });

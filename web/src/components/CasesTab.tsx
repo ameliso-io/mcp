@@ -6,6 +6,7 @@ import { errorMessage } from "../errorMessage";
 import type { Case } from "../gen/ameliso/v1/types_pb";
 import { Priority } from "../gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./CasesTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
@@ -52,6 +53,12 @@ export default function CasesTab({ repoId }: Props) {
   const [sortBy, setSortBy] = useState<"path" | "priority">("priority");
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+  const expandingRef = useRef<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [filterAnnouncement, announceFilter] = useAnnounce();
+  const [actionAnnouncement, announceAction] = useAnnounce();
+  const prevCountRef = useRef<number | null>(null);
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
@@ -86,22 +93,28 @@ export default function CasesTab({ repoId }: Props) {
     if (expandedPath === casePath) {
       setExpandedPath(null);
       setExpandedBody("");
+      expandingRef.current = null;
       return;
     }
     setExpandedPath(casePath);
     setExpandedBody("");
+    expandingRef.current = casePath;
     setBodyLoading(true);
     try {
-      setExpandedBody(await fetchBody(casePath));
+      const body = await fetchBody(casePath);
+      if (expandingRef.current === casePath) setExpandedBody(body);
     } catch (e) {
-      setError(errorMessage(e));
-      setExpandedPath(null);
+      if (expandingRef.current === casePath) {
+        setError(errorMessage(e));
+        setExpandedPath(null);
+      }
     } finally {
-      setBodyLoading(false);
+      if (expandingRef.current === casePath) setBodyLoading(false);
     }
   }
 
   async function startEdit(c: Case) {
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingPath(c.path);
     setEditTitle(c.title);
     setEditDesc(c.description);
@@ -143,12 +156,21 @@ export default function CasesTab({ repoId }: Props) {
   }, [repoId, debouncedSearch, priorityFilter, tagFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading) return;
+    const count = deferredCases.length;
+    if (prevCountRef.current !== null && prevCountRef.current !== count) {
+      announceFilter(`${count} case${count !== 1 ? "s" : ""} found`);
+    }
+    prevCountRef.current = count;
+  }, [deferredCases.length, loading, announceFilter]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newPath || !newTitle) return;
     setCreating(true);
     try {
@@ -167,12 +189,14 @@ export default function CasesTab({ repoId }: Props) {
         body: newBody,
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewPath("");
       setNewTitle("");
       setNewDesc("");
       setNewTags("");
       setNewBody("");
       setNewPriority(Priority.MEDIUM);
+      announceAction("Case created");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -182,10 +206,11 @@ export default function CasesTab({ repoId }: Props) {
   }
 
   async function handleDelete(casePath: string) {
-    if (!confirm(`Delete case "${casePath}"?`)) return;
     try {
       await client.deleteCase({ repoId, casePath });
       if (expandedPath === casePath) setExpandedPath(null);
+      setConfirmingDelete(null);
+      announceAction("Case deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -194,6 +219,7 @@ export default function CasesTab({ repoId }: Props) {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingPath is set */
     if (!editingPath) return;
     setSaving(true);
     try {
@@ -212,6 +238,8 @@ export default function CasesTab({ repoId }: Props) {
         body: editBody,
       });
       setEditingPath(null);
+      lastFocusRef.current?.focus();
+      announceAction("Case updated");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -229,9 +257,22 @@ export default function CasesTab({ repoId }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Cases</h2>
-        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
+        <button
+          type="button"
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
+          }}
+          className={styles.btn}
+        >
           {showCreate ? "Cancel" : "+ New Case"}
         </button>
       </div>
@@ -239,62 +280,86 @@ export default function CasesTab({ repoId }: Props) {
       {showCreate && (
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Case</h3>
-          <form onSubmit={handleCreate} className={styles.formGrid}>
+          <form
+            aria-label="Create Case"
+            onSubmit={handleCreate}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+                lastFocusRef.current?.focus();
+              }
+            }}
+            className={styles.formGrid}
+          >
             <div>
-              <label className={styles.label}>Path (e.g. auth/login)</label>
-              <input
-                value={newPath}
-                onChange={(e) => setNewPath(e.target.value)}
-                required
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Path (e.g. auth/login)
+                <input
+                  value={newPath}
+                  onChange={(e) => setNewPath(e.target.value)}
+                  required
+                  autoFocus
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Title</label>
-              <input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                required
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Title
+                <input
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  required
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Description</label>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Description
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Priority</label>
-              <select
-                value={newPriority}
-                onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
-                className={styles.input}
-              >
-                <option value={Priority.LOW}>Low</option>
-                <option value={Priority.MEDIUM}>Medium</option>
-                <option value={Priority.HIGH}>High</option>
-              </select>
+              <label className={styles.label}>
+                Priority
+                <select
+                  value={newPriority}
+                  onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
+                  className={styles.input}
+                >
+                  <option value={Priority.LOW}>Low</option>
+                  <option value={Priority.MEDIUM}>Medium</option>
+                  <option value={Priority.HIGH}>High</option>
+                </select>
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Tags (comma-separated)</label>
-              <input
-                value={newTags}
-                onChange={(e) => setNewTags(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Tags (comma-separated)
+                <input
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Steps / Body (Markdown)</label>
-              <textarea
-                value={newBody}
-                onChange={(e) => setNewBody(e.target.value)}
-                placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
-                rows={6}
-                className={styles.textarea}
-              />
+              <label className={styles.label}>
+                Steps / Body (Markdown)
+                <textarea
+                  value={newBody}
+                  onChange={(e) => setNewBody(e.target.value)}
+                  placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
+                  rows={6}
+                  className={styles.textarea}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
@@ -307,13 +372,15 @@ export default function CasesTab({ repoId }: Props) {
 
       <div className={styles.filterBar}>
         <input
-          type="text"
+          type="search"
+          aria-label="Search cases"
           placeholder="Search cases…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={styles.searchInput}
         />
         <select
+          aria-label="Filter by priority"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(Number(e.target.value) as Priority)}
           className={styles.filterSelect}
@@ -325,6 +392,7 @@ export default function CasesTab({ repoId }: Props) {
         </select>
         {allTags.length > 0 && (
           <select
+            aria-label="Filter by tag"
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
             className={styles.filterSelect}
@@ -338,6 +406,7 @@ export default function CasesTab({ repoId }: Props) {
           </select>
         )}
         <select
+          aria-label="Sort cases"
           value={sortBy}
           onChange={(e) =>
             startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))
@@ -357,21 +426,34 @@ export default function CasesTab({ repoId }: Props) {
       </div>
 
       {error && (
-        <div className={styles.errorCard}>
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg}>Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && deferredCases.length === 0 && !error && (
         <div className={styles.emptyCard}>No cases found.</div>
       )}
 
-      <div className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}>
+      <ul
+        className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading || isStale}
+        role="list"
+      >
         {[...deferredCases]
           .sort((a, b) => {
             if (sortBy === "priority") {
@@ -382,7 +464,7 @@ export default function CasesTab({ repoId }: Props) {
             return a.path.localeCompare(b.path);
           })
           .map((c) => (
-            <div key={c.path}>
+            <li key={c.path}>
               <div
                 className={
                   expandedPath === c.path || editingPath === c.path
@@ -391,52 +473,74 @@ export default function CasesTab({ repoId }: Props) {
                 }
               >
                 {editingPath === c.path ? (
-                  <form onSubmit={handleUpdate} className={styles.formGridSm}>
+                  <form
+                    aria-label={`Edit case ${c.path}`}
+                    onSubmit={handleUpdate}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditingPath(null);
+                        lastFocusRef.current?.focus();
+                      }
+                    }}
+                    className={styles.formGridSm}
+                  >
                     <div>
-                      <label className={styles.labelSm}>Title</label>
-                      <input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        required
-                        className={styles.input}
-                      />
+                      <label className={styles.labelSm}>
+                        Title
+                        <input
+                          autoFocus
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          required
+                          className={styles.input}
+                        />
+                      </label>
                     </div>
                     <div>
-                      <label className={styles.labelSm}>Priority</label>
-                      <select
-                        value={editPriority}
-                        onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
-                        className={styles.input}
-                      >
-                        <option value={Priority.LOW}>Low</option>
-                        <option value={Priority.MEDIUM}>Medium</option>
-                        <option value={Priority.HIGH}>High</option>
-                      </select>
+                      <label className={styles.labelSm}>
+                        Priority
+                        <select
+                          value={editPriority}
+                          onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
+                          className={styles.input}
+                        >
+                          <option value={Priority.LOW}>Low</option>
+                          <option value={Priority.MEDIUM}>Medium</option>
+                          <option value={Priority.HIGH}>High</option>
+                        </select>
+                      </label>
                     </div>
                     <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>Description</label>
-                      <input
-                        value={editDesc}
-                        onChange={(e) => setEditDesc(e.target.value)}
-                        className={styles.input}
-                      />
+                      <label className={styles.labelSm}>
+                        Description
+                        <input
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          className={styles.input}
+                        />
+                      </label>
                     </div>
                     <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>Tags (comma-separated)</label>
-                      <input
-                        value={editTags}
-                        onChange={(e) => setEditTags(e.target.value)}
-                        className={styles.input}
-                      />
+                      <label className={styles.labelSm}>
+                        Tags (comma-separated)
+                        <input
+                          value={editTags}
+                          onChange={(e) => setEditTags(e.target.value)}
+                          className={styles.input}
+                        />
+                      </label>
                     </div>
                     <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>Steps / Body (Markdown)</label>
-                      <textarea
-                        value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
-                        rows={8}
-                        className={styles.textarea}
-                      />
+                      <label className={styles.labelSm}>
+                        Steps / Body (Markdown)
+                        <textarea
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          rows={8}
+                          className={styles.textarea}
+                        />
+                      </label>
                     </div>
                     <div className={styles.formActions}>
                       <button type="submit" disabled={saving} className={styles.btnSaveSm}>
@@ -444,7 +548,10 @@ export default function CasesTab({ repoId }: Props) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingPath(null)}
+                        onClick={() => {
+                          setEditingPath(null);
+                          lastFocusRef.current?.focus();
+                        }}
                         className={styles.btnCancelSm}
                       >
                         Cancel
@@ -452,54 +559,76 @@ export default function CasesTab({ repoId }: Props) {
                     </div>
                   </form>
                 ) : (
-                  <div
-                    className={styles.caseRow}
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={expandedPath === c.path}
-                    onClick={() => toggleExpand(c.path)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleExpand(c.path);
-                      }
-                    }}
-                  >
-                    <span className={styles.priorityDot} data-priority={c.priority} />
-                    <div className={styles.caseInfo}>
-                      <div className={styles.caseMeta}>
-                        <span className={styles.casePath}>{c.path}</span>
-                        <span className={styles.priorityBadge} data-priority={c.priority}>
-                          {priorityLabel(c.priority)}
-                        </span>
-                        {c.tags.map((t) => (
-                          <span key={t} className={styles.tag}>
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                      <p className={styles.caseTitle}>{c.title}</p>
-                      {c.description && <p className={styles.caseDesc}>{c.description}</p>}
-                    </div>
-                    <span className={styles.chevron}>{expandedPath === c.path ? "▲" : "▼"}</span>
+                  <div className={styles.caseRow}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEdit(c);
-                      }}
+                      type="button"
+                      className={styles.caseExpandBtn}
+                      onClick={() => toggleExpand(c.path)}
+                      aria-expanded={expandedPath === c.path}
+                    >
+                      <span
+                        className={styles.priorityDot}
+                        data-priority={c.priority}
+                        aria-hidden="true"
+                      />
+                      <div className={styles.caseInfo}>
+                        <div className={styles.caseMeta}>
+                          <span className={styles.casePath}>{c.path}</span>
+                          <span className={styles.priorityBadge} data-priority={c.priority}>
+                            {priorityLabel(c.priority)}
+                          </span>
+                          {c.tags.map((t) => (
+                            <span key={t} className={styles.tag}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <p className={styles.caseTitle}>{c.title}</p>
+                        {c.description && <p className={styles.caseDesc}>{c.description}</p>}
+                      </div>
+                      <span className={styles.chevron} aria-hidden="true">
+                        {expandedPath === c.path ? "▲" : "▼"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(c)}
+                      aria-label={`Edit ${c.path}`}
                       className={styles.btnOutlineSm}
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(c.path);
-                      }}
-                      className={styles.btnDangerSm}
-                    >
-                      Delete
-                    </button>
+                    {confirmingDelete === c.path ? (
+                      <>
+                        <span className={styles.confirmText}>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c.path)}
+                          aria-label={`Confirm delete ${c.path}`}
+                          className={styles.btnDangerSm}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDelete(null)}
+                          aria-label="Cancel delete"
+                          className={styles.btnOutlineSm}
+                          autoFocus
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(c.path)}
+                        aria-label={`Delete ${c.path}`}
+                        className={styles.btnDangerSm}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -507,7 +636,9 @@ export default function CasesTab({ repoId }: Props) {
               {expandedPath === c.path && editingPath !== c.path && (
                 <div className={styles.expandedPanel}>
                   {bodyLoading ? (
-                    <p className={styles.expandedLoading}>Loading…</p>
+                    <p className={styles.expandedLoading} role="status">
+                      Loading…
+                    </p>
                   ) : expandedBody ? (
                     <MarkdownBody body={expandedBody} />
                   ) : (
@@ -515,9 +646,9 @@ export default function CasesTab({ repoId }: Props) {
                   )}
                 </div>
               )}
-            </div>
+            </li>
           ))}
-      </div>
+      </ul>
     </div>
   );
 }

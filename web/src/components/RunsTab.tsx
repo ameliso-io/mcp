@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
+import { useAnnounce } from "../hooks/useAnnounce";
 import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
@@ -76,6 +77,15 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   const [caseBodyLoading, setCaseBodyLoading] = useState(false);
   const [bulkPassing, setBulkPassing] = useState(false);
 
+  const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
+  const [confirmingFinalize, setConfirmingFinalize] = useState<{
+    runId: string;
+    status: RunStatus;
+  } | null>(null);
+  const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
+  const [actionAnnouncement, announce] = useAnnounce();
+
+  const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
@@ -122,12 +132,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }, [repoId, statusFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug) return;
     setCreating(true);
     try {
@@ -139,10 +149,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         suite: newSuite,
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewSlug("");
       setNewTester("");
       setNewEnv("");
       setNewSuite("");
+      announce("Run created");
       await load();
       // Auto-expand the newly created run
       if (created.run) {
@@ -194,6 +206,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   async function handleRecord(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — record form only shown when both are set */
     if (!selectedRunId || !recordingCase) return;
     setRecording(true);
     try {
@@ -205,9 +218,11 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         notes: recordNotes,
       });
       setRecordingCase(null);
+      lastFocusRef.current?.focus();
       setRecordNotes("");
       setRecordStatus(ResultStatus.PASSED);
       setCaseBody(null);
+      announce("Result recorded");
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
       setPendingCases(res.cases);
@@ -225,6 +240,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setCaseBody(null);
       return;
     }
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setRecordingCase(casePath);
     setRecordNotes("");
     setRecordStatus(ResultStatus.PASSED);
@@ -241,12 +257,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleFinalize(runId: string, status: RunStatus) {
-    const label = status === RunStatus.COMPLETED ? "complete" : "abort";
-    if (!confirm(`Mark run as ${label}?`)) return;
+    setConfirmingFinalize(null);
     try {
       await client.finalizeRun({ repoId, runId, status });
       setSelectedRunId(null);
       setPendingCases([]);
+      announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -254,13 +270,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleBulkPass(runId: string) {
+    /* v8 ignore next 2 — button only renders when pendingCases.length > 0 */
     if (pendingCases.length === 0) return;
-    if (
-      !confirm(
-        `Mark all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""} as Passed?`
-      )
-    )
-      return;
+    setConfirmingBulkPass(null);
     setBulkPassing(true);
     try {
       const resp = await client.bulkRecordResults({
@@ -284,7 +296,6 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleDeleteRun(runId: string) {
-    if (!confirm(`Delete run "${runId}"?`)) return;
     try {
       await client.deleteRun({ repoId, runId });
       if (selectedRunId === runId) {
@@ -293,6 +304,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         setRecordingCase(null);
         setCaseBody(null);
       }
+      setConfirmingDeleteRun(null);
+      announce("Run deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -305,29 +318,43 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2 className={styles.title}>Runs</h2>
-          {(
-            [
-              { label: "All", value: RunStatus.UNSPECIFIED },
-              { label: "In Progress", value: RunStatus.IN_PROGRESS },
-              { label: "Completed", value: RunStatus.COMPLETED },
-              { label: "Aborted", value: RunStatus.ABORTED },
-            ] as { label: string; value: RunStatus }[]
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setStatusFilter(opt.value)}
-              className={
-                statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
+          <div role="group" aria-label="Filter by status">
+            {(
+              [
+                { label: "All", value: RunStatus.UNSPECIFIED },
+                { label: "In Progress", value: RunStatus.IN_PROGRESS },
+                { label: "Completed", value: RunStatus.COMPLETED },
+                { label: "Aborted", value: RunStatus.ABORTED },
+              ] as { label: string; value: RunStatus }[]
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatusFilter(opt.value)}
+                aria-pressed={statusFilter === opt.value}
+                className={
+                  statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
+        <button
+          type="button"
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
+          }}
+          className={styles.btn}
+        >
           {showCreate ? "Cancel" : "+ New Run"}
         </button>
       </div>
@@ -335,39 +362,59 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       {showCreate && (
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>Create Run</h3>
-          <form onSubmit={handleCreate} className={styles.formGrid}>
+          <form
+            aria-label="Create Run"
+            onSubmit={handleCreate}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+                lastFocusRef.current?.focus();
+              }
+            }}
+            className={styles.formGrid}
+          >
             <div>
-              <label className={styles.label}>Slug</label>
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                required
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Slug
+                <input
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  autoFocus
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Tester</label>
-              <input
-                value={newTester}
-                onChange={(e) => setNewTester(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Tester
+                <input
+                  value={newTester}
+                  onChange={(e) => setNewTester(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Environment</label>
-              <input
-                value={newEnv}
-                onChange={(e) => setNewEnv(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Environment
+                <input
+                  value={newEnv}
+                  onChange={(e) => setNewEnv(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div>
-              <label className={styles.label}>Suite (optional)</label>
-              <input
-                value={newSuite}
-                onChange={(e) => setNewSuite(e.target.value)}
-                className={styles.input}
-              />
+              <label className={styles.label}>
+                Suite (optional)
+                <input
+                  value={newSuite}
+                  onChange={(e) => setNewSuite(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
@@ -379,61 +426,92 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       )}
 
       {error && (
-        <div className={styles.errorCard}>
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg}>Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && runs.length === 0 && !error && (
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
-      <div className={styles.list}>
+      <ul className={styles.list} aria-busy={loading} role="list">
         {runs.map((run) => (
-          <div key={run.id}>
-            <div
-              className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
-              role="button"
-              tabIndex={0}
-              aria-expanded={selectedRunId === run.id}
-              onClick={() => selectRun(run.id, run.status)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  selectRun(run.id, run.status);
-                }
-              }}
-            >
+          <li key={run.id}>
+            <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>
-                <span className={styles.runStatusBadge} data-status={RunStatus[run.status]}>
-                  {runStatusLabel(run.status)}
-                </span>
-                <span className={styles.runId}>{run.id}</span>
-                {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
-                {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
-                <span className={styles.runDate}>{run.date}</span>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteRun(run.id);
-                  }}
-                  className={styles.btnDangerSm}
+                  type="button"
+                  className={styles.runExpandBtn}
+                  onClick={() => selectRun(run.id, run.status)}
+                  aria-label={`${runStatusLabel(run.status)} run ${run.id}`}
+                  aria-expanded={selectedRunId === run.id}
                 >
-                  Delete
+                  <span className={styles.runStatusBadge} data-status={RunStatus[run.status]}>
+                    {runStatusLabel(run.status)}
+                  </span>
+                  <span className={styles.runId}>{run.id}</span>
+                  {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
+                  {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                  {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
+                  <time className={styles.runDate} dateTime={run.date}>
+                    {run.date}
+                  </time>
                 </button>
+                {confirmingDeleteRun === run.id ? (
+                  <>
+                    <span className={styles.confirmText}>Delete?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRun(run.id)}
+                      aria-label={`Confirm delete ${run.id}`}
+                      className={styles.btnDangerSm}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteRun(null)}
+                      aria-label="Cancel delete"
+                      className={styles.btnOutlineSm}
+                      autoFocus
+                    >
+                      No
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteRun(run.id)}
+                    aria-label={`Delete ${run.id}`}
+                    className={styles.btnDangerSm}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
 
             {selectedRunId === run.id && (
               <div className={styles.expandedPanel}>
                 {loadingPending ? (
-                  <div className={styles.panelLoading}>Loading…</div>
+                  <div className={styles.panelLoading} role="status">
+                    Loading…
+                  </div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
                     {recordedResults.length > 0 &&
@@ -449,7 +527,11 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             .length,
                         };
                         return (
-                          <div className={styles.resultFilters}>
+                          <div
+                            className={styles.resultFilters}
+                            role="group"
+                            aria-label="Filter by result status"
+                          >
                             {[
                               {
                                 label: "Passed",
@@ -476,11 +558,13 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               .map((s) => (
                                 <button
                                   key={s.label}
+                                  type="button"
                                   onClick={() =>
                                     setResultStatusFilter((rsf) =>
                                       rsf === s.status ? null : s.status
                                     )
                                   }
+                                  aria-pressed={resultStatusFilter === s.status}
                                   className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
                                   data-status={ResultStatus[s.status]}
                                 >
@@ -489,6 +573,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               ))}
                             {resultStatusFilter !== null && (
                               <button
+                                type="button"
                                 onClick={() => setResultStatusFilter(null)}
                                 className={styles.showAllBtn}
                               >
@@ -501,12 +586,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <div className={styles.resultList}>
+                      <ul className={styles.resultList} role="list">
                         {(resultStatusFilter !== null
                           ? recordedResults.filter((r) => r.status === resultStatusFilter)
                           : recordedResults
                         ).map((r) => (
-                          <div key={r.casePath} className={styles.resultRow}>
+                          <li key={r.casePath} className={styles.resultRow}>
                             <span
                               className={styles.resultStatusBadge}
                               data-status={ResultStatus[r.status]}
@@ -520,9 +605,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </span>
                             )}
                             {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                 ) : (
@@ -540,7 +625,15 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             %
                           </span>
                         </div>
-                        <div className={styles.progressTrack}>
+                        <div
+                          className={styles.progressTrack}
+                          role="progressbar"
+                          aria-label="Run completion progress"
+                          aria-valuemin={0}
+                          aria-valuemax={totalInScope}
+                          aria-valuenow={totalInScope - pendingCases.length}
+                          aria-valuetext={`${totalInScope - pendingCases.length} of ${totalInScope} case${totalInScope !== 1 ? "s" : ""} complete`}
+                        >
                           <div
                             className={styles.progressBar}
                             style={{
@@ -551,33 +644,104 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                       </div>
                     )}
                     <div className={styles.pendingHeader}>
-                      <p className={styles.pendingLabel}>
+                      <h3 className={styles.pendingLabel}>
                         {pendingCases.length} pending
                         <span className={styles.refreshHint}>auto-refresh 30s</span>
-                      </p>
+                      </h3>
                       {run.status === RunStatus.IN_PROGRESS && (
                         <div className={styles.pendingActions}>
-                          {pendingCases.length > 0 && (
-                            <button
-                              onClick={() => handleBulkPass(run.id)}
-                              disabled={bulkPassing}
-                              className={styles.btnBlueSm}
-                            >
-                              {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
-                            </button>
+                          {pendingCases.length > 0 &&
+                            (confirmingBulkPass === run.id ? (
+                              <>
+                                <span className={styles.confirmText}>Pass all?</span>
+                                <button
+                                  type="button"
+                                  aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
+                                  onClick={() => handleBulkPass(run.id)}
+                                  disabled={bulkPassing}
+                                  className={styles.btnBlueSm}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label="Cancel bulk pass"
+                                  onClick={() => setConfirmingBulkPass(null)}
+                                  className={styles.btnOutlineSm}
+                                  autoFocus
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmingBulkPass(run.id)}
+                                disabled={bulkPassing}
+                                className={styles.btnBlueSm}
+                              >
+                                {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
+                              </button>
+                            ))}
+                          {confirmingFinalize?.runId === run.id ? (
+                            <>
+                              <span className={styles.confirmText}>
+                                {confirmingFinalize.status === RunStatus.COMPLETED
+                                  ? "Complete?"
+                                  : "Abort?"}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
+                                onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
+                                className={
+                                  confirmingFinalize.status === RunStatus.COMPLETED
+                                    ? styles.btnGreenSm
+                                    : styles.btnRedSm
+                                }
+                              >
+                                Yes
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Cancel"
+                                onClick={() => setConfirmingFinalize(null)}
+                                className={styles.btnOutlineSm}
+                                autoFocus
+                              >
+                                No
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                aria-label={`Complete run ${run.id}`}
+                                onClick={() =>
+                                  setConfirmingFinalize({
+                                    runId: run.id,
+                                    status: RunStatus.COMPLETED,
+                                  })
+                                }
+                                className={styles.btnGreenSm}
+                              >
+                                Complete Run
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Abort run ${run.id}`}
+                                onClick={() =>
+                                  setConfirmingFinalize({
+                                    runId: run.id,
+                                    status: RunStatus.ABORTED,
+                                  })
+                                }
+                                className={styles.btnRedSm}
+                              >
+                                Abort Run
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={() => handleFinalize(run.id, RunStatus.COMPLETED)}
-                            className={styles.btnGreenSm}
-                          >
-                            Complete Run
-                          </button>
-                          <button
-                            onClick={() => handleFinalize(run.id, RunStatus.ABORTED)}
-                            className={styles.btnRedSm}
-                          >
-                            Abort Run
-                          </button>
                         </div>
                       )}
                     </div>
@@ -586,15 +750,21 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                       <p className={styles.allDone}>All cases have results recorded.</p>
                     )}
 
-                    <div className={styles.pendingList}>
+                    <ul className={styles.pendingList} role="list">
                       {pendingCases.map((c) => (
-                        <div key={c.path}>
+                        <li key={c.path}>
                           <div className={styles.pendingRow}>
                             <span className={styles.pendingPath}>{c.path}</span>
                             <span className={styles.pendingTitle}>{c.title}</span>
                             {run.status === RunStatus.IN_PROGRESS && (
                               <button
+                                type="button"
                                 onClick={() => openRecord(c.path)}
+                                aria-label={
+                                  recordingCase === c.path
+                                    ? `Cancel recording ${c.path}`
+                                    : `Record result for ${c.path}`
+                                }
                                 className={styles.btnRecordSm}
                               >
                                 {recordingCase === c.path ? "Cancel" : "Record"}
@@ -607,27 +777,44 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               {(caseBodyLoading || caseBody) && (
                                 <div className={styles.recordSteps}>
                                   {caseBodyLoading ? (
-                                    <p className={styles.stepsLoading}>Loading steps…</p>
+                                    <p className={styles.stepsLoading} role="status">
+                                      Loading steps…
+                                    </p>
                                   ) : (
                                     caseBody && <MarkdownBody body={caseBody} maxHeight="200px" />
                                   )}
                                 </div>
                               )}
-                              <form onSubmit={handleRecord} className={styles.recordForm}>
+                              <form
+                                aria-label={`Record result for ${recordingCase}`}
+                                onSubmit={handleRecord}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    setRecordingCase(null);
+                                    setCaseBody(null);
+                                    lastFocusRef.current?.focus();
+                                  }
+                                }}
+                                className={styles.recordForm}
+                              >
                                 <div>
-                                  <label className={styles.labelSm}>Status</label>
-                                  <select
-                                    value={recordStatus}
-                                    onChange={(e) =>
-                                      setRecordStatus(Number(e.target.value) as ResultStatus)
-                                    }
-                                    className={styles.inputAuto}
-                                  >
-                                    <option value={ResultStatus.PASSED}>Passed</option>
-                                    <option value={ResultStatus.FAILED}>Failed</option>
-                                    <option value={ResultStatus.BLOCKED}>Blocked</option>
-                                    <option value={ResultStatus.SKIPPED}>Skipped</option>
-                                  </select>
+                                  <label className={styles.labelSm}>
+                                    Status
+                                    <select
+                                      value={recordStatus}
+                                      onChange={(e) =>
+                                        setRecordStatus(Number(e.target.value) as ResultStatus)
+                                      }
+                                      autoFocus
+                                      className={styles.inputAuto}
+                                    >
+                                      <option value={ResultStatus.PASSED}>Passed</option>
+                                      <option value={ResultStatus.FAILED}>Failed</option>
+                                      <option value={ResultStatus.BLOCKED}>Blocked</option>
+                                      <option value={ResultStatus.SKIPPED}>Skipped</option>
+                                    </select>
+                                  </label>
                                 </div>
                                 <div className={styles.notesWrap}>
                                   <label
@@ -643,28 +830,32 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                     recordStatus === ResultStatus.BLOCKED
                                       ? " *"
                                       : ""}
+                                    <input
+                                      value={recordNotes}
+                                      onChange={(e) => setRecordNotes(e.target.value)}
+                                      placeholder={
+                                        recordStatus === ResultStatus.FAILED
+                                          ? "Describe what failed…"
+                                          : recordStatus === ResultStatus.BLOCKED
+                                            ? "Describe what is blocking…"
+                                            : "Optional notes…"
+                                      }
+                                      required={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                      }
+                                      aria-required={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                      }
+                                      className={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                          ? styles.inputErr
+                                          : styles.input
+                                      }
+                                    />
                                   </label>
-                                  <input
-                                    value={recordNotes}
-                                    onChange={(e) => setRecordNotes(e.target.value)}
-                                    required={
-                                      recordStatus === ResultStatus.FAILED ||
-                                      recordStatus === ResultStatus.BLOCKED
-                                    }
-                                    placeholder={
-                                      recordStatus === ResultStatus.FAILED
-                                        ? "Describe what failed…"
-                                        : recordStatus === ResultStatus.BLOCKED
-                                          ? "Describe what is blocking…"
-                                          : "Optional notes…"
-                                    }
-                                    className={
-                                      recordStatus === ResultStatus.FAILED ||
-                                      recordStatus === ResultStatus.BLOCKED
-                                        ? styles.inputErr
-                                        : styles.input
-                                    }
-                                  />
                                 </div>
                                 <button
                                   type="submit"
@@ -676,16 +867,16 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </form>
                             </div>
                           )}
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </>
                 )}
               </div>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

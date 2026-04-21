@@ -58,23 +58,29 @@ describe("RunsTab", () => {
     expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument();
   });
 
+  it("does not create run when slug is empty", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    // Leave Slug empty — guard at top of handleCreate fires
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    expect(client.createRun).not.toHaveBeenCalled();
+  });
+
   it("pre-fills suite when initialSuite provided", async () => {
     render(<RunsTab repoId="owner/repo" initialSuite="smoke" onInitialSuiteConsumed={() => {}} />);
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument()
     );
-    const suiteInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "smoke");
-    expect(suiteInput).toBeDefined();
+    expect(
+      (screen.getByRole("textbox", { name: "Suite (optional)" }) as HTMLInputElement).value
+    ).toBe("smoke");
   });
 
   it("creates run and auto-expands on submit", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith(expect.objectContaining({ slug: "smoke" }))
@@ -88,6 +94,17 @@ describe("RunsTab", () => {
     expect(screen.getByText("All")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
     expect(screen.getByText("Completed")).toBeInTheDocument();
+  });
+
+  it("status filter group has aria-label and All is pressed by default", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("No runs found."));
+    expect(screen.getByRole("group", { name: "Filter by status" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "In Progress" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
   });
 
   it("filters runs by status", async () => {
@@ -149,13 +166,16 @@ describe("RunsTab", () => {
   });
 
   it("calls finalizeRun when Complete Run clicked", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm complete run 2026-01-01-smoke" })
+    );
     await waitFor(() =>
       expect(client.finalizeRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke", status: RunStatus.COMPLETED })
@@ -164,13 +184,16 @@ describe("RunsTab", () => {
   });
 
   it("calls finalizeRun with ABORTED when Abort Run clicked", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Abort Run"));
     await userEvent.click(screen.getByText("Abort Run"));
+    await waitFor(() => screen.getByText("Abort?"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm abort run 2026-01-01-smoke" })
+    );
     await waitFor(() =>
       expect(client.finalizeRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke", status: RunStatus.ABORTED })
@@ -178,8 +201,26 @@ describe("RunsTab", () => {
     );
   });
 
-  it("calls bulkRecordResults when All Passed clicked", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("bulk pass confirm button uses plural 'cases' label when multiple pending", async () => {
+    const case2 = makeCase({ path: "auth/logout", title: "User Logout" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase, case2],
+      totalInScope: 2,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText(/All Passed/));
+    await userEvent.click(screen.getByText(/All Passed/));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Confirm pass all 2 pending cases" })
+      ).toBeInTheDocument()
+    );
+  });
+
+  it("calls bulkRecordResults when All Passed confirmed", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.bulkRecordResults).mockResolvedValue({
       results: [],
@@ -191,6 +232,8 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText(/All Passed/));
     await userEvent.click(screen.getByText(/All Passed/));
+    await waitFor(() => screen.getByText("Pass all?"));
+    await userEvent.click(screen.getByRole("button", { name: /Confirm pass all/ }));
     await waitFor(() =>
       expect(client.bulkRecordResults).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -204,11 +247,12 @@ describe("RunsTab", () => {
   });
 
   it("calls deleteRun when Delete confirmed", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.deleteRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke" })
@@ -298,11 +342,28 @@ describe("RunsTab", () => {
   it("shows error when deleteRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.deleteRun).mockRejectedValue(new Error("delete error"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() => expect(screen.getByText("delete error")).toBeInTheDocument());
+  });
+
+  it("shows progressbar with aria-valuetext for completion progress", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase],
+      totalInScope: 3,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByRole("progressbar"));
+    const bar = screen.getByRole("progressbar");
+    expect(bar).toHaveAttribute("aria-valuemax", "3");
+    expect(bar).toHaveAttribute("aria-valuenow", "2");
+    expect(bar).toHaveAttribute("aria-valuetext", "2 of 3 cases complete");
   });
 
   it('shows "all cases recorded" message when pending is empty', async () => {
@@ -320,8 +381,7 @@ describe("RunsTab", () => {
     vi.mocked(client.createRun).mockRejectedValue(new Error("create error"));
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() => expect(screen.getByText("create error")).toBeInTheDocument());
   });
@@ -329,23 +389,25 @@ describe("RunsTab", () => {
   it("shows error when handleBulkPass fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.bulkRecordResults).mockRejectedValue(new Error("bulk error"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText(/All Passed/));
     await userEvent.click(screen.getByText(/All Passed/));
+    await waitFor(() => screen.getByText("Pass all?"));
+    await userEvent.click(screen.getByRole("button", { name: /Confirm pass all/ }));
     await waitFor(() => expect(screen.getByText("bulk error")).toBeInTheDocument());
   });
 
   it("collapses selected run when it is deleted", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.deleteRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke" })
@@ -430,24 +492,29 @@ describe("RunsTab", () => {
   it("shows error when finalizeRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.finalizeRun).mockRejectedValue(new Error("finalize failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm complete run 2026-01-01-smoke" })
+    );
     await waitFor(() => expect(screen.getByText("finalize failed")).toBeInTheDocument());
   });
 
-  it("does not finalize run when confirm cancelled", async () => {
+  it("does not finalize run when inline confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(client.finalizeRun).not.toHaveBeenCalled();
+    expect(screen.getByText("Complete Run")).toBeInTheDocument();
   });
 
   it("opens record form even when getCase fails to fetch body", async () => {
@@ -486,15 +553,17 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
   });
 
-  it("does not call bulkRecordResults when bulk pass confirm cancelled", async () => {
+  it("does not call bulkRecordResults when bulk pass inline confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("All Passed (1)"));
     await userEvent.click(screen.getByText("All Passed (1)"));
+    await waitFor(() => screen.getByText("Pass all?"));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel bulk pass" }));
     expect(client.bulkRecordResults).not.toHaveBeenCalled();
+    expect(screen.getByText("All Passed (1)")).toBeInTheDocument();
   });
 
   it("uses plural in bulk pass confirm when multiple cases pending", async () => {
@@ -508,22 +577,27 @@ describe("RunsTab", () => {
       cases: [mockCase, mockCase2],
       totalInScope: 2,
     } as never);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("All Passed (2)"));
     await userEvent.click(screen.getByText("All Passed (2)"));
-    expect(confirmSpy).toHaveBeenCalledWith("Mark all 2 pending cases as Passed?");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Confirm pass all 2 pending cases" })
+      ).toBeInTheDocument()
+    );
   });
 
   it("does not delete run when confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel delete" }));
     expect(client.deleteRun).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" })).toBeInTheDocument();
   });
 
   it("shows Blocked styling and placeholder in record form", async () => {
@@ -658,11 +732,10 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke-2");
-    await userEvent.type(inputs[1], "bob");
-    await userEvent.type(inputs[2], "prod");
-    await userEvent.type(inputs[3], "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke-2");
+    await userEvent.type(screen.getByRole("textbox", { name: "Tester" }), "bob");
+    await userEvent.type(screen.getByRole("textbox", { name: "Environment" }), "prod");
+    await userEvent.type(screen.getByRole("textbox", { name: "Suite (optional)" }), "regression");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith(
@@ -751,11 +824,31 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
 
+  it("pressing Escape in create form cancels it", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("heading", { name: "Create Run" })).not.toBeInTheDocument();
+  });
+
+  it("pressing Escape in record form closes it", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText("Save Result")).not.toBeInTheDocument();
+  });
+
   it("expands run on Enter key", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
-    const runRow = screen.getByRole("button", { name: /2026-01-01-smoke/ });
+    const runRow = screen.getByRole("button", { name: "In Progress run 2026-01-01-smoke" });
     await userEvent.type(runRow, "{Enter}");
     await waitFor(() =>
       expect(client.getPendingCases).toHaveBeenCalledWith(
@@ -768,7 +861,7 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
-    const runRow = screen.getByRole("button", { name: /2026-01-01-smoke/ });
+    const runRow = screen.getByRole("button", { name: "In Progress run 2026-01-01-smoke" });
     runRow.focus();
     await userEvent.keyboard(" ");
     await waitFor(() =>

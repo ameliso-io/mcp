@@ -5,6 +5,7 @@ import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { AffectedCase, CoverageEntry, RunMeta } from "../gen/ameliso/v1/types_pb";
 import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./OverviewTab.module.css";
 
 interface Props {
@@ -58,8 +59,10 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
   const [affectedLoading, setAffectedLoading] = useState(false);
   const [affectedError, setAffectedError] = useState<string | null>(null);
+  const [announcement, announce] = useAnnounce();
 
   const load = useCallback(async (path: string) => {
+    /* v8 ignore next 2 — useEffect guards !path before calling load */
     if (!path) return;
     setLoading(true);
     setError(null);
@@ -71,18 +74,19 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
       setEntries(coverageRes.entries);
       setRunCount(coverageRes.runCount);
       setActiveRuns(activeRunsRes.runs);
+      const n = coverageRes.entries.length;
+      announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [announce]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (repoId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       load(repoId);
     }
   }, [repoId, load]);
@@ -100,12 +104,15 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — component returns early rendering when repoId is empty */
     if (!repoId) return;
     setAffectedLoading(true);
     setAffectedError(null);
     try {
       const res = await client.getAffectedCases({ repoId, sinceRef });
       setAffected(res.cases);
+      const n = res.cases.length;
+      announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
     } catch (err) {
       setAffectedError(errorMessage(err));
     } finally {
@@ -120,12 +127,20 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
       <h2 className={styles.title}>Overview</h2>
 
       {error && (
-        <div className={styles.errorCard}>
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
@@ -140,11 +155,15 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg}>Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && entries.length > 0 && (
         <>
-          <div className={styles.statsGrid}>
+          <dl className={styles.statsGrid}>
             {[
               { label: "Total Cases", value: statCases },
               { label: "Passed", value: statPassed },
@@ -152,57 +171,62 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
               { label: "Never Run", value: statNever },
             ].map((stat) => (
               <div key={stat.label} className={styles.statCard}>
-                <p className={styles.label}>{stat.label}</p>
-                <p className={styles.statValue} data-stat={stat.label}>
+                <dt className={styles.label}>{stat.label}</dt>
+                <dd className={styles.statValue} data-stat={stat.label}>
                   {stat.value}
-                </p>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
 
           {activeRuns.length > 0 && (
             <div className={styles.activeRunsCard}>
               <div className={styles.activeRunsHeader}>
-                <p className={styles.activeRunsLabel}>
+                <h3 className={styles.activeRunsLabel}>
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
-                </p>
+                </h3>
                 {onGoToRuns && (
-                  <button onClick={onGoToRuns} className={styles.goToRunsBtn}>
+                  <button type="button" onClick={onGoToRuns} className={styles.goToRunsBtn}>
                     Go to Runs
                   </button>
                 )}
               </div>
-              <div className={styles.runList}>
+              <ul className={styles.runList} role="list">
                 {activeRuns.map((run) => (
-                  <div key={run.id} className={styles.runRow}>
+                  <li key={run.id} className={styles.runRow}>
                     <span className={styles.runId}>{run.id}</span>
                     {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
                     {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                    <span className={styles.runDate}>{run.date}</span>
-                  </div>
+                    <time className={styles.runDate} dateTime={run.date}>
+                      {run.date}
+                    </time>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
 
           <div className={styles.card}>
-            <p className={`${styles.label} ${styles.sectionLabel}`}>
+            <h3 className={`${styles.label} ${styles.sectionLabel}`}>
               Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
-            </p>
-            <div className={styles.coverageList}>
+            </h3>
+            <ul className={styles.coverageList} role="list">
               {[...entries]
                 .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))
                 .map((entry) => (
-                  <div key={entry.case?.path} className={styles.coverageRow}>
+                  <li key={entry.case?.path} className={styles.coverageRow}>
                     <span
                       className={styles.statusDot}
+                      aria-hidden="true"
                       data-status={ResultStatus[entry.latestStatus]}
                     />
                     <span className={styles.coveragePath}>{entry.case?.path}</span>
                     <span className={styles.coverageTitle}>{entry.case?.title}</span>
                     {entry.lastRunDate && (
-                      <span className={styles.coverageDate}>{entry.lastRunDate}</span>
+                      <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
+                        {entry.lastRunDate}
+                      </time>
                     )}
                     <span
                       className={styles.coverageStatus}
@@ -210,9 +234,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     >
                       {statusLabel(entry.latestStatus)}
                     </span>
-                  </div>
+                  </li>
                 ))}
-            </div>
+            </ul>
           </div>
         </>
       )}
@@ -223,10 +247,15 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
       {repoId && (
         <div className={styles.card}>
-          <p className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</p>
-          <form onSubmit={handleAffected} className={styles.affectedForm}>
+          <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
+          <form
+            aria-label="Check affected cases by git diff"
+            onSubmit={handleAffected}
+            className={styles.affectedForm}
+          >
             <input
               type="text"
+              aria-label="Git ref to compare from (leave empty to use last run commit)"
               value={sinceRef}
               onChange={(e) => setSinceRef(e.target.value)}
               placeholder="Since ref (default: last run commit)"
@@ -237,9 +266,14 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             </button>
           </form>
           {affectedError && (
-            <div className={styles.inlineError}>
+            <div className={styles.inlineError} role="alert">
               <span>{affectedError}</span>
-              <button onClick={() => setAffectedError(null)} className={styles.inlineErrorDismiss}>
+              <button
+                type="button"
+                onClick={() => setAffectedError(null)}
+                className={styles.inlineErrorDismiss}
+                aria-label="Dismiss"
+              >
                 ×
               </button>
             </div>
@@ -248,7 +282,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             (affected.length === 0 ? (
               <p className={styles.noAffected}>No cases affected by this diff.</p>
             ) : (
-              <div className={styles.affectedList}>
+              <ul className={styles.affectedList} role="list">
                 {[...affected]
                   .sort((a, b) => {
                     const order = { high: 0, medium: 1, low: 2 } as Record<string, number>;
@@ -257,16 +291,23 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     );
                   })
                   .map((ac, idx) => (
-                    <div key={ac.case?.path ?? idx} className={styles.affectedRow}>
+                    <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
-                        <span className={styles.priorityDot} data-priority={ac.case.priority} />
+                        <>
+                          <span
+                            className={styles.priorityDot}
+                            data-priority={ac.case.priority}
+                            aria-hidden="true"
+                          />
+                          <span className="sr-only">{ac.case.priority} priority</span>
+                        </>
                       )}
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>
                       <span className={styles.affectedReason}>{ac.reason}</span>
-                    </div>
+                    </li>
                   ))}
-              </div>
+              </ul>
             ))}
         </div>
       )}
