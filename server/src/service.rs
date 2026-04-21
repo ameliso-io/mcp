@@ -2417,6 +2417,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_case_with_no_optional_fields_passes_validation() {
+        // All optional fields absent — all take the None path; passes validation → DB error.
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn update_case_with_optional_fields_passes_validation() {
         // Non-empty title/tags/body take the Some(...) branches — passes validation → DB error.
         let s = server();
@@ -2508,6 +2523,23 @@ mod tests {
             .update_suite(Request::new(pb::UpdateSuiteRequest {
                 repo_id: "owner/repo".to_owned(),
                 slug: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_suite_with_name_and_description_passes_validation() {
+        // Non-empty name and description take the Some(...) paths — passes validation → DB error.
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                name: "Smoke Tests".to_owned(),
+                description: "Critical path checks".to_owned(),
                 ..Default::default()
             }))
             .await
