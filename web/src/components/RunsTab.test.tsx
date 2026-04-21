@@ -345,6 +345,16 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("No results recorded.")).toBeInTheDocument());
   });
 
+  it("shows no results when getRun returns undefined run field for completed run", async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({ run: undefined } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("No results recorded.")).toBeInTheDocument());
+  });
+
   it("shows error when deleteRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.deleteRun).mockRejectedValue(new Error("delete error"));
@@ -889,6 +899,17 @@ describe("RunsTab", () => {
       <RunsTab repoId="owner/repo" initialSuite="smoke" onInitialSuiteConsumed={onConsumed} />
     );
     await waitFor(() => expect(onConsumed).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not crash when initialSuite is provided without onInitialSuiteConsumed", async () => {
+    render(<RunsTab repoId="owner/repo" initialSuite="smoke" />);
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument()
+    );
+    const suiteInput = screen
+      .getAllByRole("textbox")
+      .find((i) => (i as HTMLInputElement).value === "smoke");
+    expect(suiteInput).toBeDefined();
   });
 
   it("shows loading state while fetching runs", async () => {
