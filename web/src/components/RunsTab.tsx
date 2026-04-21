@@ -145,39 +145,7 @@ export default function RunsTab({
     load();
   }, [load]);
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newSlug) return;
-    setCreating(true);
-    try {
-      const created = await client.createRun({
-        repoId,
-        slug: newSlug,
-        tester: newTester,
-        environment: newEnv,
-        suite: newSuite,
-      });
-      setShowCreate(false);
-      lastFocusRef.current?.focus();
-      setNewSlug("");
-      setNewTester("");
-      setNewEnv("");
-      setNewSuite("");
-      announce("Run created");
-      await load();
-      // Auto-expand the newly created run
-      if (created.run) {
-        await selectRun(created.run.id, created.run.status);
-      }
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  async function selectRun(runId: string, status: RunStatus) {
+  const selectRun = useCallback(async (runId: string, status: RunStatus) => {
     if (selectedRunId === runId) {
       setSelectedRunId(null);
       setPendingCases([]);
@@ -212,9 +180,41 @@ export default function RunsTab({
     } finally {
       setLoadingPending(false);
     }
-  }
+  }, [selectedRunId, repoId]);
 
-  async function handleRecord(e: React.FormEvent) {
+  const handleCreate = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
+    if (!repoId || !newSlug) return;
+    setCreating(true);
+    try {
+      const created = await client.createRun({
+        repoId,
+        slug: newSlug,
+        tester: newTester,
+        environment: newEnv,
+        suite: newSuite,
+      });
+      setShowCreate(false);
+      lastFocusRef.current?.focus();
+      setNewSlug("");
+      setNewTester("");
+      setNewEnv("");
+      setNewSuite("");
+      announce("Run created");
+      await load();
+      // Auto-expand the newly created run
+      if (created.run) {
+        await selectRun(created.run.id, created.run.status);
+      }
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setCreating(false);
+    }
+  }, [repoId, newSlug, newTester, newEnv, newSuite, announce, load, selectRun]);
+
+  const handleRecord = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     /* v8 ignore next 2 — record form only shown when both are set */
     if (!selectedRunId || !recordingCase) return;
@@ -242,7 +242,7 @@ export default function RunsTab({
     } finally {
       setRecording(false);
     }
-  }
+  }, [selectedRunId, recordingCase, repoId, recordStatus, recordNotes, announce]);
 
   async function openRecord(casePath: string) {
     if (recordingCase === casePath) {
