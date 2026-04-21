@@ -2266,6 +2266,23 @@ mod tests {
         assert!(text_references_case("\tauth/login", "auth/login"));
     }
 
+    #[test]
+    fn text_references_case_tab_suffix() {
+        assert!(text_references_case("auth/login\tnotes", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_paren_suffix() {
+        // ends_cleanly allows ')' — path followed by closing paren
+        assert!(text_references_case("see (auth/login) for more", "auth/login"));
+    }
+
+    #[test]
+    fn is_doc_file_no_extension_not_doc() {
+        assert!(!is_doc_file("Makefile"));
+        assert!(!is_doc_file("README"));
+    }
+
     // ── is_doc_file ───────────────────────────────────────────────────────────
 
     #[test]

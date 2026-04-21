@@ -949,6 +949,19 @@ describe("RunsTab", () => {
     resolve!({ case: mockCase, body: "## Steps" });
   });
 
+  it("shows progress bar text when totalInScope > 0 and some cases pending", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase],
+      totalInScope: 3,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("2 / 3 done")).toBeInTheDocument());
+    expect(screen.getByText("67%")).toBeInTheDocument();
+  });
+
   it("shows suite badge, tester, and environment in run card", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);

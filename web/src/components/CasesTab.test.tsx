@@ -584,6 +584,13 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
   });
 
+  it("shows case tags as chips in case card list view", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.getAllByText("auth").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("smoke").length).toBeGreaterThan(0);
+  });
+
   it('shows "Loading…" while case body is loading on expand', async () => {
     let resolve: (v: unknown) => void;
     vi.mocked(client.getCase).mockReturnValue(
