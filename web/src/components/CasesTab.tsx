@@ -367,6 +367,7 @@ export default function CasesTab({ repoId }: Props) {
           className={styles.searchInput}
         />
         <select
+          aria-label="Filter by priority"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(Number(e.target.value) as Priority)}
           className={styles.filterSelect}
@@ -378,6 +379,7 @@ export default function CasesTab({ repoId }: Props) {
         </select>
         {allTags.length > 0 && (
           <select
+            aria-label="Filter by tag"
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
             className={styles.filterSelect}
@@ -391,6 +393,7 @@ export default function CasesTab({ repoId }: Props) {
           </select>
         )}
         <select
+          aria-label="Sort cases"
           value={sortBy}
           onChange={(e) =>
             startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))
