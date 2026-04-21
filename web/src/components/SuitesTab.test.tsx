@@ -248,7 +248,6 @@ describe("SuitesTab", () => {
     const inputs = screen.getAllByRole("textbox");
     await userEvent.type(inputs[0], "regression");
     await userEvent.type(inputs[1], "Regression Tests");
-    // 3rd input is description, 4th is cases
     await userEvent.type(inputs[3], "auth/login, auth/logout");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
@@ -286,5 +285,72 @@ describe("SuitesTab", () => {
     if (casesInput) await userEvent.type(casesInput, "auth/login, auth/logout");
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled());
+  });
+
+  it("does not call deleteSuite when confirm cancelled", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Delete"));
+    await userEvent.click(screen.getByText("Delete"));
+    expect(client.deleteSuite).not.toHaveBeenCalled();
+  });
+
+  it("handles listCases failure silently when suite expanded", async () => {
+    vi.mocked(client.listCases).mockRejectedValue(new Error("cases load error"));
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+  });
+
+  it("dismisses error banner when X button clicked", async () => {
+    vi.mocked(client.listSuites).mockRejectedValue(new Error("load failed"));
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("load failed")).toBeInTheDocument());
+    await userEvent.click(screen.getByText("×"));
+    expect(screen.queryByText("load failed")).not.toBeInTheDocument();
+  });
+
+  it("fills description in create form", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "e2e");
+    await userEvent.type(inputs[1], "E2E Tests");
+    await userEvent.type(inputs[2], "End to end regression suite");
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    await waitFor(() =>
+      expect(client.createSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ description: "End to end regression suite" })
+      )
+    );
+  });
+
+  it("changes description in edit form", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    const descInput = screen
+      .getAllByRole("textbox")
+      .find((i) => (i as HTMLInputElement).value === "Critical path checks") as HTMLInputElement;
+    await userEvent.clear(descInput);
+    await userEvent.type(descInput, "Updated description");
+    await userEvent.click(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(client.updateSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ description: "Updated description" })
+      )
+    );
+  });
+
+  it("cancels edit form when Cancel button clicked", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByText("Save")).not.toBeInTheDocument();
+    expect(screen.getByText("Edit")).toBeInTheDocument();
   });
 });

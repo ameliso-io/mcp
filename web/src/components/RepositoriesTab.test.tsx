@@ -157,6 +157,42 @@ describe("RepositoriesTab", () => {
     window.history.replaceState({}, "", "/");
   });
 
+  it("calls handleGitHubCallback when installation_id present without setup_action", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-no-action");
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() =>
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-no-action" })
+    );
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("handles syncRepository with no repository in response", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.syncRepository).mockResolvedValue({} as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("Sync"));
+    await userEvent.click(screen.getByText("Sync"));
+    await waitFor(() => expect(client.syncRepository).toHaveBeenCalled());
+  });
+
+  it("updates repo in list when syncRepository succeeds with repository", async () => {
+    const otherRepo = makeRepo({ id: "owner/other", name: "other" });
+    const updatedRepo = makeRepo({ name: "repo-updated" });
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo(), otherRepo],
+    } as never);
+    vi.mocked(client.syncRepository).mockResolvedValue({ repository: updatedRepo } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getAllByText("Sync").length).toBeGreaterThan(0));
+    await userEvent.click(screen.getAllByText("Sync")[0]);
+    await waitFor(() =>
+      expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" })
+    );
+  });
+
   it("search filters repos by name", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({
       repositories: [

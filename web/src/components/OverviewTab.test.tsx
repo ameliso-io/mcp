@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
@@ -290,5 +290,139 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
     const titles = screen.getAllByText(/Priority/);
     expect(titles[0].textContent).toBe("High Priority");
+  });
+
+  it("sorts AffectedCase with null case field to end (null first)", async () => {
+    const nullCaseAffected = { case: undefined, reason: "unknown" } as unknown as AffectedCase;
+    const knownCase = {
+      case: {
+        path: "auth/login",
+        title: "Known",
+        priority: "high",
+        tags: [],
+        description: "",
+        createdAt: "",
+        updatedAt: "",
+      },
+      reason: "modified",
+    } as unknown as AffectedCase;
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [nullCaseAffected, knownCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("Known")).toBeInTheDocument());
+  });
+
+  it("clears existing poll interval when rerendered with new repoId while active runs exist", async () => {
+    const activeRun = {
+      id: "run-poll",
+      tester: "alice",
+      environment: "staging",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    const { rerender } = render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    await act(async () => {
+      rerender(<OverviewTab repoId="owner/new-repo" />);
+    });
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenCalledWith(
+        expect.objectContaining({ repoId: "owner/new-repo" })
+      )
+    );
+  });
+
+  it("sorts AffectedCase with null case field to end (null second)", async () => {
+    const nullCaseAffected = { case: undefined, reason: "unknown" } as unknown as AffectedCase;
+    const knownCase = {
+      case: {
+        path: "auth/login",
+        title: "Known2",
+        priority: "high",
+        tags: [],
+        description: "",
+        createdAt: "",
+        updatedAt: "",
+      },
+      reason: "modified",
+    } as unknown as AffectedCase;
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [knownCase, nullCaseAffected],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("Known2")).toBeInTheDocument());
+  });
+
+  it("shows Blocked, Skipped, Never, and Unknown status labels in coverage", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("a", "A", "high", ResultStatus.BLOCKED),
+        makeCovEntry("b", "B", "high", ResultStatus.SKIPPED),
+        makeCovEntry("c", "C", "high", ResultStatus.NEVER),
+        makeCovEntry("d", "D", "high", ResultStatus.UNSPECIFIED),
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
+    expect(screen.getByText("Skipped")).toBeInTheDocument();
+    expect(screen.getByText("Never run")).toBeInTheDocument();
+    expect(screen.getByText("Unknown")).toBeInTheDocument();
+  });
+
+  it("dismisses error banner when X button clicked", async () => {
+    vi.mocked(client.getCoverageReport).mockRejectedValue(new Error("coverage failed"));
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("coverage failed")).toBeInTheDocument());
+    await userEvent.click(screen.getByText("×"));
+    expect(screen.queryByText("coverage failed")).not.toBeInTheDocument();
+  });
+
+  it("sets sinceRef when typing in diff input", async () => {
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    const sinceInput = screen.getByPlaceholderText(/Since ref/);
+    await userEvent.type(sinceInput, "HEAD~3");
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(client.getAffectedCases).toHaveBeenCalledWith(
+        expect.objectContaining({ sinceRef: "HEAD~3" })
+      )
+    );
+  });
+
+  it("dismisses affectedError when X button clicked", async () => {
+    vi.mocked(client.getAffectedCases).mockRejectedValue(new Error("diff error"));
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("diff error")).toBeInTheDocument());
+    const xButtons = screen.getAllByText("×");
+    await userEvent.click(xButtons[xButtons.length - 1]);
+    expect(screen.queryByText("diff error")).not.toBeInTheDocument();
+  });
+
+  it("unmounts cleanly when polling interval is active", async () => {
+    const activeRun = {
+      id: "run-unmount",
+      tester: "alice",
+      environment: "staging",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    const { unmount } = render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    unmount();
   });
 });
