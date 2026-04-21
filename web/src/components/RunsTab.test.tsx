@@ -197,4 +197,41 @@ describe('RunsTab', () => {
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('1 Passed')).toBeInTheDocument())
   })
+
+  it('shows case title and notes in completed run results', async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
+    const mockResult = { casePath: 'auth/login', status: ResultStatus.PASSED, notes: 'looks good' } as unknown as CaseResult
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
+    vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [mockResult] } } as never)
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(screen.getByText('User Login')).toBeInTheDocument())
+    expect(screen.getByText('looks good')).toBeInTheDocument()
+  })
+
+  it('filters results by status and shows Show all button', async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta
+    const mockResult = { casePath: 'auth/login', status: ResultStatus.PASSED, notes: '' } as unknown as CaseResult
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never)
+    vi.mocked(client.getRun).mockResolvedValue({ run: { meta: completedRun, results: [mockResult] } } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('1 Passed'))
+    await userEvent.click(screen.getByText('1 Passed'))
+    await waitFor(() => expect(screen.getByText('Show all')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Show all'))
+    await waitFor(() => expect(screen.queryByText('Show all')).not.toBeInTheDocument())
+  })
+
+  it('shows "all cases recorded" message when pending is empty', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 1 } as never)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => expect(screen.getByText('All cases have results recorded.')).toBeInTheDocument())
+  })
 })
