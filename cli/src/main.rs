@@ -749,7 +749,10 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
     println!("{:40} {:8} LAST RUN", "CASE", "STATUS");
     println!("{}", "-".repeat(70));
     for (c, status, run_id) in &rows {
-        println!("{:40} {:8} {} — {}", c.case_path, status, run_id, c.fm.title);
+        println!(
+            "{:40} {:8} {} — {}",
+            c.case_path, status, run_id, c.fm.title
+        );
     }
     if never_count > 0 && status_filter.is_none() {
         println!("\n{never_count} case(s) never run.");

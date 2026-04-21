@@ -1214,3 +1214,42 @@ async fn delete_run_rejects_nonexistent() {
         .unwrap_err();
     assert_eq!(err.code(), tonic::Code::NotFound);
 }
+
+#[tokio::test]
+async fn list_cases_filter_by_suite() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "auth/signup", "Signup");
+    write_case(tmp.path(), "billing/checkout", "Checkout");
+
+    // Create a suite with only auth/login and billing/checkout
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .list_cases(Request::new(pb::ListCasesRequest {
+            repo_path: rp.clone(),
+            suite: "smoke".to_owned(),
+            ..Default::default()
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.cases.len(), 2);
+    let paths: Vec<&str> = resp.cases.iter().map(|c| c.path.as_str()).collect();
+    assert!(paths.contains(&"auth/login"));
+    assert!(paths.contains(&"billing/checkout"));
+    assert!(!paths.contains(&"auth/signup"));
+}

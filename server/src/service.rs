@@ -147,6 +147,16 @@ impl AmelisoService for AmelisoServer {
                     || c.case_path.to_lowercase().contains(&q)
             });
         }
+        if !req.suite.is_empty() {
+            match repo::get_suite(&repo, &req.suite) {
+                Ok(suite) => {
+                    let suite_set: std::collections::HashSet<&str> =
+                        suite.cases.iter().map(|p| p.as_str()).collect();
+                    cases.retain(|c| suite_set.contains(c.case_path.as_str()));
+                }
+                Err(e) => return Err(repo_err(e)),
+            }
+        }
 
         let priority_rank = |p: &str| match p {
             "high" => 0u8,

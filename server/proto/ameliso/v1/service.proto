@@ -87,6 +87,8 @@ message ListCasesRequest {
   Priority priority = 3;
   // Optional: full-text query against title and description
   string query = 4;
+  // Optional: restrict to cases in this suite slug
+  string suite = 5;
 }
 
 message ListCasesResponse {
