@@ -537,15 +537,20 @@ impl AmelisoService for AmelisoServer {
         let medium = cases.iter().filter(|c| c.fm.priority == "medium").count() as i32;
         let low = cases.iter().filter(|c| c.fm.priority == "low").count() as i32;
 
-        // Build latest-status map (newest run first)
-        let mut latest: std::collections::HashMap<String, String> =
+        // Build latest-status map: case_path -> (status, run_id, run_date)
+        // Runs are newest-first; first write wins = latest result.
+        let mut latest: std::collections::HashMap<String, (String, String, String)> =
             std::collections::HashMap::new();
         for run_meta in &runs {
             if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
                 for result in &run.results {
-                    latest
-                        .entry(result.case_path.clone())
-                        .or_insert_with(|| result.fm.status.clone());
+                    latest.entry(result.case_path.clone()).or_insert_with(|| {
+                        (
+                            result.fm.status.clone(),
+                            run_meta.id.clone(),
+                            run_meta.date.clone(),
+                        )
+                    });
                 }
             }
         }
@@ -558,7 +563,7 @@ impl AmelisoService for AmelisoServer {
         for c in &cases {
             match latest
                 .get(&c.case_path)
-                .map(|s| s.as_str())
+                .map(|(s, _, _)| s.as_str())
                 .unwrap_or("never")
             {
                 "passed" => passed += 1,
@@ -593,7 +598,7 @@ impl AmelisoService for AmelisoServer {
             .map(|c| {
                 let (status, last_run_id, last_run_date) = latest
                     .get(&c.case_path)
-                    .map(|s| (s.clone(), String::new(), String::new()))
+                    .cloned()
                     .unwrap_or_else(|| ("never".to_owned(), String::new(), String::new()));
                 pb::CoverageEntry {
                     case: Some(case_to_pb(c)),

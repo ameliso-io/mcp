@@ -1336,4 +1336,5 @@ async fn get_repo_status_returns_summary() {
         .find(|e| e.case.as_ref().map(|c| c.path.as_str()) == Some("auth/login"))
         .expect("auth/login entry missing");
     assert_eq!(login_entry.latest_status, pb::ResultStatus::Passed as i32);
+    assert_eq!(login_entry.last_run_id, "2026-01-01-smoke");
 }
