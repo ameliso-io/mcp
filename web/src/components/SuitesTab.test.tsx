@@ -497,4 +497,12 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Smoke Tests"));
     expect(screen.queryByText("Run")).not.toBeInTheDocument();
   });
+
+  it("does not show description paragraph when suite description is empty", async () => {
+    const noDescSuite = { ...mockSuite, description: "" } as unknown as Suite;
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [noDescSuite] } as never);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    expect(screen.queryByText("Critical path checks")).not.toBeInTheDocument();
+  });
 });

@@ -1021,4 +1021,25 @@ describe("RunsTab", () => {
     expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.getByText("staging")).toBeInTheDocument();
   });
+
+  it("does not show title span when result casePath has no matching case in caseTitleMap", async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const unknownPathResult = {
+      casePath: "auth/unknown-path",
+      status: ResultStatus.PASSED,
+      notes: "",
+    } as unknown as CaseResult;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [unknownPathResult] },
+    } as never);
+    // listCases returns mockCase (auth/login) — no match for auth/unknown-path
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("auth/unknown-path")).toBeInTheDocument());
+    // "User Login" belongs to auth/login — should NOT appear for auth/unknown-path result
+    expect(screen.queryByText("User Login")).not.toBeInTheDocument();
+  });
 });
