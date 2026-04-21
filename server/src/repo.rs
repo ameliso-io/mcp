@@ -220,6 +220,23 @@ fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
             kind
         )));
     }
+    for segment in path.split('/') {
+        if segment.is_empty() {
+            return Err(RepoError::InvalidArg(format!(
+                "invalid {} path '{}': contains empty segment (double slash?)",
+                kind, path
+            )));
+        }
+        if !segment
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        {
+            return Err(RepoError::InvalidArg(format!(
+                "invalid {} path '{}': each segment must contain only a-z, 0-9, hyphens, underscores",
+                kind, path
+            )));
+        }
+    }
     Ok(())
 }
 

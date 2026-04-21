@@ -212,10 +212,12 @@ impl AmelisoMcp {
             }
         }
 
-        let mut counts: std::collections::HashMap<&str, usize> =
-            std::collections::HashMap::new();
+        let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
         for c in &cases {
-            let status = latest.get(&c.case_path).map(|s| s.as_str()).unwrap_or("never");
+            let status = latest
+                .get(&c.case_path)
+                .map(|s| s.as_str())
+                .unwrap_or("never");
             *counts.entry(status).or_insert(0) += 1;
         }
 
@@ -327,7 +329,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Create a new test case. case_path is slash-separated (e.g. auth/login); no leading slash or .. segments. priority must be low|medium|high (default: medium)."
+        description = "Create a new test case. case_path is slash-separated (e.g. auth/login); each segment must be [a-z0-9-_] only — no spaces, uppercase, or special chars. priority must be low|medium|high (default: medium)."
     )]
     fn create_case(&self, Parameters(req): Parameters<CreateCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
