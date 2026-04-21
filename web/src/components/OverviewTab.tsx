@@ -5,6 +5,7 @@ import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { AffectedCase, CoverageEntry, RunMeta } from "../gen/ameliso/v1/types_pb";
 import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
+import { useAnnounce } from "../hooks/useAnnounce";
 import styles from "./OverviewTab.module.css";
 
 interface Props {
@@ -58,6 +59,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
   const [affectedLoading, setAffectedLoading] = useState(false);
   const [affectedError, setAffectedError] = useState<string | null>(null);
+  const [announcement, announce] = useAnnounce();
 
   const load = useCallback(async (path: string) => {
     /* v8 ignore next 2 — useEffect guards !path before calling load */
@@ -72,12 +74,14 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
       setEntries(coverageRes.entries);
       setRunCount(coverageRes.runCount);
       setActiveRuns(activeRunsRes.runs);
+      const n = coverageRes.entries.length;
+      announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [announce]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -107,6 +111,8 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
     try {
       const res = await client.getAffectedCases({ repoId, sinceRef });
       setAffected(res.cases);
+      const n = res.cases.length;
+      announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
     } catch (err) {
       setAffectedError(errorMessage(err));
     } finally {
@@ -121,6 +127,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
       <h2 className={styles.title}>Overview</h2>
 
       {error && (
