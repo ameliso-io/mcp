@@ -40,6 +40,11 @@ export default function SuitesTab({ repoPath }: Props) {
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
 
+  const [newName, setNewName] = useState('')
+  const [newDesc, setNewDesc] = useState('')
+  const [newCases, setNewCases] = useState('')
+  const [creating, setCreating] = useState(false)
+
   // Edit suite state
   const [editingSlug, setEditingSlug] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -53,10 +58,6 @@ export default function SuitesTab({ repoPath }: Props) {
     setEditDesc(suite.description)
     setEditCases(suite.cases.join(', '))
   }
-  const [newName, setNewName] = useState('')
-  const [newDesc, setNewDesc] = useState('')
-  const [newCases, setNewCases] = useState('')
-  const [creating, setCreating] = useState(false)
 
   const load = useCallback(async () => {
     if (!repoPath) return
