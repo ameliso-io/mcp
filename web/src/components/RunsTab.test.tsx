@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RunsTab from "./RunsTab";
 import { client } from "@/client";
-import type { Case, RunMeta } from "@/gen/ameliso/v1/types_pb";
+import type { Case, RunMeta, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { makeCase, makeCaseResult, makeRunMeta } from "@/test/factories";
 
@@ -953,14 +953,14 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     // Open record form for first case
     const recordBtns = await screen.findAllByText("Record");
-    await userEvent.click(recordBtns[0]);
+    await userEvent.click(recordBtns[0]!);
     await waitFor(() => screen.getByRole("combobox"));
     // Set FAILED and add notes
     await userEvent.selectOptions(screen.getByRole("combobox"), String(ResultStatus.FAILED));
     await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "broken");
     // Now click Record on the second case — form should switch and reset
     const btns2 = screen.getAllByText("Record");
-    await userEvent.click(btns2[btns2.length - 1]);
+    await userEvent.click(btns2[btns2.length - 1]!);
     await waitFor(() => {
       const select = screen.getByRole("combobox") as HTMLSelectElement;
       expect(select.value).toBe(String(ResultStatus.PASSED));
@@ -1083,7 +1083,7 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
     await waitFor(() => screen.getByRole("heading", { name: "Create Run" }));
-    await userEvent.type(screen.getAllByRole("textbox")[0], "2026-01-15-smoke");
+    await userEvent.type(screen.getAllByRole("textbox")[0]!,"2026-01-15-smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ run: mockRun, dirPath: "runs/2026-01-01-smoke" });
@@ -1159,7 +1159,7 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke-3");
+    await userEvent.type(inputs[0]!, "smoke-3");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() => expect(client.createRun).toHaveBeenCalled());
     // getPendingCases should NOT be called — no auto-expand

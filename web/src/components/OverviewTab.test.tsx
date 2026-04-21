@@ -63,7 +63,7 @@ describe("OverviewTab", () => {
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("auth/login"));
     const entries = screen.getAllByText(/auth\//);
-    expect(entries[0].textContent).toBe("auth/logout");
+    expect(entries[0]!.textContent).toBe("auth/logout");
   });
 
   it("shows last run date on coverage entries", async () => {
@@ -153,8 +153,8 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
     const titles = screen.getAllByText(/Priority/);
-    expect(titles[0].textContent).toBe("High Priority");
-    expect(titles[1].textContent).toBe("Low Priority");
+    expect(titles[0]!.textContent).toBe("High Priority");
+    expect(titles[1]!.textContent).toBe("Low Priority");
   });
 
   it('shows singular "run" when runCount is 1', async () => {
@@ -190,7 +190,12 @@ describe("OverviewTab", () => {
   });
 
   it("active runs panel not shown when coverage entries empty even with active runs", async () => {
-    const activeRun = makeRunMeta({ id: "run-active", tester: "alice", suite: "smoke", date: "2026-01-01" });
+    const activeRun = makeRunMeta({
+      id: "run-active",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
     vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
@@ -239,7 +244,7 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
     const titles = screen.getAllByText(/Priority/);
-    expect(titles[0].textContent).toBe("High Priority");
+    expect(titles[0]!.textContent).toBe("High Priority");
   });
 
   it("sorts AffectedCase with null case field to end (null first)", async () => {
@@ -334,7 +339,7 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("diff error")).toBeInTheDocument());
     const xButtons = screen.getAllByText("×");
-    await userEvent.click(xButtons[xButtons.length - 1]);
+    await userEvent.click(xButtons[xButtons.length - 1]!);
     expect(screen.queryByText("diff error")).not.toBeInTheDocument();
   });
 
@@ -488,7 +493,12 @@ describe("OverviewTab", () => {
   });
 
   it("shows suite badge and tester in active runs panel", async () => {
-    const activeRun = makeRunMeta({ id: "run-badge", tester: "carol", suite: "e2e", date: "2026-02-01" });
+    const activeRun = makeRunMeta({
+      id: "run-badge",
+      tester: "carol",
+      suite: "e2e",
+      date: "2026-02-01",
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("e2e")).toBeInTheDocument());
@@ -497,7 +507,12 @@ describe("OverviewTab", () => {
   });
 
   it("polling timer callback triggers reload when active runs present", async () => {
-    const activeRun = makeRunMeta({ id: "run-timer", tester: "alice", suite: "smoke", date: "2026-01-01" });
+    const activeRun = makeRunMeta({
+      id: "run-timer",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     let capturedCallback: (() => void) | null = null;
     const spy = vi
@@ -519,7 +534,12 @@ describe("OverviewTab", () => {
   });
 
   it("Go to Runs button not shown when onGoToRuns prop is not provided", async () => {
-    const activeRun = makeRunMeta({ id: "run-no-goto", tester: "alice", suite: "smoke", date: "2026-01-01" });
+    const activeRun = makeRunMeta({
+      id: "run-no-goto",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
@@ -537,7 +557,12 @@ describe("OverviewTab", () => {
   });
 
   it("polling timer callback shows error banner when load fails", async () => {
-    const activeRun = makeRunMeta({ id: "run-poll-err", tester: "bob", suite: "smoke", date: "2026-01-01" });
+    const activeRun = makeRunMeta({
+      id: "run-poll-err",
+      tester: "bob",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     vi.mocked(client.getCoverageReport)
       .mockResolvedValueOnce({ entries: coverageEntries, runCount: 5 } as never)

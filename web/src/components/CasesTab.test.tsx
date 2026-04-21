@@ -279,8 +279,8 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
     const paths = screen.getAllByText(/auth\//);
-    expect(paths[0].textContent).toBe("auth/login");
-    expect(paths[1].textContent).toBe("auth/logout");
+    expect(paths[0]!.textContent).toBe("auth/login");
+    expect(paths[1]!.textContent).toBe("auth/logout");
   });
 
   it("sorts unknown priority cases to end", async () => {
@@ -648,8 +648,8 @@ describe("CasesTab", () => {
     const prioritySelect = screen.getByDisplayValue("Medium");
     await userEvent.selectOptions(prioritySelect, "High");
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
+    await userEvent.type(inputs[0]!, "auth/new");
+    await userEvent.type(inputs[1]!, "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(client.createCase).toHaveBeenCalled());
     // Reopen form — priority should be reset to Medium
@@ -714,8 +714,8 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
+    await userEvent.type(inputs[0]!, "auth/new");
+    await userEvent.type(inputs[1]!, "New Title");
     await userEvent.click(screen.getByText("Create"));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ case: mockCase, filePath: "cases/auth/new.md" });

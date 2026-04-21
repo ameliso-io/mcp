@@ -5,6 +5,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
 import { client } from "@/client";
 import { makeCase, makeSuite } from "@/test/factories";
+import type { Suite } from "@/gen/ameliso/v1/types_pb";
 
 vi.mock("@/client");
 vi.mock("next/link", () => ({
@@ -399,8 +400,8 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "regression");
-    await userEvent.type(inputs[1], "Regression Tests");
+    await userEvent.type(inputs[0]!, "regression");
+    await userEvent.type(inputs[1]!, "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ suite: mockSuite, filePath: "suites/regression.yaml" });
