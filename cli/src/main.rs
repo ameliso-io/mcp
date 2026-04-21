@@ -318,7 +318,10 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
         RunsCmd::List { repo, status } => {
             let all_runs = repo::list_runs(&repo)?;
             let runs: Vec<_> = if let Some(ref s) = status {
-                all_runs.into_iter().filter(|r| r.status == *s).collect()
+                all_runs
+                    .into_iter()
+                    .filter(|r| r.status.eq_ignore_ascii_case(s))
+                    .collect()
             } else {
                 all_runs
             };
@@ -444,10 +447,26 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             let meta = repo::finalize_run(&repo, &run_id, &status)?;
             println!("Finalized run {} as {}", meta.id, meta.status);
             if let Ok(run) = repo::get_run(&repo, &meta.id) {
-                let passed = run.results.iter().filter(|r| r.fm.status == "passed").count();
-                let failed = run.results.iter().filter(|r| r.fm.status == "failed").count();
-                let blocked = run.results.iter().filter(|r| r.fm.status == "blocked").count();
-                let skipped = run.results.iter().filter(|r| r.fm.status == "skipped").count();
+                let passed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "passed")
+                    .count();
+                let failed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "failed")
+                    .count();
+                let blocked = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "blocked")
+                    .count();
+                let skipped = run
+                    .results
+                    .iter()
+                    .filter(|r| r.fm.status == "skipped")
+                    .count();
                 println!(
                     "Summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
                     passed,
@@ -602,7 +621,7 @@ fn run_coverage(repo: &std::path::Path, status_filter: Option<&str>) -> Result<(
             .cloned()
             .unwrap_or_else(|| ("never".to_owned(), String::new()));
         if let Some(f) = status_filter {
-            if status != f {
+            if !status.eq_ignore_ascii_case(f) {
                 continue;
             }
         }
