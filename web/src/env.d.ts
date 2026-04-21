@@ -1,6 +1,7 @@
 declare namespace NodeJS {
   interface ProcessEnv {
-    NEXT_PUBLIC_API_URL?: string;
+    /** Server-side only: gRPC backend URL for the Next.js rewrite proxy. Never sent to the browser. */
+    API_URL?: string;
     NEXT_PUBLIC_SITE_URL?: string;
   }
 }

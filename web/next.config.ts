@@ -41,7 +41,11 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(__dirname, ".."),
   experimental: {
     // Tree-shake barrel-exporting packages to reduce client bundle size
-    optimizePackageImports: ["@bufbuild/protobuf", "@connectrpc/connect", "@connectrpc/connect-web"],
+    optimizePackageImports: [
+      "@bufbuild/protobuf",
+      "@connectrpc/connect",
+      "@connectrpc/connect-web",
+    ],
   },
   turbopack: {
     root: path.resolve(__dirname, ".."),
@@ -53,7 +57,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/ameliso.v1.AmelisoService/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:50052"}/ameliso.v1.AmelisoService/:path*`,
+        destination: `${process.env.API_URL ?? "http://localhost:50052"}/ameliso.v1.AmelisoService/:path*`,
       },
     ];
   },
