@@ -36,6 +36,13 @@
   background: var(--color-ink-hover);
 }
 
+.digest {
+  font-size: 11px;
+  color: var(--color-muted);
+  font-family: monospace;
+  margin: 0;
+}
+
 .link {
   color: var(--color-primary);
   text-decoration: none;
