@@ -43,6 +43,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
     if (installationId && (setupAction === 'install' || setupAction === 'update' || setupAction == null)) {
       // Clear the URL params so we don't reprocess on re-render
       window.history.replaceState({}, '', window.location.pathname)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true)
       setError(null)
       client.handleGitHubCallback({ installationId })
@@ -57,9 +58,8 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoPath }: Props)
     }
   }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load() }, [load])
 
   async function handleSync(id: string) {
     setSyncing(id)

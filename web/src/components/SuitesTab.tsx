@@ -76,6 +76,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
     }
   }, [repoPath])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleCreate(e: React.FormEvent) {

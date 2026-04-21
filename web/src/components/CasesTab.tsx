@@ -136,6 +136,7 @@ export default function CasesTab({ repoPath }: Props) {
     }
   }, [repoPath, debouncedSearch, priorityFilter, tagFilter])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleCreate(e: React.FormEvent) {

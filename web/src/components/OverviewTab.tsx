@@ -91,8 +91,12 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (repoPath) { setInputPath(repoPath); load(repoPath) }
-  }, [repoPath, load])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (repoPath) setInputPath(repoPath)
+  }, [repoPath])
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (repoPath) load(repoPath) }, [repoPath, load])
 
   // Auto-refresh every 30s while there are active runs
   useEffect(() => {
