@@ -118,12 +118,12 @@ describe('RepositoriesTab', () => {
     expect(screen.queryByText('network error')).not.toBeInTheDocument()
   })
 
-  it('calls handleGitHubCallback when installation_id present in URL', async () => {
-    window.history.pushState({}, '', '?installation_id=inst-42&setup_action=install')
+  it('calls handleGitHubCallback when installationId prop provided', async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({ repositories: [makeRepo()] } as never)
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
+    const onCallbackHandled = vi.fn()
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" installationId="inst-42" onCallbackHandled={onCallbackHandled} />)
     await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: 'inst-42' }))
-    window.history.replaceState({}, '', '/')
+    expect(onCallbackHandled).toHaveBeenCalled()
   })
 
   it('shows error when syncRepository fails', async () => {
@@ -145,11 +145,9 @@ describe('RepositoriesTab', () => {
     await waitFor(() => expect(screen.getByText('remove failed')).toBeInTheDocument())
   })
 
-  it('calls handleGitHubCallback for setup_action=update', async () => {
-    window.history.pushState({}, '', '?installation_id=inst-99&setup_action=update')
-    vi.mocked(client.handleGitHubCallback).mockResolvedValue({ repositories: [makeRepo()] } as never)
+  it('does not call handleGitHubCallback when installationId prop absent', async () => {
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
-    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: 'inst-99' }))
-    window.history.replaceState({}, '', '/')
+    await waitFor(() => expect(client.listRepositories).toHaveBeenCalled())
+    expect(client.handleGitHubCallback).not.toHaveBeenCalled()
   })
 })
