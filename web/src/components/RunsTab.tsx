@@ -402,9 +402,28 @@ export default function RunsTab({ repoPath }: Props) {
                   </div>
                 ) : (
                   <>
+                    {totalInScope > 0 && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>
+                          <span>{totalInScope - pendingCases.length} / {totalInScope} done</span>
+                          <span>{Math.round(((totalInScope - pendingCases.length) / totalInScope) * 100)}%</span>
+                        </div>
+                        <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${((totalInScope - pendingCases.length) / totalInScope) * 100}%`,
+                              background: '#16a34a',
+                              borderRadius: '3px',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
-                        {pendingCases.length} pending / {totalInScope} total in scope
+                        {pendingCases.length} pending
                       </p>
                       {run.status === RunStatus.IN_PROGRESS && (
                         <div style={{ display: 'flex', gap: '8px' }}>
