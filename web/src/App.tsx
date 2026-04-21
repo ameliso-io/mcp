@@ -50,9 +50,16 @@ const styles = {
   },
 }
 
+const REPO_PATH_KEY = 'ameliso:repoPath'
+
 export default function App() {
   const [tab, setTab] = useState<Tab>('overview')
-  const [repoPath, setRepoPath] = useState('')
+  const [repoPath, setRepoPath] = useState(() => localStorage.getItem(REPO_PATH_KEY) ?? '')
+
+  function handleRepoPathChange(p: string) {
+    setRepoPath(p)
+    localStorage.setItem(REPO_PATH_KEY, p)
+  }
 
   return (
     <div style={styles.app}>
@@ -72,7 +79,7 @@ export default function App() {
       </header>
       <main style={styles.content}>
         {tab === 'overview' && (
-          <OverviewTab repoPath={repoPath} onRepoPathChange={setRepoPath} />
+          <OverviewTab repoPath={repoPath} onRepoPathChange={handleRepoPathChange} />
         )}
         {tab === 'cases' && <CasesTab repoPath={repoPath} />}
         {tab === 'suites' && <SuitesTab repoPath={repoPath} />}
