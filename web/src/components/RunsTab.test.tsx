@@ -864,6 +864,24 @@ describe("RunsTab", () => {
     });
   });
 
+  it('shows "Marking…" on All Passed button while bulk record in progress', async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.bulkRecordResults).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText(/All Passed/));
+    await userEvent.click(screen.getByText(/All Passed/));
+    expect(screen.getByText("Marking…")).toBeInTheDocument();
+    resolve!({ results: [], pendingCount: 0, totalInScope: 1 });
+  });
+
   it('shows "Creating…" on Create Run button while run creation in progress', async () => {
     let resolve: (v: unknown) => void;
     vi.mocked(client.createRun).mockReturnValue(
