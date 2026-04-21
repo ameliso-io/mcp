@@ -21,7 +21,7 @@ function NavLinkLabel({ label }: { label: string }) {
 
 export default function NavLink({ href, label }: Props) {
   const pathname = usePathname();
-  const active = pathname === href || (href === "/overview" && pathname === "/");
+  const active = pathname === href;
   return (
     <Link
       href={href}

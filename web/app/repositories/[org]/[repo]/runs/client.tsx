@@ -1,9 +1,10 @@
 "use client";
 
+import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
-import { useRepoId } from "@/hooks/useRepoId";
+import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { RunStatus } from "@/gen/ameliso/v1/types_pb";
 
@@ -22,7 +23,7 @@ const SLUG_BY_STATUS: Record<number, string> = {
 function RunsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [repoId] = useRepoId();
+  const { repoId, basePath } = useRepoParams();
   const initialSuite = searchParams.get("suite") ?? undefined;
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
@@ -31,7 +32,7 @@ function RunsInner() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
     const qs = params.toString();
-    router.replace(qs ? `/runs?${qs}` : "/runs");
+    router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route<string>);
   }
 
   const handleStatusFilterChange = useCallback(
@@ -44,9 +45,9 @@ function RunsInner() {
         params.delete("status");
       }
       const qs = params.toString();
-      router.replace(qs ? `/runs?${qs}` : "/runs");
+      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route<string>);
     },
-    [router, searchParams]
+    [router, searchParams, basePath]
   );
 
   return (

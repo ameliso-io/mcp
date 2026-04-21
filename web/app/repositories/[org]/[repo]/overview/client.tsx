@@ -2,11 +2,11 @@
 
 import { Suspense } from "react";
 import OverviewTab from "@/components/OverviewTab";
-import { useRepoId } from "@/hooks/useRepoId";
+import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 function OverviewInner() {
-  const [repoId] = useRepoId();
+  const { repoId } = useRepoParams();
   return <OverviewTab repoId={repoId} />;
 }
 

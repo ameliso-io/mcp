@@ -35,7 +35,9 @@
       "Bash(cargo fmt *)",
       "Bash(cargo test *)",
       "Skill(merge-worktrees)",
-      "mcp__centy__centy_v1_CentyDaemon_ListProjects"
+      "mcp__centy__centy_v1_CentyDaemon_ListProjects",
+      "Bash(npx vitest *)",
+      "Bash(make dev *)"
     ]
   }
 }

@@ -1,25 +1,26 @@
 "use client";
 
+import type { Route } from "next";
 import { useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RepositoriesTab from "@/components/RepositoriesTab";
-import { useRepoId } from "@/hooks/useRepoId";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 function RepositoriesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [repoId, setRepoId] = useRepoId();
 
   const installationId = searchParams.get("installation_id") ?? undefined;
   const setupAction = searchParams.get("setup_action") ?? undefined;
 
   const handleRepoSelect = useCallback(
     (id: string) => {
-      setRepoId(id);
-      if (id) router.push("/overview");
+      const slashIdx = id.indexOf("/");
+      const org = id.slice(0, slashIdx);
+      const repo = id.slice(slashIdx + 1);
+      router.push(`/repositories/${org}/${repo}/overview` as Route<string>);
     },
-    [setRepoId, router]
+    [router]
   );
 
   const handleInstallationHandled = useCallback(() => {
@@ -32,7 +33,7 @@ function RepositoriesInner() {
 
   return (
     <RepositoriesTab
-      activeRepoId={repoId}
+      activeRepoId=""
       onRepoSelect={handleRepoSelect}
       installationId={installationId}
       setupAction={setupAction}

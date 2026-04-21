@@ -1,9 +1,10 @@
 "use client";
 
+import type { Route } from "next";
 import { useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
-import { useRepoId } from "@/hooks/useRepoId";
+import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 
@@ -22,7 +23,7 @@ const SLUG_BY_PRIORITY: Record<number, string> = {
 function CasesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [repoId] = useRepoId();
+  const { repoId, basePath } = useRepoParams();
 
   const initialSearch = searchParams.get("q") ?? "";
   const initialPriorityFilter =
@@ -56,9 +57,9 @@ function CasesInner() {
         params.delete("sort");
       }
       const qs = params.toString();
-      router.replace(qs ? `/cases?${qs}` : "/cases");
+      router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route<string>);
     },
-    [router, searchParams]
+    [router, searchParams, basePath]
   );
 
   return (

@@ -1,15 +1,16 @@
 "use client";
 
+import type { Route } from "next";
 import { useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SuitesTab from "@/components/SuitesTab";
-import { useRepoId } from "@/hooks/useRepoId";
+import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 function SuitesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [repoId] = useRepoId();
+  const { repoId, basePath } = useRepoParams();
 
   const initialExpanded = searchParams.get("expanded") ?? undefined;
 
@@ -22,9 +23,9 @@ function SuitesInner() {
         params.delete("expanded");
       }
       const qs = params.toString();
-      router.replace(qs ? `/suites?${qs}` : "/suites");
+      router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route<string>);
     },
-    [router, searchParams]
+    [router, searchParams, basePath]
   );
 
   return (
