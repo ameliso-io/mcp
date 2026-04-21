@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import styles from "./OverviewTab.module.css";
 import { client } from "@/client";
@@ -148,6 +148,22 @@ export default function OverviewTab({ repoId, basePath }: Props) {
     [repoId, sinceRef, announce]
   );
 
+  const sortedEntries = useMemo(
+    () => [...entries].sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)),
+    [entries]
+  );
+
+  const sortedAffected = useMemo(
+    () =>
+      affected === null
+        ? null
+        : [...affected].sort((a, b) => {
+            const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
+            return (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3);
+          }),
+    [affected]
+  );
+
   const statCases = entries.length;
   const statPassed = entries.filter((e) => e.latestStatus === ResultStatus.PASSED).length;
   const statFailed = entries.filter((e) => e.latestStatus === ResultStatus.FAILED).length;
@@ -289,9 +305,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               </select>
             </div>
             <ul className={styles.coverageList} role="list">
-              {[...entries]
-                .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))
-                .map((entry) => (
+              {sortedEntries.map((entry) => (
                   <li key={entry.case?.path} className={styles.coverageRow}>
                     <span
                       className={styles.statusDot}
@@ -359,19 +373,12 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               </button>
             </div>
           )}
-          {affected !== null &&
-            (affected.length === 0 ? (
+          {sortedAffected !== null &&
+            (sortedAffected.length === 0 ? (
               <p className={styles.noAffected}>No cases affected by this diff.</p>
             ) : (
               <ul className={styles.affectedList} role="list">
-                {[...affected]
-                  .sort((a, b) => {
-                    const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
-                    return (
-                      (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3)
-                    );
-                  })
-                  .map((ac, idx) => (
+                {sortedAffected.map((ac, idx) => (
                     <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
                         <>
