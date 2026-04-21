@@ -1,4 +1,4 @@
-.PHONY: install dev build test fmt lint spell pre-commit pre-push
+.PHONY: install dev build test coverage-check fmt lint spell pre-commit pre-push
 
 install:
 	pnpm install
@@ -15,6 +15,9 @@ test:
 	cargo test
 	pnpm --filter ameliso-web test
 
+coverage-check:
+	pnpm --filter ameliso-web test:coverage
+
 fmt:
 	cargo fmt --all
 
@@ -30,5 +33,5 @@ spell:
 pre-commit: fmt lint spell
 	@echo "pre-commit: OK"
 
-pre-push: build test
+pre-push: build test coverage-check
 	@echo "pre-push: OK"
