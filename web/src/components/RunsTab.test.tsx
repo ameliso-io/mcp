@@ -863,4 +863,39 @@ describe("RunsTab", () => {
       expect(select.value).toBe(String(ResultStatus.PASSED));
     });
   });
+
+  it('shows "Creating…" on Create Run button while run creation in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.createRun).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    await waitFor(() => screen.getByRole("heading", { name: "Create Run" }));
+    await userEvent.type(screen.getAllByRole("textbox")[0], "2026-01-15-smoke");
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    expect(screen.getByText("Creating…")).toBeInTheDocument();
+    resolve!({ run: mockRun, dirPath: "runs/2026-01-01-smoke" });
+  });
+
+  it('shows "Saving…" on Save Result button while recording result', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.recordResult).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    await userEvent.click(screen.getByText("Save Result"));
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+    resolve!({ result: undefined });
+  });
 });

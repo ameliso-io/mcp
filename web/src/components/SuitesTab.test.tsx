@@ -390,4 +390,20 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("No suites found.")).toBeInTheDocument());
   });
+
+  it('shows "Saving…" on Save button while update in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.updateSuite).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Save"));
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+    resolve!({ suite: mockSuite });
+  });
 });
