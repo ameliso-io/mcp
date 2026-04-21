@@ -872,6 +872,20 @@ mod tests {
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
 
+    #[test]
+    fn slug_path_trailing_slash_returns_invalid_arg() {
+        let err = validate_slug_path("auth/login/", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("empty segment"));
+    }
+
+    #[test]
+    fn slug_path_dot_returns_invalid_arg() {
+        let err = validate_slug_path("auth/lo.gin", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("a-z, 0-9"));
+    }
+
     // -----------------------------------------------------------------------
     // validate_priority
     // -----------------------------------------------------------------------
