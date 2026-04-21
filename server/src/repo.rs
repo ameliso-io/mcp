@@ -437,6 +437,12 @@ pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml>
     let yaml_path = dir.join("run.yaml");
     let content = std::fs::read_to_string(&yaml_path).context("reading run.yaml")?;
     let mut meta: RunYaml = serde_yaml::from_str(&content).context("parsing run.yaml")?;
+    if matches!(meta.status.as_str(), "completed" | "aborted") {
+        return Err(RepoError::ClosedRun(format!(
+            "run {} is already {}",
+            run_id, meta.status
+        )));
+    }
     meta.status = status.to_owned();
     let yaml = serde_yaml::to_string(&meta).context("serializing run.yaml")?;
     std::fs::write(yaml_path, yaml).context("writing run.yaml")?;

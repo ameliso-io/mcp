@@ -314,6 +314,35 @@ async fn record_result_on_closed_run_fails() {
     assert_eq!(err.code(), tonic::Code::FailedPrecondition);
 }
 
+#[tokio::test]
+async fn finalize_run_twice_fails() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+
+    c.finalize_run(Request::new(pb::FinalizeRunRequest {
+        repo_path: rp.clone(),
+        run_id: "2026-01-01-smoke".to_owned(),
+        status: pb::RunStatus::Completed as i32,
+    }))
+    .await
+    .unwrap();
+
+    let err = c
+        .finalize_run(Request::new(pb::FinalizeRunRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-smoke".to_owned(),
+            status: pb::RunStatus::Completed as i32,
+        }))
+        .await
+        .unwrap_err();
+
+    assert_eq!(err.code(), tonic::Code::FailedPrecondition);
+}
+
 // ---------------------------------------------------------------------------
 // Tests — Coverage report
 // ---------------------------------------------------------------------------
