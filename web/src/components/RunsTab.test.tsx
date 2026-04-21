@@ -779,6 +779,48 @@ describe("RunsTab", () => {
     expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
   });
 
+  it("closes record form when switching to a different run", async () => {
+    const run2 = {
+      ...mockRun,
+      id: "2026-01-02-regression",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun, run2] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase],
+      totalInScope: 1,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    // Expand first run and open record form
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    // Switch to second run — record form must close
+    await userEvent.click(screen.getByText("2026-01-02-regression"));
+    await waitFor(() => expect(screen.queryByText("Save Result")).not.toBeInTheDocument());
+  });
+
+  it("closes record form when selected run is deleted", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    // Delete the run
+    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() =>
+      expect(client.deleteRun).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
+    expect(screen.queryByText("Save Result")).not.toBeInTheDocument();
+  });
+
   it("resets recordStatus to PASSED after recording a result", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);

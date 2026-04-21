@@ -203,6 +203,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setPendingCases([]);
       setRecordedResults([]);
       setResultStatusFilter(null);
+      setRecordingCase(null);
+      setCaseBody(null);
       return;
     }
     setSelectedRunId(runId);
@@ -210,6 +212,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
     setPendingCases([]);
     setRecordedResults([]);
     setResultStatusFilter(null);
+    setRecordingCase(null);
+    setCaseBody(null);
     try {
       if (status === RunStatus.IN_PROGRESS) {
         const res = await client.getPendingCases({ repoId, runId });
@@ -312,6 +316,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       });
       setPendingCases([]);
       setTotalInScope(resp.totalInScope);
+      setRecordingCase(null);
+      setCaseBody(null);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -326,6 +332,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       if (selectedRunId === runId) {
         setSelectedRunId(null);
         setPendingCases([]);
+        setRecordingCase(null);
+        setCaseBody(null);
       }
       load();
     } catch (e) {

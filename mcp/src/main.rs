@@ -411,7 +411,10 @@ impl AmelisoMcp {
                 let pending_part = match pend_res {
                     Ok(resp) => {
                         let resp = resp.into_inner();
-                        format!(" ({}/{} pending)", resp.cases.len(), resp.total_in_scope)
+                        let pending = resp.cases.len();
+                        let total = resp.total_in_scope as usize;
+                        let done = total.saturating_sub(pending);
+                        format!(" ({done}/{total} done, {pending} pending)")
                     }
                     Err(_) => String::new(),
                 };
