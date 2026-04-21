@@ -360,6 +360,8 @@ message GetRepoStatusResponse {
   // Totals
   int32 total_runs = 11;
   int32 total_suites = 12;
+  // Per-case coverage (same as GetCoverageReport without status_filter)
+  repeated CoverageEntry coverage_entries = 13;
 }
 
 message GetCoverageReportRequest {

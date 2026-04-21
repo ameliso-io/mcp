@@ -1035,6 +1035,13 @@ export declare type GetRepoStatusResponse = Message<"ameliso.v1.GetRepoStatusRes
    * @generated from field: int32 total_suites = 12;
    */
   totalSuites: number;
+
+  /**
+   * Per-case coverage (same as GetCoverageReport without status_filter)
+   *
+   * @generated from field: repeated ameliso.v1.CoverageEntry coverage_entries = 13;
+   */
+  coverageEntries: CoverageEntry[];
 };
 
 /**

@@ -57,7 +57,6 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Summary stats from getRepoStatus (single call)
   const [totalCases, setTotalCases] = useState(0)
   const [passed, setPassed] = useState(0)
   const [failed, setFailed] = useState(0)
@@ -74,17 +73,14 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     setLoading(true)
     setError(null)
     try {
-      const [statusRes, coverageRes] = await Promise.all([
-        client.getRepoStatus({ repoPath: path }),
-        client.getCoverageReport({ repoPath: path }),
-      ])
-      setTotalCases(statusRes.totalCases)
-      setPassed(statusRes.passedCount)
-      setFailed(statusRes.failedCount)
-      setNeverRun(statusRes.neverRunCount)
-      setActiveRuns(statusRes.activeRuns)
-      setEntries(coverageRes.entries)
-      setRunCount(coverageRes.runCount)
+      const res = await client.getRepoStatus({ repoPath: path })
+      setTotalCases(res.totalCases)
+      setPassed(res.passedCount)
+      setFailed(res.failedCount)
+      setNeverRun(res.neverRunCount)
+      setActiveRuns(res.activeRuns)
+      setEntries(res.coverageEntries)
+      setRunCount(res.totalRuns)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -131,11 +127,10 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     }
   }
 
-  // Use getRepoStatus summary for stat cards; fall back to coverage entries for per-case list
-  const statCases = totalCases || entries.length
-  const statPassed = passed || entries.filter(e => e.latestStatus === ResultStatus.PASSED).length
-  const statFailed = failed || entries.filter(e => e.latestStatus === ResultStatus.FAILED).length
-  const statNever = neverRun || entries.filter(e => e.latestStatus === ResultStatus.NEVER || e.latestStatus === ResultStatus.UNSPECIFIED).length
+  const statCases = totalCases
+  const statPassed = passed
+  const statFailed = failed
+  const statNever = neverRun
 
   return (
     <div>

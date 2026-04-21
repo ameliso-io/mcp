@@ -1328,4 +1328,12 @@ async fn get_repo_status_returns_summary() {
     assert_eq!(resp.active_runs[0].run_id, "2026-01-01-smoke");
     assert_eq!(resp.active_runs[0].pending_count, 1);
     assert_eq!(resp.active_runs[0].total_in_scope, 2);
+    // coverage_entries includes all cases
+    assert_eq!(resp.coverage_entries.len(), 2);
+    let login_entry = resp
+        .coverage_entries
+        .iter()
+        .find(|e| e.case.as_ref().map(|c| c.path.as_str()) == Some("auth/login"))
+        .expect("auth/login entry missing");
+    assert_eq!(login_entry.latest_status, pb::ResultStatus::Passed as i32);
 }

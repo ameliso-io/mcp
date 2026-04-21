@@ -588,6 +588,22 @@ impl AmelisoService for AmelisoServer {
             })
             .collect();
 
+        let coverage_entries: Vec<pb::CoverageEntry> = cases
+            .iter()
+            .map(|c| {
+                let (status, last_run_id, last_run_date) = latest
+                    .get(&c.case_path)
+                    .map(|s| (s.clone(), String::new(), String::new()))
+                    .unwrap_or_else(|| ("never".to_owned(), String::new(), String::new()));
+                pb::CoverageEntry {
+                    case: Some(case_to_pb(c)),
+                    latest_status: result_status_to_i32(&status),
+                    last_run_id,
+                    last_run_date,
+                }
+            })
+            .collect();
+
         Ok(Response::new(pb::GetRepoStatusResponse {
             total_cases: cases.len() as i32,
             high_priority: high,
@@ -601,6 +617,7 @@ impl AmelisoService for AmelisoServer {
             active_runs,
             total_runs: runs.len() as i32,
             total_suites: suites.len() as i32,
+            coverage_entries,
         }))
     }
 
