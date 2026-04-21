@@ -512,7 +512,13 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
                 println!("No suites found.");
             } else {
                 for (slug, s) in &suites {
-                    println!("{:20} {} ({} cases)", slug, s.name, s.cases.len());
+                    let desc = s
+                        .description
+                        .as_deref()
+                        .filter(|d| !d.is_empty())
+                        .map(|d| format!(" — {d}"))
+                        .unwrap_or_default();
+                    println!("{:20} {} ({} cases){}", slug, s.name, s.cases.len(), desc);
                 }
             }
         }

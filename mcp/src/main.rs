@@ -627,7 +627,15 @@ impl AmelisoMcp {
                 }
                 suites
                     .iter()
-                    .map(|(slug, s)| format!("[{}] {} ({} cases)", slug, s.name, s.cases.len()))
+                    .map(|(slug, s)| {
+                        let desc = s
+                            .description
+                            .as_deref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| format!(" — {d}"))
+                            .unwrap_or_default();
+                        format!("[{}] {} ({} cases){}", slug, s.name, s.cases.len(), desc)
+                    })
                     .collect::<Vec<_>>()
                     .join("\n")
             }
