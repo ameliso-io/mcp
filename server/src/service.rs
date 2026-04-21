@@ -356,6 +356,9 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
+        if req.name.is_empty() {
+            return Err(invalid("name is required"));
+        }
         let desc = if req.description.is_empty() {
             None
         } else {
