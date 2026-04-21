@@ -76,16 +76,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.app-shell {
-  min-height: 100vh;
-}
-
-.page-content {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
