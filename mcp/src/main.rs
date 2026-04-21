@@ -37,7 +37,9 @@ struct CreateCaseRequest {
     tags: Option<String>,
     #[schemars(description = "low | medium | high (default: medium)")]
     priority: Option<String>,
-    #[schemars(description = "Full markdown body (steps, expected results). Defaults to a template.")]
+    #[schemars(
+        description = "Full markdown body (steps, expected results). Defaults to a template."
+    )]
     body: Option<String>,
 }
 
@@ -84,7 +86,9 @@ struct UpdateCaseRequest {
     tags: Option<String>,
     #[schemars(description = "low | medium | high (default: medium)")]
     priority: Option<String>,
-    #[schemars(description = "Replace the full markdown body. If omitted, existing body is preserved.")]
+    #[schemars(
+        description = "Replace the full markdown body. If omitted, existing body is preserved."
+    )]
     body: Option<String>,
 }
 
@@ -313,7 +317,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Update an existing test case's metadata.")]
+    #[tool(description = "Update an existing test case's metadata and optionally replace its body.")]
     fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let tag_list: Vec<String> = req
@@ -336,6 +340,15 @@ impl AmelisoMcp {
             body,
         ) {
             Ok(c) => format!("updated: cases/{}.md", c.case_path),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Delete a test case file from the repository.")]
+    fn delete_case(&self, Parameters(req): Parameters<GetCaseRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::delete_case(&repo, &req.case_path) {
+            Ok(()) => format!("deleted: cases/{}.md", req.case_path),
             Err(e) => format!("error: {e}"),
         }
     }

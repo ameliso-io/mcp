@@ -304,6 +304,16 @@ pub fn update_case(
     })
 }
 
+pub fn delete_case(repo: &Path, case_path: &str) -> RResult<()> {
+    let file = case_file_path(repo, case_path);
+    if !file.exists() {
+        return Err(RepoError::NotFound(format!("case not found: {}", case_path)));
+    }
+    std::fs::remove_file(&file)
+        .with_context(|| format!("deleting {}", file.display()))?;
+    Ok(())
+}
+
 pub fn list_runs(repo: &Path) -> RResult<Vec<RunYaml>> {
     let dir = runs_dir(repo);
     if !dir.exists() {

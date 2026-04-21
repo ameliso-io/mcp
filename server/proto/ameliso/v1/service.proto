@@ -23,6 +23,9 @@ service AmelisoService {
   // Update an existing case's metadata. Bumps updated_at automatically.
   rpc UpdateCase(UpdateCaseRequest) returns (UpdateCaseResponse);
 
+  // Delete a case file from the repository.
+  rpc DeleteCase(DeleteCaseRequest) returns (DeleteCaseResponse);
+
   // --- Suites ---
 
   // List all suites.
@@ -119,6 +122,16 @@ message UpdateCaseRequest {
 
 message UpdateCaseResponse {
   Case case = 1;
+}
+
+message DeleteCaseRequest {
+  string repo_path = 1;
+  string case_path = 2;
+}
+
+message DeleteCaseResponse {
+  // Path of the deleted file relative to repo root
+  string file_path = 1;
 }
 
 // --- Suites ---

@@ -545,3 +545,32 @@ async fn create_case_with_custom_body() {
 
     assert!(resp.body.contains("Open the app"), "custom body preserved");
 }
+
+#[tokio::test]
+async fn delete_case_removes_file() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "User Login");
+    assert!(tmp.path().join("cases/auth/login.md").exists());
+
+    c.delete_case(Request::new(pb::DeleteCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "auth/login".to_owned(),
+    }))
+    .await
+    .unwrap();
+
+    assert!(!tmp.path().join("cases/auth/login.md").exists());
+
+    let err = c
+        .delete_case(Request::new(pb::DeleteCaseRequest {
+            repo_path: rp,
+            case_path: "auth/login".to_owned(),
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}

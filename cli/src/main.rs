@@ -82,6 +82,12 @@ enum CasesCmd {
         #[arg(long, help = "Replace the full markdown body")]
         body: Option<String>,
     },
+    #[command(about = "Delete a test case")]
+    Delete {
+        #[arg(long, env = "AMELISO_REPO")]
+        repo: PathBuf,
+        case_path: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -249,6 +255,10 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
                 body.as_deref(),
             )?;
             println!("Updated: cases/{}.md", c.case_path);
+        }
+        CasesCmd::Delete { repo, case_path } => {
+            repo::delete_case(&repo, &case_path)?;
+            println!("Deleted: cases/{}.md", case_path);
         }
     }
     Ok(())

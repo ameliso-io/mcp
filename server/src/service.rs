@@ -177,7 +177,11 @@ impl AmelisoService for AmelisoServer {
         }
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
-        let body = if req.body.is_empty() { None } else { Some(req.body.as_str()) };
+        let body = if req.body.is_empty() {
+            None
+        } else {
+            Some(req.body.as_str())
+        };
         let case = repo::create_case(
             &repo,
             &req.case_path,
@@ -202,7 +206,11 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
-        let body = if req.body.is_empty() { None } else { Some(req.body.as_str()) };
+        let body = if req.body.is_empty() {
+            None
+        } else {
+            Some(req.body.as_str())
+        };
         let case = repo::update_case(
             &repo,
             &req.case_path,
@@ -215,6 +223,21 @@ impl AmelisoService for AmelisoServer {
         .map_err(repo_err)?;
         Ok(Response::new(pb::UpdateCaseResponse {
             case: Some(case_to_pb(&case)),
+        }))
+    }
+
+    async fn delete_case(
+        &self,
+        request: Request<pb::DeleteCaseRequest>,
+    ) -> Result<Response<pb::DeleteCaseResponse>, Status> {
+        let req = request.into_inner();
+        if req.case_path.is_empty() {
+            return Err(invalid("case_path is required"));
+        }
+        let repo = PathBuf::from(&req.repo_path);
+        repo::delete_case(&repo, &req.case_path).map_err(repo_err)?;
+        Ok(Response::new(pb::DeleteCaseResponse {
+            file_path: format!("cases/{}.md", req.case_path),
         }))
     }
 
