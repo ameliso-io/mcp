@@ -332,9 +332,15 @@ impl AmelisoMcp {
                 }
                 runs.iter()
                     .map(|r| {
+                        let suite_part = r
+                            .suite
+                            .as_deref()
+                            .filter(|s| !s.is_empty())
+                            .map(|s| format!(" suite: {s}"))
+                            .unwrap_or_default();
                         format!(
-                            "[{}] {} — tester: {} status: {}",
-                            r.id, r.date, r.tester, r.status
+                            "[{}] {} — tester: {} status: {}{}",
+                            r.id, r.date, r.tester, r.status, suite_part
                         )
                     })
                     .collect::<Vec<_>>()

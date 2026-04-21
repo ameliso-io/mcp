@@ -326,7 +326,16 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                 println!("No runs found.");
             } else {
                 for r in &runs {
-                    println!("{:30} {:12} tester: {}", r.id, r.status, r.tester);
+                    let suite_part = r
+                        .suite
+                        .as_deref()
+                        .filter(|s| !s.is_empty())
+                        .map(|s| format!(" [suite: {s}]"))
+                        .unwrap_or_default();
+                    println!(
+                        "{:30} {:12} tester: {}{}",
+                        r.id, r.status, r.tester, suite_part
+                    );
                 }
                 println!("\n{} run(s)", runs.len());
             }
