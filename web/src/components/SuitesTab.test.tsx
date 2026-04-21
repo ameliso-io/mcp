@@ -353,4 +353,21 @@ describe("SuitesTab", () => {
     expect(screen.queryByText("Save")).not.toBeInTheDocument();
     expect(screen.getByText("Edit")).toBeInTheDocument();
   });
+
+  it("expands suite on Enter key", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    const suiteRow = screen.getByRole("button", { name: /Smoke Tests/ });
+    await userEvent.type(suiteRow, "{Enter}");
+    await waitFor(() => expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" })));
+  });
+
+  it("expands suite on Space key", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    const suiteRow = screen.getByRole("button", { name: /Smoke Tests/ });
+    suiteRow.focus();
+    await userEvent.keyboard(" ");
+    await waitFor(() => expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" })));
+  });
 });

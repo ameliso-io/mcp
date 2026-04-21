@@ -530,4 +530,21 @@ describe("CasesTab", () => {
       )
     );
   });
+
+  it("expands case on Enter key", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const caseRow = screen.getByRole("button", { name: /User Login/ });
+    await userEvent.type(caseRow, "{Enter}");
+    await waitFor(() => expect(client.getCase).toHaveBeenCalled());
+  });
+
+  it("expands case on Space key", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const caseRow = screen.getByRole("button", { name: /User Login/ });
+    caseRow.focus();
+    await userEvent.keyboard(" ");
+    await waitFor(() => expect(client.getCase).toHaveBeenCalled());
+  });
 });

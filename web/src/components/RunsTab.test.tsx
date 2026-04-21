@@ -694,4 +694,31 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
+
+  it("expands run on Enter key", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    const runRow = screen.getByRole("button", { name: /2026-01-01-smoke/ });
+    await userEvent.type(runRow, "{Enter}");
+    await waitFor(() =>
+      expect(client.getPendingCases).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
+  });
+
+  it("expands run on Space key", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    const runRow = screen.getByRole("button", { name: /2026-01-01-smoke/ });
+    runRow.focus();
+    await userEvent.keyboard(" ");
+    await waitFor(() =>
+      expect(client.getPendingCases).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
+  });
 });
