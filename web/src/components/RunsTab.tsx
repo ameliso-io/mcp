@@ -320,6 +320,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
             ).map((opt) => (
               <button
                 key={opt.value}
+                type="button"
                 onClick={() => setStatusFilter(opt.value)}
                 aria-pressed={statusFilter === opt.value}
                 className={
@@ -332,6 +333,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
           </div>
         </div>
         <button
+          type="button"
           onClick={() => {
             if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
             setShowCreate(!showCreate);
@@ -412,6 +414,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             className={styles.errorDismiss}
             aria-label="Dismiss"
@@ -540,6 +543,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               .map((s) => (
                                 <button
                                   key={s.label}
+                                  type="button"
                                   onClick={() =>
                                     setResultStatusFilter((rsf) =>
                                       rsf === s.status ? null : s.status
@@ -554,6 +558,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               ))}
                             {resultStatusFilter !== null && (
                               <button
+                                type="button"
                                 onClick={() => setResultStatusFilter(null)}
                                 className={styles.showAllBtn}
                               >
