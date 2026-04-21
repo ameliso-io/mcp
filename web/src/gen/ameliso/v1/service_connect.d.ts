@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BulkRecordResultsRequest, BulkRecordResultsResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, ListCasesRequest, ListCasesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
+import { CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -173,18 +173,6 @@ export declare const AmelisoService: {
       readonly kind: MethodKind.Unary,
     },
     /**
-     * Record multiple case results in one call. More efficient than N sequential RecordResult calls.
-     * Idempotent per case: later entries for the same case_path overwrite earlier ones.
-     *
-     * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
-     */
-    readonly bulkRecordResults: {
-      readonly name: "BulkRecordResults",
-      readonly I: typeof BulkRecordResultsRequest,
-      readonly O: typeof BulkRecordResultsResponse,
-      readonly kind: MethodKind.Unary,
-    },
-    /**
      * Mark a run as completed or aborted. Validates all expected cases have results.
      *
      * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
@@ -238,6 +226,62 @@ export declare const AmelisoService: {
       readonly name: "GetAffectedCases",
       readonly I: typeof GetAffectedCasesRequest,
       readonly O: typeof GetAffectedCasesResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.GetGitHubInstallUrl
+     */
+    readonly getGitHubInstallUrl: {
+      readonly name: "GetGitHubInstallUrl",
+      readonly I: typeof GetGitHubInstallUrlRequest,
+      readonly O: typeof GetGitHubInstallUrlResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Called after GitHub redirects back with an installation_id.
+     * Fetches repos for the installation, clones them, and persists the connection.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
+     */
+    readonly handleGitHubCallback: {
+      readonly name: "HandleGitHubCallback",
+      readonly I: typeof HandleGitHubCallbackRequest,
+      readonly O: typeof HandleGitHubCallbackResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * List all connected repositories.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
+     */
+    readonly listRepositories: {
+      readonly name: "ListRepositories",
+      readonly I: typeof ListRepositoriesRequest,
+      readonly O: typeof ListRepositoriesResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Pull latest changes for a connected repository.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
+     */
+    readonly syncRepository: {
+      readonly name: "SyncRepository",
+      readonly I: typeof SyncRepositoryRequest,
+      readonly O: typeof SyncRepositoryResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Remove a connected repository from the store (does not delete the local clone).
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
+     */
+    readonly removeRepository: {
+      readonly name: "RemoveRepository",
+      readonly I: typeof RemoveRepositoryRequest,
+      readonly O: typeof RemoveRepositoryResponse,
       readonly kind: MethodKind.Unary,
     },
   }

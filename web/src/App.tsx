@@ -3,8 +3,9 @@ import OverviewTab from './components/OverviewTab'
 import CasesTab from './components/CasesTab'
 import RunsTab from './components/RunsTab'
 import SuitesTab from './components/SuitesTab'
+import RepositoriesTab from './components/RepositoriesTab'
 
-type Tab = 'overview' | 'cases' | 'suites' | 'runs'
+type Tab = 'repositories' | 'overview' | 'cases' | 'suites' | 'runs'
 
 const styles = {
   app: {
@@ -52,8 +53,22 @@ const styles = {
 
 const REPO_PATH_KEY = 'ameliso:repoPath'
 
+const TAB_LABELS: Record<Tab, string> = {
+  repositories: 'Repositories',
+  overview: 'Overview',
+  cases: 'Cases',
+  suites: 'Suites',
+  runs: 'Runs',
+}
+
+// Start on repositories tab if GitHub is redirecting back with installation_id
+const initialTab = (): Tab => {
+  const params = new URLSearchParams(window.location.search)
+  return params.has('installation_id') ? 'repositories' : 'overview'
+}
+
 export default function App() {
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [repoPath, setRepoPath] = useState(() => localStorage.getItem(REPO_PATH_KEY) ?? '')
 
   function handleRepoPathChange(p: string) {
@@ -61,23 +76,34 @@ export default function App() {
     localStorage.setItem(REPO_PATH_KEY, p)
   }
 
+  function handleRepoSelect(path: string) {
+    handleRepoPathChange(path)
+    setTab('overview')
+  }
+
   return (
     <div style={styles.app}>
       <header style={styles.header}>
         <span style={styles.logo}>Ameliso</span>
         <nav style={styles.nav}>
-          {(['overview', 'cases', 'suites', 'runs'] as Tab[]).map((t) => (
+          {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
             <button
               key={t}
               style={styles.navBtn(tab === t)}
               onClick={() => setTab(t)}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </nav>
       </header>
       <main style={styles.content}>
+        {tab === 'repositories' && (
+          <RepositoriesTab
+            activeRepoPath={repoPath}
+            onRepoSelect={handleRepoSelect}
+          />
+        )}
         {tab === 'overview' && (
           <OverviewTab repoPath={repoPath} onRepoPathChange={handleRepoPathChange} />
         )}

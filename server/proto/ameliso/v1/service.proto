@@ -79,6 +79,24 @@ service AmelisoService {
 
   // Return cases that may need re-running based on git changes since the last run.
   rpc GetAffectedCases(GetAffectedCasesRequest) returns (GetAffectedCasesResponse);
+
+  // --- GitHub App ---
+
+  // Return the GitHub App installation URL (set via GITHUB_APP_INSTALLATION_URL env var).
+  rpc GetGitHubInstallUrl(GetGitHubInstallUrlRequest) returns (GetGitHubInstallUrlResponse);
+
+  // Called after GitHub redirects back with an installation_id.
+  // Fetches repos for the installation, clones them, and persists the connection.
+  rpc HandleGitHubCallback(HandleGitHubCallbackRequest) returns (HandleGitHubCallbackResponse);
+
+  // List all connected repositories.
+  rpc ListRepositories(ListRepositoriesRequest) returns (ListRepositoriesResponse);
+
+  // Pull latest changes for a connected repository.
+  rpc SyncRepository(SyncRepositoryRequest) returns (SyncRepositoryResponse);
+
+  // Remove a connected repository from the store (does not delete the local clone).
+  rpc RemoveRepository(RemoveRepositoryRequest) returns (RemoveRepositoryResponse);
 }
 
 // --- Cases ---
@@ -327,3 +345,40 @@ message GetAffectedCasesResponse {
   repeated AffectedCase cases = 1;
   string reason = 2;
 }
+
+// --- GitHub App ---
+
+message GetGitHubInstallUrlRequest {}
+
+message GetGitHubInstallUrlResponse {
+  string url = 1;
+  bool configured = 2;
+}
+
+message HandleGitHubCallbackRequest {
+  string installation_id = 1;
+}
+
+message HandleGitHubCallbackResponse {
+  repeated Repository repositories = 1;
+}
+
+message ListRepositoriesRequest {}
+
+message ListRepositoriesResponse {
+  repeated Repository repositories = 1;
+}
+
+message SyncRepositoryRequest {
+  string id = 1;
+}
+
+message SyncRepositoryResponse {
+  Repository repository = 1;
+}
+
+message RemoveRepositoryRequest {
+  string id = 1;
+}
+
+message RemoveRepositoryResponse {}

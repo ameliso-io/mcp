@@ -243,6 +243,69 @@ export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
 export declare const AffectedCaseSchema: GenMessage<AffectedCase>;
 
 /**
+ * A GitHub repository connected via the GitHub App installation.
+ *
+ * @generated from message ameliso.v1.Repository
+ */
+export declare type Repository = Message<"ameliso.v1.Repository"> & {
+  /**
+   * "owner/repo"
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * "repo"
+   *
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * "owner/repo"
+   *
+   * @generated from field: string full_name = 3;
+   */
+  fullName: string;
+
+  /**
+   * "https://github.com/owner/repo"
+   *
+   * @generated from field: string html_url = 4;
+   */
+  htmlUrl: string;
+
+  /**
+   * absolute path to local clone
+   *
+   * @generated from field: string local_path = 5;
+   */
+  localPath: string;
+
+  /**
+   * @generated from field: string installation_id = 6;
+   */
+  installationId: string;
+
+  /**
+   * @generated from field: bool cloned = 7;
+   */
+  cloned: boolean;
+
+  /**
+   * @generated from field: string added_at = 8;
+   */
+  addedAt: string;
+};
+
+/**
+ * Describes the message ameliso.v1.Repository.
+ * Use `create(RepositorySchema)` to create a new message.
+ */
+export declare const RepositorySchema: GenMessage<Repository>;
+
+/**
  * @generated from enum ameliso.v1.RunStatus
  */
 export enum RunStatus {

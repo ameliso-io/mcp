@@ -1,4 +1,0 @@
-name: Smoke Test
-description: Quick verification of core functionality after any deployment
-cases:
-  - auth/user-login
