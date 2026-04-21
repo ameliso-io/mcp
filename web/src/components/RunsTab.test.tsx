@@ -1135,4 +1135,13 @@ describe("RunsTab", () => {
     // "User Login" belongs to auth/login — should NOT appear for auth/unknown-path result
     expect(screen.queryByText("User Login")).not.toBeInTheDocument();
   });
+
+  it("cancels Create Run form when Cancel button clicked on toggle", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByRole("heading", { name: "Create Run" })).not.toBeInTheDocument();
+    expect(screen.getByText("+ New Run")).toBeInTheDocument();
+  });
 });
