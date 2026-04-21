@@ -619,7 +619,7 @@ export default function CasesTab({ repoId }: Props) {
               {expandedPath === c.path && editingPath !== c.path && (
                 <div className={styles.expandedPanel}>
                   {bodyLoading ? (
-                    <p className={styles.expandedLoading}>Loading…</p>
+                    <p className={styles.expandedLoading} role="status">Loading…</p>
                   ) : expandedBody ? (
                     <MarkdownBody body={expandedBody} />
                   ) : (

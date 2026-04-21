@@ -489,7 +489,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
             {selectedRunId === run.id && (
               <div className={styles.expandedPanel}>
                 {loadingPending ? (
-                  <div className={styles.panelLoading}>Loading…</div>
+                  <div className={styles.panelLoading} role="status">Loading…</div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
                     {recordedResults.length > 0 &&
@@ -740,7 +740,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               {(caseBodyLoading || caseBody) && (
                                 <div className={styles.recordSteps}>
                                   {caseBodyLoading ? (
-                                    <p className={styles.stepsLoading}>Loading steps…</p>
+                                    <p className={styles.stepsLoading} role="status">Loading steps…</p>
                                   ) : (
                                     caseBody && <MarkdownBody body={caseBody} maxHeight="200px" />
                                   )}

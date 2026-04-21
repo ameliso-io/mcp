@@ -405,7 +405,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 {expanded === suite.slug && (
                   <div className={styles.expandedPanel}>
                     {expandedCasesLoading ? (
-                      <p className={styles.expandedLoading}>Loading…</p>
+                      <p className={styles.expandedLoading} role="status">Loading…</p>
                     ) : expandedCases.length > 0 ? (
                       <ul className={styles.caseList} role="list">
                         {expandedCases.map((c) => (
