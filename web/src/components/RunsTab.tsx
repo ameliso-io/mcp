@@ -633,6 +633,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                 <span className={styles.confirmText}>Pass all?</span>
                                 <button
                                   type="button"
+                                  aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
                                   onClick={() => handleBulkPass(run.id)}
                                   disabled={bulkPassing}
                                   className={styles.btnBlueSm}
@@ -641,6 +642,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                 </button>
                                 <button
                                   type="button"
+                                  aria-label="Cancel bulk pass"
                                   onClick={() => setConfirmingBulkPass(null)}
                                   className={styles.btnOutlineSm}
                                   autoFocus
