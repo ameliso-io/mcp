@@ -239,7 +239,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
           <form onSubmit={handleAffected} className={styles.affectedForm}>
             <input
               type="text"
-              aria-label="Since ref"
+              aria-label="Git ref to compare from (leave empty to use last run commit)"
               value={sinceRef}
               onChange={(e) => setSinceRef(e.target.value)}
               placeholder="Since ref (default: last run commit)"

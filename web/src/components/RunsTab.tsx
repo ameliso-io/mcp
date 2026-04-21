@@ -667,6 +667,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </span>
                               <button
                                 type="button"
+                                aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
                                 onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
                                 className={
                                   confirmingFinalize.status === RunStatus.COMPLETED
@@ -678,6 +679,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </button>
                               <button
                                 type="button"
+                                aria-label="Cancel"
                                 onClick={() => setConfirmingFinalize(null)}
                                 className={styles.btnOutlineSm}
                                 autoFocus
@@ -689,6 +691,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                             <>
                               <button
                                 type="button"
+                                aria-label={`Complete run ${run.id}`}
                                 onClick={() =>
                                   setConfirmingFinalize({
                                     runId: run.id,
@@ -701,6 +704,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </button>
                               <button
                                 type="button"
+                                aria-label={`Abort run ${run.id}`}
                                 onClick={() =>
                                   setConfirmingFinalize({
                                     runId: run.id,

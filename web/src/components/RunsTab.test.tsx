@@ -165,7 +165,7 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
     await waitFor(() => screen.getByText("Complete?"));
-    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm complete run 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.finalizeRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke", status: RunStatus.COMPLETED })
@@ -181,7 +181,7 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("Abort Run"));
     await userEvent.click(screen.getByText("Abort Run"));
     await waitFor(() => screen.getByText("Abort?"));
-    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm abort run 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.finalizeRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke", status: RunStatus.ABORTED })
@@ -445,7 +445,7 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
     await waitFor(() => screen.getByText("Complete?"));
-    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm complete run 2026-01-01-smoke" }));
     await waitFor(() => expect(screen.getByText("finalize failed")).toBeInTheDocument());
   });
 
@@ -457,7 +457,7 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
     await waitFor(() => screen.getByText("Complete?"));
-    await userEvent.click(screen.getByRole("button", { name: "No" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(client.finalizeRun).not.toHaveBeenCalled();
     expect(screen.getByText("Complete Run")).toBeInTheDocument();
   });
