@@ -186,7 +186,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
           )}
 
           <div className={styles.card}>
-            <p className={styles.label} style={{ marginBottom: "12px" }}>
+            <p className={`${styles.label} ${styles.sectionLabel}`}>
               Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
             </p>
             <div className={styles.coverageList}>
@@ -222,7 +222,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
       {repoId && (
         <div className={styles.card}>
-          <p className={styles.label} style={{ marginBottom: "12px" }}>
+          <p className={`${styles.label} ${styles.sectionLabel}`}>
             Affected Cases by Git Diff
           </p>
           <form onSubmit={handleAffected} className={styles.affectedForm}>
@@ -260,10 +260,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   .map((ac, idx) => (
                     <div key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
-                        <span
-                          className={styles.priorityDot}
-                          data-priority={ac.case.priority}
-                        />
+                        <span className={styles.priorityDot} data-priority={ac.case.priority} />
                       )}
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>

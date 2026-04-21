@@ -245,3 +245,18 @@
 .btnOutline:hover {
   background: var(--color-surface);
 }
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.searchWrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.clearBtnMt {
+  margin-top: 4px;
+}

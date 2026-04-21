@@ -125,13 +125,9 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     <div>
       <div className={styles.header}>
         <h2 className={styles.title}>Repositories</h2>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className={styles.headerActions}>
           {repos.length > 0 && (
-            <button
-              onClick={handleRefreshAll}
-              disabled={refreshing}
-              className={styles.btnOutline}
-            >
+            <button onClick={handleRefreshAll} disabled={refreshing} className={styles.btnOutline}>
               {refreshing ? "Refreshing…" : "↻ Refresh All"}
             </button>
           )}
@@ -155,7 +151,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       </div>
 
       {repos.length > 0 && (
-        <div style={{ position: "relative", marginBottom: "20px" }}>
+        <div className={styles.searchWrapper}>
           <input
             type="search"
             placeholder="Search repositories…"
@@ -170,10 +166,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       {error && (
         <div className={styles.errorCard}>
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className={styles.errorDismiss}
-          >
+          <button onClick={() => setError(null)} className={styles.errorDismiss}>
             ×
           </button>
         </div>
@@ -199,7 +192,10 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       {!loading && repos.length > 0 && filteredRepos.length === 0 && (
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No results for "{search}"</p>
-          <button onClick={() => setSearch("")} className={`${styles.btn} ${styles.btnSecondary}`} style={{ marginTop: "4px" }}>
+          <button
+            onClick={() => setSearch("")}
+            className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
+          >
             Clear search
           </button>
         </div>
