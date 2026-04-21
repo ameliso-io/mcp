@@ -368,6 +368,7 @@ pub fn list_runs(repo: &Path) -> RResult<Vec<RunYaml>> {
 }
 
 pub fn get_run(repo: &Path, run_id: &str) -> RResult<LoadedRun> {
+    validate_slug_path(run_id, "run")?;
     let dir = run_dir_path(repo, run_id);
     if !dir.exists() {
         return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
@@ -445,6 +446,7 @@ pub fn record_result(
             status
         )));
     }
+    validate_slug_path(run_id, "run")?;
     validate_slug_path(case_path, "case")?;
     let run_dir = run_dir_path(repo, run_id);
     if !run_dir.exists() {
@@ -479,6 +481,7 @@ pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml>
             status
         )));
     }
+    validate_slug_path(run_id, "run")?;
     let dir = run_dir_path(repo, run_id);
     if !dir.exists() {
         return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
