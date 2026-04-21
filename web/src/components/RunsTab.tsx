@@ -148,6 +148,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         suite: newSuite,
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewSlug("");
       setNewTester("");
       setNewEnv("");

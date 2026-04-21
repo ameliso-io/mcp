@@ -102,6 +102,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
           : [],
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewSlug("");
       setNewName("");
       setNewDesc("");

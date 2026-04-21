@@ -182,6 +182,7 @@ export default function CasesTab({ repoId }: Props) {
         body: newBody,
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewPath("");
       setNewTitle("");
       setNewDesc("");
