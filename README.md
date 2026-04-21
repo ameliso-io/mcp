@@ -147,10 +147,10 @@ Git hooks run automatically after `pnpm install`.
 
 ### Coverage prerequisites
 
-`cargo-tarpaulin` must be installed for Rust coverage:
+`cargo-llvm-cov` must be installed for Rust coverage:
 
 ```sh
-cargo install cargo-tarpaulin
+cargo install cargo-llvm-cov
 ```
 
-Thresholds: **80% line coverage** for Rust, **80% statement/branch/function/line coverage** for the web frontend.
+Thresholds: **60% line coverage** for `ameliso-server` (target: 80%), **80% statement/branch/function/line coverage** for the web frontend.

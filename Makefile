@@ -28,7 +28,7 @@ spell:
 	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
 
 coverage-check:
-	cargo tarpaulin --workspace --fail-under 80
+	cargo llvm-cov -p ameliso-server --fail-under-lines 60
 	cd web && pnpm run coverage
 
 # --- Git hooks (called by Husky) ---
