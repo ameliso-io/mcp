@@ -10,9 +10,18 @@ import styles from "./RepositoriesTab.module.css";
 interface Props {
   onRepoSelect: (id: string) => void;
   activeRepoId: string;
+  installationId?: string;
+  setupAction?: string;
+  onInstallationHandled?: () => void;
 }
 
-export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
+export default function RepositoriesTab({
+  onRepoSelect,
+  activeRepoId,
+  installationId,
+  setupAction,
+  onInstallationHandled,
+}: Props) {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [installUrl, setInstallUrl] = useState<string>("");
   const [configured, setConfigured] = useState(false);
@@ -65,31 +74,27 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     }
   }, [repos, announce]);
 
-  // Handle GitHub callback: ?installation_id=... in URL
+  // Handle GitHub OAuth callback params passed from the page client
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const installationId = params.get("installation_id");
-    const setupAction = params.get("setup_action");
     if (
-      installationId &&
-      (setupAction === "install" || setupAction === "update" || setupAction == null)
-    ) {
-      // Clear the URL params so we don't reprocess on re-render
-      window.history.replaceState({}, "", window.location.pathname);
-      setLoading(true);
-      setError(null);
-      client
-        .handleGitHubCallback({ installationId })
-        .then((res) => {
-          setRepos((prev) => {
-            const ids = new Set(res.repositories.map((r) => r.id));
-            return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
-          });
-        })
-        .catch((e) => setError(errorMessage(e)))
-        .finally(() => setLoading(false));
-    }
-  }, []);
+      !installationId ||
+      (setupAction != null && setupAction !== "install" && setupAction !== "update")
+    )
+      return;
+    onInstallationHandled?.();
+    setLoading(true);
+    setError(null);
+    client
+      .handleGitHubCallback({ installationId })
+      .then((res) => {
+        setRepos((prev) => {
+          const ids = new Set(res.repositories.map((r) => r.id));
+          return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
+        });
+      })
+      .catch((e) => setError(errorMessage(e)))
+      .finally(() => setLoading(false));
+  }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {
     load();
