@@ -535,7 +535,7 @@ export default function CasesTab({
         {[...deferredCases]
           .sort((a, b) => {
             if (sortBy === "priority") {
-              const ord = { high: 0, medium: 1, low: 2 } as Record<string, number>;
+              const ord: Record<string, number> = { high: 0, medium: 1, low: 2 };
               const diff = (ord[a.priority] ?? 3) - (ord[b.priority] ?? 3);
               return diff !== 0 ? diff : a.path.localeCompare(b.path);
             }
