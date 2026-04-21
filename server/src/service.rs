@@ -1745,6 +1745,47 @@ mod tests {
         assert!(err.message().contains("run_id is required"));
     }
 
+    // ── github handler validation ─────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn handle_git_hub_callback_rejects_empty_installation_id() {
+        let s = server();
+        let err = s
+            .handle_git_hub_callback(Request::new(pb::HandleGitHubCallbackRequest {
+                installation_id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("installation_id is required"));
+    }
+
+    #[tokio::test]
+    async fn sync_repository_rejects_empty_id() {
+        let s = server();
+        let err = s
+            .sync_repository(Request::new(pb::SyncRepositoryRequest {
+                id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("id is required"));
+    }
+
+    #[tokio::test]
+    async fn remove_repository_rejects_empty_id() {
+        let s = server();
+        let err = s
+            .remove_repository(Request::new(pb::RemoveRepositoryRequest {
+                id: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("id is required"));
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
