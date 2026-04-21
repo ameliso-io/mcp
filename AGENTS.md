@@ -153,7 +153,7 @@ Notes go here (optional).
 - After executing one or more cases manually or in a controlled environment.
 - Never fabricate results — a run represents a real execution.
 - If using `--suite`, the suite must already exist (`create_run` validates this).
-- `create_run` immediately reports the scope size (number of cases to test).
+- `create_run` returns the full list of cases to test sorted by priority — no separate `get_pending_cases` call needed at the start.
 
 ### Recording results
 Use `record_result` (MCP) or `ameliso runs record` (CLI).
@@ -167,9 +167,15 @@ if the run was created with `--suite`; otherwise all cases in the repo.
 
 Typical agent workflow:
 1. `list_runs --status in-progress` → find the active run_id
-2. `get_pending_cases` → which cases still need results
-3. `record_result` for each pending case
-4. When all done: `finalize_run`
+2. `get_pending_cases` → which cases still need results (sorted high→medium→low priority)
+3. `record_result` for each pending case (add `notes` for failures)
+4. When all done: `finalize_run` (warns if any cases still pending)
+
+### Updating cases and suites
+Both `update_case` and `update_suite` are **patch-style**: omit any field to preserve its current value.
+- To change only priority: `update_case case_path=X priority=high` (title/description/tags unchanged)
+- To add a case to a suite: `get_suite` first, then `update_suite cases=existing,new` (or omit cases to keep list unchanged)
+- Passing an empty string for `tags` in `update_case` clears all tags.
 
 ### After code changes
 Use `get_affected_cases` (MCP) or `ameliso affected` (CLI) to identify cases
