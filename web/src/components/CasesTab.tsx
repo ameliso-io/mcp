@@ -213,7 +213,7 @@ export default function CasesTab({
     prevCountRef.current = count;
   }, [deferredCases.length, loading, announceFilter]);
 
-  async function handleCreate(e: React.FormEvent) {
+  const handleCreate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newPath || !newTitle) return;
@@ -248,7 +248,7 @@ export default function CasesTab({
     } finally {
       setCreating(false);
     }
-  }
+  }, [repoId, newPath, newTitle, newDesc, newPriority, newTags, newBody, announceAction, load]);
 
   async function handleDelete(casePath: string) {
     try {
@@ -262,7 +262,7 @@ export default function CasesTab({
     }
   }
 
-  async function handleUpdate(e: React.FormEvent) {
+  const handleUpdate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     /* v8 ignore next 2 — form only renders when editingPath is set */
     if (!editingPath) return;
@@ -292,7 +292,7 @@ export default function CasesTab({
     } finally {
       setSaving(false);
     }
-  }
+  }, [editingPath, repoId, editTitle, editDesc, editPriority, editTags, editBody, announceAction, load]);
 
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;

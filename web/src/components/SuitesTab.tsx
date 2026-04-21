@@ -112,7 +112,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     }
   }, [suites]);
 
-  async function handleCreate(e: React.FormEvent) {
+  const handleCreate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug || !newName) return;
@@ -143,7 +143,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     } finally {
       setCreating(false);
     }
-  }
+  }, [repoId, newSlug, newName, newDesc, newCases, announce, load]);
 
   async function handleDelete(slug: string) {
     try {
@@ -157,7 +157,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     }
   }
 
-  async function handleUpdate(e: React.FormEvent) {
+  const handleUpdate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     /* v8 ignore next 2 — form only renders when editingSlug is set */
     if (!editingSlug) return;
@@ -186,7 +186,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     } finally {
       setSaving(false);
     }
-  }
+  }, [editingSlug, repoId, editName, editDesc, editCases, announce, load]);
 
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
