@@ -1,13 +1,13 @@
-import { redirect } from 'next/navigation'
+import { redirect } from "next/navigation";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ installation_id?: string }>
+  searchParams: Promise<{ installation_id?: string }>;
 }) {
-  const { installation_id } = await searchParams
+  const { installation_id } = await searchParams;
   if (installation_id) {
-    redirect(`/repositories?installation_id=${installation_id}`)
+    redirect(`/repositories?installation_id=${installation_id}`);
   }
-  redirect('/overview')
+  redirect("/overview");
 }

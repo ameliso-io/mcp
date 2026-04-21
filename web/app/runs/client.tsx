@@ -18,7 +18,11 @@ function RunsInner() {
   }
 
   return (
-    <RunsTab repoId={repoId} initialSuite={initialSuite} onInitialSuiteConsumed={handleInitialSuiteConsumed} />
+    <RunsTab
+      repoId={repoId}
+      initialSuite={initialSuite}
+      onInitialSuiteConsumed={handleInitialSuiteConsumed}
+    />
   );
 }
 

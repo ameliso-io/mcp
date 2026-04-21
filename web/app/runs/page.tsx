@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
-import RunsPageClient from './client'
+import type { Metadata } from "next";
+import RunsPageClient from "./client";
 
 export const metadata: Metadata = {
-  title: 'Runs | Ameliso',
-}
+  title: "Runs | Ameliso",
+};
 
 export default function RunsPage() {
-  return <RunsPageClient />
+  return <RunsPageClient />;
 }

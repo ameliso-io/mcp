@@ -1,5 +1,5 @@
-import Link from 'next/link'
-import styles from './app.module.css'
+import Link from "next/link";
+import styles from "./app.module.css";
 
 export default function NotFound() {
   return (
@@ -9,5 +9,5 @@ export default function NotFound() {
         Go to Overview
       </Link>
     </div>
-  )
+  );
 }

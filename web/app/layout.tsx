@@ -1,15 +1,15 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { Inter } from 'next/font/google'
-import NavBar from '@/components/NavBar'
-import './globals.css'
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { Inter } from "next/font/google";
+import NavBar from "@/components/NavBar";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: 'Ameliso',
-  description: 'Test coverage and quality management',
-}
+  title: "Ameliso",
+  description: "Test coverage and quality management",
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -21,5 +21,5 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </div>
       </body>
     </html>
-  )
+  );
 }

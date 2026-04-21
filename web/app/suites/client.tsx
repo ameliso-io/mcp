@@ -9,6 +9,9 @@ export default function SuitesPageClient() {
   const [repoId] = useRepoId();
 
   return (
-    <SuitesTab repoId={repoId} onRunSuite={(slug) => router.push(`/runs?suite=${encodeURIComponent(slug)}`)} />
+    <SuitesTab
+      repoId={repoId}
+      onRunSuite={(slug) => router.push(`/runs?suite=${encodeURIComponent(slug)}`)}
+    />
   );
 }

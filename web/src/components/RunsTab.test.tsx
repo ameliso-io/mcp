@@ -473,9 +473,7 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
-    await waitFor(() =>
-      expect(screen.getByText("No results recorded.")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("No results recorded.")).toBeInTheDocument());
   });
 
   it("shows no case body in record form when body is empty string", async () => {

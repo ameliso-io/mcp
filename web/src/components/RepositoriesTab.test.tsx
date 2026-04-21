@@ -188,9 +188,7 @@ describe("RepositoriesTab", () => {
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getAllByText("Sync").length).toBeGreaterThan(0));
     await userEvent.click(screen.getAllByText("Sync")[0]);
-    await waitFor(() =>
-      expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" })
-    );
+    await waitFor(() => expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
   });
 
   it("search filters repos by name", async () => {

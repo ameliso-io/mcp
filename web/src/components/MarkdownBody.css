@@ -13,11 +13,20 @@
   line-height: 1.3;
 }
 
-.md-body h1 { font-size: 1.2em; }
-.md-body h2 { font-size: 1.05em; }
-.md-body h3 { font-size: 0.95em; color: #334155; }
+.md-body h1 {
+  font-size: 1.2em;
+}
+.md-body h2 {
+  font-size: 1.05em;
+}
+.md-body h3 {
+  font-size: 0.95em;
+  color: #334155;
+}
 
-.md-body p { margin: 0.3em 0; }
+.md-body p {
+  margin: 0.3em 0;
+}
 
 .md-body ol,
 .md-body ul {
@@ -25,7 +34,9 @@
   margin: 0.3em 0;
 }
 
-.md-body li { margin: 0.15em 0; }
+.md-body li {
+  margin: 0.15em 0;
+}
 
 .md-body code {
   background: #f1f5f9;
@@ -48,8 +59,12 @@
   padding: 0;
 }
 
-.md-body strong { font-weight: 700; }
-.md-body em { font-style: italic; }
+.md-body strong {
+  font-weight: 700;
+}
+.md-body em {
+  font-style: italic;
+}
 
 .md-body hr {
   border: none;
