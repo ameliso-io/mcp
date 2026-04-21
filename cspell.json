@@ -63,7 +63,14 @@
     "worktrees",
     "turbopack",
     "nosniff",
-    "SAMEORIGIN"
+    "SAMEORIGIN",
+    "hmac",
+    "roundtrips",
+    "dgst",
+    "invalidsig",
+    "axum",
+    "serde_yaml",
+    "upsert"
   ],
   "flagWords": []
 }

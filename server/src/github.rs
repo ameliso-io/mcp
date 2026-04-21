@@ -533,6 +533,317 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
             std::env::remove_var("AMELISO_GITHUB_API");
         }
     }
+
+    // -----------------------------------------------------------------------
+    // get_file tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn get_file_returns_none_on_404() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let result = get_file("owner", "repo", "cases/foo.md", "tok").await;
+        assert!(result.unwrap().is_none());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn get_file_returns_content_and_sha() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "sha": "abc123sha",
+                "content": "aGVsbG8=\n"
+            })))
+            .mount(&server)
+            .await;
+
+        let result = get_file("owner", "repo", "cases/foo.md", "tok").await;
+        let (content, sha) = result.unwrap().unwrap();
+        assert_eq!(sha, "abc123sha");
+        assert!(content.contains("aGVsbG8="));
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn get_file_errors_on_bad_status() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(ResponseTemplate::new(500).set_body_string("internal error"))
+            .mount(&server)
+            .await;
+
+        let result = get_file("owner", "repo", "cases/foo.md", "tok").await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("get file: bad status") || msg.contains("500"),
+            "err: {msg}"
+        );
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // put_file tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn put_file_succeeds() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("PUT"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(
+                ResponseTemplate::new(201)
+                    .set_body_json(serde_json::json!({"content": {}, "commit": {}})),
+            )
+            .mount(&server)
+            .await;
+
+        let result = put_file(
+            "owner",
+            "repo",
+            "cases/foo.md",
+            "aGVsbG8=",
+            "chore: upsert",
+            None,
+            "tok",
+        )
+        .await;
+        assert!(result.is_ok());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn put_file_errors_on_bad_status() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("PUT"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(ResponseTemplate::new(409).set_body_string("conflict"))
+            .mount(&server)
+            .await;
+
+        let result = put_file(
+            "owner",
+            "repo",
+            "cases/foo.md",
+            "aGVsbG8=",
+            "chore: upsert",
+            None,
+            "tok",
+        )
+        .await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("HTTP 409"), "err: {msg}");
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // delete_file tests
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn delete_file_succeeds() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("DELETE"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"commit": {}})),
+            )
+            .mount(&server)
+            .await;
+
+        let result = delete_file(
+            "owner",
+            "repo",
+            "cases/foo.md",
+            "chore: delete",
+            "sha123",
+            "tok",
+        )
+        .await;
+        assert!(result.is_ok());
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+
+    #[tokio::test]
+    async fn delete_file_errors_on_bad_status() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("DELETE"))
+            .and(path("/repos/owner/repo/contents/cases/foo.md"))
+            .respond_with(ResponseTemplate::new(422).set_body_string("unprocessable"))
+            .mount(&server)
+            .await;
+
+        let result = delete_file(
+            "owner",
+            "repo",
+            "cases/foo.md",
+            "chore: delete",
+            "sha123",
+            "tok",
+        )
+        .await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("HTTP 422"), "err: {msg}");
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct ContentResponse {
+    sha: String,
+    content: String, // base64 with embedded newlines
+}
+
+/// Returns (content_base64_raw, sha) or None if 404.
+pub async fn get_file(
+    owner: &str,
+    repo: &str,
+    path: &str,
+    token: &str,
+) -> Result<Option<(String, String)>> {
+    let client = reqwest::Client::new();
+    let base = github_api_base();
+    let resp = client
+        .get(format!("{base}/repos/{owner}/{repo}/contents/{path}"))
+        .header("Authorization", format!("token {token}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .send()
+        .await
+        .context("get file request failed")?;
+    if resp.status() == 404 {
+        return Ok(None);
+    }
+    let cr: ContentResponse = resp
+        .error_for_status()
+        .context("get file: bad status")?
+        .json()
+        .await
+        .context("get file: parse error")?;
+    Ok(Some((cr.content, cr.sha)))
+}
+
+pub async fn put_file(
+    owner: &str,
+    repo: &str,
+    path: &str,
+    content_b64: &str,
+    message: &str,
+    sha: Option<&str>,
+    token: &str,
+) -> Result<()> {
+    #[derive(Serialize)]
+    struct Body<'a> {
+        message: &'a str,
+        content: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        sha: Option<&'a str>,
+    }
+    let client = reqwest::Client::new();
+    let base = github_api_base();
+    let resp = client
+        .put(format!("{base}/repos/{owner}/{repo}/contents/{path}"))
+        .header("Authorization", format!("token {token}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .json(&Body {
+            message,
+            content: content_b64,
+            sha,
+        })
+        .send()
+        .await
+        .context("put file request failed")?;
+    let status = resp.status();
+    if !status.is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        anyhow::bail!("put file: HTTP {status}: {body}");
+    }
+    Ok(())
+}
+
+pub async fn delete_file(
+    owner: &str,
+    repo: &str,
+    path: &str,
+    message: &str,
+    sha: &str,
+    token: &str,
+) -> Result<()> {
+    #[derive(Serialize)]
+    struct Body<'a> {
+        message: &'a str,
+        sha: &'a str,
+    }
+    let client = reqwest::Client::new();
+    let base = github_api_base();
+    let resp = client
+        .delete(format!("{base}/repos/{owner}/{repo}/contents/{path}"))
+        .header("Authorization", format!("token {token}"))
+        .header("Accept", "application/vnd.github.v3+json")
+        .header("User-Agent", "ameliso/1.0")
+        .json(&Body { message, sha })
+        .send()
+        .await
+        .context("delete file request failed")?;
+    let status = resp.status();
+    if !status.is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        anyhow::bail!("delete file: HTTP {status}: {body}");
+    }
+    Ok(())
 }
 
 pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result<CompareResult> {

@@ -1,8 +1,12 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use ameliso_server::proto::ameliso_v1::ameliso_service_server::AmelisoServiceServer;
 use ameliso_server::service::AmelisoServer;
+use ameliso_server::webhook::{github_push, WebhookState};
 use anyhow::Result;
+use axum::routing::post;
+use axum::Router;
 use tonic::transport::Server;
 
 fn load_env() {
@@ -102,13 +106,39 @@ async fn main() -> Result<()> {
     let addr: SocketAddr = format!("0.0.0.0:{port}").parse()?;
     println!("ameliso-server listening on {}", addr);
 
-    Server::builder()
-        .accept_http1(true)
-        .add_service(tonic_web::enable(AmelisoServiceServer::new(
-            AmelisoServer { pool },
-        )))
-        .serve(addr)
-        .await?;
+    let webhook_port = std::env::var("AMELISO_WEBHOOK_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(8080);
+    let webhook_addr: SocketAddr = format!("0.0.0.0:{webhook_port}").parse()?;
+    let webhook_secret = std::env::var("GITHUB_WEBHOOK_SECRET").ok();
+    let webhook_state = Arc::new(WebhookState {
+        pool: pool.clone(),
+        secret: webhook_secret,
+    });
+    let webhook_app = Router::new()
+        .route("/webhook/github", post(github_push))
+        .with_state(webhook_state);
+    let webhook_listener = tokio::net::TcpListener::bind(webhook_addr).await?;
+    println!("webhook server listening on {}", webhook_addr);
+
+    tokio::try_join!(
+        async {
+            axum::serve(webhook_listener, webhook_app)
+                .await
+                .map_err(anyhow::Error::from)
+        },
+        async {
+            Server::builder()
+                .accept_http1(true)
+                .add_service(tonic_web::enable(AmelisoServiceServer::new(
+                    AmelisoServer { pool },
+                )))
+                .serve(addr)
+                .await
+                .map_err(anyhow::Error::from)
+        },
+    )?;
 
     Ok(())
 }
