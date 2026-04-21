@@ -284,6 +284,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
                         className={styles.btnOutline}
                         onClick={() => setConfirmingRemove(null)}
                         aria-label="Cancel remove"
+                        autoFocus
                       >
                         No
                       </button>

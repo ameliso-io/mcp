@@ -468,6 +468,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                       onClick={() => setConfirmingDeleteRun(null)}
                       aria-label="Cancel delete"
                       className={styles.btnOutlineSm}
+                      autoFocus
                     >
                       No
                     </button>
@@ -640,6 +641,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                   type="button"
                                   onClick={() => setConfirmingBulkPass(null)}
                                   className={styles.btnOutlineSm}
+                                  autoFocus
                                 >
                                   No
                                 </button>
@@ -676,6 +678,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                 type="button"
                                 onClick={() => setConfirmingFinalize(null)}
                                 className={styles.btnOutlineSm}
+                                autoFocus
                               >
                                 No
                               </button>

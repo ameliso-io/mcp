@@ -383,6 +383,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                           onClick={() => setConfirmingDelete(null)}
                           aria-label="Cancel delete"
                           className={styles.btnOutlineSm}
+                          autoFocus
                         >
                           No
                         </button>

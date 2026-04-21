@@ -594,6 +594,7 @@ export default function CasesTab({ repoId }: Props) {
                           onClick={() => setConfirmingDelete(null)}
                           aria-label="Cancel delete"
                           className={styles.btnOutlineSm}
+                          autoFocus
                         >
                           No
                         </button>
