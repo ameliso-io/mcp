@@ -552,7 +552,30 @@ describe("RunsTab", () => {
     expect(screen.getByText("All Passed (1)")).toBeInTheDocument();
   });
 
-  it("does not delete run when inline confirm cancelled", async () => {
+  it("uses plural in bulk pass confirm when multiple cases pending", async () => {
+    const mockCase2 = {
+      ...mockCase,
+      path: "auth/signup",
+      title: "User Signup",
+    } as unknown as typeof mockCase;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase, mockCase2],
+      totalInScope: 2,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("All Passed (2)"));
+    await userEvent.click(screen.getByText("All Passed (2)"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Confirm pass all 2 pending cases" })
+      ).toBeInTheDocument()
+    );
+  });
+
+  it("does not delete run when confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
