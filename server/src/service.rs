@@ -580,7 +580,7 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("repo_id is required"));
         }
         let status = run_status_from_i32(req.status);
-        if status == "unspecified" {
+        if !matches!(status, "completed" | "aborted") {
             return Err(invalid("status must be completed or aborted"));
         }
         let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, status)
@@ -1301,6 +1301,9 @@ mod tests {
 
     #[test]
     fn text_references_case_trailing_slash_in_path() {
-        assert!(text_references_case("cases/auth/login/step1.md", "auth/login"));
+        assert!(text_references_case(
+            "cases/auth/login/step1.md",
+            "auth/login"
+        ));
     }
 }
