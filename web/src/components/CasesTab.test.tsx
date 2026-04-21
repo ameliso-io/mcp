@@ -604,4 +604,12 @@ describe("CasesTab", () => {
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolve!({ case: mockCase, body: "" });
   });
+
+  it("tag filter select is not shown when cases have no tags", async () => {
+    const noTagCase = { ...mockCase, tags: [] } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [noTagCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.queryByDisplayValue("All tags")).not.toBeInTheDocument();
+  });
 });
