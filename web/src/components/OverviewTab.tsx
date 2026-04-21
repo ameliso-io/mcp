@@ -280,11 +280,14 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   .map((ac, idx) => (
                     <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
-                        <span
-                          className={styles.priorityDot}
-                          data-priority={ac.case.priority}
-                          aria-hidden="true"
-                        />
+                        <>
+                          <span
+                            className={styles.priorityDot}
+                            data-priority={ac.case.priority}
+                            aria-hidden="true"
+                          />
+                          <span className="sr-only">{ac.case.priority} priority</span>
+                        </>
                       )}
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>

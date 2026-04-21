@@ -419,6 +419,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                               data-priority={c.priority}
                               aria-hidden="true"
                             />
+                            <span className="sr-only">{c.priority} priority</span>
                             <span className={styles.casePath}>{c.path}</span>
                             <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map((t) => (
