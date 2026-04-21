@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
+import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
 import { RunStatus, ResultStatus } from '../gen/ameliso/v1/types_pb'
 
@@ -96,7 +97,7 @@ export default function RunsTab({ repoPath }: Props) {
       const res = await client.listRuns({ repoPath })
       setRuns(res.runs)
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -123,7 +124,7 @@ export default function RunsTab({ repoPath }: Props) {
       setNewSuite('')
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setCreating(false)
     }
@@ -150,7 +151,7 @@ export default function RunsTab({ repoPath }: Props) {
         setRecordedResults(res.run?.results ?? [])
       }
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setLoadingPending(false)
     }
@@ -175,7 +176,7 @@ export default function RunsTab({ repoPath }: Props) {
       setPendingCases(res.cases)
       setTotalInScope(res.totalInScope)
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setRecording(false)
     }
@@ -190,7 +191,7 @@ export default function RunsTab({ repoPath }: Props) {
       setPendingCases([])
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     }
   }
 
@@ -204,7 +205,7 @@ export default function RunsTab({ repoPath }: Props) {
       }
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     }
   }
 

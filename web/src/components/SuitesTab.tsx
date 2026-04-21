@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
+import { errorMessage } from '../errorMessage'
 import type { Suite } from '../gen/ameliso/v1/types_pb'
 
 interface Props {
@@ -65,7 +66,7 @@ export default function SuitesTab({ repoPath }: Props) {
       const res = await client.listSuites({ repoPath })
       setSuites(res.suites)
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -92,7 +93,7 @@ export default function SuitesTab({ repoPath }: Props) {
       setNewCases('')
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setCreating(false)
     }
@@ -105,7 +106,7 @@ export default function SuitesTab({ repoPath }: Props) {
       if (expanded === slug) setExpanded(null)
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     }
   }
 
@@ -124,7 +125,7 @@ export default function SuitesTab({ repoPath }: Props) {
       setEditingSlug(null)
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setSaving(false)
     }

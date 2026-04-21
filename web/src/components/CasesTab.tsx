@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { client } from '../client'
+import { errorMessage } from '../errorMessage'
 import type { Case } from '../gen/ameliso/v1/types_pb'
 import { Priority } from '../gen/ameliso/v1/types_pb'
 
@@ -105,7 +106,7 @@ export default function CasesTab({ repoPath }: Props) {
       })
       setCases(res.cases)
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -133,7 +134,7 @@ export default function CasesTab({ repoPath }: Props) {
       setNewTags('')
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setCreating(false)
     }
@@ -145,7 +146,7 @@ export default function CasesTab({ repoPath }: Props) {
       await client.deleteCase({ repoPath, casePath })
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     }
   }
 
@@ -166,7 +167,7 @@ export default function CasesTab({ repoPath }: Props) {
       setEditingPath(null)
       load()
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setSaving(false)
     }

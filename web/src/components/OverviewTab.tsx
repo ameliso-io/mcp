@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
+import { errorMessage } from '../errorMessage'
 import type { AffectedCase, CoverageEntry } from '../gen/ameliso/v1/types_pb'
 import { ResultStatus } from '../gen/ameliso/v1/types_pb'
 
@@ -68,7 +69,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
       setEntries(res.entries)
       setRunCount(res.runCount)
     } catch (e) {
-      setError(String(e))
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -96,7 +97,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange }: Props) {
       const res = await client.getAffectedCases({ repoPath, sinceRef })
       setAffected(res.cases)
     } catch (err) {
-      setAffectedError(String(err))
+      setAffectedError(errorMessage(err))
     } finally {
       setAffectedLoading(false)
     }
