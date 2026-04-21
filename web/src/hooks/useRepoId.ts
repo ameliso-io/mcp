@@ -21,13 +21,12 @@ function getServerSnapshot() {
   return "";
 }
 
+function updateRepoId(id: string) {
+  localStorage.setItem(REPO_ID_KEY, id);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export function useRepoId() {
   const repoId = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  function updateRepoId(id: string) {
-    localStorage.setItem(REPO_ID_KEY, id);
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-  }
-
   return [repoId, updateRepoId] as const;
 }
