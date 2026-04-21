@@ -28,6 +28,7 @@ service AmelisoService {
   rpc GetRun(GetRunRequest) returns (GetRunResponse);
   rpc CreateRun(CreateRunRequest) returns (CreateRunResponse);
   rpc RecordResult(RecordResultRequest) returns (RecordResultResponse);
+  rpc BulkRecordResults(BulkRecordResultsRequest) returns (BulkRecordResultsResponse);
   rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
   rpc DeleteRun(DeleteRunRequest) returns (DeleteRunResponse);
   rpc GetPendingCases(GetPendingCasesRequest) returns (GetPendingCasesResponse);
@@ -203,6 +204,24 @@ message RecordResultRequest {
 
 message RecordResultResponse {
   CaseResult result = 1;
+}
+
+message BulkResultEntry {
+  string case_path = 1;
+  ResultStatus status = 2;
+  string notes = 3;
+}
+
+message BulkRecordResultsRequest {
+  string repo_id = 1;
+  string run_id = 2;
+  repeated BulkResultEntry results = 3;
+}
+
+message BulkRecordResultsResponse {
+  repeated CaseResult results = 1;
+  int32 pending_count = 2;
+  int32 total_in_scope = 3;
 }
 
 message FinalizeRunRequest {

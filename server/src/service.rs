@@ -615,6 +615,63 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn bulk_record_results(
+        &self,
+        request: Request<pb::BulkRecordResultsRequest>,
+    ) -> Result<Response<pb::BulkRecordResultsResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
+        }
+        if req.results.is_empty() {
+            return Err(invalid("results must not be empty"));
+        }
+        // Validate all entries before touching the DB.
+        for entry in &req.results {
+            if entry.case_path.is_empty() {
+                return Err(invalid("each result must have a case_path"));
+            }
+            let status = result_status_from_i32(entry.status);
+            if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
+                return Err(invalid(
+                    "status must be one of: passed, failed, blocked, skipped",
+                ));
+            }
+            if matches!(status, "failed" | "blocked") && entry.notes.trim().is_empty() {
+                return Err(invalid(
+                    "notes are required when status is failed or blocked",
+                ));
+            }
+        }
+        let mut recorded: Vec<pb::CaseResult> = Vec::new();
+        for entry in &req.results {
+            let status = result_status_from_i32(entry.status);
+            let (result, _) = repo::record_result(
+                &self.pool,
+                &req.repo_id,
+                &req.run_id,
+                &entry.case_path,
+                status,
+                &entry.notes,
+            )
+            .await
+            .map_err(repo_err)?;
+            recorded.push(result_to_pb(&result));
+        }
+        let (pending_cases, total_in_scope) =
+            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?;
+        Ok(Response::new(pb::BulkRecordResultsResponse {
+            results: recorded,
+            pending_count: pending_cases.len() as i32,
+            total_in_scope: total_in_scope as i32,
+        }))
+    }
+
     async fn finalize_run(
         &self,
         request: Request<pb::FinalizeRunRequest>,
@@ -1250,6 +1307,99 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("repo_id is required"));
+    }
+
+    // ── bulk_record_results validation ───────────────────────────────────────
+
+    #[tokio::test]
+    async fn bulk_record_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_rejects_empty_results() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("results must not be empty"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_rejects_failed_without_notes() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Failed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes are required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_rejects_invalid_status() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Unspecified as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("status must be one of"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
     }
 
     // ── delete validation ─────────────────────────────────────────────────────

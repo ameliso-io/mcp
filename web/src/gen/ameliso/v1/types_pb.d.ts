@@ -377,3 +377,4 @@ export enum Priority {
  * Describes the enum ameliso.v1.Priority.
  */
 export declare const PrioritySchema: GenEnum<Priority>;
+

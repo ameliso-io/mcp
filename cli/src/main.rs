@@ -252,6 +252,21 @@ enum RunsCmd {
         repo_id: String,
         run_id: String,
     },
+    #[command(
+        about = "Record multiple results in one call",
+        long_about = "Record multiple results in one gRPC call. Each entry is case_path:status[:notes]. \
+Status must be one of: passed, failed, blocked, skipped. Notes are required for failed/blocked."
+    )]
+    BulkRecord {
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
+        run_id: String,
+        #[arg(
+            required = true,
+            help = "Results in format case_path:status or case_path:status:notes"
+        )]
+        entries: Vec<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -761,6 +776,52 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner();
             println!("Deleted: {}", resp.dir_path);
+        }
+        RunsCmd::BulkRecord {
+            repo_id,
+            run_id,
+            entries,
+        } => {
+            let mut grpc_entries: Vec<pb::BulkResultEntry> = Vec::new();
+            for raw in &entries {
+                let parts: Vec<&str> = raw.splitn(3, ':').collect();
+                if parts.len() < 2 {
+                    anyhow::bail!(
+                        "invalid entry {:?}: expected case_path:status[:notes]",
+                        raw
+                    );
+                }
+                let case_path = parts[0].to_owned();
+                let status_str = parts[1];
+                let notes = parts.get(2).map(|s| s.to_string()).unwrap_or_default();
+                grpc_entries.push(pb::BulkResultEntry {
+                    case_path,
+                    status: result_status_str_to_i32(status_str),
+                    notes,
+                });
+            }
+            let resp = c
+                .bulk_record_results(pb::BulkRecordResultsRequest {
+                    repo_id,
+                    run_id,
+                    results: grpc_entries,
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            for r in &resp.results {
+                println!("recorded: {}", r.case_path);
+            }
+            let pending = resp.pending_count as usize;
+            let total = resp.total_in_scope as usize;
+            if pending == 0 {
+                println!("progress: {total}/{total} done — all cases recorded; ready to finalize");
+            } else {
+                println!(
+                    "progress: {}/{total} done, {pending} remaining",
+                    total - pending
+                );
+            }
         }
     }
     Ok(())

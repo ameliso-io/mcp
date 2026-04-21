@@ -818,60 +818,54 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Record multiple test results in one call. More efficient than N sequential record_result calls. Returns summary of recorded results and pending count."
+        description = "Record multiple test results in a single gRPC call. Returns a summary of recorded results and remaining pending count. Prefer this over N sequential record_result calls."
     )]
     async fn bulk_record_results(
         &self,
         Parameters(req): Parameters<BulkRecordResultsRequest>,
     ) -> String {
         let mut client = self.client();
-        let mut lines: Vec<String> = Vec::new();
-        let mut had_error = false;
-        for entry in &req.results {
-            let status_i32 = result_status_str_to_i32(&entry.status);
-            let notes = entry.notes.clone().unwrap_or_default();
-            match client
-                .record_result(pb::RecordResultRequest {
-                    repo_id: req.repo_id.clone(),
-                    run_id: req.run_id.clone(),
-                    case_path: entry.case_path.clone(),
-                    status: status_i32,
-                    notes,
-                })
-                .await
-            {
-                Ok(_) => lines.push(format!("recorded: {} = {}", entry.case_path, entry.status)),
-                Err(e) => {
-                    lines.push(format!("error for {}: {e}", entry.case_path));
-                    had_error = true;
-                }
-            }
-        }
-        if !had_error {
-            if let Ok(resp) = client
-                .get_pending_cases(pb::GetPendingCasesRequest {
-                    repo_id: req.repo_id,
-                    run_id: req.run_id,
-                })
-                .await
-            {
-                let resp = resp.into_inner();
-                let total = resp.total_in_scope as usize;
-                let pending = resp.cases.len();
+        let grpc_results: Vec<pb::BulkResultEntry> = req
+            .results
+            .iter()
+            .map(|e| pb::BulkResultEntry {
+                case_path: e.case_path.clone(),
+                status: result_status_str_to_i32(&e.status),
+                notes: e.notes.clone().unwrap_or_default(),
+            })
+            .collect();
+        match client
+            .bulk_record_results(pb::BulkRecordResultsRequest {
+                repo_id: req.repo_id,
+                run_id: req.run_id,
+                results: grpc_results,
+            })
+            .await
+        {
+            Ok(r) => {
+                let r = r.into_inner();
+                let recorded = r.results.len();
+                let pending = r.pending_count as usize;
+                let total = r.total_in_scope as usize;
+                let mut lines: Vec<String> = r
+                    .results
+                    .iter()
+                    .map(|res| format!("recorded: {}", res.case_path))
+                    .collect();
                 if pending == 0 {
                     lines.push(format!(
-                        "\nprogress: {total}/{total} done — all cases recorded; ready to finalize"
+                        "\n{recorded} recorded. progress: {total}/{total} done — all cases recorded; ready to finalize"
                     ));
                 } else {
                     lines.push(format!(
-                        "\nprogress: {}/{total} done, {} remaining",
-                        total - pending,
-                        pending
+                        "\n{recorded} recorded. progress: {}/{total} done, {pending} remaining",
+                        total - pending
                     ));
                 }
+                lines.join("\n")
             }
+            Err(e) => format!("error: {e}"),
         }
-        lines.join("\n")
     }
 
     #[tool(
