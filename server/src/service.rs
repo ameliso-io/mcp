@@ -2043,6 +2043,53 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    #[tokio::test]
+    async fn create_run_empty_tester_passes_validation() {
+        // Empty tester is allowed (falls back to "unknown"); validation must pass → DB error.
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                tester: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_suite_with_replace_cases_true_passes_validation() {
+        // replace_cases=true with empty cases list is valid; passes validation → DB error.
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                cases: vec![],
+                replace_cases: true,
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn list_runs_with_status_filter_passes_validation() {
+        // A non-Unspecified status filter is valid; passes validation → DB error.
+        let s = server();
+        let err = s
+            .list_runs(Request::new(pb::ListRunsRequest {
+                repo_id: "owner/repo".to_owned(),
+                status: pb::RunStatus::InProgress as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
