@@ -17,8 +17,8 @@ cargo build       # build all crates
 ```
 
 Git hooks activate automatically after `pnpm install`:
-- `pre-commit`: `cargo fmt` + `cargo clippy`
-- `pre-push`: `cargo build --release` + `cargo test`
+- `pre-commit`: `make pre-commit` — fmt (Rust + web), clippy, buf lint, web ESLint, cspell
+- `pre-push`: `make pre-push` — fmt-check, build, test, coverage check
 
 ## Project structure
 
@@ -28,15 +28,16 @@ Git hooks activate automatically after `pnpm install`:
 | `server/proto/` | Protobuf definitions for `AmelisoService`. |
 | `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 24 RPCs as 21 MCP tools. |
 | `cli/` | CLI binary (clap 4). Wraps all RPCs as subcommands. |
-| `web/` | Browser client (Vite + React + TypeScript). Talks gRPC-Web to the server. |
+| `web/` | Browser client (Next.js + React + TypeScript). Talks gRPC-Web to the server. |
 
 ## Engineering constraints
 
 - **Language**: Rust for all backend logic. TypeScript only for UI (`web/`).
 - **Service communication**: gRPC only. No REST or WebSocket between services.
 - **Package manager**: `pnpm` only. Never `npm install` or `yarn`.
-- **No logic duplication**: repo logic lives in `server/src/repo.rs` and is
-  imported by both `mcp/` and `cli/` via the `ameliso-server` lib crate.
+- **No logic duplication**: repo logic lives in `server/src/repo.rs`. The `mcp/`
+  and `cli/` crates currently call the gRPC server directly (they are not in the
+  Cargo workspace while the migration from file-based to gRPC-backed is in progress).
 - **No panics**: use `anyhow::Result` and `?`. No `unwrap()` or `expect()` in
   production code paths.
 
@@ -55,7 +56,7 @@ Run both the gRPC server and the Vite dev server together:
 pnpm dev       # or: make dev
 ```
 
-The web client is at http://localhost:5173 and proxies gRPC-Web calls to http://localhost:50051.
+The web client is at http://localhost:5173 and proxies gRPC-Web calls to http://localhost:50052.
 
 To regenerate the TypeScript proto bindings after proto changes:
 
