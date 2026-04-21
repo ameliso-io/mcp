@@ -61,9 +61,8 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Case Title");
+    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Case Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -98,10 +97,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => {
-      const titleInput = screen
-        .getAllByRole("textbox")
-        .find((i) => (i as HTMLInputElement).value === "User Login");
-      expect(titleInput).toBeDefined();
+      expect((screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement).value).toBe(
+        "User Login"
+      );
     });
   });
 
@@ -199,9 +197,8 @@ describe("CasesTab", () => {
     vi.mocked(client.createCase).mockRejectedValue(new Error("create case error"));
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
+    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(screen.getByText("create case error")).toBeInTheDocument());
   });
@@ -212,10 +209,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => {
-      const titleInput = screen
-        .getAllByRole("textbox")
-        .find((i) => (i as HTMLInputElement).value === "User Login");
-      expect(titleInput).toBeDefined();
+      expect((screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement).value).toBe(
+        "User Login"
+      );
     });
   });
 
@@ -224,13 +220,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const tagsInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "auth, smoke");
-    if (tagsInput) {
-      await userEvent.clear(tagsInput);
-      await userEvent.type(tagsInput, "auth, smoke, regression");
-    }
+    const tagsInput = screen.getByRole("textbox", { name: "Tags (comma-separated)" });
+    await userEvent.clear(tagsInput);
+    await userEvent.type(tagsInput, "auth, smoke, regression");
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() =>
       expect(client.updateCase).toHaveBeenCalledWith(
@@ -305,10 +297,9 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Case Title");
-    await userEvent.type(inputs[3], "auth, smoke");
+    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Case Title");
+    await userEvent.type(screen.getByRole("textbox", { name: "Tags (comma-separated)" }), "auth, smoke");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -322,12 +313,7 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const tagsInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "auth, smoke");
-    if (tagsInput) {
-      await userEvent.clear(tagsInput);
-    }
+    await userEvent.clear(screen.getByRole("textbox", { name: "Tags (comma-separated)" }));
     await userEvent.click(screen.getByText("Save"));
     await waitFor(() =>
       expect(client.updateCase).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
@@ -398,12 +384,10 @@ describe("CasesTab", () => {
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
-    await userEvent.type(inputs[2], "Some description");
-    const textarea = screen.getByPlaceholderText(/## Steps/);
-    await userEvent.type(textarea, "## Steps");
+    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
+    await userEvent.type(screen.getByRole("textbox", { name: "Description" }), "Some description");
+    await userEvent.type(screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }), "## Steps");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(
@@ -421,9 +405,8 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("+ New Case"));
     const prioritySelect = screen.getByDisplayValue("Medium");
     await userEvent.selectOptions(prioritySelect, "High");
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Title");
+    await userEvent.type(screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }), "auth/new");
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "New Title");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() => expect(client.createCase).toHaveBeenCalled());
   });
@@ -433,9 +416,7 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const descInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "Verify login flow") as HTMLInputElement;
+    const descInput = screen.getByRole("textbox", { name: "Description" }) as HTMLInputElement;
     await userEvent.clear(descInput);
     await userEvent.type(descInput, "Updated description");
     await userEvent.click(screen.getByText("Save"));
@@ -466,9 +447,9 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const bodyTextarea = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement;
+    const bodyTextarea = screen.getByRole("textbox", {
+      name: "Steps / Body (Markdown)",
+    }) as HTMLTextAreaElement;
     await userEvent.clear(bodyTextarea);
     await userEvent.type(bodyTextarea, "## New Steps");
     await userEvent.click(screen.getByText("Save"));
@@ -484,9 +465,7 @@ describe("CasesTab", () => {
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
     await waitFor(() => screen.getByText("Save"));
-    const titleInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "User Login") as HTMLInputElement;
+    const titleInput = screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement;
     await userEvent.clear(titleInput);
     await userEvent.type(titleInput, "Updated Login");
     await userEvent.click(screen.getByText("Save"));

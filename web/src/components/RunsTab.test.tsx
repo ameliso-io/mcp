@@ -63,18 +63,16 @@ describe("RunsTab", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument()
     );
-    const suiteInput = screen
-      .getAllByRole("textbox")
-      .find((i) => (i as HTMLInputElement).value === "smoke");
-    expect(suiteInput).toBeDefined();
+    expect(
+      (screen.getByRole("textbox", { name: "Suite (optional)" }) as HTMLInputElement).value
+    ).toBe("smoke");
   });
 
   it("creates run and auto-expands on submit", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith(expect.objectContaining({ slug: "smoke" }))
@@ -325,8 +323,7 @@ describe("RunsTab", () => {
     vi.mocked(client.createRun).mockRejectedValue(new Error("create error"));
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() => expect(screen.getByText("create error")).toBeInTheDocument());
   });
@@ -620,11 +617,10 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Run"));
-    const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke-2");
-    await userEvent.type(inputs[1], "bob");
-    await userEvent.type(inputs[2], "prod");
-    await userEvent.type(inputs[3], "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke-2");
+    await userEvent.type(screen.getByRole("textbox", { name: "Tester" }), "bob");
+    await userEvent.type(screen.getByRole("textbox", { name: "Environment" }), "prod");
+    await userEvent.type(screen.getByRole("textbox", { name: "Suite (optional)" }), "regression");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     await waitFor(() =>
       expect(client.createRun).toHaveBeenCalledWith(
