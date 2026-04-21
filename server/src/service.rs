@@ -3187,4 +3187,22 @@ mod tests {
             "auth/login"
         ));
     }
+
+    #[test]
+    fn text_references_case_newline_suffix_via_starts_with() {
+        // ends_cleanly '\n' branch via the starts_with path (path at start of text, \n suffix)
+        assert!(text_references_case("auth/login\nmore text", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_double_quote_suffix_via_starts_with() {
+        // ends_cleanly '"' branch via the starts_with path (path at start of text, " suffix)
+        assert!(text_references_case("auth/login\" extra", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_slash_suffix_via_starts_with() {
+        // ends_cleanly '/' branch via the starts_with path (path at start of text, / suffix)
+        assert!(text_references_case("auth/login/nested", "auth/login"));
+    }
 }
