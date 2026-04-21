@@ -508,6 +508,28 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
             std::env::remove_var("AMELISO_GITHUB_API");
         }
     }
+
+    #[tokio::test]
+    async fn compare_errors_on_http_failure() {
+        let _g = ENV_LOCK.lock().unwrap();
+        let server = MockServer::start().await;
+        unsafe {
+            std::env::set_var("AMELISO_GITHUB_API", server.uri());
+        }
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/compare/abc123...HEAD"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let result = compare("owner", "repo", "abc123", "tok").await;
+        assert!(result.is_err(), "expected an error for 404 response");
+        let msg = format!("{:#}", result.err().unwrap());
+        assert!(msg.contains("compare: bad status") || msg.contains("404"), "err: {msg}");
+        unsafe {
+            std::env::remove_var("AMELISO_GITHUB_API");
+        }
+    }
 }
 
 pub async fn compare(owner: &str, repo: &str, base: &str, token: &str) -> Result<CompareResult> {
