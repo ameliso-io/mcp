@@ -114,7 +114,7 @@ describe('RepositoriesTab', () => {
     vi.mocked(client.listRepositories).mockRejectedValue(new Error('network error'))
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoPath="" />)
     await waitFor(() => expect(screen.getByText('network error')).toBeInTheDocument())
-    await userEvent.click(screen.getByRole('button', { name: '×' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss error' }))
     expect(screen.queryByText('network error')).not.toBeInTheDocument()
   })
 

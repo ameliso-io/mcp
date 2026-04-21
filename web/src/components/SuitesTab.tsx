@@ -169,7 +169,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
       {error && (
         <div className={styles.errorCard}>
           <span>{error}</span>
-          <button className={styles.errorDismiss} onClick={() => setError(null)}>×</button>
+          <button className={styles.errorDismiss} onClick={() => setError(null)} aria-label="Dismiss error">×</button>
         </div>
       )}
 
