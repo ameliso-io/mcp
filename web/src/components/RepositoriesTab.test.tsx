@@ -400,4 +400,12 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText("org/alpha")).not.toBeInTheDocument();
     expect(screen.getByText("org/beta")).toBeInTheDocument();
   });
+
+  it("does not show Active badge when repo is not the active repo", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="other/repo" />);
+    await waitFor(() => expect(screen.getByText("owner/repo")).toBeInTheDocument());
+    // Active badge is only shown when activeRepoId matches repo id
+    expect(screen.queryByText("Active")).not.toBeInTheDocument();
+  });
 });
