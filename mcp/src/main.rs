@@ -48,7 +48,8 @@ struct CreateCaseRequest {
     repo_path: String,
     case_path: String,
     title: String,
-    description: String,
+    #[schemars(description = "One-line description (optional)")]
+    description: Option<String>,
     #[schemars(description = "Comma-separated tags (optional)")]
     tags: Option<String>,
     #[schemars(description = "low | medium | high (default: medium)")]
@@ -372,16 +373,9 @@ impl AmelisoMcp {
             .filter(|s| !s.is_empty())
             .collect();
         let pri = req.priority.as_deref().unwrap_or("medium");
+        let desc = req.description.as_deref().unwrap_or("");
         let body = req.body.as_deref();
-        match repo::create_case(
-            &repo,
-            &req.case_path,
-            &req.title,
-            &req.description,
-            tag_list,
-            pri,
-            body,
-        ) {
+        match repo::create_case(&repo, &req.case_path, &req.title, desc, tag_list, pri, body) {
             Ok(c) => format!(
                 "created: cases/{}.md\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
                 c.case_path,
@@ -399,7 +393,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Get a coverage report: latest test status for every case with title. Summary shows counts by status. Optionally filter by status: never | passed | failed | blocked | skipped."
+        description = "Get a coverage report: latest test status for every case with title. Results sorted by actionability: failed → blocked → never → skipped → passed, then by priority. Optionally filter by status: never | passed | failed | blocked | skipped."
     )]
     fn coverage_report(&self, Parameters(req): Parameters<CoverageReportRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -422,30 +416,58 @@ impl AmelisoMcp {
                 }
             }
         }
-        let mut entry_lines = Vec::new();
         let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-        for c in &cases {
-            let (status, run_id) = latest
-                .get(&c.case_path)
-                .cloned()
-                .unwrap_or_else(|| ("never".to_owned(), String::new()));
+        let status_rank = |s: &str| match s {
+            "failed" => 0u8,
+            "blocked" => 1,
+            "never" => 2,
+            "skipped" => 3,
+            "passed" => 4,
+            _ => 5,
+        };
+        let priority_rank = |p: &str| match p {
+            "high" => 0u8,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        };
+        let mut enriched: Vec<(&repo::LoadedCase, String, String)> = cases
+            .iter()
+            .map(|c| {
+                let (status, run_id) = latest
+                    .get(&c.case_path)
+                    .cloned()
+                    .unwrap_or_else(|| ("never".to_owned(), String::new()));
+                (c, status, run_id)
+            })
+            .collect();
+        for (_, ref status, _) in &enriched {
             *counts.entry(status.clone()).or_insert(0) += 1;
-            if let Some(ref f) = req.status_filter {
-                let normalized_filter = f.to_lowercase();
-                if status != normalized_filter {
-                    continue;
-                }
-            }
-            let run_ref = if run_id.is_empty() {
-                String::new()
-            } else {
-                format!(" [{}]", run_id)
-            };
-            entry_lines.push(format!(
-                "  {:40} {:8}{} — {}",
-                c.case_path, status, run_ref, c.fm.title
-            ));
         }
+        if let Some(ref f) = req.status_filter {
+            let normalized_filter = f.to_lowercase();
+            enriched.retain(|(_, status, _)| *status == normalized_filter);
+        }
+        enriched.sort_by(|(a_c, a_s, _), (b_c, b_s, _)| {
+            status_rank(a_s)
+                .cmp(&status_rank(b_s))
+                .then_with(|| priority_rank(&a_c.fm.priority).cmp(&priority_rank(&b_c.fm.priority)))
+                .then_with(|| a_c.case_path.cmp(&b_c.case_path))
+        });
+        let entry_lines: Vec<String> = enriched
+            .into_iter()
+            .map(|(c, status, run_id)| {
+                let run_ref = if run_id.is_empty() {
+                    String::new()
+                } else {
+                    format!(" [{}]", run_id)
+                };
+                format!(
+                    "  {:40} {:8}{} — {}",
+                    c.case_path, status, run_ref, c.fm.title
+                )
+            })
+            .collect();
         let total = cases.len();
         let never = counts.get("never").copied().unwrap_or(0);
         let passed = counts.get("passed").copied().unwrap_or(0);
