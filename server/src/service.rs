@@ -408,6 +408,9 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
+        if req.slug.is_empty() {
+            return Err(invalid("slug is required"));
+        }
         if req.name.is_empty() {
             return Err(invalid("name is required"));
         }
@@ -1181,6 +1184,40 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("case_path is required"));
+    }
+
+    // ── create_suite validation ───────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn create_suite_rejects_empty_slug() {
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "".to_owned(),
+                name: "Smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug is required"));
+    }
+
+    #[tokio::test]
+    async fn create_suite_rejects_empty_name() {
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                name: "".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("name is required"));
     }
 
     // ── create_run validation ─────────────────────────────────────────────────
