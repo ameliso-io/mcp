@@ -562,12 +562,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <div className={styles.resultList}>
+                      <ul className={styles.resultList} role="list">
                         {(resultStatusFilter !== null
                           ? recordedResults.filter((r) => r.status === resultStatusFilter)
                           : recordedResults
                         ).map((r) => (
-                          <div key={r.casePath} className={styles.resultRow}>
+                          <li key={r.casePath} className={styles.resultRow}>
                             <span
                               className={styles.resultStatusBadge}
                               data-status={ResultStatus[r.status]}
@@ -581,9 +581,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </span>
                             )}
                             {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                 ) : (
@@ -719,9 +719,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                       <p className={styles.allDone}>All cases have results recorded.</p>
                     )}
 
-                    <div className={styles.pendingList}>
+                    <ul className={styles.pendingList} role="list">
                       {pendingCases.map((c) => (
-                        <div key={c.path}>
+                        <li key={c.path}>
                           <div className={styles.pendingRow}>
                             <span className={styles.pendingPath}>{c.path}</span>
                             <span className={styles.pendingTitle}>{c.title}</span>
@@ -827,9 +827,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               </form>
                             </div>
                           )}
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </>
                 )}
               </div>
