@@ -415,8 +415,10 @@ describe("SuitesTab", () => {
   it("ignores stale listCases response when suite clicked twice rapidly", async () => {
     const suite2 = makeSuite({ slug: "regression", name: "Regression", cases: [] });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
-    let resolveFirst!: (v: unknown) => void;
-    let resolveSecond!: (v: unknown) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveFirst!: (v: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveSecond!: (v: any) => void;
     vi.mocked(client.listCases)
       .mockImplementationOnce(
         () =>

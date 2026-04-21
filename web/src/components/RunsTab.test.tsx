@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RunsTab from "./RunsTab";
 import { client } from "@/client";
+import type { Case, RunMeta } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { makeCase, makeCaseResult, makeRunMeta } from "@/test/factories";
 

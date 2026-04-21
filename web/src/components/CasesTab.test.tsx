@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import CasesTab from "./CasesTab";
 import { client } from "@/client";
+import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { makeCase } from "@/test/factories";
 
