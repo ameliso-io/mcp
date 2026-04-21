@@ -248,6 +248,24 @@ describe('CasesTab', () => {
     expect(loginIdx).toBeLessThan(otherIdx)
   })
 
+  it('sets aria-expanded false by default and true after click', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    const row = screen.getByRole('button', { name: /user login/i })
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'))
+  })
+
+  it('expands case body on Enter keypress', async () => {
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('User Login'))
+    const row = screen.getByRole('button', { name: /user login/i })
+    row.focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(screen.getByText(/Go to \/login/)).toBeInTheDocument())
+  })
+
   it('collapses expanded case when it is deleted', async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: 'cases/auth/login.md' } as never)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
