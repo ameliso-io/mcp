@@ -2350,6 +2350,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_affected_cases_passes_validation() {
+        // Non-empty repo_id passes validation; handler then hits the DB → Internal.
+        let s = server();
+        let err = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn list_repositories_returns_internal_without_db() {
+        // list_repositories has no validation — it always hits the DB directly.
+        let s = server();
+        let err = s
+            .list_repositories(Request::new(pb::ListRepositoriesRequest {}))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::Internal);
+    }
+
+    #[tokio::test]
     async fn sync_repository_passes_validation() {
         // Non-empty id passes validation; the handler then hits the DB → Internal.
         let s = server();
