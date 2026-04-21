@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useTransition } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { Case } from '../gen/ameliso/v1/types_pb'
@@ -48,6 +48,7 @@ export default function CasesTab({ repoPath }: Props) {
   const [priorityFilter, setPriorityFilter] = useState<Priority>(Priority.UNSPECIFIED)
   const [tagFilter, setTagFilter] = useState('')
   const [sortBy, setSortBy] = useState<'path' | 'priority'>('priority')
+  const [, startSortTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [showCreate, setShowCreate] = useState(false)
@@ -285,7 +286,7 @@ export default function CasesTab({ repoPath }: Props) {
             {allTags.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as 'path' | 'priority')} className={styles.filterSelect}>
+        <select value={sortBy} onChange={e => startSortTransition(() => setSortBy(e.target.value as 'path' | 'priority'))} className={styles.filterSelect}>
           <option value="priority">Sort: Priority</option>
           <option value="path">Sort: Path</option>
         </select>

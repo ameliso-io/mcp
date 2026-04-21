@@ -17,6 +17,13 @@ export const metadata: Metadata = {
     template: '%s | Ameliso',
   },
   description: 'Test coverage and quality management',
+  openGraph: {
+    title: 'Ameliso',
+    description: 'Test coverage and quality management',
+    type: 'website',
+    siteName: 'Ameliso',
+  },
+  robots: { index: false, follow: false },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
