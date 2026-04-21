@@ -988,4 +988,68 @@ mod tests {
         let err = RepoError::Other(inner);
         assert!(err.to_string().contains("something broke"));
     }
+
+    // -----------------------------------------------------------------------
+    // finalize_run status validation (pre-DB)
+    // -----------------------------------------------------------------------
+
+    fn lazy_pool() -> sqlx::PgPool {
+        sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
+            .expect("lazy pool creation should not fail")
+    }
+
+    #[tokio::test]
+    async fn finalize_run_invalid_status_returns_invalid_arg() {
+        let err = finalize_run(&lazy_pool(), "owner/repo", "2026-01-01-smoke", "invalid")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("invalid finalize status"));
+    }
+
+    #[tokio::test]
+    async fn finalize_run_invalid_run_id_returns_invalid_arg() {
+        // Valid status but invalid run_id — validate_slug_path fires before DB.
+        let err = finalize_run(&lazy_pool(), "owner/repo", "../escape", "completed")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    // -----------------------------------------------------------------------
+    // record_result status validation (pre-DB)
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn record_result_invalid_status_returns_invalid_arg() {
+        let err = record_result(
+            &lazy_pool(),
+            "owner/repo",
+            "2026-01-01-smoke",
+            "auth/login",
+            "unspecified",
+            "",
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("invalid result status"));
+    }
+
+    #[tokio::test]
+    async fn record_result_invalid_run_id_returns_invalid_arg() {
+        // Valid status but invalid run_id — validate_slug_path fires before DB.
+        let err = record_result(
+            &lazy_pool(),
+            "owner/repo",
+            "bad run",
+            "auth/login",
+            "passed",
+            "",
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
 }
