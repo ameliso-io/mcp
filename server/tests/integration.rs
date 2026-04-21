@@ -610,3 +610,46 @@ async fn update_case_preserves_body_when_omitted() {
         "original body preserved after update"
     );
 }
+
+#[tokio::test]
+async fn update_suite_changes_cases() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        description: String::new(),
+        cases: vec!["auth/login".to_owned()],
+    }))
+    .await
+    .unwrap();
+
+    c.update_suite(Request::new(pb::UpdateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke Suite".to_owned(),
+        description: String::new(),
+        cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+    }))
+    .await
+    .unwrap();
+
+    let suite = c
+        .get_suite(Request::new(pb::GetSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .suite
+        .unwrap();
+
+    assert_eq!(suite.name, "Smoke Suite");
+    assert_eq!(suite.cases.len(), 2);
+    assert!(suite.cases.contains(&"billing/checkout".to_owned()));
+}

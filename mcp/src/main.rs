@@ -152,6 +152,7 @@ impl AmelisoMcp {
             cases.retain(|c| {
                 c.fm.title.to_lowercase().contains(&q)
                     || c.fm.description.to_lowercase().contains(&q)
+                    || c.body.to_lowercase().contains(&q)
                     || c.case_path.to_lowercase().contains(&q)
             });
         }
@@ -317,7 +318,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Update an existing test case's metadata and optionally replace its body.")]
+    #[tool(
+        description = "Update an existing test case's metadata and optionally replace its body."
+    )]
     fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let tag_list: Vec<String> = req
@@ -423,6 +426,22 @@ impl AmelisoMcp {
         let desc = req.description.filter(|s| !s.is_empty());
         match repo::create_suite(&repo, &req.slug, &req.name, desc, case_list) {
             Ok(_) => format!("created: suites/{}.yaml", req.slug),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(description = "Update an existing test suite's name, description, or case list.")]
+    fn update_suite(&self, Parameters(req): Parameters<CreateSuiteRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        let case_list: Vec<String> = req
+            .cases
+            .split(',')
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let desc = req.description.filter(|s| !s.is_empty());
+        match repo::update_suite(&repo, &req.slug, &req.name, desc, case_list) {
+            Ok(_) => format!("updated: suites/{}.yaml", req.slug),
             Err(e) => format!("error: {e}"),
         }
     }

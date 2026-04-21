@@ -37,6 +37,9 @@ service AmelisoService {
   // Create a new suite.
   rpc CreateSuite(CreateSuiteRequest) returns (CreateSuiteResponse);
 
+  // Update an existing suite's name, description, or case list.
+  rpc UpdateSuite(UpdateSuiteRequest) returns (UpdateSuiteResponse);
+
   // --- Runs ---
 
   // List all runs, newest first.
@@ -164,6 +167,18 @@ message CreateSuiteRequest {
 message CreateSuiteResponse {
   Suite suite = 1;
   string file_path = 2;
+}
+
+message UpdateSuiteRequest {
+  string repo_path = 1;
+  string slug = 2;
+  string name = 3;
+  string description = 4;
+  repeated string cases = 5;
+}
+
+message UpdateSuiteResponse {
+  Suite suite = 1;
 }
 
 // --- Runs ---

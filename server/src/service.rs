@@ -286,6 +286,24 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn update_suite(
+        &self,
+        request: Request<pb::UpdateSuiteRequest>,
+    ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+        let desc = if req.description.is_empty() {
+            None
+        } else {
+            Some(req.description.clone())
+        };
+        let suite =
+            repo::update_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(repo_err)?;
+        Ok(Response::new(pb::UpdateSuiteResponse {
+            suite: Some(suite_to_pb(&req.slug, &suite)),
+        }))
+    }
+
     async fn list_runs(
         &self,
         request: Request<pb::ListRunsRequest>,

@@ -307,10 +307,12 @@ pub fn update_case(
 pub fn delete_case(repo: &Path, case_path: &str) -> RResult<()> {
     let file = case_file_path(repo, case_path);
     if !file.exists() {
-        return Err(RepoError::NotFound(format!("case not found: {}", case_path)));
+        return Err(RepoError::NotFound(format!(
+            "case not found: {}",
+            case_path
+        )));
     }
-    std::fs::remove_file(&file)
-        .with_context(|| format!("deleting {}", file.display()))?;
+    std::fs::remove_file(&file).with_context(|| format!("deleting {}", file.display()))?;
     Ok(())
 }
 
@@ -508,6 +510,27 @@ pub fn create_suite(
             "suite already exists: {}",
             slug
         )));
+    }
+    let suite = SuiteYaml {
+        name: name.to_owned(),
+        description,
+        cases,
+    };
+    let yaml = serde_yaml::to_string(&suite).context("serializing suite")?;
+    std::fs::write(path, yaml).context("writing suite file")?;
+    Ok(suite)
+}
+
+pub fn update_suite(
+    repo: &Path,
+    slug: &str,
+    name: &str,
+    description: Option<String>,
+    cases: Vec<String>,
+) -> RResult<SuiteYaml> {
+    let path = suites_dir(repo).join(format!("{}.yaml", slug));
+    if !path.exists() {
+        return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
     }
     let suite = SuiteYaml {
         name: name.to_owned(),

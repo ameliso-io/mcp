@@ -161,6 +161,18 @@ enum SuitesCmd {
         #[arg(long, help = "Comma-separated case paths")]
         cases: String,
     },
+    #[command(about = "Update an existing suite")]
+    Update {
+        #[arg(long, env = "AMELISO_REPO")]
+        repo: PathBuf,
+        slug: String,
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        description: Option<String>,
+        #[arg(long, help = "Comma-separated case paths")]
+        cases: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -371,6 +383,21 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
                 .collect();
             repo::create_suite(&repo, &slug, &name, description, case_list)?;
             println!("Created: suites/{slug}.yaml");
+        }
+        SuitesCmd::Update {
+            repo,
+            slug,
+            name,
+            description,
+            cases,
+        } => {
+            let case_list: Vec<String> = cases
+                .split(',')
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+                .collect();
+            repo::update_suite(&repo, &slug, &name, description, case_list)?;
+            println!("Updated: suites/{slug}.yaml");
         }
     }
     Ok(())
