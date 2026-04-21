@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "../../app/app.module.css";
+import styles from "./ErrorView.module.css";
 
 interface Props {
   error: Error & { digest?: string };
