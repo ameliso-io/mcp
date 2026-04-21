@@ -54,7 +54,7 @@ struct InstallationTokenResponse {
 
 pub async fn get_installation_token(installation_id: &str, jwt: &str) -> Result<String> {
     let client = reqwest::Client::new();
-    let resp: InstallationTokenResponse = client
+    let raw = client
         .post(format!(
             "https://api.github.com/app/installations/{installation_id}/access_tokens"
         ))
@@ -63,9 +63,13 @@ pub async fn get_installation_token(installation_id: &str, jwt: &str) -> Result<
         .header("User-Agent", "ameliso/1.0")
         .send()
         .await
-        .context("request failed")?
-        .error_for_status()
-        .context("get installation token: bad status")?
+        .context("request failed")?;
+    if !raw.status().is_success() {
+        let status = raw.status();
+        let body = raw.text().await.unwrap_or_default();
+        anyhow::bail!("get installation token: HTTP {status}: {body}");
+    }
+    let resp: InstallationTokenResponse = raw
         .json()
         .await
         .context("get installation token: parse error")?;

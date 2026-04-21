@@ -21,7 +21,11 @@
       "Bash(cargo install *)",
       "WebSearch",
       "Bash(cargo build *)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__centy__IsRunning",
+      "mcp__centy__centy_v1_CentyDaemon_GetProjectInfo",
+      "mcp__centy__centy_v1_CentyDaemon_ListItemTypes",
+      "mcp__centy__centy_v1_CentyDaemon_CreateItem"
     ]
   }
 }
