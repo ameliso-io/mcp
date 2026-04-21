@@ -84,6 +84,8 @@ message GetCaseRequest {
 
 message GetCaseResponse {
   Case case = 1;
+  // Full markdown body (everything after the frontmatter delimiter)
+  string body = 2;
 }
 
 message CreateCaseRequest {

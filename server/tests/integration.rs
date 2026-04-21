@@ -458,3 +458,27 @@ async fn create_and_get_suite() {
     assert_eq!(suite.name, "Smoke Test");
     assert_eq!(suite.cases, vec!["auth/login"]);
 }
+
+#[tokio::test]
+async fn get_case_returns_body() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "User Login");
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "auth/login".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    let case = resp.case.unwrap();
+    assert_eq!(case.path, "auth/login");
+    assert_eq!(case.title, "User Login");
+    assert!(resp.body.contains("Steps"), "body should contain Steps section");
+}

@@ -232,9 +232,8 @@ pub fn list_cases(repo: &Path) -> RResult<Vec<LoadedCase>> {
 
 pub fn get_case(repo: &Path, case_path: &str) -> RResult<LoadedCase> {
     let file = case_file_path(repo, case_path);
-    let content = std::fs::read_to_string(&file).map_err(|_| {
-        RepoError::NotFound(format!("case not found: {}", case_path))
-    })?;
+    let content = std::fs::read_to_string(&file)
+        .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
     let (fm, body) = parse_fm::<CaseFm>(&content)?;
     Ok(LoadedCase {
         fm,
@@ -285,9 +284,8 @@ pub fn update_case(
     priority: &str,
 ) -> RResult<LoadedCase> {
     let file = case_file_path(repo, case_path);
-    let content = std::fs::read_to_string(&file).map_err(|_| {
-        RepoError::NotFound(format!("case not found: {}", case_path))
-    })?;
+    let content = std::fs::read_to_string(&file)
+        .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
     let (mut fm, body) = parse_fm::<CaseFm>(&content)?;
     fm.title = title.to_owned();
     fm.description = description.to_owned();

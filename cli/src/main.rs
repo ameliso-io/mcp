@@ -213,7 +213,8 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             priority,
         } => {
             let tag_list = parse_tags(tags.as_deref());
-            let c = repo::create_case(&repo, &case_path, &title, &description, tag_list, &priority)?;
+            let c =
+                repo::create_case(&repo, &case_path, &title, &description, tag_list, &priority)?;
             println!("Created: cases/{}.md", c.case_path);
         }
         CasesCmd::Update {
@@ -225,7 +226,8 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             priority,
         } => {
             let tag_list = parse_tags(tags.as_deref());
-            let c = repo::update_case(&repo, &case_path, &title, &description, tag_list, &priority)?;
+            let c =
+                repo::update_case(&repo, &case_path, &title, &description, tag_list, &priority)?;
             println!("Updated: cases/{}.md", c.case_path);
         }
     }
@@ -280,10 +282,20 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
             status,
             notes,
         } => {
-            repo::record_result(&repo, &run_id, &case_path, &status, notes.as_deref().unwrap_or(""))?;
+            repo::record_result(
+                &repo,
+                &run_id,
+                &case_path,
+                &status,
+                notes.as_deref().unwrap_or(""),
+            )?;
             println!("Recorded: {case_path} = {status} in run {run_id}");
         }
-        RunsCmd::Finalize { repo, run_id, status } => {
+        RunsCmd::Finalize {
+            repo,
+            run_id,
+            status,
+        } => {
             let meta = repo::finalize_run(&repo, &run_id, &status)?;
             println!("Finalized run {} as {}", meta.id, meta.status);
         }
@@ -348,7 +360,11 @@ fn run_coverage(repo: &std::path::Path) -> Result<()> {
             }
         }
     }
-    println!("Coverage ({} run(s), {} case(s))\n", runs.len(), cases.len());
+    println!(
+        "Coverage ({} run(s), {} case(s))\n",
+        runs.len(),
+        cases.len()
+    );
     println!("{:40} {:8} LAST RUN", "CASE", "STATUS");
     println!("{}", "-".repeat(70));
     let mut never_count = 0usize;

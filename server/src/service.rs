@@ -160,6 +160,7 @@ impl AmelisoService for AmelisoServer {
         let case = repo::get_case(&repo, &req.case_path).map_err(repo_err)?;
         Ok(Response::new(pb::GetCaseResponse {
             case: Some(case_to_pb(&case)),
+            body: case.body.clone(),
         }))
     }
 

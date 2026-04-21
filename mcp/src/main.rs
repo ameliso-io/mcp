@@ -319,7 +319,14 @@ impl AmelisoMcp {
             .filter(|s| !s.is_empty())
             .collect();
         let pri = req.priority.as_deref().unwrap_or("medium");
-        match repo::update_case(&repo, &req.case_path, &req.title, &req.description, tag_list, pri) {
+        match repo::update_case(
+            &repo,
+            &req.case_path,
+            &req.title,
+            &req.description,
+            tag_list,
+            pri,
+        ) {
             Ok(c) => format!("updated: cases/{}.md", c.case_path),
             Err(e) => format!("error: {e}"),
         }
@@ -372,10 +379,7 @@ impl AmelisoMcp {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_suite(&repo, &req.slug) {
             Ok(s) => {
-                let mut lines = vec![
-                    format!("slug: {}", req.slug),
-                    format!("name: {}", s.name),
-                ];
+                let mut lines = vec![format!("slug: {}", req.slug), format!("name: {}", s.name)];
                 if let Some(d) = &s.description {
                     lines.push(format!("description: {d}"));
                 }
