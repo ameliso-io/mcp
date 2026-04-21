@@ -142,4 +142,25 @@ describe('RepositoriesTab', () => {
     await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: 'inst-99' }))
     window.history.replaceState({}, '', '/')
   })
+
+  it('search filters repos by name', async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo({ id: 'org/alpha', name: 'alpha', fullName: 'org/alpha', htmlUrl: 'https://github.com/org/alpha' }), makeRepo({ id: 'org/beta', name: 'beta', fullName: 'org/beta', htmlUrl: 'https://github.com/org/beta' })],
+    } as never)
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />)
+    await waitFor(() => screen.getByText('org/alpha'))
+    await userEvent.type(screen.getByPlaceholderText('Search repositories…'), 'alpha')
+    expect(screen.getByText('org/alpha')).toBeInTheDocument()
+    expect(screen.queryByText('org/beta')).not.toBeInTheDocument()
+  })
+
+  it('search shows no-results state and clear button resets', async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never)
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />)
+    await waitFor(() => screen.getByPlaceholderText('Search repositories…'))
+    await userEvent.type(screen.getByPlaceholderText('Search repositories…'), 'no-match-xyz')
+    await waitFor(() => expect(screen.getByText(/No results for/)).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Clear search'))
+    expect(screen.getByText('owner/repo')).toBeInTheDocument()
+  })
 })
