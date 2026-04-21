@@ -2,6 +2,7 @@
 
 @layer tokens {
   :root {
+    color-scheme: light;
     --color-border: #e2e8f0;
     --color-muted: #64748b;
     --color-muted-dark: #475569;
