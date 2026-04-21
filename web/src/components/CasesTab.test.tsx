@@ -78,6 +78,14 @@ describe('CasesTab', () => {
     ))
   })
 
+  it('does not call deleteCase when confirm cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<CasesTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    expect(client.deleteCase).not.toHaveBeenCalled()
+  })
+
   it('opens edit form with pre-filled values when Edit clicked', async () => {
     render(<CasesTab repoPath="/repo" />)
     await waitFor(() => screen.getByText('Edit'))
