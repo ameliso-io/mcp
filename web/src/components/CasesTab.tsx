@@ -355,15 +355,19 @@ export default function CasesTab({ repoId }: Props) {
       </div>
 
       {error && (
-        <div className={styles.errorCard}>
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss} aria-label="Dismiss">
+          <button
+            onClick={() => setError(null)}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg}>Loading…</div>}
+      {loading && <div className={styles.loadingMsg} role="status">Loading…</div>}
 
       {!loading && deferredCases.length === 0 && !error && (
         <div className={styles.emptyCard}>No cases found.</div>
