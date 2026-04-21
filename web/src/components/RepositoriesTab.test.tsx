@@ -438,6 +438,23 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
   });
 
+  it("Refresh All keeps repos with different installationIds after update", async () => {
+    const repoA = makeRepo({ id: "org/alpha", name: "alpha", fullName: "org/alpha", installationId: "inst-1" });
+    const repoB = makeRepo({ id: "org/beta", name: "beta", fullName: "org/beta", installationId: "inst-2" });
+    const repoAUpdated = makeRepo({ id: "org/alpha", name: "alpha-updated", fullName: "org/alpha", installationId: "inst-1" });
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [repoA, repoB] } as never);
+    vi.mocked(client.handleGitHubCallback)
+      .mockResolvedValueOnce({ repositories: [repoAUpdated] } as never)
+      .mockResolvedValueOnce({ repositories: [repoB] } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledTimes(2));
+    // Both repos should remain visible after refresh
+    expect(screen.getByText("org/alpha")).toBeInTheDocument();
+    expect(screen.getByText("org/beta")).toBeInTheDocument();
+  });
+
   it("does not show Active badge when repo is not the active repo", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="other/repo" />);
