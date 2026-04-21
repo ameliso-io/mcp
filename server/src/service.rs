@@ -2297,6 +2297,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_suite_passes_validation() {
+        // Both required fields present — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .get_suite(Request::new(pb::GetSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn create_suite_with_description_passes_validation() {
         // Non-empty description takes the Some(desc) branch — passes validation → DB error.
         let s = server();
