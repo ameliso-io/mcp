@@ -85,6 +85,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   const [totalInScope, setTotalInScope] = useState(0)
   const [loadingPending, setLoadingPending] = useState(false)
   const [recordedResults, setRecordedResults] = useState<CaseResult[]>([])
+  const [resultStatusFilter, setResultStatusFilter] = useState<ResultStatus | null>(null)
 
   // Record result form
   const [recordingCase, setRecordingCase] = useState<string | null>(null)
@@ -173,12 +174,14 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
       setSelectedRunId(null)
       setPendingCases([])
       setRecordedResults([])
+      setResultStatusFilter(null)
       return
     }
     setSelectedRunId(runId)
     setLoadingPending(true)
     setPendingCases([])
     setRecordedResults([])
+    setResultStatusFilter(null)
     try {
       if (status === RunStatus.IN_PROGRESS) {
         const res = await client.getPendingCases({ repoPath, runId })
@@ -457,26 +460,36 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                       return (
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
                           {[
-                            { label: 'Passed', count: counts.passed, color: '#16a34a', bg: '#f0fdf4' },
-                            { label: 'Failed', count: counts.failed, color: '#dc2626', bg: '#fef2f2' },
-                            { label: 'Blocked', count: counts.blocked, color: '#ea580c', bg: '#fff7ed' },
-                            { label: 'Skipped', count: counts.skipped, color: '#64748b', bg: '#f8fafc' },
+                            { label: 'Passed', count: counts.passed, color: '#16a34a', bg: '#f0fdf4', status: ResultStatus.PASSED },
+                            { label: 'Failed', count: counts.failed, color: '#dc2626', bg: '#fef2f2', status: ResultStatus.FAILED },
+                            { label: 'Blocked', count: counts.blocked, color: '#ea580c', bg: '#fff7ed', status: ResultStatus.BLOCKED },
+                            { label: 'Skipped', count: counts.skipped, color: '#64748b', bg: '#f8fafc', status: ResultStatus.SKIPPED },
                           ].filter(s => s.count > 0).map(s => (
-                            <span
+                            <button
                               key={s.label}
+                              onClick={() => setResultStatusFilter(rsf => rsf === s.status ? null : s.status)}
                               style={{
                                 fontSize: '13px',
                                 fontWeight: '600',
                                 color: s.color,
-                                background: s.bg,
-                                border: `1px solid ${s.color}30`,
+                                background: resultStatusFilter === s.status ? s.color + '30' : s.bg,
+                                border: `1px solid ${resultStatusFilter === s.status ? s.color : s.color + '30'}`,
                                 padding: '4px 10px',
                                 borderRadius: '6px',
+                                cursor: 'pointer',
                               }}
                             >
                               {s.count} {s.label}
-                            </span>
+                            </button>
                           ))}
+                          {resultStatusFilter !== null && (
+                            <button
+                              onClick={() => setResultStatusFilter(null)}
+                              style={{ fontSize: '12px', color: '#64748b', background: 'none', border: '1px solid #e2e8f0', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                              Show all
+                            </button>
+                          )}
                         </div>
                       )
                     })()}
@@ -484,7 +497,10 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                       <p style={{ color: '#64748b', fontSize: '14px' }}>No results recorded.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {recordedResults.map(r => (
+                        {(resultStatusFilter !== null
+                          ? recordedResults.filter(r => r.status === resultStatusFilter)
+                          : recordedResults
+                        ).map(r => (
                           <div
                             key={r.casePath}
                             style={{
