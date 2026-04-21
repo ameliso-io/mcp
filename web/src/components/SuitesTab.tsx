@@ -166,6 +166,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       <div className={styles.header}>
         <h2 className={styles.title}>Suites</h2>
         <button
+          type="button"
           onClick={() => {
             if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
             setShowCreate(!showCreate);
@@ -250,6 +251,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             className={styles.errorDismiss}
             aria-label="Dismiss"
@@ -356,6 +358,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     </button>
                     {onRunSuite && (
                       <button
+                        type="button"
                         onClick={() => onRunSuite(suite.slug)}
                         aria-label={`Run ${suite.slug}`}
                         className={styles.btnGreenSm}
@@ -364,6 +367,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => startEdit(suite)}
                       aria-label={`Edit ${suite.slug}`}
                       className={styles.btnOutlineSm}

@@ -125,6 +125,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             className={styles.errorDismiss}
             aria-label="Dismiss"
@@ -175,7 +176,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
                 {onGoToRuns && (
-                  <button onClick={onGoToRuns} className={styles.goToRunsBtn}>
+                  <button type="button" onClick={onGoToRuns} className={styles.goToRunsBtn}>
                     Go to Runs
                   </button>
                 )}
@@ -257,6 +258,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             <div className={styles.inlineError} role="alert">
               <span>{affectedError}</span>
               <button
+                type="button"
                 onClick={() => setAffectedError(null)}
                 className={styles.inlineErrorDismiss}
                 aria-label="Dismiss"
