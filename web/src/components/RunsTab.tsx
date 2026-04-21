@@ -244,6 +244,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       });
       setRecordingCase(null);
       setRecordNotes("");
+      setRecordStatus(ResultStatus.PASSED);
       setCaseBody(null);
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });

@@ -537,4 +537,23 @@ describe("CasesTab", () => {
       )
     );
   });
+
+  it("resets priority to Medium after creating a case with High priority", async () => {
+    vi.mocked(client.createCase).mockResolvedValue({
+      case: mockCase,
+      filePath: "cases/auth/new.md",
+    } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    const prioritySelect = screen.getByDisplayValue("Medium");
+    await userEvent.selectOptions(prioritySelect, "High");
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "auth/new");
+    await userEvent.type(inputs[1], "New Title");
+    await userEvent.click(screen.getByText("Create"));
+    await waitFor(() => expect(client.createCase).toHaveBeenCalled());
+    // Reopen form — priority should be reset to Medium
+    await userEvent.click(screen.getByText("+ New Case"));
+    await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
+  });
 });

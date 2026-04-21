@@ -34,6 +34,22 @@ fn text_references_case(text: &str, case_path: &str) -> bool {
     false
 }
 
+/// Returns true when `path` is a documentation/config file that does not
+/// constitute a source change (i.e., should not trigger broad test flagging).
+fn is_doc_file(path: &str) -> bool {
+    let doc_exts = [".md", ".txt", ".yaml", ".yml"];
+    // dotfiles like .gitignore have no extension via Path::extension(), so check by filename
+    let doc_filenames = [".gitignore", ".gitattributes"];
+    let p = std::path::Path::new(path);
+    let ext = p
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| format!(".{e}"))
+        .unwrap_or_default();
+    let filename = p.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+    doc_exts.contains(&ext.as_str()) || doc_filenames.contains(&filename)
+}
+
 fn repo_err(e: RepoError) -> Status {
     match e {
         RepoError::NotFound(msg) => Status::not_found(msg),
@@ -777,18 +793,10 @@ impl AmelisoService for AmelisoServer {
             }
         }
 
-        let doc_exts = [".md", ".txt", ".gitignore", ".yaml", ".yml"];
         let source_changed: Vec<&str> = compare
             .changed_files
             .iter()
-            .filter(|f| {
-                let ext = std::path::Path::new(f)
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .map(|e| format!(".{e}"))
-                    .unwrap_or_default();
-                !doc_exts.contains(&ext.as_str())
-            })
+            .filter(|f| !is_doc_file(f))
             .map(|f| f.as_str())
             .collect();
 
@@ -1331,5 +1339,43 @@ mod tests {
             "cases/auth/login/step1.md",
             "auth/login"
         ));
+    }
+
+    // ── is_doc_file ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn is_doc_file_markdown() {
+        assert!(is_doc_file("cases/auth/login.md"));
+    }
+
+    #[test]
+    fn is_doc_file_yaml() {
+        assert!(is_doc_file("config/suite.yaml"));
+        assert!(is_doc_file("config/suite.yml"));
+    }
+
+    #[test]
+    fn is_doc_file_txt() {
+        assert!(is_doc_file("notes.txt"));
+    }
+
+    #[test]
+    fn is_doc_file_gitignore_dotfile() {
+        // Path::extension() returns None for .gitignore, so we check by filename
+        assert!(is_doc_file(".gitignore"));
+        assert!(is_doc_file("subdir/.gitignore"));
+    }
+
+    #[test]
+    fn is_doc_file_gitattributes_dotfile() {
+        assert!(is_doc_file(".gitattributes"));
+        assert!(is_doc_file("subdir/.gitattributes"));
+    }
+
+    #[test]
+    fn is_doc_file_source_files_not_doc() {
+        assert!(!is_doc_file("src/auth.rs"));
+        assert!(!is_doc_file("src/main.ts"));
+        assert!(!is_doc_file("app.py"));
     }
 }

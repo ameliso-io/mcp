@@ -737,4 +737,30 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
   });
+
+  it("resets recordStatus to PASSED after recording a result", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByRole("combobox"));
+    // Change status to FAILED
+    await userEvent.selectOptions(
+      screen.getByRole("combobox"),
+      String(ResultStatus.FAILED)
+    );
+    // Fill notes (required for FAILED; placeholder changes per status)
+    await userEvent.type(screen.getByPlaceholderText("Describe what failed…"), "blocker");
+    await userEvent.click(screen.getByText("Save Result"));
+    // Record button reappears after success; open the form again
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    // Status should be reset to PASSED
+    await waitFor(() => {
+      const select = screen.getByRole("combobox") as HTMLSelectElement;
+      expect(select.value).toBe(String(ResultStatus.PASSED));
+    });
+  });
 });
