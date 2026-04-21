@@ -144,7 +144,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     if (!repoPath || !newSlug) return
     setCreating(true)
     try {
-      await client.createRun({
+      const created = await client.createRun({
         repoPath,
         slug: newSlug,
         tester: newTester,
@@ -156,7 +156,11 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
       setNewTester('')
       setNewEnv('')
       setNewSuite('')
-      load()
+      await load()
+      // Auto-expand the newly created run
+      if (created.run) {
+        await selectRun(created.run.id, created.run.status)
+      }
     } catch (e) {
       setError(errorMessage(e))
     } finally {
