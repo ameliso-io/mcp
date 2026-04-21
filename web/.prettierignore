@@ -1,0 +1,4 @@
+coverage/
+.claude/
+.next/
+node_modules/
