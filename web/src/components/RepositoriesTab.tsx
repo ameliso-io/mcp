@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'

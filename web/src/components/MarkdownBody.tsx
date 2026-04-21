@@ -1,3 +1,5 @@
+'use client'
+
 import { marked } from 'marked'
 import './MarkdownBody.css'
 

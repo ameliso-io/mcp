@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect, useCallback, useRef, useId, useTransition, useDeferredValue } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
