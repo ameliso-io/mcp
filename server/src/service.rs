@@ -2148,6 +2148,26 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn text_references_case_in_parentheses() {
+        assert!(text_references_case(
+            "fix (auth/login) redirect",
+            "auth/login"
+        ));
+    }
+
+    #[test]
+    fn text_references_case_in_quotes() {
+        assert!(text_references_case("see 'auth/login' for details", "auth/login"));
+        assert!(text_references_case(r#"see "auth/login" for details"#, "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_no_match_prefix_only() {
+        // "auth/login" is a prefix of "auth/login-flow" — should NOT match
+        assert!(!text_references_case("src/auth/login-flow.ts", "auth/login"));
+    }
+
     // ── is_doc_file ───────────────────────────────────────────────────────────
 
     #[test]
