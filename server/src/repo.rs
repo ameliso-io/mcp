@@ -235,7 +235,7 @@ pub async fn update_case(
     let new_body = body.unwrap_or(&existing.body);
     let today = Local::now().format("%Y-%m-%d").to_string();
 
-    sqlx::query(
+    let rows = sqlx::query(
         "UPDATE cases SET title=$3, description=$4, tags=$5, priority=$6, body=$7, updated_at=$8
          WHERE repo_id=$1 AND case_path=$2",
     )
@@ -249,7 +249,11 @@ pub async fn update_case(
     .bind(&today)
     .execute(pool)
     .await
-    .map_err(map_db)?;
+    .map_err(map_db)?
+    .rows_affected();
+    if rows == 0 {
+        return Err(RepoError::NotFound(format!("case not found: {}", case_path)));
+    }
 
     Ok(LoadedCase {
         case_path: case_path.to_owned(),
@@ -388,15 +392,21 @@ pub async fn update_suite(
         existing.cases.clone()
     };
 
-    sqlx::query("UPDATE suites SET name=$3, description=$4, cases=$5 WHERE repo_id=$1 AND slug=$2")
-        .bind(repo_id)
-        .bind(slug)
-        .bind(new_name)
-        .bind(&new_desc)
-        .bind(&new_cases)
-        .execute(pool)
-        .await
-        .map_err(map_db)?;
+    let rows = sqlx::query(
+        "UPDATE suites SET name=$3, description=$4, cases=$5 WHERE repo_id=$1 AND slug=$2",
+    )
+    .bind(repo_id)
+    .bind(slug)
+    .bind(new_name)
+    .bind(&new_desc)
+    .bind(&new_cases)
+    .execute(pool)
+    .await
+    .map_err(map_db)?
+    .rows_affected();
+    if rows == 0 {
+        return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
+    }
 
     Ok(SuiteRow {
         slug: slug.to_owned(),
@@ -646,13 +656,17 @@ pub async fn finalize_run(
         _ => {}
     }
 
-    sqlx::query("UPDATE runs SET status=$3 WHERE repo_id=$1 AND run_id=$2")
+    let rows = sqlx::query("UPDATE runs SET status=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .bind(status)
         .execute(pool)
         .await
-        .map_err(map_db)?;
+        .map_err(map_db)?
+        .rows_affected();
+    if rows == 0 {
+        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+    }
 
     get_run(pool, repo_id, run_id).await.map(|r| r.meta)
 }
