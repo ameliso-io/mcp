@@ -637,19 +637,21 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               )}
                               <form onSubmit={handleRecord} className={styles.recordForm}>
                                 <div>
-                                  <label className={styles.labelSm}>Status</label>
-                                  <select
-                                    value={recordStatus}
-                                    onChange={(e) =>
-                                      setRecordStatus(Number(e.target.value) as ResultStatus)
-                                    }
-                                    className={styles.inputAuto}
-                                  >
-                                    <option value={ResultStatus.PASSED}>Passed</option>
-                                    <option value={ResultStatus.FAILED}>Failed</option>
-                                    <option value={ResultStatus.BLOCKED}>Blocked</option>
-                                    <option value={ResultStatus.SKIPPED}>Skipped</option>
-                                  </select>
+                                  <label className={styles.labelSm}>
+                                    Status
+                                    <select
+                                      value={recordStatus}
+                                      onChange={(e) =>
+                                        setRecordStatus(Number(e.target.value) as ResultStatus)
+                                      }
+                                      className={styles.inputAuto}
+                                    >
+                                      <option value={ResultStatus.PASSED}>Passed</option>
+                                      <option value={ResultStatus.FAILED}>Failed</option>
+                                      <option value={ResultStatus.BLOCKED}>Blocked</option>
+                                      <option value={ResultStatus.SKIPPED}>Skipped</option>
+                                    </select>
+                                  </label>
                                 </div>
                                 <div className={styles.notesWrap}>
                                   <label
@@ -665,10 +667,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                     recordStatus === ResultStatus.BLOCKED
                                       ? " *"
                                       : ""}
-                                  </label>
-                                  <input
-                                    value={recordNotes}
-                                    onChange={(e) => setRecordNotes(e.target.value)}
+                                    <input
+                                      value={recordNotes}
+                                      onChange={(e) => setRecordNotes(e.target.value)}
                                     placeholder={
                                       recordStatus === ResultStatus.FAILED
                                         ? "Describe what failed…"
@@ -682,7 +683,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                         ? styles.inputErr
                                         : styles.input
                                     }
-                                  />
+                                    />
+                                  </label>
                                 </div>
                                 <button
                                   type="submit"
