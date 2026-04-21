@@ -432,9 +432,10 @@ export default function CasesTab({ repoId }: Props) {
         <div className={styles.emptyCard}>No cases found.</div>
       )}
 
-      <div
+      <ul
         className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}
         aria-busy={loading || isStale}
+        role="list"
       >
         {[...deferredCases]
           .sort((a, b) => {
@@ -446,7 +447,7 @@ export default function CasesTab({ repoId }: Props) {
             return a.path.localeCompare(b.path);
           })
           .map((c) => (
-            <div key={c.path}>
+            <li key={c.path}>
               <div
                 className={
                   expandedPath === c.path || editingPath === c.path
@@ -622,9 +623,9 @@ export default function CasesTab({ repoId }: Props) {
                   )}
                 </div>
               )}
-            </div>
+            </li>
           ))}
-      </div>
+      </ul>
     </div>
   );
 }

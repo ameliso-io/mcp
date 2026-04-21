@@ -430,12 +430,10 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
-      <div className={styles.list} aria-busy={loading}>
+      <ul className={styles.list} aria-busy={loading} role="list">
         {runs.map((run) => (
-          <div key={run.id}>
-            <div
-              className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}
-            >
+          <li key={run.id}>
+            <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>
                 <button
                   className={styles.runExpandBtn}
@@ -825,9 +823,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                 )}
               </div>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

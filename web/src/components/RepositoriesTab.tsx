@@ -229,11 +229,11 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         </div>
       )}
 
-      <div aria-busy={loading}>
+      <ul aria-busy={loading} role="list" className={styles.repoList}>
         {filteredRepos.map((repo) => {
           const isActive = activeRepoId === repo.id;
           return (
-            <div key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
+            <li key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
               <div className={styles.repoRow}>
                 <div className={styles.repoInfo}>
                   <div className={styles.repoNameRow}>
@@ -305,10 +305,10 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
                   Added <time dateTime={repo.addedAt}>{repo.addedAt}</time>
                 </div>
               )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

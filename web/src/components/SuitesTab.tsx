@@ -268,9 +268,9 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
-      <div className={styles.list} aria-busy={loading}>
+      <ul className={styles.list} aria-busy={loading} role="list">
         {suites.map((suite) => (
-          <div key={suite.slug}>
+          <li key={suite.slug}>
             {editingSlug === suite.slug ? (
               <div className={styles.card}>
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
@@ -406,9 +406,9 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     {expandedCasesLoading ? (
                       <p className={styles.expandedLoading}>Loading…</p>
                     ) : expandedCases.length > 0 ? (
-                      <div className={styles.caseList}>
+                      <ul className={styles.caseList} role="list">
                         {expandedCases.map((c) => (
-                          <div key={c.path} className={styles.caseRow}>
+                          <li key={c.path} className={styles.caseRow}>
                             <span
                               className={styles.caseDot}
                               data-priority={c.priority}
@@ -421,17 +421,17 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                                 {t}
                               </span>
                             ))}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : suite.cases.length > 0 ? (
-                      <div className={styles.caseList}>
+                      <ul className={styles.caseList} role="list">
                         {suite.cases.map((casePath) => (
-                          <div key={casePath} className={styles.casePathOnly}>
+                          <li key={casePath} className={styles.casePathOnly}>
                             {casePath}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : (
                       <p className={styles.noCase}>No cases in this suite.</p>
                     )}
@@ -439,9 +439,9 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                 )}
               </>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

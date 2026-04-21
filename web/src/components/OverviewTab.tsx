@@ -180,16 +180,18 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   </button>
                 )}
               </div>
-              <div className={styles.runList}>
+              <ul className={styles.runList} role="list">
                 {activeRuns.map((run) => (
-                  <div key={run.id} className={styles.runRow}>
+                  <li key={run.id} className={styles.runRow}>
                     <span className={styles.runId}>{run.id}</span>
                     {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
                     {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                    <time className={styles.runDate} dateTime={run.date}>{run.date}</time>
-                  </div>
+                    <time className={styles.runDate} dateTime={run.date}>
+                      {run.date}
+                    </time>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
 
@@ -197,11 +199,11 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             <p className={`${styles.label} ${styles.sectionLabel}`}>
               Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
             </p>
-            <div className={styles.coverageList}>
+            <ul className={styles.coverageList} role="list">
               {[...entries]
                 .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))
                 .map((entry) => (
-                  <div key={entry.case?.path} className={styles.coverageRow}>
+                  <li key={entry.case?.path} className={styles.coverageRow}>
                     <span
                       className={styles.statusDot}
                       aria-hidden="true"
@@ -210,7 +212,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     <span className={styles.coveragePath}>{entry.case?.path}</span>
                     <span className={styles.coverageTitle}>{entry.case?.title}</span>
                     {entry.lastRunDate && (
-                      <time className={styles.coverageDate} dateTime={entry.lastRunDate}>{entry.lastRunDate}</time>
+                      <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
+                        {entry.lastRunDate}
+                      </time>
                     )}
                     <span
                       className={styles.coverageStatus}
@@ -218,9 +222,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     >
                       {statusLabel(entry.latestStatus)}
                     </span>
-                  </div>
+                  </li>
                 ))}
-            </div>
+            </ul>
           </div>
         </>
       )}
@@ -261,7 +265,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
             (affected.length === 0 ? (
               <p className={styles.noAffected}>No cases affected by this diff.</p>
             ) : (
-              <div className={styles.affectedList}>
+              <ul className={styles.affectedList} role="list">
                 {[...affected]
                   .sort((a, b) => {
                     const order = { high: 0, medium: 1, low: 2 } as Record<string, number>;
@@ -270,7 +274,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                     );
                   })
                   .map((ac, idx) => (
-                    <div key={ac.case?.path ?? idx} className={styles.affectedRow}>
+                    <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
                         <span
                           className={styles.priorityDot}
@@ -281,9 +285,9 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>
                       <span className={styles.affectedReason}>{ac.reason}</span>
-                    </div>
+                    </li>
                   ))}
-              </div>
+              </ul>
             ))}
         </div>
       )}
