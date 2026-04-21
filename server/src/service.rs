@@ -148,6 +148,17 @@ impl AmelisoService for AmelisoServer {
             });
         }
 
+        let priority_rank = |p: &str| match p {
+            "high" => 0u8,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        };
+        cases.sort_by(|a, b| {
+            priority_rank(&a.fm.priority)
+                .cmp(&priority_rank(&b.fm.priority))
+                .then_with(|| a.case_path.cmp(&b.case_path))
+        });
         let pb_cases = cases.iter().map(case_to_pb).collect();
         Ok(Response::new(pb::ListCasesResponse { cases: pb_cases }))
     }
@@ -308,13 +319,21 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let name = if req.name.is_empty() { None } else { Some(req.name.as_str()) };
+        let name = if req.name.is_empty() {
+            None
+        } else {
+            Some(req.name.as_str())
+        };
         let description = if req.description.is_empty() {
             None
         } else {
             Some(Some(req.description.clone()))
         };
-        let cases = if req.cases.is_empty() { None } else { Some(req.cases) };
+        let cases = if req.cases.is_empty() {
+            None
+        } else {
+            Some(req.cases)
+        };
         let suite =
             repo::update_suite(&repo, &req.slug, name, description, cases).map_err(repo_err)?;
         Ok(Response::new(pb::UpdateSuiteResponse {
@@ -462,17 +481,18 @@ impl AmelisoService for AmelisoServer {
         // Build latest-status map: case_path -> (status, run_id, run_date)
         let mut latest: std::collections::HashMap<String, (String, String, String)> =
             std::collections::HashMap::new();
-        // Runs are newest-first; first write wins = latest
+        // Runs are newest-first; first write wins = latest. Skip corrupt run.yaml files.
         for run_meta in &runs {
-            let run = repo::get_run(&repo, &run_meta.id).map_err(repo_err)?;
-            for result in &run.results {
-                latest.entry(result.case_path.clone()).or_insert_with(|| {
-                    (
-                        result.fm.status.clone(),
-                        run_meta.id.clone(),
-                        run_meta.date.clone(),
-                    )
-                });
+            if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
+                for result in &run.results {
+                    latest.entry(result.case_path.clone()).or_insert_with(|| {
+                        (
+                            result.fm.status.clone(),
+                            run_meta.id.clone(),
+                            run_meta.date.clone(),
+                        )
+                    });
+                }
             }
         }
 
@@ -526,8 +546,20 @@ impl AmelisoService for AmelisoServer {
         let result = git::find_affected(&repo, since, &known_paths)
             .map_err(|e| repo_err(RepoError::Other(e)))?;
 
-        let affected = result
-            .case_paths
+        let priority_rank = |p: &str| match p {
+            "high" => 0u8,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        };
+        let mut sorted_paths = result.case_paths.clone();
+        sorted_paths.sort_by_key(|p| {
+            case_map
+                .get(p)
+                .map(|c| priority_rank(&c.fm.priority))
+                .unwrap_or(3)
+        });
+        let affected = sorted_paths
             .iter()
             .map(|path| pb::AffectedCase {
                 case: case_map.get(path).map(|c| case_to_pb(c)),
