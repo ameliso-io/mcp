@@ -94,9 +94,7 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("owner/repo removed")
-    );
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("owner/repo removed"));
   });
 
   it("does not call removeRepository when inline confirm cancelled", async () => {
@@ -264,6 +262,19 @@ describe("RepositoriesTab", () => {
     await userEvent.click(screen.getByText("↻ Refresh All"));
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-1" })
+    );
+  });
+
+  it("announces refresh completion via live region", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Repositories refreshed")
     );
   });
 

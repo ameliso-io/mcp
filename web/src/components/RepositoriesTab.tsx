@@ -54,6 +54,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       }
+      setAnnouncement("Repositories refreshed");
     } catch (e) {
       setError(errorMessage(e));
     } finally {
