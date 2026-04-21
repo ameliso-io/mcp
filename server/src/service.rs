@@ -1735,6 +1735,23 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    #[tokio::test]
+    async fn create_case_with_explicit_priority_passes_validation() {
+        // Non-Unspecified priority takes the Some("high") branch — passes validation → DB error.
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login".to_owned(),
+                priority: pb::Priority::High as i32,
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── create_suite validation ───────────────────────────────────────────────
 
     #[tokio::test]
