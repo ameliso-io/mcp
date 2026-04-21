@@ -54,6 +54,7 @@ Available tools:
 | `list_suites` | List all suites |
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
+| `update_suite` | Update a suite's name, description, or case list |
 | `get_affected_cases` | Cases that may need re-running based on git changes |
 
 All tools accept `repo_path` — the absolute path to the controlled repository.
@@ -88,6 +89,7 @@ ameliso runs finalize 2026-04-21-smoke completed
 ameliso suites list
 ameliso suites get smoke
 ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/checkout
+ameliso suites update smoke --name "Smoke Suite" --cases auth/login,billing/checkout,payments/refund
 
 # Reports
 ameliso coverage
