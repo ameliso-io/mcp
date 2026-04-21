@@ -139,7 +139,18 @@ All steps completed. Verified on Chrome 124.
 pnpm install          # install git hooks (Husky)
 cargo test            # run all tests
 make pre-commit       # fmt + lint
-make pre-push         # build + test
+make pre-push         # build + test + coverage check
+make coverage-check   # run coverage checks only
 ```
 
 Git hooks run automatically after `pnpm install`.
+
+### Coverage prerequisites
+
+`cargo-llvm-cov` must be installed for Rust coverage:
+
+```sh
+cargo install cargo-llvm-cov
+```
+
+Thresholds: **60% line coverage** for `ameliso-server` (target: 80%), **80% statement/branch/function/line coverage** for the web frontend.
