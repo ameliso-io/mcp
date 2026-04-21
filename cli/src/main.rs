@@ -63,6 +63,8 @@ enum CasesCmd {
         tags: Option<String>,
         #[arg(long, default_value = "medium", help = "low | medium | high")]
         priority: String,
+        #[arg(long, help = "Full markdown body (steps, expected results)")]
+        body: Option<String>,
     },
     #[command(about = "Update an existing test case")]
     Update {
@@ -77,6 +79,8 @@ enum CasesCmd {
         tags: Option<String>,
         #[arg(long, default_value = "medium", help = "low | medium | high")]
         priority: String,
+        #[arg(long, help = "Replace the full markdown body")]
+        body: Option<String>,
     },
 }
 
@@ -211,10 +215,18 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             description,
             tags,
             priority,
+            body,
         } => {
             let tag_list = parse_tags(tags.as_deref());
-            let c =
-                repo::create_case(&repo, &case_path, &title, &description, tag_list, &priority)?;
+            let c = repo::create_case(
+                &repo,
+                &case_path,
+                &title,
+                &description,
+                tag_list,
+                &priority,
+                body.as_deref(),
+            )?;
             println!("Created: cases/{}.md", c.case_path);
         }
         CasesCmd::Update {
@@ -224,10 +236,18 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             description,
             tags,
             priority,
+            body,
         } => {
             let tag_list = parse_tags(tags.as_deref());
-            let c =
-                repo::update_case(&repo, &case_path, &title, &description, tag_list, &priority)?;
+            let c = repo::update_case(
+                &repo,
+                &case_path,
+                &title,
+                &description,
+                tag_list,
+                &priority,
+                body.as_deref(),
+            )?;
             println!("Updated: cases/{}.md", c.case_path);
         }
     }

@@ -177,6 +177,7 @@ impl AmelisoService for AmelisoServer {
         }
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
+        let body = if req.body.is_empty() { None } else { Some(req.body.as_str()) };
         let case = repo::create_case(
             &repo,
             &req.case_path,
@@ -184,6 +185,7 @@ impl AmelisoService for AmelisoServer {
             &req.description,
             req.tags,
             priority,
+            body,
         )
         .map_err(repo_err)?;
         let file_path = format!("cases/{}.md", req.case_path);
@@ -200,6 +202,7 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
+        let body = if req.body.is_empty() { None } else { Some(req.body.as_str()) };
         let case = repo::update_case(
             &repo,
             &req.case_path,
@@ -207,6 +210,7 @@ impl AmelisoService for AmelisoServer {
             &req.description,
             req.tags,
             priority,
+            body,
         )
         .map_err(repo_err)?;
         Ok(Response::new(pb::UpdateCaseResponse {

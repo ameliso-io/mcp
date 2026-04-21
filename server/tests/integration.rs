@@ -480,5 +480,39 @@ async fn get_case_returns_body() {
     let case = resp.case.unwrap();
     assert_eq!(case.path, "auth/login");
     assert_eq!(case.title, "User Login");
-    assert!(resp.body.contains("Steps"), "body should contain Steps section");
+    assert!(
+        resp.body.contains("Steps"),
+        "body should contain Steps section"
+    );
+}
+
+#[tokio::test]
+async fn create_case_with_custom_body() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let custom_body = "## Steps\n\n1. Open the app\n\n## Expected Result\n\nApp opens\n";
+    c.create_case(Request::new(pb::CreateCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "smoke/open".to_owned(),
+        title: "Open App".to_owned(),
+        description: "Basic smoke test".to_owned(),
+        body: custom_body.to_owned(),
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "smoke/open".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert!(resp.body.contains("Open the app"), "custom body preserved");
 }

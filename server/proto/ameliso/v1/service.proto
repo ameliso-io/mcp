@@ -96,6 +96,8 @@ message CreateCaseRequest {
   string description = 4;
   repeated string tags = 5;
   Priority priority = 6;
+  // Optional: full markdown body (steps, expected results, etc.). Defaults to a template.
+  string body = 7;
 }
 
 message CreateCaseResponse {
@@ -111,6 +113,8 @@ message UpdateCaseRequest {
   string description = 4;
   repeated string tags = 5;
   Priority priority = 6;
+  // Optional: replace the full markdown body. If empty, existing body is preserved.
+  string body = 7;
 }
 
 message UpdateCaseResponse {

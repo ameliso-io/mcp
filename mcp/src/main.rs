@@ -37,6 +37,8 @@ struct CreateCaseRequest {
     tags: Option<String>,
     #[schemars(description = "low | medium | high (default: medium)")]
     priority: Option<String>,
+    #[schemars(description = "Full markdown body (steps, expected results). Defaults to a template.")]
+    body: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -82,6 +84,8 @@ struct UpdateCaseRequest {
     tags: Option<String>,
     #[schemars(description = "low | medium | high (default: medium)")]
     priority: Option<String>,
+    #[schemars(description = "Replace the full markdown body. If omitted, existing body is preserved.")]
+    body: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -197,6 +201,7 @@ impl AmelisoMcp {
             .filter(|s| !s.is_empty())
             .collect();
         let pri = req.priority.as_deref().unwrap_or("medium");
+        let body = req.body.as_deref();
         match repo::create_case(
             &repo,
             &req.case_path,
@@ -204,6 +209,7 @@ impl AmelisoMcp {
             &req.description,
             tag_list,
             pri,
+            body,
         ) {
             Ok(c) => format!("created: cases/{}.md\ntitle: {}", c.case_path, c.fm.title),
             Err(e) => format!("error: {e}"),
@@ -319,6 +325,7 @@ impl AmelisoMcp {
             .filter(|s| !s.is_empty())
             .collect();
         let pri = req.priority.as_deref().unwrap_or("medium");
+        let body = req.body.as_deref();
         match repo::update_case(
             &repo,
             &req.case_path,
@@ -326,6 +333,7 @@ impl AmelisoMcp {
             &req.description,
             tag_list,
             pri,
+            body,
         ) {
             Ok(c) => format!("updated: cases/{}.md", c.case_path),
             Err(e) => format!("error: {e}"),

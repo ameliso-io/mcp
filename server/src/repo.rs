@@ -249,6 +249,7 @@ pub fn create_case(
     description: &str,
     tags: Vec<String>,
     priority: &str,
+    body: Option<&str>,
 ) -> RResult<LoadedCase> {
     let file = case_file_path(repo, case_path);
     if file.exists() {
@@ -266,7 +267,8 @@ pub fn create_case(
         created_at: today.clone(),
         updated_at: today,
     };
-    let body = "## Prerequisites\n\n- \n\n## Steps\n\n1. \n\n## Expected Result\n\n\n";
+    let body =
+        body.unwrap_or("## Prerequisites\n\n- \n\n## Steps\n\n1. \n\n## Expected Result\n\n\n");
     write_case_file(&file, &fm, body)?;
     Ok(LoadedCase {
         fm,
@@ -282,20 +284,22 @@ pub fn update_case(
     description: &str,
     tags: Vec<String>,
     priority: &str,
+    body: Option<&str>,
 ) -> RResult<LoadedCase> {
     let file = case_file_path(repo, case_path);
     let content = std::fs::read_to_string(&file)
         .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
-    let (mut fm, body) = parse_fm::<CaseFm>(&content)?;
+    let (mut fm, existing_body) = parse_fm::<CaseFm>(&content)?;
     fm.title = title.to_owned();
     fm.description = description.to_owned();
     fm.tags = tags;
     fm.priority = priority.to_owned();
     fm.updated_at = Local::now().format("%Y-%m-%d").to_string();
-    write_case_file(&file, &fm, &body)?;
+    let body = body.unwrap_or(&existing_body);
+    write_case_file(&file, &fm, body)?;
     Ok(LoadedCase {
         fm,
-        body,
+        body: body.to_owned(),
         case_path: case_path.to_owned(),
     })
 }
