@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue } from 'react'
+import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue, useId } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { Case } from '../gen/ameliso/v1/types_pb'
@@ -44,6 +44,7 @@ export default function CasesTab({ repoPath }: Props) {
   const [, startSortTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const createFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newPath, setNewPath] = useState('')
   const [newTitle, setNewTitle] = useState('')
@@ -214,32 +215,33 @@ export default function CasesTab({ repoPath }: Props) {
           <h3 className={styles.cardTitle}>Create Case</h3>
           <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label className={styles.label}>Path (e.g. auth/login)</label>
-              <input value={newPath} onChange={e => setNewPath(e.target.value)} required className={styles.input} />
+              <label htmlFor={`${createFormId}-path`} className={styles.label}>Path (e.g. auth/login)</label>
+              <input id={`${createFormId}-path`} value={newPath} onChange={e => setNewPath(e.target.value)} required className={styles.input} />
             </div>
             <div>
-              <label className={styles.label}>Title</label>
-              <input value={newTitle} onChange={e => setNewTitle(e.target.value)} required className={styles.input} />
+              <label htmlFor={`${createFormId}-title`} className={styles.label}>Title</label>
+              <input id={`${createFormId}-title`} value={newTitle} onChange={e => setNewTitle(e.target.value)} required className={styles.input} />
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Description</label>
-              <input value={newDesc} onChange={e => setNewDesc(e.target.value)} className={styles.input} />
+              <label htmlFor={`${createFormId}-desc`} className={styles.label}>Description</label>
+              <input id={`${createFormId}-desc`} value={newDesc} onChange={e => setNewDesc(e.target.value)} className={styles.input} />
             </div>
             <div>
-              <label className={styles.label}>Priority</label>
-              <select value={newPriority} onChange={e => setNewPriority(Number(e.target.value) as Priority)} className={styles.input}>
+              <label htmlFor={`${createFormId}-priority`} className={styles.label}>Priority</label>
+              <select id={`${createFormId}-priority`} value={newPriority} onChange={e => setNewPriority(Number(e.target.value) as Priority)} className={styles.input}>
                 <option value={Priority.LOW}>Low</option>
                 <option value={Priority.MEDIUM}>Medium</option>
                 <option value={Priority.HIGH}>High</option>
               </select>
             </div>
             <div>
-              <label className={styles.label}>Tags (comma-separated)</label>
-              <input value={newTags} onChange={e => setNewTags(e.target.value)} className={styles.input} />
+              <label htmlFor={`${createFormId}-tags`} className={styles.label}>Tags (comma-separated)</label>
+              <input id={`${createFormId}-tags`} value={newTags} onChange={e => setNewTags(e.target.value)} className={styles.input} />
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Steps / Body (Markdown)</label>
+              <label htmlFor={`${createFormId}-body`} className={styles.label}>Steps / Body (Markdown)</label>
               <textarea
+                id={`${createFormId}-body`}
                 value={newBody}
                 onChange={e => setNewBody(e.target.value)}
                 placeholder={'## Steps\n\n1. \n\n## Expected Result\n\n'}

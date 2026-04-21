@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useId } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { RunMeta, Case, CaseResult } from '../gen/ameliso/v1/types_pb'
@@ -42,6 +42,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<RunStatus>(RunStatus.UNSPECIFIED)
 
+  const createFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
   const [newTester, setNewTester] = useState('')
@@ -296,20 +297,20 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
           <h3 className={styles.cardTitle}>Create Run</h3>
           <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label className={styles.label}>Slug</label>
-              <input value={newSlug} onChange={e => setNewSlug(e.target.value)} required className={styles.input} />
+              <label htmlFor={`${createFormId}-slug`} className={styles.label}>Slug</label>
+              <input id={`${createFormId}-slug`} value={newSlug} onChange={e => setNewSlug(e.target.value)} required className={styles.input} />
             </div>
             <div>
-              <label className={styles.label}>Tester</label>
-              <input value={newTester} onChange={e => setNewTester(e.target.value)} className={styles.input} />
+              <label htmlFor={`${createFormId}-tester`} className={styles.label}>Tester</label>
+              <input id={`${createFormId}-tester`} value={newTester} onChange={e => setNewTester(e.target.value)} className={styles.input} />
             </div>
             <div>
-              <label className={styles.label}>Environment</label>
-              <input value={newEnv} onChange={e => setNewEnv(e.target.value)} className={styles.input} />
+              <label htmlFor={`${createFormId}-env`} className={styles.label}>Environment</label>
+              <input id={`${createFormId}-env`} value={newEnv} onChange={e => setNewEnv(e.target.value)} className={styles.input} />
             </div>
             <div>
-              <label className={styles.label}>Suite (optional)</label>
-              <input value={newSuite} onChange={e => setNewSuite(e.target.value)} className={styles.input} />
+              <label htmlFor={`${createFormId}-suite`} className={styles.label}>Suite (optional)</label>
+              <input id={`${createFormId}-suite`} value={newSuite} onChange={e => setNewSuite(e.target.value)} className={styles.input} />
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>

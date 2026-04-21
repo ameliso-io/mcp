@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useId } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { Suite, Case } from '../gen/ameliso/v1/types_pb'
@@ -19,6 +19,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
   const [expandedCases, setExpandedCases] = useState<Case[]>([])
   const [expandedCasesLoading, setExpandedCasesLoading] = useState(false)
 
+  const createFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
   const [newName, setNewName] = useState('')
@@ -141,20 +142,20 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
           <h3 className={styles.cardTitle}>Create Suite</h3>
           <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label className={styles.label}>Slug</label>
-              <input className={styles.input} value={newSlug} onChange={e => setNewSlug(e.target.value)} required placeholder="e.g. smoke" />
+              <label htmlFor={`${createFormId}-slug`} className={styles.label}>Slug</label>
+              <input id={`${createFormId}-slug`} className={styles.input} value={newSlug} onChange={e => setNewSlug(e.target.value)} required placeholder="e.g. smoke" />
             </div>
             <div>
-              <label className={styles.label}>Name</label>
-              <input className={styles.input} value={newName} onChange={e => setNewName(e.target.value)} required placeholder="e.g. Smoke Tests" />
+              <label htmlFor={`${createFormId}-name`} className={styles.label}>Name</label>
+              <input id={`${createFormId}-name`} className={styles.input} value={newName} onChange={e => setNewName(e.target.value)} required placeholder="e.g. Smoke Tests" />
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Description</label>
-              <input className={styles.input} value={newDesc} onChange={e => setNewDesc(e.target.value)} />
+              <label htmlFor={`${createFormId}-desc`} className={styles.label}>Description</label>
+              <input id={`${createFormId}-desc`} className={styles.input} value={newDesc} onChange={e => setNewDesc(e.target.value)} />
             </div>
             <div className={styles.fullCol}>
-              <label className={styles.label}>Cases (comma-separated paths)</label>
-              <input className={styles.input} value={newCases} onChange={e => setNewCases(e.target.value)} placeholder="auth/login, auth/logout" />
+              <label htmlFor={`${createFormId}-cases`} className={styles.label}>Cases (comma-separated paths)</label>
+              <input id={`${createFormId}-cases`} className={styles.input} value={newCases} onChange={e => setNewCases(e.target.value)} placeholder="auth/login, auth/logout" />
             </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
