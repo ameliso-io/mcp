@@ -333,4 +333,17 @@ describe("RepositoriesTab", () => {
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolve!({ repositories: [], runs: [] });
   });
+
+  it("shows connect hint when configured but no repos", async () => {
+    vi.mocked(client.getGitHubInstallUrl).mockResolvedValue({
+      url: "https://github.com/apps/ameliso/install",
+      configured: true,
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Click.*Connect GitHub Repo.*to install/i)
+      ).toBeInTheDocument()
+    );
+  });
 });
