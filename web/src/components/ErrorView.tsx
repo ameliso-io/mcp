@@ -9,7 +9,7 @@ interface Props {
 
 export default function ErrorView({ error, reset }: Props) {
   return (
-    <div className={styles.centered}>
+    <div className={styles.centered} role="alert">
       <p className={styles.errorMessage}>{error.message || "Something went wrong."}</p>
       <button className={styles.btn} onClick={reset}>
         Try again
