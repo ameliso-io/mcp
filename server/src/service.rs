@@ -775,13 +775,14 @@ impl AmelisoService for AmelisoServer {
             cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
 
         let mut affected: Vec<String> = Vec::new();
+        let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
         let mut reasons: Vec<String> = Vec::new();
 
         let all_text = compare.commit_messages.join("\n");
         for path in &known_paths {
             if text_references_case(&all_text, path) {
                 reasons.push(format!("commit messages reference: {}", path));
-                if !affected.contains(path) {
+                if affected_set.insert(path.clone()) {
                     affected.push(path.clone());
                 }
             }
@@ -791,7 +792,7 @@ impl AmelisoService for AmelisoServer {
             for path in &known_paths {
                 if text_references_case(file, path) {
                     reasons.push(format!("file {} references {}", file, path));
-                    if !affected.contains(path) {
+                    if affected_set.insert(path.clone()) {
                         affected.push(path.clone());
                     }
                 }
