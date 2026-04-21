@@ -289,7 +289,7 @@ export default function SuitesTab({ repoPath, onRunSuite }: Props) {
                     ...card,
                     marginBottom: 0,
                     cursor: 'pointer',
-                    borderColor: expanded === suite.slug ? '#3b82f6' : '#e2e8f0',
+                    border: `1px solid ${expanded === suite.slug ? '#3b82f6' : '#e2e8f0'}`,
                   }}
                   onClick={() => toggleExpand(suite.slug)}
                 >
