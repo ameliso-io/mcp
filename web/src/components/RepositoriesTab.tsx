@@ -10,8 +10,8 @@ import styles from "./RepositoriesTab.module.css";
 interface Props {
   onRepoSelect: (id: string) => void;
   activeRepoId: string;
-  installationId?: string;
-  setupAction?: string;
+  installationId?: string | undefined;
+  setupAction?: string | undefined;
   onInstallationHandled?: () => void;
 }
 

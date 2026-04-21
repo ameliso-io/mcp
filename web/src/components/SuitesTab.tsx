@@ -10,7 +10,7 @@ import styles from "./SuitesTab.module.css";
 
 interface Props {
   repoId: string;
-  initialExpanded?: string;
+  initialExpanded?: string | undefined;
   onExpandedChange?: (slug: string | null) => void;
 }
 
