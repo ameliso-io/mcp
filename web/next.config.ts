@@ -38,6 +38,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
   typedRoutes: true,
   output: "standalone",
   // Trace deps from monorepo root so standalone captures shared packages
