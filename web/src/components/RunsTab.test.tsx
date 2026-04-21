@@ -1022,6 +1022,22 @@ describe("RunsTab", () => {
     expect(screen.getByText("staging")).toBeInTheDocument();
   });
 
+  it("does not show suite/tester/environment labels when run fields are empty", async () => {
+    const bareRun = {
+      ...mockRun,
+      suite: "",
+      tester: "",
+      environment: "",
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [bareRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    // suite/tester/environment spans should not be rendered
+    expect(screen.queryByText("smoke")).not.toBeInTheDocument();
+    expect(screen.queryByText("alice")).not.toBeInTheDocument();
+    expect(screen.queryByText("staging")).not.toBeInTheDocument();
+  });
+
   it("renders case body markdown when record form opened and body is loaded", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getCase).mockResolvedValue({
