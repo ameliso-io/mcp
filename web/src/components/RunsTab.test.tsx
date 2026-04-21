@@ -260,4 +260,39 @@ describe('RunsTab', () => {
     await userEvent.click(screen.getByText('2026-01-01-smoke'))
     await waitFor(() => expect(screen.getByText('All cases have results recorded.')).toBeInTheDocument())
   })
+
+  it('shows error when createRun fails', async () => {
+    vi.mocked(client.createRun).mockRejectedValue(new Error('create error'))
+    render(<RunsTab repoPath="/repo" />)
+    await userEvent.click(screen.getByText('+ New Run'))
+    const inputs = screen.getAllByRole('textbox')
+    await userEvent.type(inputs[0], 'smoke')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Run' }))
+    await waitFor(() => expect(screen.getByText('create error')).toBeInTheDocument())
+  })
+
+  it('shows error when handleBulkPass fails', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.mocked(client.recordResult).mockRejectedValue(new Error('bulk error'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText(/All Passed/))
+    await userEvent.click(screen.getByText(/All Passed/))
+    await waitFor(() => expect(screen.getByText('bulk error')).toBeInTheDocument())
+  })
+
+  it('collapses selected run when it is deleted', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<RunsTab repoPath="/repo" />)
+    await waitFor(() => screen.getByText('2026-01-01-smoke'))
+    await userEvent.click(screen.getByText('2026-01-01-smoke'))
+    await waitFor(() => screen.getByText('Delete'))
+    await userEvent.click(screen.getByText('Delete'))
+    await waitFor(() => expect(client.deleteRun).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: '2026-01-01-smoke' })
+    ))
+  })
 })

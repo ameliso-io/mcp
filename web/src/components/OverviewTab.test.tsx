@@ -129,4 +129,23 @@ describe('OverviewTab', () => {
       expect.objectContaining({ repoPath: '/new/repo' })
     ))
   })
+
+  it('sorts affected cases high before low', async () => {
+    const highCase = {
+      case: { path: 'auth/login', title: 'High Priority', priority: 'high', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'modified',
+    } as unknown as AffectedCase
+    const lowCase = {
+      case: { path: 'auth/logout', title: 'Low Priority', priority: 'low', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'added',
+    } as unknown as AffectedCase
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [lowCase, highCase], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('High Priority')).toBeInTheDocument())
+    const titles = screen.getAllByText(/Priority/)
+    expect(titles[0].textContent).toBe('High Priority')
+    expect(titles[1].textContent).toBe('Low Priority')
+  })
 })
