@@ -628,4 +628,16 @@ describe("OverviewTab", () => {
     // active runs panel only shown when activeRuns.length > 0
     expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
   });
+
+  it("shows all four stat card labels and Never Run count is 0 when no never-run cases", async () => {
+    // default entries: 1 PASSED + 1 FAILED — no NEVER entries
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Total Cases")).toBeInTheDocument());
+    // stat card labels appear (may also appear in coverage list — use getAllByText)
+    expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
+    expect(screen.getByText("Never Run")).toBeInTheDocument();
+    // statNever = 0 since no NEVER entries in default coverage data
+    expect(screen.getByText("0")).toBeInTheDocument();
+  });
 });
