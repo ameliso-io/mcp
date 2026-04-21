@@ -124,7 +124,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
       {error && (
         <div className={styles.errorCard}>
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button onClick={() => setError(null)} className={styles.errorDismiss} aria-label="Dismiss">
             ×
           </button>
         </div>
@@ -238,7 +238,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
           {affectedError && (
             <div className={styles.inlineError}>
               <span>{affectedError}</span>
-              <button onClick={() => setAffectedError(null)} className={styles.inlineErrorDismiss}>
+              <button onClick={() => setAffectedError(null)} className={styles.inlineErrorDismiss} aria-label="Dismiss">
                 ×
               </button>
             </div>

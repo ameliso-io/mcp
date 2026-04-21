@@ -211,7 +211,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       {error && (
         <div className={styles.errorCard}>
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button onClick={() => setError(null)} className={styles.errorDismiss} aria-label="Dismiss">
             ×
           </button>
         </div>
@@ -320,9 +320,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                       Delete
                     </button>
                   </div>
-                  {suite.description && (
-                    <p className={styles.suiteDesc}>{suite.description}</p>
-                  )}
+                  {suite.description && <p className={styles.suiteDesc}>{suite.description}</p>}
                 </div>
 
                 {expanded === suite.slug && (

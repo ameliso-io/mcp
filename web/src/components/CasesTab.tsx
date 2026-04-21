@@ -346,7 +346,9 @@ export default function CasesTab({ repoId }: Props) {
           <option value="path">Sort: Path</option>
         </select>
         {!loading && deferredCases.length > 0 && (
-          <span className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}>
+          <span
+            className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}
+          >
             {deferredCases.length} case{deferredCases.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -355,7 +357,7 @@ export default function CasesTab({ repoId }: Props) {
       {error && (
         <div className={styles.errorCard}>
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button onClick={() => setError(null)} className={styles.errorDismiss} aria-label="Dismiss">
             ×
           </button>
         </div>

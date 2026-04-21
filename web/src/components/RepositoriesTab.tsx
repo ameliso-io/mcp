@@ -166,7 +166,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       {error && (
         <div className={styles.errorCard}>
           <span>{error}</span>
-          <button onClick={() => setError(null)} className={styles.errorDismiss}>
+          <button onClick={() => setError(null)} className={styles.errorDismiss} aria-label="Dismiss">
             ×
           </button>
         </div>
