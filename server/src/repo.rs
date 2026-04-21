@@ -439,6 +439,12 @@ pub fn record_result(
     status: &str,
     notes: &str,
 ) -> RResult<LoadedResult> {
+    if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
+        return Err(RepoError::InvalidArg(format!(
+            "invalid result status '{}'; must be one of: passed, failed, blocked, skipped",
+            status
+        )));
+    }
     validate_slug_path(case_path, "case")?;
     let run_dir = run_dir_path(repo, run_id);
     if !run_dir.exists() {
@@ -467,6 +473,12 @@ pub fn record_result(
 }
 
 pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml> {
+    if !matches!(status, "completed" | "aborted") {
+        return Err(RepoError::InvalidArg(format!(
+            "invalid finalize status '{}'; must be one of: completed, aborted",
+            status
+        )));
+    }
     let dir = run_dir_path(repo, run_id);
     if !dir.exists() {
         return Err(RepoError::NotFound(format!("run not found: {}", run_id)));

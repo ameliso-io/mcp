@@ -51,6 +51,7 @@ ameliso cases delete auth/login
 
 # Runs
 ameliso runs list
+ameliso runs list --status in-progress
 ameliso runs create smoke --tester alice --environment staging
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
 ameliso runs finalize 2026-04-21-smoke completed
