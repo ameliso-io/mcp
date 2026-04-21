@@ -103,6 +103,25 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
     }
   }, [initialSuite, onInitialSuiteConsumed])
 
+  // Auto-refresh pending cases every 30s when viewing an in-progress run
+  const pendingPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    if (pendingPollRef.current) clearInterval(pendingPollRef.current)
+    const selectedRun = runs.find(r => r.id === selectedRunId)
+    if (selectedRun && selectedRun.status === RunStatus.IN_PROGRESS) {
+      pendingPollRef.current = setInterval(async () => {
+        try {
+          const res = await client.getPendingCases({ repoPath, runId: selectedRunId! })
+          setPendingCases(res.cases)
+          setTotalInScope(res.totalInScope)
+        } catch {
+          // silently ignore poll errors
+        }
+      }, 30_000)
+    }
+    return () => { if (pendingPollRef.current) clearInterval(pendingPollRef.current) }
+  }, [repoPath, selectedRunId, runs])
+
   const load = useCallback(async () => {
     if (!repoPath) return
     setLoading(true)
@@ -494,6 +513,9 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
                         {pendingCases.length} pending
+                        <span style={{ marginLeft: '8px', fontSize: '10px', fontWeight: '400', color: '#94a3b8' }}>
+                          auto-refresh 30s
+                        </span>
                       </p>
                       {run.status === RunStatus.IN_PROGRESS && (
                         <div style={{ display: 'flex', gap: '8px' }}>
