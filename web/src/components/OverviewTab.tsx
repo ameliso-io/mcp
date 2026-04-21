@@ -203,7 +203,8 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                 .map((entry) => (
                   <div key={entry.case?.path} className={styles.coverageRow}>
                     <span
-                      className={styles.statusDot} aria-hidden="true"
+                      className={styles.statusDot}
+                      aria-hidden="true"
                       data-status={ResultStatus[entry.latestStatus]}
                     />
                     <span className={styles.coveragePath}>{entry.case?.path}</span>
@@ -234,6 +235,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
           <form onSubmit={handleAffected} className={styles.affectedForm}>
             <input
               type="text"
+              aria-label="Since ref"
               value={sinceRef}
               onChange={(e) => setSinceRef(e.target.value)}
               placeholder="Since ref (default: last run commit)"
@@ -270,7 +272,11 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
                   .map((ac, idx) => (
                     <div key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
-                        <span className={styles.priorityDot} data-priority={ac.case.priority} aria-hidden="true" />
+                        <span
+                          className={styles.priorityDot}
+                          data-priority={ac.case.priority}
+                          aria-hidden="true"
+                        />
                       )}
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>

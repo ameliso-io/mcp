@@ -291,7 +291,7 @@ describe("OverviewTab", () => {
   it("sets sinceRef when typing in diff input", async () => {
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
-    const sinceInput = screen.getByPlaceholderText(/Since ref/);
+    const sinceInput = screen.getByRole("textbox", { name: "Since ref" });
     await userEvent.type(sinceInput, "HEAD~3");
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() =>
