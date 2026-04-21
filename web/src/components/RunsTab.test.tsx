@@ -1022,6 +1022,21 @@ describe("RunsTab", () => {
     expect(screen.getByText("staging")).toBeInTheDocument();
   });
 
+  it("renders case body markdown when record form opened and body is loaded", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getCase).mockResolvedValue({
+      case: mockCase,
+      body: "## Steps\n\n1. Login",
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    // MarkdownBody renders "## Steps" as an <h2> — wait for the heading to appear
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument());
+  });
+
   it("does not show title span when result casePath has no matching case in caseTitleMap", async () => {
     const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
     const unknownPathResult = {
