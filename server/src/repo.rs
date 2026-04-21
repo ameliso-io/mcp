@@ -716,11 +716,12 @@ pub async fn get_pending_cases(
         } else {
             match get_suite(pool, repo_id, suite_slug).await {
                 Ok(s) => {
-                    let suite_cases = s.cases.clone();
+                    let suite_set: std::collections::HashSet<String> =
+                        s.cases.into_iter().collect();
                     let all = list_cases(pool, repo_id).await?;
                     let filtered: Vec<_> = all
                         .into_iter()
-                        .filter(|c| suite_cases.contains(&c.case_path))
+                        .filter(|c| suite_set.contains(&c.case_path))
                         .collect();
                     let total = filtered.len();
                     (filtered, total)
