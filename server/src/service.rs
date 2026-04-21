@@ -848,3 +848,255 @@ impl AmelisoService for AmelisoServer {
         Ok(Response::new(pb::RemoveRepositoryResponse {}))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::repo::RepoError;
+    use anyhow::anyhow;
+
+    // ── repo_err mapping ──────────────────────────────────────────────────────
+
+    #[test]
+    fn repo_err_not_found_maps_to_not_found_status() {
+        let s = repo_err(RepoError::NotFound("case x".to_owned()));
+        assert_eq!(s.code(), tonic::Code::NotFound);
+        assert!(s.message().contains("case x"));
+    }
+
+    #[test]
+    fn repo_err_already_exists_maps_to_already_exists_status() {
+        let s = repo_err(RepoError::AlreadyExists("run y".to_owned()));
+        assert_eq!(s.code(), tonic::Code::AlreadyExists);
+    }
+
+    #[test]
+    fn repo_err_closed_run_maps_to_failed_precondition() {
+        let s = repo_err(RepoError::ClosedRun("run z".to_owned()));
+        assert_eq!(s.code(), tonic::Code::FailedPrecondition);
+    }
+
+    #[test]
+    fn repo_err_invalid_arg_maps_to_invalid_argument() {
+        let s = repo_err(RepoError::InvalidArg("bad path".to_owned()));
+        assert_eq!(s.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[test]
+    fn repo_err_other_maps_to_internal() {
+        let s = repo_err(RepoError::Other(anyhow!("oops")));
+        assert_eq!(s.code(), tonic::Code::Internal);
+        assert!(s.message().contains("oops"));
+    }
+
+    // ── run_status_to_i32 ─────────────────────────────────────────────────────
+
+    #[test]
+    fn run_status_to_i32_known_values() {
+        assert_eq!(run_status_to_i32("in-progress"), pb::RunStatus::InProgress as i32);
+        assert_eq!(run_status_to_i32("completed"), pb::RunStatus::Completed as i32);
+        assert_eq!(run_status_to_i32("aborted"), pb::RunStatus::Aborted as i32);
+    }
+
+    #[test]
+    fn run_status_to_i32_unknown_maps_to_unspecified() {
+        assert_eq!(run_status_to_i32("bogus"), pb::RunStatus::Unspecified as i32);
+        assert_eq!(run_status_to_i32(""), pb::RunStatus::Unspecified as i32);
+    }
+
+    // ── result_status_to_i32 ─────────────────────────────────────────────────
+
+    #[test]
+    fn result_status_to_i32_known_values() {
+        assert_eq!(result_status_to_i32("passed"), pb::ResultStatus::Passed as i32);
+        assert_eq!(result_status_to_i32("failed"), pb::ResultStatus::Failed as i32);
+        assert_eq!(result_status_to_i32("blocked"), pb::ResultStatus::Blocked as i32);
+        assert_eq!(result_status_to_i32("skipped"), pb::ResultStatus::Skipped as i32);
+        assert_eq!(result_status_to_i32("never"), pb::ResultStatus::Never as i32);
+    }
+
+    #[test]
+    fn result_status_to_i32_unknown_maps_to_unspecified() {
+        assert_eq!(result_status_to_i32("bogus"), pb::ResultStatus::Unspecified as i32);
+    }
+
+    // ── result_status_from_i32 ───────────────────────────────────────────────
+
+    #[test]
+    fn result_status_from_i32_round_trips() {
+        assert_eq!(result_status_from_i32(pb::ResultStatus::Passed as i32), "passed");
+        assert_eq!(result_status_from_i32(pb::ResultStatus::Failed as i32), "failed");
+        assert_eq!(result_status_from_i32(pb::ResultStatus::Blocked as i32), "blocked");
+        assert_eq!(result_status_from_i32(pb::ResultStatus::Skipped as i32), "skipped");
+        assert_eq!(result_status_from_i32(pb::ResultStatus::Never as i32), "never");
+        assert_eq!(result_status_from_i32(pb::ResultStatus::Unspecified as i32), "unspecified");
+    }
+
+    #[test]
+    fn result_status_from_i32_unknown_value_maps_to_unspecified() {
+        assert_eq!(result_status_from_i32(9999), "unspecified");
+    }
+
+    // ── run_status_from_i32 ──────────────────────────────────────────────────
+
+    #[test]
+    fn run_status_from_i32_round_trips() {
+        assert_eq!(run_status_from_i32(pb::RunStatus::InProgress as i32), "in-progress");
+        assert_eq!(run_status_from_i32(pb::RunStatus::Completed as i32), "completed");
+        assert_eq!(run_status_from_i32(pb::RunStatus::Aborted as i32), "aborted");
+        assert_eq!(run_status_from_i32(pb::RunStatus::Unspecified as i32), "unspecified");
+    }
+
+    #[test]
+    fn run_status_from_i32_unknown_value_maps_to_unspecified() {
+        assert_eq!(run_status_from_i32(9999), "unspecified");
+    }
+
+    // ── priority_from_i32 ─────────────────────────────────────────────────────
+
+    #[test]
+    fn priority_from_i32_known_values() {
+        assert_eq!(priority_from_i32(pb::Priority::Low as i32), Some("low"));
+        assert_eq!(priority_from_i32(pb::Priority::Medium as i32), Some("medium"));
+        assert_eq!(priority_from_i32(pb::Priority::High as i32), Some("high"));
+        assert_eq!(priority_from_i32(pb::Priority::Unspecified as i32), None);
+    }
+
+    #[test]
+    fn priority_from_i32_unknown_maps_to_none() {
+        assert_eq!(priority_from_i32(9999), None);
+    }
+
+    // ── priority_rank ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn priority_rank_ordering() {
+        assert!(priority_rank("high") < priority_rank("medium"));
+        assert!(priority_rank("medium") < priority_rank("low"));
+        assert!(priority_rank("low") < priority_rank("unknown"));
+    }
+
+    #[test]
+    fn priority_rank_known_values() {
+        assert_eq!(priority_rank("high"), 0);
+        assert_eq!(priority_rank("medium"), 1);
+        assert_eq!(priority_rank("low"), 2);
+        assert_eq!(priority_rank("bogus"), 3);
+    }
+
+    // ── conversion helpers ────────────────────────────────────────────────────
+
+    #[test]
+    fn case_to_pb_maps_all_fields() {
+        let c = repo::LoadedCase {
+            case_path: "auth/login".to_owned(),
+            title: "Login".to_owned(),
+            description: "desc".to_owned(),
+            tags: vec!["smoke".to_owned()],
+            priority: "high".to_owned(),
+            body: "## Steps".to_owned(),
+            created_at: "2026-01-01".to_owned(),
+            updated_at: "2026-01-02".to_owned(),
+        };
+        let pb = case_to_pb(&c);
+        assert_eq!(pb.path, "auth/login");
+        assert_eq!(pb.title, "Login");
+        assert_eq!(pb.description, "desc");
+        assert_eq!(pb.tags, vec!["smoke"]);
+        assert_eq!(pb.priority, "high");
+        assert_eq!(pb.created_at, "2026-01-01");
+        assert_eq!(pb.updated_at, "2026-01-02");
+    }
+
+    #[test]
+    fn run_meta_to_pb_maps_all_fields() {
+        let r = repo::RunRow {
+            run_id: "2026-01-01-smoke".to_owned(),
+            date: "2026-01-01".to_owned(),
+            tester: "alice".to_owned(),
+            status: "in-progress".to_owned(),
+            environment: Some("staging".to_owned()),
+            suite: Some("smoke".to_owned()),
+        };
+        let pb = run_meta_to_pb(&r);
+        assert_eq!(pb.id, "2026-01-01-smoke");
+        assert_eq!(pb.tester, "alice");
+        assert_eq!(pb.status, pb::RunStatus::InProgress as i32);
+        assert_eq!(pb.environment, "staging");
+        assert_eq!(pb.suite, "smoke");
+    }
+
+    #[test]
+    fn run_meta_to_pb_none_fields_default_to_empty_string() {
+        let r = repo::RunRow {
+            run_id: "r1".to_owned(),
+            date: "2026-01-01".to_owned(),
+            tester: "bob".to_owned(),
+            status: "completed".to_owned(),
+            environment: None,
+            suite: None,
+        };
+        let pb = run_meta_to_pb(&r);
+        assert_eq!(pb.environment, "");
+        assert_eq!(pb.suite, "");
+    }
+
+    #[test]
+    fn result_to_pb_maps_all_fields() {
+        let r = repo::LoadedResult {
+            case_path: "auth/login".to_owned(),
+            status: "passed".to_owned(),
+            notes: "all good".to_owned(),
+        };
+        let pb = result_to_pb(&r);
+        assert_eq!(pb.case_path, "auth/login");
+        assert_eq!(pb.status, pb::ResultStatus::Passed as i32);
+        assert_eq!(pb.notes, "all good");
+    }
+
+    #[test]
+    fn suite_to_pb_maps_all_fields() {
+        let s = repo::SuiteRow {
+            slug: "core".to_owned(),
+            name: "Core Suite".to_owned(),
+            description: Some("desc".to_owned()),
+            cases: vec!["auth/login".to_owned()],
+        };
+        let pb = suite_to_pb(&s);
+        assert_eq!(pb.slug, "core");
+        assert_eq!(pb.name, "Core Suite");
+        assert_eq!(pb.description, "desc");
+        assert_eq!(pb.cases, vec!["auth/login"]);
+    }
+
+    #[test]
+    fn suite_to_pb_none_description_defaults_to_empty_string() {
+        let s = repo::SuiteRow {
+            slug: "s".to_owned(),
+            name: "S".to_owned(),
+            description: None,
+            cases: vec![],
+        };
+        let pb = suite_to_pb(&s);
+        assert_eq!(pb.description, "");
+    }
+
+    #[test]
+    fn stored_to_pb_maps_all_fields() {
+        let r = crate::repos_store::StoredRepo {
+            id: "owner/repo".to_owned(),
+            name: "repo".to_owned(),
+            full_name: "owner/repo".to_owned(),
+            html_url: "https://github.com/owner/repo".to_owned(),
+            installation_id: "inst-1".to_owned(),
+            added_at: "2026-01-01".to_owned(),
+        };
+        let pb = stored_to_pb(&r);
+        assert_eq!(pb.id, "owner/repo");
+        assert_eq!(pb.name, "repo");
+        assert_eq!(pb.full_name, "owner/repo");
+        assert_eq!(pb.html_url, "https://github.com/owner/repo");
+        assert_eq!(pb.installation_id, "inst-1");
+        assert_eq!(pb.added_at, "2026-01-01");
+    }
+}
