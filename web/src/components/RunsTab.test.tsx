@@ -1224,4 +1224,34 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("All Passed (1)"));
     expect(confirmSpy).toHaveBeenCalledWith("Mark all 1 pending case as Passed?");
   });
+
+  it("filters results by Failed status and clicking same button deactivates filter", async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    const failedResult = {
+      casePath: "auth/login",
+      status: ResultStatus.FAILED,
+      notes: "broken",
+    } as unknown as CaseResult;
+    const passedResult = {
+      casePath: "auth/logout",
+      status: ResultStatus.PASSED,
+      notes: "",
+    } as unknown as CaseResult;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [failedResult, passedResult] },
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("1 Failed"));
+    // Filter by Failed — Passed result should be hidden
+    await userEvent.click(screen.getByText("1 Failed"));
+    await waitFor(() => expect(screen.getByText("Show all")).toBeInTheDocument());
+    expect(screen.queryByText("auth/logout")).not.toBeInTheDocument();
+    // Click Failed again — filter toggles off, Passed result shows again
+    await userEvent.click(screen.getByText("1 Failed"));
+    await waitFor(() => expect(screen.queryByText("Show all")).not.toBeInTheDocument());
+    expect(screen.getByText("auth/logout")).toBeInTheDocument();
+  });
 });
