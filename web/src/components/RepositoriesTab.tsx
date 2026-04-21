@@ -54,6 +54,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +73,25 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       setLoading(false);
     }
   }, []);
+
+  const handleRefreshAll = useCallback(async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      const installationIds = [...new Set(repos.map((r) => r.installationId).filter(Boolean))];
+      for (const installationId of installationIds) {
+        const res = await client.handleGitHubCallback({ installationId });
+        setRepos((prev) => {
+          const ids = new Set(res.repositories.map((r) => r.id));
+          return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
+        });
+      }
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [repos]);
 
   // Handle GitHub callback: ?installation_id=... in URL
   useEffect(() => {
@@ -147,22 +167,44 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         }}
       >
         <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700" }}>Repositories</h2>
-        {configured && installUrl ? (
-          <a
-            href={installUrl}
-            style={{
-              padding: "8px 16px",
-              background: "#1e293b",
-              color: "white",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontSize: "14px",
-              fontWeight: "500",
-            }}
-          >
-            + Connect GitHub Repo
-          </a>
-        ) : (
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          {repos.length > 0 && (
+            <button
+              onClick={handleRefreshAll}
+              disabled={refreshing}
+              style={{
+                padding: "8px 16px",
+                background: "white",
+                color: "#1e293b",
+                border: "1px solid #e2e8f0",
+                borderRadius: "6px",
+                cursor: refreshing ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                opacity: refreshing ? 0.6 : 1,
+              }}
+            >
+              {refreshing ? "Refreshing…" : "↻ Refresh All"}
+            </button>
+          )}
+          {configured && installUrl ? (
+            <a
+              href={installUrl}
+              style={{
+                padding: "8px 16px",
+                background: "#1e293b",
+                color: "white",
+                borderRadius: "6px",
+                textDecoration: "none",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              + Connect GitHub Repo
+            </a>
+          ) : null}
+        </div>
+        {!configured && (
           <div style={{ fontSize: "13px", color: "#94a3b8" }}>
             Set <code>GITHUB_APP_ID</code> + <code>GITHUB_APP_PRIVATE_KEY</code> to enable GitHub
             integration
