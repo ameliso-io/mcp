@@ -61,6 +61,9 @@ service AmelisoService {
   // Mark a run as completed or aborted. Validates all expected cases have results.
   rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
 
+  // Delete a run directory entirely. Useful for cleaning up accidentally-created runs.
+  rpc DeleteRun(DeleteRunRequest) returns (DeleteRunResponse);
+
   // Return case paths in a run's scope that have no result recorded yet.
   // If the run references a suite, scope = suite cases; otherwise scope = all cases in repo.
   rpc GetPendingCases(GetPendingCasesRequest) returns (GetPendingCasesResponse);
@@ -253,6 +256,16 @@ message FinalizeRunRequest {
 
 message FinalizeRunResponse {
   RunMeta run = 1;
+}
+
+message DeleteRunRequest {
+  string repo_path = 1;
+  string run_id = 2;
+}
+
+message DeleteRunResponse {
+  // Path of the deleted run directory relative to repo root (e.g. runs/2026-04-21-smoke)
+  string dir_path = 1;
 }
 
 message GetPendingCasesRequest {

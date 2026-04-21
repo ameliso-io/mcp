@@ -25,8 +25,8 @@ runs/{YYYY-MM-DD}-{slug}/
 ### This repository's structure
 
 ```
-server/   # gRPC server (Rust + tonic); exposes AmelisoService (18 RPCs)
-mcp/      # MCP server (Rust + rmcp); stdio transport; 19 tools
+server/   # gRPC server (Rust + tonic); exposes AmelisoService (19 RPCs)
+mcp/      # MCP server (Rust + rmcp); stdio transport; 20 tools
 cli/      # CLI (Rust + clap); calls repo logic directly
 proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
 ```
@@ -52,6 +52,7 @@ Available tools:
 | `create_run` | Start a new test run; returns run ID and scope size; suite must exist |
 | `record_result` | Record a case result; case must exist; rejects closed runs |
 | `finalize_run` | Mark a run completed or aborted |
+| `delete_run` | Delete a run directory entirely (use to clean up accidental runs) |
 | `list_suites` | List all suites |
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
@@ -90,6 +91,7 @@ ameliso runs get 2026-04-21-smoke
 ameliso runs create smoke --tester alice --environment staging
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
 ameliso runs finalize 2026-04-21-smoke completed
+ameliso runs delete 2026-04-21-smoke
 ameliso runs pending 2026-04-21-smoke
 
 # Suites

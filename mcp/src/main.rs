@@ -873,6 +873,17 @@ impl AmelisoMcp {
         }
     }
 
+    #[tool(
+        description = "Delete a run directory entirely. Use to clean up accidentally-created runs. Removes all recorded results. Returns the deleted directory path."
+    )]
+    fn delete_run(&self, Parameters(req): Parameters<RunIdRequest>) -> String {
+        let repo = PathBuf::from(&req.repo_path);
+        match repo::delete_run(&repo, &req.run_id) {
+            Ok(()) => format!("deleted: runs/{}", req.run_id),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
     #[tool(description = "Delete a test suite file. Returns the deleted file path.")]
     fn delete_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);

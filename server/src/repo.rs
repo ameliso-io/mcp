@@ -544,6 +544,17 @@ pub fn record_result(
     ))
 }
 
+pub fn delete_run(repo: &Path, run_id: &str) -> RResult<()> {
+    validate_slug_path(run_id, "run")?;
+    let dir = run_dir_path(repo, run_id);
+    if !dir.exists() {
+        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+    }
+    std::fs::remove_dir_all(&dir)
+        .with_context(|| format!("deleting run directory {}", dir.display()))?;
+    Ok(())
+}
+
 pub fn finalize_run(repo: &Path, run_id: &str, status: &str) -> RResult<RunYaml> {
     if !matches!(status, "completed" | "aborted") {
         return Err(RepoError::InvalidArg(format!(

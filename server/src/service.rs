@@ -455,6 +455,21 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn delete_run(
+        &self,
+        request: Request<pb::DeleteRunRequest>,
+    ) -> Result<Response<pb::DeleteRunResponse>, Status> {
+        let req = request.into_inner();
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
+        }
+        let repo = PathBuf::from(&req.repo_path);
+        repo::delete_run(&repo, &req.run_id).map_err(repo_err)?;
+        Ok(Response::new(pb::DeleteRunResponse {
+            dir_path: format!("runs/{}", req.run_id),
+        }))
+    }
+
     async fn get_pending_cases(
         &self,
         request: Request<pb::GetPendingCasesRequest>,

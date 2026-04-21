@@ -159,6 +159,12 @@ enum RunsCmd {
         repo: PathBuf,
         run_id: String,
     },
+    #[command(about = "Delete a run directory entirely (removes all recorded results)")]
+    Delete {
+        #[arg(long, env = "AMELISO_REPO")]
+        repo: PathBuf,
+        run_id: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -560,6 +566,10 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
                     );
                 }
             }
+        }
+        RunsCmd::Delete { repo, run_id } => {
+            repo::delete_run(&repo, &run_id)?;
+            println!("Deleted: runs/{run_id}");
         }
     }
     Ok(())

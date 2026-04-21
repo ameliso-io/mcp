@@ -1177,3 +1177,40 @@ async fn create_suite_rejects_nonexistent_case() {
         .unwrap_err();
     assert_eq!(err.code(), tonic::Code::NotFound);
 }
+
+#[tokio::test]
+async fn delete_run_removes_directory() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+    assert!(tmp.path().join("runs/2026-01-01-smoke").exists());
+
+    c.delete_run(Request::new(pb::DeleteRunRequest {
+        repo_path: rp.clone(),
+        run_id: "2026-01-01-smoke".to_owned(),
+    }))
+    .await
+    .unwrap();
+
+    assert!(!tmp.path().join("runs/2026-01-01-smoke").exists());
+}
+
+#[tokio::test]
+async fn delete_run_rejects_nonexistent() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    let err = c
+        .delete_run(Request::new(pb::DeleteRunRequest {
+            repo_path: rp,
+            run_id: "2026-01-01-ghost".to_owned(),
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
+}
