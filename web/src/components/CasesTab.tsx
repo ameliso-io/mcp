@@ -24,6 +24,15 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
+function stringToPriority(p: string): Priority {
+  switch (p) {
+    case 'high': return Priority.HIGH
+    case 'medium': return Priority.MEDIUM
+    case 'low': return Priority.LOW
+    default: return Priority.MEDIUM
+  }
+}
+
 function priorityColor(p: string): string {
   switch (p) {
     case 'high': return '#ef4444'
@@ -58,6 +67,22 @@ export default function CasesTab({ repoPath }: Props) {
   const [newPriority, setNewPriority] = useState<Priority>(Priority.MEDIUM)
   const [newTags, setNewTags] = useState('')
   const [creating, setCreating] = useState(false)
+
+  // Edit case form
+  const [editingPath, setEditingPath] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editPriority, setEditPriority] = useState<Priority>(Priority.MEDIUM)
+  const [editTags, setEditTags] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  function startEdit(c: import('../gen/ameliso/v1/types_pb').Case) {
+    setEditingPath(c.path)
+    setEditTitle(c.title)
+    setEditDesc(c.description)
+    setEditPriority(stringToPriority(c.priority))
+    setEditTags(c.tags.join(', '))
+  }
 
   const load = useCallback(async () => {
     if (!repoPath) return
@@ -113,6 +138,29 @@ export default function CasesTab({ repoPath }: Props) {
       load()
     } catch (e) {
       setError(String(e))
+    }
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingPath) return
+    setSaving(true)
+    try {
+      await client.updateCase({
+        repoPath,
+        casePath: editingPath,
+        title: editTitle,
+        description: editDesc,
+        priority: editPriority,
+        tags: editTags ? editTags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        body: '',
+      })
+      setEditingPath(null)
+      load()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -267,69 +315,85 @@ export default function CasesTab({ repoPath }: Props) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {cases.map(c => (
-          <div
-            key={c.path}
-            style={{
-              ...card,
-              marginBottom: 0,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-            }}
-          >
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                background: priorityColor(c.priority),
-                marginTop: '6px',
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                  {c.path}
-                </span>
-                <span style={{ fontSize: '12px', color: priorityColor(c.priority), fontWeight: '600' }}>
-                  {priorityLabel(c.priority)}
-                </span>
-                {c.tags.map(t => (
-                  <span
-                    key={t}
-                    style={{
-                      fontSize: '11px',
-                      background: '#f1f5f9',
-                      color: '#64748b',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                    }}
+          <div key={c.path} style={{ ...card, marginBottom: 0 }}>
+            {editingPath === c.path ? (
+              <form onSubmit={handleUpdate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '3px' }}>Title</label>
+                  <input value={editTitle} onChange={e => setEditTitle(e.target.value)} required style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '3px' }}>Priority</label>
+                  <select value={editPriority} onChange={e => setEditPriority(Number(e.target.value) as Priority)} style={inputStyle}>
+                    <option value={Priority.LOW}>Low</option>
+                    <option value={Priority.MEDIUM}>Medium</option>
+                    <option value={Priority.HIGH}>High</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '3px' }}>Description</label>
+                  <input value={editDesc} onChange={e => setEditDesc(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '3px' }}>Tags (comma-separated)</label>
+                  <input value={editTags} onChange={e => setEditTags(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    style={{ padding: '6px 16px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}
                   >
-                    {t}
-                  </span>
-                ))}
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingPath(null)}
+                    style={{ padding: '6px 16px', background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: priorityColor(c.priority),
+                    marginTop: '6px',
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '13px', color: '#94a3b8', fontFamily: 'monospace' }}>{c.path}</span>
+                    <span style={{ fontSize: '12px', color: priorityColor(c.priority), fontWeight: '600' }}>{priorityLabel(c.priority)}</span>
+                    {c.tags.map(t => (
+                      <span key={t} style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px' }}>{t}</span>
+                    ))}
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontWeight: '600', fontSize: '15px' }}>{c.title}</p>
+                  {c.description && (
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>{c.description}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => startEdit(c)}
+                  style={{ background: 'none', border: '1px solid #e2e8f0', color: '#334155', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(c.path)}
+                  style={{ background: 'none', border: '1px solid #fecaca', color: '#ef4444', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}
+                >
+                  Delete
+                </button>
               </div>
-              <p style={{ margin: '4px 0 0', fontWeight: '600', fontSize: '15px' }}>{c.title}</p>
-              {c.description && (
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>{c.description}</p>
-              )}
-            </div>
-            <button
-              onClick={() => handleDelete(c.path)}
-              style={{
-                background: 'none',
-                border: '1px solid #fecaca',
-                color: '#ef4444',
-                borderRadius: '4px',
-                padding: '4px 10px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                flexShrink: 0,
-              }}
-            >
-              Delete
-            </button>
+            )}
           </div>
         ))}
       </div>
