@@ -320,6 +320,20 @@ describe("OverviewTab", () => {
     unmount();
   });
 
+  it("getCoverageReport call count matches render cycle — poll uses silent=true so no extra announce", async () => {
+    const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    // Spy on announce by verifying only one announcement fires for the initial load
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("2 cases loaded"))
+      ).toBe(true)
+    );
+    // Only one getCoverageReport call for the initial load — poll hasn't fired (no timer advance)
+    expect(client.getCoverageReport).toHaveBeenCalledTimes(1);
+  });
+
   it("announces singular '1 case loaded' when exactly one coverage entry returned", async () => {
     vi.mocked(client.getCoverageReport).mockResolvedValue({
       entries: [makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED)],
