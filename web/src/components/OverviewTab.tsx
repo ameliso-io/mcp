@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
-import type { AffectedCase, CoverageEntry, RunMeta } from '../gen/ameliso/v1/types_pb'
-import { ResultStatus, RunStatus } from '../gen/ameliso/v1/types_pb'
+import type { AffectedCase, CoverageEntry } from '../gen/ameliso/v1/types_pb'
+import { ResultStatus } from '../gen/ameliso/v1/types_pb'
+import type { ActiveRunSummary } from '../gen/ameliso/v1/service_pb'
 
 interface Props {
   repoPath: string
@@ -56,8 +57,12 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [activeRuns, setActiveRuns] = useState<RunMeta[]>([])
-  const [runPending, setRunPending] = useState<Record<string, { pending: number; total: number }>>({})
+  // Summary stats from getRepoStatus (single call)
+  const [totalCases, setTotalCases] = useState(0)
+  const [passed, setPassed] = useState(0)
+  const [failed, setFailed] = useState(0)
+  const [neverRun, setNeverRun] = useState(0)
+  const [activeRuns, setActiveRuns] = useState<ActiveRunSummary[]>([])
 
   const [sinceRef, setSinceRef] = useState('')
   const [affected, setAffected] = useState<AffectedCase[] | null>(null)
@@ -69,26 +74,17 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     setLoading(true)
     setError(null)
     try {
-      const [coverageRes, runsRes] = await Promise.all([
+      const [statusRes, coverageRes] = await Promise.all([
+        client.getRepoStatus({ repoPath: path }),
         client.getCoverageReport({ repoPath: path }),
-        client.listRuns({ repoPath: path }),
       ])
+      setTotalCases(statusRes.totalCases)
+      setPassed(statusRes.passedCount)
+      setFailed(statusRes.failedCount)
+      setNeverRun(statusRes.neverRunCount)
+      setActiveRuns(statusRes.activeRuns)
       setEntries(coverageRes.entries)
       setRunCount(coverageRes.runCount)
-      const inProgress = runsRes.runs.filter(r => r.status === RunStatus.IN_PROGRESS)
-      setActiveRuns(inProgress)
-      // fetch pending counts in parallel (typically few active runs)
-      const pendingResults = await Promise.allSettled(
-        inProgress.map(r => client.getPendingCases({ repoPath: path, runId: r.id }))
-      )
-      const pending: Record<string, { pending: number; total: number }> = {}
-      inProgress.forEach((r, i) => {
-        const res = pendingResults[i]
-        if (res.status === 'fulfilled') {
-          pending[r.id] = { pending: res.value.cases.length, total: res.value.totalInScope }
-        }
-      })
-      setRunPending(pending)
     } catch (e) {
       setError(errorMessage(e))
     } finally {
@@ -124,12 +120,11 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
     }
   }
 
-  const counts = {
-    passed: entries.filter(e => e.latestStatus === ResultStatus.PASSED).length,
-    failed: entries.filter(e => e.latestStatus === ResultStatus.FAILED).length,
-    blocked: entries.filter(e => e.latestStatus === ResultStatus.BLOCKED).length,
-    never: entries.filter(e => e.latestStatus === ResultStatus.NEVER || e.latestStatus === ResultStatus.UNSPECIFIED).length,
-  }
+  // Use getRepoStatus summary for stat cards; fall back to coverage entries for per-case list
+  const statCases = totalCases || entries.length
+  const statPassed = passed || entries.filter(e => e.latestStatus === ResultStatus.PASSED).length
+  const statFailed = failed || entries.filter(e => e.latestStatus === ResultStatus.FAILED).length
+  const statNever = neverRun || entries.filter(e => e.latestStatus === ResultStatus.NEVER || e.latestStatus === ResultStatus.UNSPECIFIED).length
 
   return (
     <div>
@@ -187,10 +182,10 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
             {[
-              { label: 'Total Cases', value: entries.length, color: '#1e293b' },
-              { label: 'Passed', value: counts.passed, color: '#16a34a' },
-              { label: 'Failed', value: counts.failed, color: '#dc2626' },
-              { label: 'Never Run', value: counts.never, color: '#94a3b8' },
+              { label: 'Total Cases', value: statCases, color: '#1e293b' },
+              { label: 'Passed', value: statPassed, color: '#16a34a' },
+              { label: 'Failed', value: statFailed, color: '#dc2626' },
+              { label: 'Never Run', value: statNever, color: '#94a3b8' },
             ].map(stat => (
               <div key={stat.label} style={{ ...card, marginBottom: 0 }}>
                 <p style={label}>{stat.label}</p>
@@ -227,12 +222,11 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {activeRuns.map(run => {
-                  const p = runPending[run.id]
-                  const done = p ? p.total - p.pending : null
-                  const pct = p && p.total > 0 ? Math.round((done! / p.total) * 100) : null
+                  const done = run.totalInScope - run.pendingCount
+                  const pct = run.totalInScope > 0 ? Math.round((done / run.totalInScope) * 100) : 0
                   return (
                     <div
-                      key={run.id}
+                      key={run.runId}
                       style={{
                         padding: '12px',
                         background: 'white',
@@ -240,21 +234,21 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
                         border: '1px solid #dbeafe',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: p ? '8px' : 0 }}>
-                        <span style={{ fontWeight: '600', fontSize: '14px', flex: 1, fontFamily: 'monospace' }}>{run.id}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: run.totalInScope > 0 ? '8px' : 0 }}>
+                        <span style={{ fontWeight: '600', fontSize: '14px', flex: 1, fontFamily: 'monospace' }}>{run.runId}</span>
                         {run.suite && (
                           <span style={{ fontSize: '11px', background: '#eff6ff', color: '#3b82f6', padding: '2px 7px', borderRadius: '4px', fontWeight: '600' }}>{run.suite}</span>
                         )}
                         {run.tester && (
                           <span style={{ fontSize: '12px', color: '#64748b' }}>{run.tester}</span>
                         )}
-                        {p && (
+                        {run.totalInScope > 0 && (
                           <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                            {done} / {p.total} done
+                            {done} / {run.totalInScope} done
                           </span>
                         )}
                       </div>
-                      {p && p.total > 0 && (
+                      {run.totalInScope > 0 && (
                         <div style={{ height: '4px', background: '#dbeafe', borderRadius: '2px', overflow: 'hidden' }}>
                           <div
                             style={{

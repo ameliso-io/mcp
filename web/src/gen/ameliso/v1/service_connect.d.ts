@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
+import { BulkRecordResultsRequest, BulkRecordResultsResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRepoStatusRequest, GetRepoStatusResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -173,6 +173,18 @@ export declare const AmelisoService: {
       readonly kind: MethodKind.Unary,
     },
     /**
+     * Record multiple case results in one call. More efficient than N sequential RecordResult calls.
+     * Idempotent per case: later entries for the same case_path overwrite earlier ones.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
+     */
+    readonly bulkRecordResults: {
+      readonly name: "BulkRecordResults",
+      readonly I: typeof BulkRecordResultsRequest,
+      readonly O: typeof BulkRecordResultsResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
      * Mark a run as completed or aborted. Validates all expected cases have results.
      *
      * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
@@ -204,6 +216,18 @@ export declare const AmelisoService: {
       readonly name: "GetPendingCases",
       readonly I: typeof GetPendingCasesRequest,
       readonly O: typeof GetPendingCasesResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Return a combined snapshot of repo state in one call: case counts by priority,
+     * coverage summary, active in-progress runs with pending counts, and suite count.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.GetRepoStatus
+     */
+    readonly getRepoStatus: {
+      readonly name: "GetRepoStatus",
+      readonly I: typeof GetRepoStatusRequest,
+      readonly O: typeof GetRepoStatusResponse,
       readonly kind: MethodKind.Unary,
     },
     /**

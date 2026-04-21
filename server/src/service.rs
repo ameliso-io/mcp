@@ -522,6 +522,85 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn get_repo_status(
+        &self,
+        request: Request<pb::GetRepoStatusRequest>,
+    ) -> Result<Response<pb::GetRepoStatusResponse>, Status> {
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+
+        let cases = repo::list_cases(&repo).map_err(repo_err)?;
+        let runs = repo::list_runs(&repo).map_err(repo_err)?;
+        let suites = repo::list_suites(&repo).map_err(repo_err)?;
+
+        let high = cases.iter().filter(|c| c.fm.priority == "high").count() as i32;
+        let medium = cases.iter().filter(|c| c.fm.priority == "medium").count() as i32;
+        let low = cases.iter().filter(|c| c.fm.priority == "low").count() as i32;
+
+        // Build latest-status map (newest run first)
+        let mut latest: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+        for run_meta in &runs {
+            if let Ok(run) = repo::get_run(&repo, &run_meta.id) {
+                for result in &run.results {
+                    latest
+                        .entry(result.case_path.clone())
+                        .or_insert_with(|| result.fm.status.clone());
+                }
+            }
+        }
+
+        let mut passed = 0i32;
+        let mut failed = 0i32;
+        let mut blocked = 0i32;
+        let mut skipped = 0i32;
+        let mut never_run = 0i32;
+        for c in &cases {
+            match latest.get(&c.case_path).map(|s| s.as_str()).unwrap_or("never") {
+                "passed" => passed += 1,
+                "failed" => failed += 1,
+                "blocked" => blocked += 1,
+                "skipped" => skipped += 1,
+                _ => never_run += 1,
+            }
+        }
+
+        let active_runs: Vec<pb::ActiveRunSummary> = runs
+            .iter()
+            .filter(|r| r.status == "in-progress")
+            .map(|r| {
+                let (pending_count, total_in_scope) =
+                    repo::get_pending_cases(&repo, &r.id)
+                        .map(|(p, t)| (p.len() as i32, t as i32))
+                        .unwrap_or((0, 0));
+                pb::ActiveRunSummary {
+                    run_id: r.id.clone(),
+                    tester: r.tester.clone(),
+                    environment: r.environment.clone().unwrap_or_default(),
+                    suite: r.suite.clone().unwrap_or_default(),
+                    date: r.date.clone(),
+                    pending_count,
+                    total_in_scope,
+                }
+            })
+            .collect();
+
+        Ok(Response::new(pb::GetRepoStatusResponse {
+            total_cases: cases.len() as i32,
+            high_priority: high,
+            medium_priority: medium,
+            low_priority: low,
+            passed_count: passed,
+            failed_count: failed,
+            blocked_count: blocked,
+            skipped_count: skipped,
+            never_run_count: never_run,
+            active_runs,
+            total_runs: runs.len() as i32,
+            total_suites: suites.len() as i32,
+        }))
+    }
+
     async fn get_coverage_report(
         &self,
         request: Request<pb::GetCoverageReportRequest>,

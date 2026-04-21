@@ -901,6 +901,149 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
 export declare const GetPendingCasesResponseSchema: GenMessage<GetPendingCasesResponse>;
 
 /**
+ * @generated from message ameliso.v1.GetRepoStatusRequest
+ */
+export declare type GetRepoStatusRequest = Message<"ameliso.v1.GetRepoStatusRequest"> & {
+  /**
+   * @generated from field: string repo_path = 1;
+   */
+  repoPath: string;
+};
+
+/**
+ * Describes the message ameliso.v1.GetRepoStatusRequest.
+ * Use `create(GetRepoStatusRequestSchema)` to create a new message.
+ */
+export declare const GetRepoStatusRequestSchema: GenMessage<GetRepoStatusRequest>;
+
+/**
+ * Summary for one active (in-progress) run.
+ *
+ * @generated from message ameliso.v1.ActiveRunSummary
+ */
+export declare type ActiveRunSummary = Message<"ameliso.v1.ActiveRunSummary"> & {
+  /**
+   * @generated from field: string run_id = 1;
+   */
+  runId: string;
+
+  /**
+   * @generated from field: string tester = 2;
+   */
+  tester: string;
+
+  /**
+   * @generated from field: string environment = 3;
+   */
+  environment: string;
+
+  /**
+   * @generated from field: string suite = 4;
+   */
+  suite: string;
+
+  /**
+   * @generated from field: string date = 5;
+   */
+  date: string;
+
+  /**
+   * @generated from field: int32 pending_count = 6;
+   */
+  pendingCount: number;
+
+  /**
+   * @generated from field: int32 total_in_scope = 7;
+   */
+  totalInScope: number;
+};
+
+/**
+ * Describes the message ameliso.v1.ActiveRunSummary.
+ * Use `create(ActiveRunSummarySchema)` to create a new message.
+ */
+export declare const ActiveRunSummarySchema: GenMessage<ActiveRunSummary>;
+
+/**
+ * @generated from message ameliso.v1.GetRepoStatusResponse
+ */
+export declare type GetRepoStatusResponse = Message<"ameliso.v1.GetRepoStatusResponse"> & {
+  /**
+   * Case counts
+   *
+   * @generated from field: int32 total_cases = 1;
+   */
+  totalCases: number;
+
+  /**
+   * @generated from field: int32 high_priority = 2;
+   */
+  highPriority: number;
+
+  /**
+   * @generated from field: int32 medium_priority = 3;
+   */
+  mediumPriority: number;
+
+  /**
+   * @generated from field: int32 low_priority = 4;
+   */
+  lowPriority: number;
+
+  /**
+   * Coverage summary (latest known status across all cases)
+   *
+   * @generated from field: int32 passed_count = 5;
+   */
+  passedCount: number;
+
+  /**
+   * @generated from field: int32 failed_count = 6;
+   */
+  failedCount: number;
+
+  /**
+   * @generated from field: int32 blocked_count = 7;
+   */
+  blockedCount: number;
+
+  /**
+   * @generated from field: int32 skipped_count = 8;
+   */
+  skippedCount: number;
+
+  /**
+   * @generated from field: int32 never_run_count = 9;
+   */
+  neverRunCount: number;
+
+  /**
+   * Active runs
+   *
+   * @generated from field: repeated ameliso.v1.ActiveRunSummary active_runs = 10;
+   */
+  activeRuns: ActiveRunSummary[];
+
+  /**
+   * Totals
+   *
+   * @generated from field: int32 total_runs = 11;
+   */
+  totalRuns: number;
+
+  /**
+   * @generated from field: int32 total_suites = 12;
+   */
+  totalSuites: number;
+};
+
+/**
+ * Describes the message ameliso.v1.GetRepoStatusResponse.
+ * Use `create(GetRepoStatusResponseSchema)` to create a new message.
+ */
+export declare const GetRepoStatusResponseSchema: GenMessage<GetRepoStatusResponse>;
+
+/**
  * @generated from message ameliso.v1.GetCoverageReportRequest
  */
 export declare type GetCoverageReportRequest = Message<"ameliso.v1.GetCoverageReportRequest"> & {
@@ -1332,6 +1475,17 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetPendingCasesRequestSchema;
     output: typeof GetPendingCasesResponseSchema;
+  },
+  /**
+   * Return a combined snapshot of repo state in one call: case counts by priority,
+   * coverage summary, active in-progress runs with pending counts, and suite count.
+   *
+   * @generated from rpc ameliso.v1.AmelisoService.GetRepoStatus
+   */
+  getRepoStatus: {
+    methodKind: "unary";
+    input: typeof GetRepoStatusRequestSchema;
+    output: typeof GetRepoStatusResponseSchema;
   },
   /**
    * Return the latest known status for every case.

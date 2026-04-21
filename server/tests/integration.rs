@@ -1299,3 +1299,33 @@ async fn bulk_record_results_records_all() {
         .join("runs/2026-01-01-smoke/results/auth/signup.md")
         .exists());
 }
+
+#[tokio::test]
+async fn get_repo_status_returns_summary() {
+    let tmp = TempDir::new().unwrap();
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let repo = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+    write_case(tmp.path(), "auth/signup", "Signup");
+    write_run(tmp.path(), "2026-01-01-smoke", "in-progress");
+    write_result(tmp.path(), "2026-01-01-smoke", "auth/login", "passed");
+
+    let resp = c
+        .get_repo_status(Request::new(pb::GetRepoStatusRequest {
+            repo_path: repo.clone(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(resp.total_cases, 2);
+    assert_eq!(resp.passed_count, 1);
+    assert_eq!(resp.never_run_count, 1);
+    assert_eq!(resp.total_runs, 1);
+    assert_eq!(resp.active_runs.len(), 1);
+    assert_eq!(resp.active_runs[0].run_id, "2026-01-01-smoke");
+    assert_eq!(resp.active_runs[0].pending_count, 1);
+    assert_eq!(resp.active_runs[0].total_in_scope, 2);
+}
