@@ -257,7 +257,7 @@ describe("SuitesTab", () => {
     );
   });
 
-  it("calls updateSuite with empty cases array when cases field is cleared", async () => {
+  it("calls updateSuite with empty cases array and replaceCases=true when cases field is cleared", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -270,7 +270,9 @@ describe("SuitesTab", () => {
     }
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
-      expect(client.updateSuite).toHaveBeenCalledWith(expect.objectContaining({ cases: [] }))
+      expect(client.updateSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ cases: [], replaceCases: true })
+      )
     );
   });
 
