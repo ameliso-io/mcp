@@ -342,12 +342,11 @@ fn run_runs(cmd: RunsCmd) -> Result<()> {
         }
         RunsCmd::Get { repo, run_id } => {
             let run = repo::get_run(&repo, &run_id)?;
-            let case_titles: std::collections::HashMap<String, String> =
-                repo::list_cases(&repo)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|c| (c.case_path, c.fm.title))
-                    .collect();
+            let case_titles: std::collections::HashMap<String, String> = repo::list_cases(&repo)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|c| (c.case_path, c.fm.title))
+                .collect();
             println!("id:     {}", run.meta.id);
             println!("date:   {}", run.meta.date);
             println!("tester: {}", run.meta.tester);
@@ -476,14 +475,24 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
         }
         SuitesCmd::Get { repo, slug } => {
             let s = repo::get_suite(&repo, &slug)?;
+            let case_titles: std::collections::HashMap<String, String> =
+                repo::list_cases(&repo)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|c| (c.case_path, c.fm.title))
+                    .collect();
             println!("slug:        {slug}");
             println!("name:        {}", s.name);
             if let Some(d) = &s.description {
                 println!("description: {d}");
             }
             println!("cases ({}):", s.cases.len());
-            for c in &s.cases {
-                println!("  {c}");
+            for path in &s.cases {
+                let title = case_titles
+                    .get(path)
+                    .map(|t| format!(" — {t}"))
+                    .unwrap_or_default();
+                println!("  {path}{title}");
             }
         }
         SuitesCmd::Create {

@@ -531,10 +531,7 @@ impl AmelisoMcp {
                         .get(&r.case_path)
                         .map(|t| format!(" — {t}"))
                         .unwrap_or_default();
-                    lines.push(format!(
-                        "  {:40} {:8}{}",
-                        r.case_path, r.fm.status, title
-                    ));
+                    lines.push(format!("  {:40} {:8}{}", r.case_path, r.fm.status, title));
                 }
                 lines.join("\n")
             }
@@ -565,11 +562,24 @@ impl AmelisoMcp {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_suite(&repo, &req.slug) {
             Ok(s) => {
+                let case_titles: std::collections::HashMap<String, String> =
+                    repo::list_cases(&repo)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|c| (c.case_path, c.fm.title))
+                        .collect();
                 let mut lines = vec![format!("slug: {}", req.slug), format!("name: {}", s.name)];
                 if let Some(d) = &s.description {
                     lines.push(format!("description: {d}"));
                 }
-                lines.push(format!("cases ({}): {}", s.cases.len(), s.cases.join(", ")));
+                lines.push(format!("\ncases ({}):", s.cases.len()));
+                for path in &s.cases {
+                    let title = case_titles
+                        .get(path)
+                        .map(|t| format!(" — {t}"))
+                        .unwrap_or_default();
+                    lines.push(format!("  {path}{title}"));
+                }
                 lines.join("\n")
             }
             Err(e) => format!("error: {e}"),
