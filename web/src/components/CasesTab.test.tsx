@@ -667,6 +667,20 @@ describe("CasesTab", () => {
     expect(screen.queryByText(/\d+ cases?/)).not.toBeInTheDocument();
   });
 
+  it("resets priority filter to unspecified when All priorities re-selected after filtering", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const prioritySelect = screen.getByDisplayValue("All priorities");
+    await userEvent.selectOptions(prioritySelect, "High");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: expect.any(Number) }))
+    );
+    await userEvent.selectOptions(prioritySelect, "All priorities");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: 0 }))
+    );
+  });
+
   it("resets tag filter to empty tags when All tags re-selected after filtering", async () => {
     const taggedCase = { ...mockCase, tags: ["smoke"] } as unknown as Case;
     vi.mocked(client.listCases).mockResolvedValue({ cases: [taggedCase] } as never);
