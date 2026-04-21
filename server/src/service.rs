@@ -2334,6 +2334,32 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    #[tokio::test]
+    async fn sync_repository_passes_validation() {
+        // Non-empty id passes validation; the handler then hits the DB → Internal.
+        let s = server();
+        let err = s
+            .sync_repository(Request::new(pb::SyncRepositoryRequest {
+                id: "owner/repo".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn remove_repository_passes_validation() {
+        // Non-empty id passes validation; the handler then hits the DB → Internal.
+        let s = server();
+        let err = s
+            .remove_repository(Request::new(pb::RemoveRepositoryRequest {
+                id: "owner/repo".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
