@@ -11,8 +11,20 @@ import styles from "./CasesTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
+interface FilterState {
+  search: string;
+  priority: Priority;
+  tag: string;
+  sort: "path" | "priority";
+}
+
 interface Props {
   repoId: string;
+  initialSearch?: string;
+  initialPriorityFilter?: Priority;
+  initialTagFilter?: string;
+  initialSortBy?: "path" | "priority";
+  onFiltersChange?: (filters: FilterState) => void;
 }
 
 function stringToPriority(p: string): Priority {
@@ -41,16 +53,25 @@ function priorityLabel(p: string): string {
   }
 }
 
-export default function CasesTab({ repoId }: Props) {
+export default function CasesTab({
+  repoId,
+  initialSearch,
+  initialPriorityFilter,
+  initialTagFilter,
+  initialSortBy,
+  onFiltersChange,
+}: Props) {
   const [cases, setCases] = useState<Case[]>([]);
   const deferredCases = useDeferredValue(cases);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<Priority>(Priority.UNSPECIFIED);
-  const [tagFilter, setTagFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"path" | "priority">("priority");
+  const [search, setSearch] = useState(initialSearch ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? "");
+  const [priorityFilter, setPriorityFilter] = useState<Priority>(
+    initialPriorityFilter ?? Priority.UNSPECIFIED
+  );
+  const [tagFilter, setTagFilter] = useState(initialTagFilter ?? "");
+  const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -59,6 +80,11 @@ export default function CasesTab({ repoId }: Props) {
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [actionAnnouncement, announceAction] = useAnnounce();
   const prevCountRef = useRef<number | null>(null);
+  const onFiltersChangeRef = useRef(onFiltersChange);
+  const filtersInitializedRef = useRef(false);
+  useEffect(() => {
+    onFiltersChangeRef.current = onFiltersChange;
+  });
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
@@ -135,6 +161,19 @@ export default function CasesTab({ repoId }: Props) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [search]);
+
+  useEffect(() => {
+    if (!filtersInitializedRef.current) {
+      filtersInitializedRef.current = true;
+      return;
+    }
+    onFiltersChangeRef.current?.({
+      search: debouncedSearch,
+      priority: priorityFilter,
+      tag: tagFilter,
+      sort: sortBy,
+    });
+  }, [debouncedSearch, priorityFilter, tagFilter, sortBy]);
 
   const load = useCallback(async () => {
     if (!repoId) return;
