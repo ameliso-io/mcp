@@ -523,9 +523,10 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.selectOptions(screen.getByDisplayValue("All priorities"), "High");
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("1 case found")
-    );
+    await waitFor(() => {
+      const regions = screen.getAllByRole("status");
+      expect(regions.some((el) => el.textContent?.includes("1 case found"))).toBe(true);
+    });
   });
 
   it("expands case on Enter key", async () => {

@@ -82,6 +82,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
     status: RunStatus;
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
+  const [actionAnnouncement, setActionAnnouncement] = useState("");
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
@@ -150,6 +151,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setNewTester("");
       setNewEnv("");
       setNewSuite("");
+      setActionAnnouncement("Run created");
       await load();
       // Auto-expand the newly created run
       if (created.run) {
@@ -210,6 +212,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setRecordingCase(null);
       setRecordNotes("");
       setCaseBody(null);
+      setActionAnnouncement("Result recorded");
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
       setPendingCases(res.cases);
@@ -247,6 +250,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       await client.finalizeRun({ repoId, runId, status });
       setSelectedRunId(null);
       setPendingCases([]);
+      setActionAnnouncement(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -285,6 +289,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         setPendingCases([]);
       }
       setConfirmingDeleteRun(null);
+      setActionAnnouncement("Run deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -297,6 +302,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   return (
     <div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2 className={styles.title}>Runs</h2>
