@@ -252,7 +252,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Create a new test case. case_path uses slash-separated identifiers, e.g. auth/login."
+        description = "Create a new test case. case_path is slash-separated (e.g. auth/login); no leading slash or .. segments. priority must be low|medium|high (default: medium)."
     )]
     fn create_case(&self, Parameters(req): Parameters<CreateCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
@@ -387,7 +387,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Create a new test run. Returns the run ID and directory path.")]
+    #[tool(
+        description = "Create a new test run. If suite is provided it must already exist (validated). Returns the run ID and total scope size (number of cases to test)."
+    )]
     fn create_run(&self, Parameters(req): Parameters<CreateRunRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let tester = req
@@ -408,7 +410,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Record a test result for a case within a run.")]
+    #[tool(
+        description = "Record a test result (passed|failed|blocked|skipped) for a case in a run. Case must exist and run must be in-progress. Add notes to explain failures. Returns confirmation; shows previous status if overwriting."
+    )]
     fn record_result(&self, Parameters(req): Parameters<RecordResultRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let notes = req.notes.as_deref().unwrap_or("");
@@ -430,7 +434,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Finalize a test run, marking it completed or aborted.")]
+    #[tool(
+        description = "Mark a test run completed or aborted. Returns a pass/fail/blocked/skipped summary. Warns if cases in scope have no result recorded (pending cases remain)."
+    )]
     fn finalize_run(&self, Parameters(req): Parameters<FinalizeRunRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::finalize_run(&repo, &req.run_id, &req.status) {
@@ -551,7 +557,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Delete a test case file from the repository.")]
+    #[tool(description = "Delete a test case file. Returns the deleted file path.")]
     fn delete_case(&self, Parameters(req): Parameters<GetCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::delete_case(&repo, &req.case_path) {
@@ -632,7 +638,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "List all test suites.")]
+    #[tool(description = "List all test suites with their case counts and descriptions.")]
     fn list_suites(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::list_suites(&repo) {
@@ -658,7 +664,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Get details of a test suite by slug.")]
+    #[tool(description = "Get a suite by slug — shows name, description, and case list with titles.")]
     fn get_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::get_suite(&repo, &req.slug) {
@@ -687,7 +693,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Create a new test suite grouping related cases.")]
+    #[tool(
+        description = "Create a test suite grouping existing cases. All case paths in cases must already exist (validated). cases is comma-separated."
+    )]
     fn create_suite(&self, Parameters(req): Parameters<CreateSuiteRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let case_list: Vec<String> = req
@@ -723,7 +731,7 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Delete a test suite file from the repository.")]
+    #[tool(description = "Delete a test suite file. Returns the deleted file path.")]
     fn delete_suite(&self, Parameters(req): Parameters<SuiteSlugRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::delete_suite(&repo, &req.slug) {
@@ -732,7 +740,9 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Show which test cases need re-running after recent code changes.")]
+    #[tool(
+        description = "Show test cases that may need re-running given recent git changes. Compares against the last completed run commit by default; override with since_ref. Returns cases with title, priority, and tags."
+    )]
     fn get_affected_cases(&self, Parameters(req): Parameters<AffectedRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         let cases = match repo::list_cases(&repo) {
