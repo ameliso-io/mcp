@@ -47,6 +47,23 @@
   --color-result-skipped: var(--color-subtle);
 }
 
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 8px;
+  padding: 8px 16px;
+  background: var(--color-ink);
+  color: var(--color-on-primary);
+  border-radius: 0 0 6px 6px;
+  font-size: 14px;
+  z-index: 9999;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 button:disabled {
   opacity: 0.65;
   cursor: not-allowed;

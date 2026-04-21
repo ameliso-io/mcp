@@ -30,9 +30,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <div className={styles.shell}>
           <NavBar />
-          <main className={styles.content}>{children}</main>
+          <main id="main-content" className={styles.content}>
+            {children}
+          </main>
         </div>
       </body>
     </html>
