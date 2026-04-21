@@ -608,6 +608,10 @@ describe("RunsTab", () => {
     await userEvent.selectOptions(statusSelect, "Passed");
     const passedInput = screen.getByPlaceholderText("Optional notes…");
     expect(passedInput).not.toBeRequired();
+
+    await userEvent.selectOptions(statusSelect, "Skipped");
+    const skippedInput = screen.getByPlaceholderText("Optional notes…");
+    expect(skippedInput).not.toBeRequired();
   });
 
   it("toggles result filter off when same filter clicked twice", async () => {
