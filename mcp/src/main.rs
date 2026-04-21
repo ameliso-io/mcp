@@ -6,6 +6,16 @@ use rmcp::transport::stdio;
 use rmcp::{handler::server::wrapper::Parameters, tool, tool_router, ServiceExt};
 use serde::Deserialize;
 
+/// Normalize run status strings: lowercase and map underscore variants.
+fn normalize_run_status(s: &str) -> String {
+    match s.to_lowercase().replace('_', "-").as_str() {
+        "in-progress" => "in-progress".to_owned(),
+        "completed" => "completed".to_owned(),
+        "aborted" => "aborted".to_owned(),
+        other => other.to_owned(),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Request types
 // ---------------------------------------------------------------------------
@@ -287,7 +297,8 @@ impl AmelisoMcp {
                 .unwrap_or_else(|| ("never".to_owned(), String::new()));
             *counts.entry(status.clone()).or_insert(0) += 1;
             if let Some(ref f) = req.status_filter {
-                if status != *f {
+                let normalized_filter = f.to_lowercase();
+                if status != normalized_filter {
                     continue;
                 }
             }
@@ -327,7 +338,10 @@ impl AmelisoMcp {
         match repo::list_runs(&repo) {
             Ok(runs) => {
                 let runs: Vec<_> = if let Some(ref s) = req.status {
-                    runs.into_iter().filter(|r| r.status == *s).collect()
+                    let normalized = normalize_run_status(s);
+                    runs.into_iter()
+                        .filter(|r| r.status == normalized)
+                        .collect()
                 } else {
                     runs
                 };
