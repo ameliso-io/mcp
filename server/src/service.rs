@@ -324,9 +324,18 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::ListRunsRequest>,
     ) -> Result<Response<pb::ListRunsResponse>, Status> {
-        let repo = PathBuf::from(&request.into_inner().repo_path);
+        let req = request.into_inner();
+        let repo = PathBuf::from(&req.repo_path);
+        let status_filter = req.status;
         let runs = repo::list_runs(&repo).map_err(repo_err)?;
-        let pb_runs = runs.iter().map(run_meta_to_pb).collect();
+        let pb_runs = runs
+            .iter()
+            .filter(|r| {
+                status_filter == pb::RunStatus::Unspecified as i32
+                    || run_status_to_i32(&r.status) == status_filter
+            })
+            .map(run_meta_to_pb)
+            .collect();
         Ok(Response::new(pb::ListRunsResponse { runs: pb_runs }))
     }
 

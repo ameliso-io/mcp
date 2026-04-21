@@ -49,6 +49,15 @@ struct RepoPathRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct ListRunsRequest {
+    repo_path: String,
+    #[schemars(
+        description = "Optional status filter: in-progress | completed | aborted. Omit to return all."
+    )]
+    status: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct CreateRunRequest {
     repo_path: String,
     #[schemars(description = "Short slug, e.g. smoke or regression")]
@@ -259,11 +268,16 @@ impl AmelisoMcp {
         lines.join("\n")
     }
 
-    #[tool(description = "List all test runs in the repository.")]
-    fn list_runs(&self, Parameters(req): Parameters<RepoPathRequest>) -> String {
+    #[tool(description = "List all test runs in the repository. Optionally filter by status: in-progress | completed | aborted.")]
+    fn list_runs(&self, Parameters(req): Parameters<ListRunsRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
         match repo::list_runs(&repo) {
             Ok(runs) => {
+                let runs: Vec<_> = if let Some(ref s) = req.status {
+                    runs.into_iter().filter(|r| r.status == *s).collect()
+                } else {
+                    runs
+                };
                 if runs.is_empty() {
                     return "No runs found.".to_owned();
                 }

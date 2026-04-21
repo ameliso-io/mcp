@@ -241,7 +241,7 @@ async fn create_and_list_run() {
     assert_eq!(meta.status, pb::RunStatus::InProgress as i32);
 
     let runs = c
-        .list_runs(Request::new(pb::ListRunsRequest { repo_path: rp }))
+        .list_runs(Request::new(pb::ListRunsRequest { repo_path: rp, status: 0 }))
         .await
         .unwrap()
         .into_inner()
@@ -704,4 +704,53 @@ async fn create_case_rejects_path_traversal() {
         .unwrap_err();
 
     assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn list_runs_filter_by_status() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_run(tmp.path(), "2026-01-01-alpha", "in-progress");
+    write_run(tmp.path(), "2026-01-02-beta", "completed");
+    write_run(tmp.path(), "2026-01-03-gamma", "completed");
+
+    // No filter — returns all 3
+    let all = c
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp.clone(),
+            status: pb::RunStatus::Unspecified as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .runs;
+    assert_eq!(all.len(), 3);
+
+    // Filter: in-progress — returns 1
+    let in_progress = c
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp.clone(),
+            status: pb::RunStatus::InProgress as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .runs;
+    assert_eq!(in_progress.len(), 1);
+    assert_eq!(in_progress[0].id, "2026-01-01-alpha");
+
+    // Filter: completed — returns 2
+    let completed = c
+        .list_runs(Request::new(pb::ListRunsRequest {
+            repo_path: rp,
+            status: pb::RunStatus::Completed as i32,
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .runs;
+    assert_eq!(completed.len(), 2);
 }

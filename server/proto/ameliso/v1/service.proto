@@ -197,6 +197,8 @@ message DeleteSuiteResponse {
 
 message ListRunsRequest {
   string repo_path = 1;
+  // Optional: filter by run status. Unspecified = return all.
+  RunStatus status = 2;
 }
 
 message ListRunsResponse {

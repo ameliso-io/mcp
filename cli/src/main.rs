@@ -96,6 +96,8 @@ enum RunsCmd {
     List {
         #[arg(long, env = "AMELISO_REPO")]
         repo: PathBuf,
+        #[arg(long, value_name = "STATUS", help = "Filter by status: in-progress | completed | aborted")]
+        status: Option<String>,
     },
     #[command(about = "Show a single run with results")]
     Get {
@@ -284,8 +286,13 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
 
 fn run_runs(cmd: RunsCmd) -> Result<()> {
     match cmd {
-        RunsCmd::List { repo } => {
-            let runs = repo::list_runs(&repo)?;
+        RunsCmd::List { repo, status } => {
+            let all_runs = repo::list_runs(&repo)?;
+            let runs: Vec<_> = if let Some(ref s) = status {
+                all_runs.into_iter().filter(|r| r.status == *s).collect()
+            } else {
+                all_runs
+            };
             if runs.is_empty() {
                 println!("No runs found.");
             } else {
