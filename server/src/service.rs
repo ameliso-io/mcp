@@ -1204,6 +1204,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn list_cases_with_suite_filter_passes_validation() {
+        // Non-empty suite filter is valid — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .list_cases(Request::new(pb::ListCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn list_cases_with_query_filter_passes_validation() {
+        // Non-empty query filter is valid — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .list_cases(Request::new(pb::ListCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                query: "login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn list_cases_with_tags_filter_passes_validation() {
+        // Non-empty tags filter is valid — passes validation, then hits DB.
+        let s = server();
+        let err = s
+            .list_cases(Request::new(pb::ListCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                tags: vec!["auth".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn get_case_rejects_empty_repo_id() {
         let s = server();
         let err = s
