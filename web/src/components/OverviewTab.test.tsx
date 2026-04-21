@@ -174,6 +174,23 @@ describe("OverviewTab", () => {
     );
   });
 
+  it("active runs panel not shown when coverage entries empty even with active runs", async () => {
+    const activeRun = {
+      id: "run-active",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() =>
+      expect(screen.getByText("No cases found in this repository.")).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
+  });
+
   it("shows BLOCKED, SKIPPED, NEVER, and UNSPECIFIED status entries in coverage", async () => {
     const blockedEntry = makeCovEntry("auth/block", "Blocked Case", "medium", ResultStatus.BLOCKED);
     const skippedEntry = makeCovEntry("auth/skip", "Skipped Case", "low", ResultStatus.SKIPPED);
@@ -407,5 +424,172 @@ describe("OverviewTab", () => {
         screen.getAllByRole("status").some((el) => el.textContent?.includes("No cases affected"))
       ).toBe(true)
     );
+  });
+
+  it("does not show lastRunDate when it is empty", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        {
+          ...makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED),
+          lastRunDate: "",
+        },
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    expect(screen.queryByText("2026-01-01")).not.toBeInTheDocument();
+  });
+
+  it("shows plural runs in Coverage heading", async () => {
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Coverage \(5 runs\)/)).toBeInTheDocument());
+  });
+
+  it('shows "auto-refresh 30s" label in active runs panel', async () => {
+    const activeRun = {
+      id: "run-ar",
+      tester: "dave",
+      suite: "",
+      date: "2026-03-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/auto-refresh 30s/)).toBeInTheDocument());
+  });
+
+  it("shows non-zero Never Run stat when entries include never-run cases", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [makeCovEntry("auth/never", "NeverCase", "low", ResultStatus.NEVER)],
+      runCount: 2,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Never Run")).toBeInTheDocument());
+    // stat card shows "1" for Never Run count
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+  });
+
+  it("shows suite badge and tester in active runs panel", async () => {
+    const activeRun = {
+      id: "run-badge",
+      tester: "carol",
+      suite: "e2e",
+      date: "2026-02-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("e2e")).toBeInTheDocument());
+    expect(screen.getByText("carol")).toBeInTheDocument();
+    expect(screen.getByText("2026-02-01")).toBeInTheDocument();
+  });
+
+  it("polling timer callback triggers reload when active runs present", async () => {
+    const activeRun = {
+      id: "run-timer",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    let capturedCallback: (() => void) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    expect(capturedCallback).not.toBeNull();
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    expect(client.getCoverageReport).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+
+  it("Go to Runs button not shown when onGoToRuns prop is not provided", async () => {
+    const activeRun = {
+      id: "run-no-goto",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Go to Runs" })).not.toBeInTheDocument();
+  });
+
+  it("does not show suite badge or tester span when active run has empty suite and tester", async () => {
+    const bareRun = {
+      id: "run-bare",
+      tester: "",
+      suite: "",
+      date: "2026-04-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [bareRun] } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("run-bare")).toBeInTheDocument());
+    // suite badge and tester span are conditionally rendered — must be absent
+    expect(screen.queryByText("smoke")).not.toBeInTheDocument();
+    expect(screen.queryByText("alice")).not.toBeInTheDocument();
+  });
+
+  it("polling timer callback shows error banner when load fails", async () => {
+    const activeRun = {
+      id: "run-poll-err",
+      tester: "bob",
+      suite: "smoke",
+      date: "2026-01-01",
+      status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getCoverageReport)
+      .mockResolvedValueOnce({ entries: coverageEntries, runCount: 5 } as never)
+      .mockRejectedValueOnce(new Error("poll error"));
+    let capturedCallback: (() => void) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    await waitFor(() => expect(screen.getByText("poll error")).toBeInTheDocument());
+    spy.mockRestore();
+  });
+
+  it("active runs panel not shown when coverage entries exist but no active runs", async () => {
+    // default mocks: entries=[2 entries], listRuns=[] — activeRuns is empty
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // active runs panel only shown when activeRuns.length > 0
+    expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
+  });
+
+  it("shows all four stat card labels and Never Run count is 0 when no never-run cases", async () => {
+    // default entries: 1 PASSED + 1 FAILED — no NEVER entries
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Total Cases")).toBeInTheDocument());
+    // stat card labels appear (may also appear in coverage list — use getAllByText)
+    expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
+    expect(screen.getByText("Never Run")).toBeInTheDocument();
+    // statNever = 0 since no NEVER entries in default coverage data
+    expect(screen.getByText("0")).toBeInTheDocument();
   });
 });

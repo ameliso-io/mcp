@@ -115,6 +115,20 @@ describe("CasesTab", () => {
     expect(screen.getByRole("button", { name: "Delete auth/login" })).toBeInTheDocument();
   });
 
+  it("hides expanded body panel when case switches from expanded to edit mode", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    // Expand the case — MarkdownBody renders "## Steps" as an <h2>
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument());
+    // Click Edit — expanded body panel hides (edit textarea replaces MarkdownBody rendering)
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    // The rendered <h2> from MarkdownBody should be gone
+    expect(screen.queryByRole("heading", { name: "Steps" })).not.toBeInTheDocument();
+  });
+
   it("opens edit form with pre-filled values when Edit clicked", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
@@ -635,5 +649,112 @@ describe("CasesTab", () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
+  });
+
+  it("shows case tags as chips in case card list view", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.getAllByText("auth").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("smoke").length).toBeGreaterThan(0);
+  });
+
+  it('shows "Loading…" while case body is loading on expand', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.getCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    resolve!({ case: mockCase, body: "" });
+  });
+
+  it('shows "Creating…" on Create button while case creation is in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.createCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "auth/new");
+    await userEvent.type(inputs[1], "New Title");
+    await userEvent.click(screen.getByText("Create"));
+    expect(screen.getByText("Creating…")).toBeInTheDocument();
+    resolve!({ case: mockCase, filePath: "cases/auth/new.md" });
+  });
+
+  it('shows "Saving…" on Save button while case update is in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.updateCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Save"));
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+    resolve!({ case: mockCase });
+  });
+
+  it("does not show description paragraph when case description is empty", async () => {
+    const noDescCase = { ...mockCase, description: "" } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [noDescCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.queryByText("Verify login flow")).not.toBeInTheDocument();
+  });
+
+  it("does not show case count span when case list is empty", async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("No cases found.")).toBeInTheDocument());
+    expect(screen.queryByText(/\d+ cases?/)).not.toBeInTheDocument();
+  });
+
+  it("resets priority filter to unspecified when All priorities re-selected after filtering", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const prioritySelect = screen.getByDisplayValue("All priorities");
+    await userEvent.selectOptions(prioritySelect, "High");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: expect.any(Number) }))
+    );
+    await userEvent.selectOptions(prioritySelect, "All priorities");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: 0 }))
+    );
+  });
+
+  it("resets tag filter to empty tags when All tags re-selected after filtering", async () => {
+    const taggedCase = { ...mockCase, tags: ["smoke"] } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [taggedCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const tagSelect = screen.getByDisplayValue("All tags");
+    await userEvent.selectOptions(tagSelect, "smoke");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
+    );
+    await userEvent.selectOptions(tagSelect, "");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
+    );
+  });
+
+  it("tag filter select is not shown when cases have no tags", async () => {
+    const noTagCase = { ...mockCase, tags: [] } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [noTagCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.queryByDisplayValue("All tags")).not.toBeInTheDocument();
   });
 });

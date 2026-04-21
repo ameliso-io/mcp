@@ -75,6 +75,30 @@ describe("NavBar", () => {
     expect(screen.getByRole("link", { name: "Runs" })).not.toHaveAttribute("aria-current");
   });
 
+  it("marks Runs as active when pathname is /runs", () => {
+    mockUsePathname.mockReturnValue("/runs");
+    render(<NavBar />);
+    expect(screen.getByRole("link", { name: "Runs" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Overview" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Suites as active when pathname is /suites", () => {
+    mockUsePathname.mockReturnValue("/suites");
+    render(<NavBar />);
+    expect(screen.getByRole("link", { name: "Suites" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Repositories as active when pathname is /repositories", () => {
+    mockUsePathname.mockReturnValue("/repositories");
+    render(<NavBar />);
+    expect(screen.getByRole("link", { name: "Repositories" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+    expect(screen.getByRole("link", { name: "Overview" })).not.toHaveAttribute("aria-current");
+  });
+
   it("renders Ameliso logo", () => {
     render(<NavBar />);
     expect(screen.getByText("Ameliso")).toBeInTheDocument();

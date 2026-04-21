@@ -445,4 +445,119 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("Cancel"));
     expect(client.updateSuite).not.toHaveBeenCalled();
   });
+
+  it('shows "Loading…" inside expanded suite while cases are loading', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.listCases).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0));
+    resolve!({ cases: [] });
+  });
+
+  it('shows "Saving…" on Save button while update in progress', async () => {
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.updateSuite).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Save"));
+    expect(screen.getByText("Saving…")).toBeInTheDocument();
+    resolve!({ suite: mockSuite });
+  });
+
+  it("shows suite description in card view", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Critical path checks")).toBeInTheDocument());
+  });
+
+  it("shows case tags in expanded suite view", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("auth")).toBeInTheDocument());
+  });
+
+  it("closes create form when Cancel button clicked on toggle", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    expect(screen.getByRole("heading", { name: "Create Suite" })).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Cancel"));
+    expect(screen.queryByRole("heading", { name: "Create Suite" })).not.toBeInTheDocument();
+    expect(screen.getByText("+ New Suite")).toBeInTheDocument();
+  });
+
+  it("expanding a second suite collapses the first", async () => {
+    const suite2 = {
+      slug: "regression",
+      name: "Regression Tests",
+      description: "Full regression checks",
+      cases: ["auth/logout"],
+    } as unknown as Suite;
+    vi.mocked(client.listSuites).mockResolvedValue({
+      suites: [mockSuite, suite2],
+    } as never);
+    vi.mocked(client.listCases).mockImplementation(async (req) => {
+      const r = req as { suite?: string };
+      if (r?.suite === "regression") {
+        return {
+          cases: [
+            {
+              path: "auth/logout",
+              title: "User Logout",
+              description: "",
+              tags: [],
+              priority: "low",
+              createdAt: "",
+              updatedAt: "",
+            },
+          ],
+        } as never;
+      }
+      return {
+        cases: [
+          {
+            path: "auth/login",
+            title: "User Login",
+            description: "",
+            tags: ["auth"],
+            priority: "high",
+            createdAt: "",
+            updatedAt: "",
+          },
+        ],
+      } as never;
+    });
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
+    await userEvent.click(screen.getByText("Regression Tests"));
+    await waitFor(() => expect(screen.queryByText("User Login")).not.toBeInTheDocument());
+    expect(screen.getByText("User Logout")).toBeInTheDocument();
+  });
+
+  it("does not show Run button when onRunSuite prop not provided", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    expect(screen.queryByText("Run")).not.toBeInTheDocument();
+  });
+
+  it("does not show description paragraph when suite description is empty", async () => {
+    const noDescSuite = { ...mockSuite, description: "" } as unknown as Suite;
+    vi.mocked(client.listSuites).mockResolvedValue({ suites: [noDescSuite] } as never);
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    expect(screen.queryByText("Critical path checks")).not.toBeInTheDocument();
+  });
 });

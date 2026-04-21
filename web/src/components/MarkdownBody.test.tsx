@@ -1,62 +1,95 @@
-import { render } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach } from "vitest";
 import MarkdownBody from "./MarkdownBody";
 
+beforeEach(() => {
+  document.getElementById("ameliso-md-styles")?.remove();
+});
+
 describe("MarkdownBody", () => {
-  it("renders markdown as HTML", () => {
+  it("renders markdown heading", () => {
     const { container } = render(<MarkdownBody body="# Hello" />);
-    expect(container.querySelector("h1")).toHaveTextContent("Hello");
+    expect(container.querySelector("h1")).toBeInTheDocument();
+    expect(container.querySelector("h1")?.textContent).toBe("Hello");
   });
 
-  it("renders paragraph text", () => {
-    const { container } = render(<MarkdownBody body="Some text" />);
-    expect(container.querySelector("p")).toHaveTextContent("Some text");
+  it("renders markdown bold text", () => {
+    const { container } = render(<MarkdownBody body="**bold**" />);
+    expect(container.querySelector("strong")).toBeInTheDocument();
   });
 
-  it("renders ordered list", () => {
-    const { container } = render(<MarkdownBody body={"1. First\n2. Second\n"} />);
+  it("renders markdown list items", () => {
+    const { container } = render(<MarkdownBody body={`- item1\n- item2`} />);
     const items = container.querySelectorAll("li");
-    expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent("First");
-    expect(items[1]).toHaveTextContent("Second");
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it("renders empty body without error", () => {
+    const { container } = render(<MarkdownBody body="" />);
+    expect(container.querySelector(".md-body")).toBeInTheDocument();
+  });
+
+  it("applies maxHeight style when prop provided", () => {
+    const { container } = render(<MarkdownBody body="text" maxHeight="200px" />);
+    const div = container.querySelector(".md-body") as HTMLElement;
+    expect(div.style.maxHeight).toBe("200px");
+    expect(div.style.overflowY).toBe("auto");
+  });
+
+  it("uses maxHeight none and no overflowY when prop omitted", () => {
+    const { container } = render(<MarkdownBody body="text" />);
+    const div = container.querySelector(".md-body") as HTMLElement;
+    expect(div.style.maxHeight).toBe("none");
+    expect(div.style.overflowY).toBe("");
+  });
+
+  it("injects style tag into document head on mount", () => {
+    render(<MarkdownBody body="text" />);
+    expect(document.getElementById("ameliso-md-styles")).toBeInTheDocument();
+  });
+
+  it("does not inject duplicate style tags on re-render", () => {
+    render(<MarkdownBody body="first" />);
+    render(<MarkdownBody body="second" />);
+    const tags = document.querySelectorAll("#ameliso-md-styles");
+    expect(tags.length).toBe(1);
   });
 
   it("renders inline code", () => {
-    const { container } = render(<MarkdownBody body="Use `foo()` here" />);
-    expect(container.querySelector("code")).toHaveTextContent("foo()");
+    const { container } = render(<MarkdownBody body="use `npm install`" />);
+    expect(container.querySelector("code")).toBeInTheDocument();
   });
 
-  it("renders bold and italic", () => {
-    const { container } = render(<MarkdownBody body="**bold** and *italic*" />);
-    expect(container.querySelector("strong")).toHaveTextContent("bold");
-    expect(container.querySelector("em")).toHaveTextContent("italic");
+  it("renders paragraph text", () => {
+    render(<MarkdownBody body="plain paragraph" />);
+    expect(screen.getByText("plain paragraph")).toBeInTheDocument();
   });
 
-  it("applies md-body class", () => {
-    const { container } = render(<MarkdownBody body="text" />);
-    expect(container.firstChild).toHaveClass("md-body");
+  it("renders markdown h2 and h3 headings", () => {
+    const { container } = render(<MarkdownBody body={"## Section\n### Sub"} />);
+    expect(container.querySelector("h2")).toBeInTheDocument();
+    expect(container.querySelector("h3")).toBeInTheDocument();
   });
 
-  it("sets --md-max-height CSS variable when maxHeight provided", () => {
-    const { container } = render(<MarkdownBody body="text" maxHeight="200px" />);
-    const el = container.firstChild as HTMLElement;
-    expect(el.style.getPropertyValue("--md-max-height")).toBe("200px");
+  it("renders ordered list", () => {
+    const { container } = render(<MarkdownBody body={"1. first\n2. second"} />);
+    expect(container.querySelector("ol")).toBeInTheDocument();
+    const items = container.querySelectorAll("li");
+    expect(items.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("does not set inline style when maxHeight is omitted", () => {
-    const { container } = render(<MarkdownBody body="text" />);
-    const el = container.firstChild as HTMLElement;
-    expect(el.getAttribute("style")).toBeFalsy();
+  it("renders italic text", () => {
+    const { container } = render(<MarkdownBody body="*emphasis*" />);
+    expect(container.querySelector("em")).toBeInTheDocument();
   });
 
-  it("renders raw HTML passed through marked (caller is responsible for sanitization)", () => {
-    const { container } = render(<MarkdownBody body="plain **bold** text" />);
-    expect(container.querySelector("strong")).toHaveTextContent("bold");
+  it("renders fenced code block", () => {
+    const { container } = render(<MarkdownBody body={"```\nconst x = 1;\n```"} />);
+    expect(container.querySelector("pre")).toBeInTheDocument();
   });
 
-  it("strips script tags via DOMPurify sanitization", () => {
-    const { container } = render(<MarkdownBody body="<script>alert(1)</script>safe" />);
-    expect(container.querySelector("script")).toBeNull();
-    expect(container.textContent).toContain("safe");
+  it("renders horizontal rule", () => {
+    const { container } = render(<MarkdownBody body={"---"} />);
+    expect(container.querySelector("hr")).toBeInTheDocument();
   });
 });

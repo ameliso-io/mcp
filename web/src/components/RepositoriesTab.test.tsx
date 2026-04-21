@@ -430,4 +430,88 @@ describe("RepositoriesTab", () => {
       ).toBe(true)
     );
   });
+
+  it("shows connect hint when configured but no repos", async () => {
+    vi.mocked(client.getGitHubInstallUrl).mockResolvedValue({
+      url: "https://github.com/apps/ameliso/install",
+      configured: true,
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() =>
+      expect(screen.getByText(/Click.*Connect GitHub Repo.*to install/i)).toBeInTheDocument()
+    );
+  });
+
+  it("shows error when initial GitHub callback from URL fails", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-err&setup_action=install");
+    vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("callback failed"));
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("callback failed")).toBeInTheDocument());
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("does not call handleGitHubCallback when setup_action is an unknown value", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-xyz&setup_action=delete");
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(client.listRepositories).toHaveBeenCalled());
+    expect(client.handleGitHubCallback).not.toHaveBeenCalled();
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("Refresh All deduplicates installationIds — calls handleGitHubCallback once when two repos share same installation", async () => {
+    const repo1 = makeRepo({ id: "org/alpha", installationId: "shared-inst" });
+    const repo2 = makeRepo({ id: "org/beta", installationId: "shared-inst" });
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [repo1, repo2],
+    } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [repo1, repo2],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() => expect(client.handleGitHubCallback).toHaveBeenCalledTimes(1));
+    expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "shared-inst" });
+  });
+
+  it("search filters repos by html url", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [
+        makeRepo({
+          id: "org/alpha",
+          name: "alpha",
+          fullName: "org/alpha",
+          htmlUrl: "https://github.com/org/alpha",
+        }),
+        makeRepo({
+          id: "org/beta",
+          name: "beta",
+          fullName: "org/beta",
+          htmlUrl: "https://github.com/org/beta",
+        }),
+      ],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("org/alpha"));
+    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "beta");
+    expect(screen.queryByText("org/alpha")).not.toBeInTheDocument();
+    expect(screen.getByText("org/beta")).toBeInTheDocument();
+  });
+
+  it("does not show search bar or Refresh All button when repo list is empty", async () => {
+    // default mock: listRepositories returns []
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("No repositories connected")).toBeInTheDocument());
+    // search bar and Refresh All are conditionally rendered only when repos.length > 0
+    expect(screen.queryByPlaceholderText("Search repositories…")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Refresh All/)).not.toBeInTheDocument();
+  });
+
+  it("does not show Active badge when repo is not the active repo", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="other/repo" />);
+    await waitFor(() => expect(screen.getByText("owner/repo")).toBeInTheDocument());
+    // Active badge is only shown when activeRepoId matches repo id
+    expect(screen.queryByText("Active")).not.toBeInTheDocument();
+  });
 });
