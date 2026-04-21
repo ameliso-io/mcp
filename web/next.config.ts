@@ -45,9 +45,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Trace deps from monorepo root so standalone captures shared packages
   outputFileTracingRoot: path.resolve(__dirname, ".."),
+  // Emit source maps in production so error reports include real file+line
+  productionBrowserSourceMaps: true,
   experimental: {
-    // Emit source maps in production so error reports include real file+line
-    productionBrowserSourceMaps: true,
     // Tree-shake barrel-exporting packages to reduce client bundle size
     optimizePackageImports: [
       "@bufbuild/protobuf",
