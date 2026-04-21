@@ -193,6 +193,25 @@ describe("RunsTab", () => {
     );
   });
 
+  it("bulk pass confirm button uses plural 'cases' label when multiple pending", async () => {
+    const case2 = makeCase({ path: "auth/logout", title: "User Logout" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase, case2],
+      totalInScope: 2,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText(/All Passed/));
+    await userEvent.click(screen.getByText(/All Passed/));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Confirm pass all 2 pending cases" })
+      ).toBeInTheDocument()
+    );
+  });
+
   it("calls recordResult for each pending case when All Passed clicked", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -319,7 +338,10 @@ describe("RunsTab", () => {
 
   it("shows progressbar with aria-valuetext for completion progress", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [mockCase], totalInScope: 3 } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase],
+      totalInScope: 3,
+    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
