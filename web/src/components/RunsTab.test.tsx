@@ -821,6 +821,14 @@ describe("RunsTab", () => {
     expect(screen.queryByText("Save Result")).not.toBeInTheDocument();
   });
 
+  it("calls onInitialSuiteConsumed when initialSuite is provided", async () => {
+    const onConsumed = vi.fn();
+    render(
+      <RunsTab repoId="owner/repo" initialSuite="smoke" onInitialSuiteConsumed={onConsumed} />
+    );
+    await waitFor(() => expect(onConsumed).toHaveBeenCalledTimes(1));
+  });
+
   it("resets recordStatus to PASSED after recording a result", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
