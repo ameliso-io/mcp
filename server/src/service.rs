@@ -2378,6 +2378,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_affected_cases_empty_since_ref_passes_validation() {
+        // Empty since_ref is valid (all cases flagged path); still passes validation → DB error.
+        let s = server();
+        let err = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn list_repositories_returns_internal_without_db() {
         // list_repositories has no validation — it always hits the DB directly.
         let s = server();
