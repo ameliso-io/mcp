@@ -44,6 +44,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
 
   const [, startFilterTransition] = useTransition()
   const createFormId = useId()
+  const recordFormId = useId()
   const [showCreate, setShowCreate] = useState(false)
   const [newSlug, setNewSlug] = useState('')
   const [newTester, setNewTester] = useState('')
@@ -502,8 +503,9 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                               )}
                               <form onSubmit={handleRecord} className={styles.recordForm}>
                                 <div>
-                                  <label className={styles.labelSm}>Status</label>
+                                  <label htmlFor={`${recordFormId}-status`} className={styles.labelSm}>Status</label>
                                   <select
+                                    id={`${recordFormId}-status`}
                                     value={recordStatus}
                                     onChange={e => setRecordStatus(Number(e.target.value) as ResultStatus)}
                                     className={styles.inputAuto}
@@ -516,11 +518,13 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                                 </div>
                                 <div className={styles.notesWrap}>
                                   <label
+                                    htmlFor={`${recordFormId}-notes`}
                                     className={isNoteRequired ? styles.labelSmErr : styles.labelSm}
                                   >
                                     Notes{isNoteRequired ? ' *' : ''}
                                   </label>
                                   <input
+                                    id={`${recordFormId}-notes`}
                                     value={recordNotes}
                                     onChange={e => setRecordNotes(e.target.value)}
                                     placeholder={
