@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { client } from '../client'
 import type { Case } from '../gen/ameliso/v1/types_pb'
 import { Priority } from '../gen/ameliso/v1/types_pb'
@@ -56,8 +56,10 @@ export default function CasesTab({ repoPath }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState<Priority>(Priority.UNSPECIFIED)
   const [tagFilter, setTagFilter] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false)
@@ -84,6 +86,12 @@ export default function CasesTab({ repoPath }: Props) {
     setEditTags(c.tags.join(', '))
   }
 
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [search])
+
   const load = useCallback(async () => {
     if (!repoPath) return
     setLoading(true)
@@ -91,7 +99,7 @@ export default function CasesTab({ repoPath }: Props) {
     try {
       const res = await client.listCases({
         repoPath,
-        query: search,
+        query: debouncedSearch,
         priority: priorityFilter,
         tags: tagFilter ? [tagFilter] : [],
       })
@@ -101,7 +109,7 @@ export default function CasesTab({ repoPath }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [repoPath, search, priorityFilter, tagFilter])
+  }, [repoPath, debouncedSearch, priorityFilter, tagFilter])
 
   useEffect(() => { load() }, [load])
 
