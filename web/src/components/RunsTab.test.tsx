@@ -542,6 +542,29 @@ describe("RunsTab", () => {
     );
   });
 
+  it("notes input is required when status is Failed or Blocked", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    const statusSelect = screen.getByDisplayValue("Passed");
+
+    await userEvent.selectOptions(statusSelect, "Failed");
+    const notesInput = screen.getByPlaceholderText("Describe what failed…");
+    expect(notesInput).toBeRequired();
+
+    await userEvent.selectOptions(statusSelect, "Blocked");
+    const blockedInput = screen.getByPlaceholderText("Describe what is blocking…");
+    expect(blockedInput).toBeRequired();
+
+    await userEvent.selectOptions(statusSelect, "Passed");
+    const passedInput = screen.getByPlaceholderText("Optional notes…");
+    expect(passedInput).not.toBeRequired();
+  });
+
   it("toggles result filter off when same filter clicked twice", async () => {
     const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
     const mockResult = {

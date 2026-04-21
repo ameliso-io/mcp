@@ -1007,6 +1007,10 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                   <input
                                     value={recordNotes}
                                     onChange={(e) => setRecordNotes(e.target.value)}
+                                    required={
+                                      recordStatus === ResultStatus.FAILED ||
+                                      recordStatus === ResultStatus.BLOCKED
+                                    }
                                     placeholder={
                                       recordStatus === ResultStatus.FAILED
                                         ? "Describe what failed…"
