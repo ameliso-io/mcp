@@ -2256,6 +2256,16 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn text_references_case_newline_boundary() {
+        assert!(text_references_case("fix\nauth/login\ndone", "auth/login"));
+    }
+
+    #[test]
+    fn text_references_case_tab_prefix() {
+        assert!(text_references_case("\tauth/login", "auth/login"));
+    }
+
     // ── is_doc_file ───────────────────────────────────────────────────────────
 
     #[test]
