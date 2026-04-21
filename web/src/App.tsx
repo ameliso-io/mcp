@@ -2,8 +2,9 @@ import { useState } from 'react'
 import OverviewTab from './components/OverviewTab'
 import CasesTab from './components/CasesTab'
 import RunsTab from './components/RunsTab'
+import SuitesTab from './components/SuitesTab'
 
-type Tab = 'overview' | 'cases' | 'runs'
+type Tab = 'overview' | 'cases' | 'suites' | 'runs'
 
 const styles = {
   app: {
@@ -58,7 +59,7 @@ export default function App() {
       <header style={styles.header}>
         <span style={styles.logo}>Ameliso</span>
         <nav style={styles.nav}>
-          {(['overview', 'cases', 'runs'] as Tab[]).map((t) => (
+          {(['overview', 'cases', 'suites', 'runs'] as Tab[]).map((t) => (
             <button
               key={t}
               style={styles.navBtn(tab === t)}
@@ -74,6 +75,7 @@ export default function App() {
           <OverviewTab repoPath={repoPath} onRepoPathChange={setRepoPath} />
         )}
         {tab === 'cases' && <CasesTab repoPath={repoPath} />}
+        {tab === 'suites' && <SuitesTab repoPath={repoPath} />}
         {tab === 'runs' && <RunsTab repoPath={repoPath} />}
       </main>
     </div>
