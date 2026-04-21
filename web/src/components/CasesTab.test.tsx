@@ -308,4 +308,62 @@ describe("CasesTab", () => {
       )
     );
   });
+
+  it("filters by tag when tag select changed", async () => {
+    const taggedCase = { ...mockCase, tags: ["smoke"] } as unknown as Case;
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [taggedCase] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const tagSelect = screen.getByDisplayValue("All tags");
+    await userEvent.selectOptions(tagSelect, "smoke");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
+    );
+  });
+
+  it("calls createCase with parsed tags when tags field is filled", async () => {
+    vi.mocked(client.createCase).mockResolvedValue({
+      case: mockCase,
+      filePath: "cases/auth/new.md",
+    } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Case"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "auth/new");
+    await userEvent.type(inputs[1], "New Case Title");
+    // Fill tags field (4th textbox: path, title, desc, tags)
+    await userEvent.type(inputs[3], "auth, smoke");
+    await userEvent.click(screen.getByText("Create"));
+    await waitFor(() =>
+      expect(client.createCase).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ["auth", "smoke"] })
+      )
+    );
+  });
+
+  it("calls updateCase with empty tags array when tags field is empty", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    const tagsInput = screen
+      .getAllByRole("textbox")
+      .find((i) => (i as HTMLInputElement).value === "auth, smoke");
+    if (tagsInput) {
+      await userEvent.clear(tagsInput);
+    }
+    await userEvent.click(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(client.updateCase).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
+    );
+  });
+
+  it("cancels edit form when Cancel clicked", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    await userEvent.click(screen.getByText("Cancel"));
+    await waitFor(() => expect(screen.queryByText("Save")).not.toBeInTheDocument());
+  });
 });

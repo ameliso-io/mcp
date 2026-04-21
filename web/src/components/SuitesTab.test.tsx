@@ -242,6 +242,39 @@ describe("SuitesTab", () => {
     );
   });
 
+  it("calls createSuite with parsed cases when cases field is filled", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "regression");
+    await userEvent.type(inputs[1], "Regression Tests");
+    // 3rd input is description, 4th is cases
+    await userEvent.type(inputs[3], "auth/login, auth/logout");
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    await waitFor(() =>
+      expect(client.createSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ cases: ["auth/login", "auth/logout"] })
+      )
+    );
+  });
+
+  it("calls updateSuite with empty cases array when cases field is cleared", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    const casesInput = screen
+      .getAllByRole("textbox")
+      .find((i) => (i as HTMLInputElement).value === "auth/login, auth/logout");
+    if (casesInput) {
+      await userEvent.clear(casesInput);
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(client.updateSuite).toHaveBeenCalledWith(expect.objectContaining({ cases: [] }))
+    );
+  });
+
   it("calls updateSuite with parsed cases when cases field is filled", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));

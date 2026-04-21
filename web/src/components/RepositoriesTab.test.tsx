@@ -181,6 +181,29 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText("org/beta")).not.toBeInTheDocument();
   });
 
+  it("calls handleGitHubCallback when installation_id present with no setup_action", async () => {
+    window.history.pushState({}, "", "?installation_id=inst-55");
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() =>
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-55" })
+    );
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("does not update repo list when syncRepository returns no repository", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.syncRepository).mockResolvedValue({ repository: undefined } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("Sync"));
+    await userEvent.click(screen.getByText("Sync"));
+    await waitFor(() => expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
+    // repo card still shown - list not changed
+    expect(screen.getByText("owner/repo")).toBeInTheDocument();
+  });
+
   it("search shows no-results state and clear button resets", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);

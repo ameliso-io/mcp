@@ -234,6 +234,27 @@ describe("OverviewTab", () => {
     );
   });
 
+  it("shows BLOCKED, SKIPPED, NEVER, and UNSPECIFIED status entries in coverage", async () => {
+    const blockedEntry = makeCovEntry("auth/block", "Blocked Case", "medium", ResultStatus.BLOCKED);
+    const skippedEntry = makeCovEntry("auth/skip", "Skipped Case", "low", ResultStatus.SKIPPED);
+    const neverEntry = makeCovEntry("auth/never", "Never Run Case", "low", ResultStatus.NEVER);
+    const unknownEntry = makeCovEntry(
+      "auth/unknown",
+      "Unknown Case",
+      "low",
+      ResultStatus.UNSPECIFIED
+    );
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [blockedEntry, skippedEntry, neverEntry, unknownEntry],
+      runCount: 3,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
+    expect(screen.getByText("Skipped")).toBeInTheDocument();
+    expect(screen.getByText("Never run")).toBeInTheDocument();
+    expect(screen.getByText("Unknown")).toBeInTheDocument();
+  });
+
   it("sorts unknown priority to end in affected cases", async () => {
     const knownCase = {
       case: {

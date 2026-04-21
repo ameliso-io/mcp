@@ -43,7 +43,10 @@ async fn sync_installations(pool: &sqlx::PgPool) -> anyhow::Result<()> {
             ameliso_server::repos_store::add_or_update(pool, &stored).await?;
         }
     }
-    eprintln!("startup installation sync complete ({} installation(s))", installations.len());
+    eprintln!(
+        "startup installation sync complete ({} installation(s))",
+        installations.len()
+    );
     Ok(())
 }
 

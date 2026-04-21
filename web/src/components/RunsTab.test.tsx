@@ -393,6 +393,36 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("record error")).toBeInTheDocument());
   });
 
+  it("shows correct placeholder for BLOCKED status in record form", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    const statusSelect = screen.getByRole("combobox");
+    await userEvent.selectOptions(statusSelect, String(ResultStatus.BLOCKED));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Describe what is blocking…")).toBeInTheDocument()
+    );
+  });
+
+  it("shows correct placeholder for FAILED status in record form", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    const statusSelect = screen.getByRole("combobox");
+    await userEvent.selectOptions(statusSelect, String(ResultStatus.FAILED));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Describe what failed…")).toBeInTheDocument()
+    );
+  });
+
   it("shows error when selectRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockRejectedValue(new Error("select error"));
