@@ -1315,6 +1315,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_case_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "".to_owned(),
+                case_path: "auth/login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
     async fn get_suite_rejects_empty_slug() {
         let s = server();
         let err = s
