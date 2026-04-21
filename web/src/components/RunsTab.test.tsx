@@ -916,4 +916,38 @@ describe("RunsTab", () => {
     expect(screen.getByText("Saving…")).toBeInTheDocument();
     resolve!({ result: undefined });
   });
+
+  it('shows "Loading…" while pending cases are loading after run expanded', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.getPendingCases).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() =>
+      expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0)
+    );
+    resolve!({ cases: [mockCase], totalInScope: 1 });
+  });
+
+  it('shows "Loading steps…" while case body is loading in record form', async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    let resolve: (v: unknown) => void;
+    vi.mocked(client.getCase).mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }) as never
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => expect(screen.getByText("Loading steps…")).toBeInTheDocument());
+    resolve!({ case: mockCase, body: "## Steps" });
+  });
 });
