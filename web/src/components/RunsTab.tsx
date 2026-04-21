@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import { useAnnounce } from "../hooks/useAnnounce";
-import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
-import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import { useAnnounce } from "@/hooks/useAnnounce";
+import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
+import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
 

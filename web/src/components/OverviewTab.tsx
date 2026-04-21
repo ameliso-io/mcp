@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { AffectedCase, CoverageEntry, RunMeta } from "../gen/ameliso/v1/types_pb";
-import { ResultStatus, RunStatus } from "../gen/ameliso/v1/types_pb";
-import { useAnnounce } from "../hooks/useAnnounce";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/types_pb";
+import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
+import { useAnnounce } from "@/hooks/useAnnounce";
 import styles from "./OverviewTab.module.css";
 
 interface Props {

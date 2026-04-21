@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { Case } from "../gen/ameliso/v1/types_pb";
-import { Priority } from "../gen/ameliso/v1/types_pb";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { Case } from "@/gen/ameliso/v1/types_pb";
+import { Priority } from "@/gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
-import { useAnnounce } from "../hooks/useAnnounce";
+import { useAnnounce } from "@/hooks/useAnnounce";
 import styles from "./CasesTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });

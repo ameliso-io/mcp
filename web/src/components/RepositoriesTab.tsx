@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { Repository } from "../gen/ameliso/v1/types_pb";
-import { useAnnounce } from "../hooks/useAnnounce";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { Repository } from "@/gen/ameliso/v1/types_pb";
+import { useAnnounce } from "@/hooks/useAnnounce";
 import styles from "./RepositoriesTab.module.css";
 
 interface Props {

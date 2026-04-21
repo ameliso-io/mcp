@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { Suite, Case } from "../gen/ameliso/v1/types_pb";
-import { useAnnounce } from "../hooks/useAnnounce";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
+import { useAnnounce } from "@/hooks/useAnnounce";
 import styles from "./SuitesTab.module.css";
 
 interface Props {
