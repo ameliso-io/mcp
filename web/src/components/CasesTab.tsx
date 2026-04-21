@@ -15,18 +15,31 @@ const card = {
   marginBottom: '16px',
 }
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  border: '1px solid #e2e8f0',
+  borderRadius: '6px',
+  fontSize: '14px',
+  boxSizing: 'border-box',
+}
+
 function priorityColor(p: string): string {
-  if (p.includes('HIGH') || p === '3') return '#ef4444'
-  if (p.includes('MEDIUM') || p === '2') return '#f97316'
-  if (p.includes('LOW') || p === '1') return '#22c55e'
-  return '#94a3b8'
+  switch (p) {
+    case 'high': return '#ef4444'
+    case 'medium': return '#f97316'
+    case 'low': return '#22c55e'
+    default: return '#94a3b8'
+  }
 }
 
 function priorityLabel(p: string): string {
-  if (p.includes('HIGH') || p === '3') return 'High'
-  if (p.includes('MEDIUM') || p === '2') return 'Medium'
-  if (p.includes('LOW') || p === '1') return 'Low'
-  return '—'
+  switch (p) {
+    case 'high': return 'High'
+    case 'medium': return 'Medium'
+    case 'low': return 'Low'
+    default: return '—'
+  }
 }
 
 export default function CasesTab({ repoPath }: Props) {
@@ -322,13 +335,4 @@ export default function CasesTab({ repoPath }: Props) {
       </div>
     </div>
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 12px',
-  border: '1px solid #e2e8f0',
-  borderRadius: '6px',
-  fontSize: '14px',
-  boxSizing: 'border-box',
 }

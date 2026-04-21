@@ -5,5 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    proxy: {
+      '/ameliso.v1.AmelisoService': {
+        target: 'http://localhost:50051',
+        changeOrigin: true,
+      },
+    },
   },
 })
