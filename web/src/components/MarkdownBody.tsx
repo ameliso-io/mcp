@@ -2,6 +2,7 @@
 
 import DOMPurify from "dompurify";
 import { marked } from "marked";
+import { useMemo } from "react";
 import "./MarkdownBody.css";
 
 interface Props {
@@ -10,8 +11,10 @@ interface Props {
 }
 
 export default function MarkdownBody({ body, maxHeight }: Props) {
-  const raw = marked(body, { async: false }) as string;
-  const html = DOMPurify.sanitize(raw);
+  const html = useMemo(() => {
+    const raw = marked(body, { async: false }) as string;
+    return DOMPurify.sanitize(raw);
+  }, [body]);
   return (
     <div
       className="md-body"
