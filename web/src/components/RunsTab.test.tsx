@@ -494,12 +494,12 @@ describe("RunsTab", () => {
       totalInScope: 1,
     } as never);
     let capturedCallback: (() => Promise<void>) | null = null;
-    const spy = vi.spyOn(globalThis, "setInterval").mockImplementation(
-      (fn: TimerHandler, delay?: number) => {
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
         if (delay === 30_000) capturedCallback = fn as () => Promise<void>;
         return 0 as unknown as ReturnType<typeof setInterval>;
-      }
-    );
+      });
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
@@ -568,12 +568,12 @@ describe("RunsTab", () => {
       .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
       .mockRejectedValueOnce(new Error("poll error"));
     let capturedCallback: (() => Promise<void>) | null = null;
-    const spy = vi.spyOn(globalThis, "setInterval").mockImplementation(
-      (fn: TimerHandler, delay?: number) => {
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
         if (delay === 30_000) capturedCallback = fn as () => Promise<void>;
         return 0 as unknown as ReturnType<typeof setInterval>;
-      }
-    );
+      });
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
