@@ -282,7 +282,10 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("+ New Suite"));
     await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "e2e");
     await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "E2E Tests");
-    await userEvent.type(screen.getByRole("textbox", { name: "Description" }), "End to end regression suite");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Description" }),
+      "End to end regression suite"
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
