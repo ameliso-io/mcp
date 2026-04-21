@@ -20,10 +20,10 @@ interface FilterState {
 
 interface Props {
   repoId: string;
-  initialSearch?: string;
-  initialPriorityFilter?: Priority;
-  initialTagFilter?: string;
-  initialSortBy?: "path" | "priority";
+  initialSearch?: string | undefined;
+  initialPriorityFilter?: Priority | undefined;
+  initialTagFilter?: string | undefined;
+  initialSortBy?: "path" | "priority" | undefined;
   onFiltersChange?: (filters: FilterState) => void;
 }
 
