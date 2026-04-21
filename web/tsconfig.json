@@ -31,7 +31,8 @@
       ]
     },
     "noImplicitReturns": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true
   },
   "include": [
     "next-env.d.ts",
