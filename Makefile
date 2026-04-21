@@ -1,8 +1,11 @@
-.PHONY: install build test fmt lint spell pre-commit pre-push
+.PHONY: install dev build test fmt lint spell pre-commit pre-push
 
 install:
 	pnpm install
 	cargo fetch
+
+dev:
+	pnpm dev
 
 build:
 	cargo build --release

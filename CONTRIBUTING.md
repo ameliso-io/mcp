@@ -24,11 +24,11 @@ Git hooks activate automatically after `pnpm install`:
 
 | Directory | Purpose |
 |-----------|---------|
-| `server/` | gRPC server (tonic 0.12). Implements `AmelisoService` (18 RPCs). |
-| `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 18 RPCs as MCP tools. |
-| `cli/` | CLI binary (clap 4). Wraps all 18 RPCs as subcommands. |
-| `proto/` | Protobuf definitions for `AmelisoService`. |
-| `web/` | Browser client (gRPC-web). Not yet implemented. |
+| `server/` | gRPC server (tonic 0.12). Implements `AmelisoService` (20 RPCs). |
+| `server/proto/` | Protobuf definitions for `AmelisoService`. |
+| `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 20 RPCs as 21 MCP tools. |
+| `cli/` | CLI binary (clap 4). Wraps all RPCs as subcommands. |
+| `web/` | Browser client (Vite + React + TypeScript). Talks gRPC-Web to the server. |
 
 ## Engineering constraints
 
@@ -47,6 +47,24 @@ cargo test                   # all workspace tests
 cargo test -p ameliso-server # server + integration tests only
 ```
 
+## Web client development
+
+Run both the gRPC server and the Vite dev server together:
+
+```sh
+pnpm dev       # or: make dev
+```
+
+The web client is at http://localhost:5173 and proxies gRPC-Web calls to http://localhost:50051.
+
+To regenerate the TypeScript proto bindings after proto changes:
+
+```sh
+cd server && buf generate
+```
+
+Generated TypeScript files land in `web/src/gen/`. Commit them.
+
 ## Proto changes
 
 Proto files live in `server/proto/ameliso/v1/`. After editing:
@@ -54,6 +72,7 @@ Proto files live in `server/proto/ameliso/v1/`. After editing:
 ```sh
 cd server && buf lint         # lint proto schema
 cargo build -p ameliso-server # regenerates Rust bindings via build.rs
+cd server && buf generate     # regenerate TypeScript bindings for web/
 ```
 
 Do not commit generated files from `server/generated/`.

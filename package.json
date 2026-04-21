@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev": "concurrently --names \"grpc,web\" --prefix-colors \"blue,green\" \"cargo run -p ameliso-server\" \"pnpm --filter ameliso-web dev\""
   },
   "packageManager": "pnpm@9.0.0",
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "husky": "^9.1.7"
   }
 }
