@@ -255,6 +255,7 @@ export default function CasesTab({ repoId }: Props) {
       <div className={styles.header}>
         <h2 className={styles.title}>Cases</h2>
         <button
+          type="button"
           onClick={() => {
             if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
             setShowCreate(!showCreate);
@@ -417,6 +418,7 @@ export default function CasesTab({ repoId }: Props) {
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             className={styles.errorDismiss}
             aria-label="Dismiss"
@@ -578,6 +580,7 @@ export default function CasesTab({ repoId }: Props) {
                       </span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => startEdit(c)}
                       aria-label={`Edit ${c.path}`}
                       className={styles.btnOutlineSm}

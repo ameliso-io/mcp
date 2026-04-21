@@ -149,6 +149,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <div className={styles.headerActions}>
           {repos.length > 0 && (
             <button
+              type="button"
               onClick={handleRefreshAll}
               disabled={refreshing}
               aria-label="Refresh All"
@@ -196,6 +197,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
             className={styles.errorDismiss}
             aria-label="Dismiss"
@@ -230,6 +232,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
+            type="button"
             onClick={() => setSearch("")}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >
@@ -262,15 +265,24 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
                 </div>
                 <div className={styles.repoActions}>
                   {!isActive ? (
-                    <button className={styles.btnPrimary} onClick={() => onRepoSelect(repo.id)}>
+                    <button
+                      type="button"
+                      className={styles.btnPrimary}
+                      onClick={() => onRepoSelect(repo.id)}
+                    >
                       Use
                     </button>
                   ) : (
-                    <button className={styles.btnOutline} onClick={() => onRepoSelect("")}>
+                    <button
+                      type="button"
+                      className={styles.btnOutline}
+                      onClick={() => onRepoSelect("")}
+                    >
                       Deselect
                     </button>
                   )}
                   <button
+                    type="button"
                     className={styles.btnSecondary}
                     disabled={syncing === repo.id}
                     onClick={() => handleSync(repo.id)}
