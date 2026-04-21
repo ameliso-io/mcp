@@ -1209,4 +1209,19 @@ describe("RunsTab", () => {
     expect(screen.queryByRole("heading", { name: "Create Run" })).not.toBeInTheDocument();
     expect(screen.getByText("+ New Run")).toBeInTheDocument();
   });
+
+  it("uses singular 'case' in bulk pass confirm when exactly one case is pending", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [mockCase],
+      totalInScope: 1,
+    } as never);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("All Passed (1)"));
+    await userEvent.click(screen.getByText("All Passed (1)"));
+    expect(confirmSpy).toHaveBeenCalledWith("Mark all 1 pending case as Passed?");
+  });
 });
