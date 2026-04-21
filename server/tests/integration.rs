@@ -361,7 +361,10 @@ async fn coverage_never_for_unrun_cases() {
     write_case(tmp.path(), "billing/invoice", "Invoice");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp, status_filter: 0 }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp,
+            status_filter: 0,
+        }))
         .await
         .unwrap()
         .into_inner();
@@ -390,7 +393,10 @@ async fn coverage_shows_latest_run_status() {
     write_result(tmp.path(), "2026-01-02-run2", "auth/login", "failed");
 
     let report = c
-        .get_coverage_report(Request::new(pb::GetCoverageReportRequest { repo_path: rp, status_filter: 0 }))
+        .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
+            repo_path: rp,
+            status_filter: 0,
+        }))
         .await
         .unwrap()
         .into_inner();
@@ -439,7 +445,10 @@ async fn coverage_report_status_filter() {
         .unwrap()
         .into_inner();
     assert_eq!(never.entries.len(), 1);
-    assert_eq!(never.entries[0].case.as_ref().unwrap().path, "billing/invoice");
+    assert_eq!(
+        never.entries[0].case.as_ref().unwrap().path,
+        "billing/invoice"
+    );
 
     // Filter: passed — only login
     let passed = c
@@ -704,6 +713,45 @@ async fn update_suite_changes_cases() {
     assert_eq!(suite.name, "Smoke Suite");
     assert_eq!(suite.cases.len(), 2);
     assert!(suite.cases.contains(&"billing/checkout".to_owned()));
+}
+
+#[tokio::test]
+async fn delete_suite_removes_file() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke".to_owned(),
+        cases: vec!["auth/login".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    assert!(tmp.path().join("suites/smoke.yaml").exists());
+
+    c.delete_suite(Request::new(pb::DeleteSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+    }))
+    .await
+    .unwrap();
+
+    assert!(!tmp.path().join("suites/smoke.yaml").exists());
+
+    // Second delete → NotFound
+    let err = c
+        .delete_suite(Request::new(pb::DeleteSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+        }))
+        .await
+        .unwrap_err();
+    assert_eq!(err.code(), tonic::Code::NotFound);
 }
 
 #[tokio::test]
