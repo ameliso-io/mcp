@@ -246,6 +246,13 @@
   background: var(--color-surface);
 }
 
+.confirmText {
+  font-size: 13px;
+  color: var(--color-danger);
+  font-weight: 600;
+  align-self: center;
+}
+
 .headerActions {
   display: flex;
   gap: 8px;

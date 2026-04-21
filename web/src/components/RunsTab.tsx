@@ -76,6 +76,13 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   const [caseBodyLoading, setCaseBodyLoading] = useState(false);
   const [bulkPassing, setBulkPassing] = useState(false);
 
+  const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
+  const [confirmingFinalize, setConfirmingFinalize] = useState<{
+    runId: string;
+    status: RunStatus;
+  } | null>(null);
+  const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
+
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
@@ -235,8 +242,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleFinalize(runId: string, status: RunStatus) {
-    const label = status === RunStatus.COMPLETED ? "complete" : "abort";
-    if (!confirm(`Mark run as ${label}?`)) return;
+    setConfirmingFinalize(null);
     try {
       await client.finalizeRun({ repoId, runId, status });
       setSelectedRunId(null);
@@ -249,12 +255,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   async function handleBulkPass(runId: string) {
     if (pendingCases.length === 0) return;
-    if (
-      !confirm(
-        `Mark all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""} as Passed?`
-      )
-    )
-      return;
+    setConfirmingBulkPass(null);
     setBulkPassing(true);
     try {
       for (const c of pendingCases) {
@@ -277,13 +278,13 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleDeleteRun(runId: string) {
-    if (!confirm(`Delete run "${runId}"?`)) return;
     try {
       await client.deleteRun({ repoId, runId });
       if (selectedRunId === runId) {
         setSelectedRunId(null);
         setPendingCases([]);
       }
+      setConfirmingDeleteRun(null);
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -446,16 +447,45 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                 {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                 {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
                 <span className={styles.runDate}>{run.date}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteRun(run.id);
-                  }}
-                  aria-label={`Delete ${run.id}`}
-                  className={styles.btnDangerSm}
-                >
-                  Delete
-                </button>
+                {confirmingDeleteRun === run.id ? (
+                  <>
+                    <span className={styles.confirmText}>Delete?</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteRun(run.id);
+                      }}
+                      aria-label={`Confirm delete ${run.id}`}
+                      className={styles.btnDangerSm}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmingDeleteRun(null);
+                      }}
+                      aria-label="Cancel delete"
+                      className={styles.btnOutlineSm}
+                    >
+                      No
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmingDeleteRun(run.id);
+                    }}
+                    aria-label={`Delete ${run.id}`}
+                    className={styles.btnDangerSm}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
 
@@ -598,27 +628,92 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                       </p>
                       {run.status === RunStatus.IN_PROGRESS && (
                         <div className={styles.pendingActions}>
-                          {pendingCases.length > 0 && (
-                            <button
-                              onClick={() => handleBulkPass(run.id)}
-                              disabled={bulkPassing}
-                              className={styles.btnBlueSm}
-                            >
-                              {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
-                            </button>
+                          {pendingCases.length > 0 &&
+                            (confirmingBulkPass === run.id ? (
+                              <>
+                                <span className={styles.confirmText}>Pass all?</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleBulkPass(run.id)}
+                                  disabled={bulkPassing}
+                                  className={styles.btnBlueSm}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmingBulkPass(null)}
+                                  className={styles.btnOutlineSm}
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmingBulkPass(run.id)}
+                                disabled={bulkPassing}
+                                className={styles.btnBlueSm}
+                              >
+                                {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
+                              </button>
+                            ))}
+                          {confirmingFinalize?.runId === run.id ? (
+                            <>
+                              <span className={styles.confirmText}>
+                                {confirmingFinalize.status === RunStatus.COMPLETED
+                                  ? "Complete?"
+                                  : "Abort?"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleFinalize(run.id, confirmingFinalize.status)
+                                }
+                                className={
+                                  confirmingFinalize.status === RunStatus.COMPLETED
+                                    ? styles.btnGreenSm
+                                    : styles.btnRedSm
+                                }
+                              >
+                                Yes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmingFinalize(null)}
+                                className={styles.btnOutlineSm}
+                              >
+                                No
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setConfirmingFinalize({
+                                    runId: run.id,
+                                    status: RunStatus.COMPLETED,
+                                  })
+                                }
+                                className={styles.btnGreenSm}
+                              >
+                                Complete Run
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setConfirmingFinalize({
+                                    runId: run.id,
+                                    status: RunStatus.ABORTED,
+                                  })
+                                }
+                                className={styles.btnRedSm}
+                              >
+                                Abort Run
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={() => handleFinalize(run.id, RunStatus.COMPLETED)}
-                            className={styles.btnGreenSm}
-                          >
-                            Complete Run
-                          </button>
-                          <button
-                            onClick={() => handleFinalize(run.id, RunStatus.ABORTED)}
-                            className={styles.btnRedSm}
-                          >
-                            Abort Run
-                          </button>
                         </div>
                       )}
                     </div>

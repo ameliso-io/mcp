@@ -29,6 +29,8 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
 
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
   // Edit suite state
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -112,10 +114,10 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }
 
   async function handleDelete(slug: string) {
-    if (!confirm(`Delete suite "${slug}"?`)) return;
     try {
       await client.deleteSuite({ repoId, slug });
       if (expanded === slug) setExpanded(null);
+      setConfirmingDelete(null);
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -368,16 +370,45 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        handleDelete(suite.slug);
-                      }}
-                      aria-label={`Delete ${suite.slug}`}
-                      className={styles.btnDangerSm}
-                    >
-                      Delete
-                    </button>
+                    {confirmingDelete === suite.slug ? (
+                      <>
+                        <span className={styles.confirmText}>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            handleDelete(suite.slug);
+                          }}
+                          aria-label={`Confirm delete ${suite.slug}`}
+                          className={styles.btnDangerSm}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setConfirmingDelete(null);
+                          }}
+                          aria-label="Cancel delete"
+                          className={styles.btnOutlineSm}
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setConfirmingDelete(suite.slug);
+                        }}
+                        aria-label={`Delete ${suite.slug}`}
+                        className={styles.btnDangerSm}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                   {suite.description && <p className={styles.suiteDesc}>{suite.description}</p>}
                 </div>

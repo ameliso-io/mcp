@@ -65,10 +65,10 @@ describe("SuitesTab", () => {
   });
 
   it("calls deleteSuite when delete confirmed", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Delete"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
     await waitFor(() =>
       expect(client.deleteSuite).toHaveBeenCalledWith(expect.objectContaining({ slug: "smoke" }))
     );
@@ -153,10 +153,10 @@ describe("SuitesTab", () => {
 
   it("shows error when deleteSuite fails", async () => {
     vi.mocked(client.deleteSuite).mockRejectedValue(new Error("delete failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Delete"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
     await waitFor(() => expect(screen.getByText("delete failed")).toBeInTheDocument());
   });
 
@@ -200,12 +200,12 @@ describe("SuitesTab", () => {
   });
 
   it("collapses expanded suite when it is deleted", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
     await waitFor(() =>
       expect(client.deleteSuite).toHaveBeenCalledWith(expect.objectContaining({ slug: "smoke" }))
     );
@@ -253,12 +253,13 @@ describe("SuitesTab", () => {
     await waitFor(() => expect(client.updateSuite).toHaveBeenCalled());
   });
 
-  it("does not call deleteSuite when confirm cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("does not call deleteSuite when inline confirm cancelled", async () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Delete"));
     await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel delete" }));
     expect(client.deleteSuite).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete smoke" })).toBeInTheDocument();
   });
 
   it("handles listCases failure silently when suite expanded", async () => {

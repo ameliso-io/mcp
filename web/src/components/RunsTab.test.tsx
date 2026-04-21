@@ -158,13 +158,14 @@ describe("RunsTab", () => {
   });
 
   it("calls finalizeRun when Complete Run clicked", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
     await waitFor(() =>
       expect(client.finalizeRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke", status: RunStatus.COMPLETED })
@@ -173,13 +174,14 @@ describe("RunsTab", () => {
   });
 
   it("calls finalizeRun with ABORTED when Abort Run clicked", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Abort Run"));
     await userEvent.click(screen.getByText("Abort Run"));
+    await waitFor(() => screen.getByText("Abort?"));
+    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
     await waitFor(() =>
       expect(client.finalizeRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke", status: RunStatus.ABORTED })
@@ -188,13 +190,14 @@ describe("RunsTab", () => {
   });
 
   it("calls recordResult for each pending case when All Passed clicked", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText(/All Passed/));
     await userEvent.click(screen.getByText(/All Passed/));
+    await waitFor(() => screen.getByText("Pass all?"));
+    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
     await waitFor(() =>
       expect(client.recordResult).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -207,11 +210,12 @@ describe("RunsTab", () => {
   });
 
   it("calls deleteRun when Delete confirmed", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.deleteRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke" })
@@ -301,10 +305,11 @@ describe("RunsTab", () => {
   it("shows error when deleteRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.deleteRun).mockRejectedValue(new Error("delete error"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() => expect(screen.getByText("delete error")).toBeInTheDocument());
   });
 
@@ -331,23 +336,25 @@ describe("RunsTab", () => {
   it("shows error when handleBulkPass fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.recordResult).mockRejectedValue(new Error("bulk error"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText(/All Passed/));
     await userEvent.click(screen.getByText(/All Passed/));
+    await waitFor(() => screen.getByText("Pass all?"));
+    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
     await waitFor(() => expect(screen.getByText("bulk error")).toBeInTheDocument());
   });
 
   it("collapses selected run when it is deleted", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() =>
       expect(client.deleteRun).toHaveBeenCalledWith(
         expect.objectContaining({ runId: "2026-01-01-smoke" })
@@ -432,24 +439,27 @@ describe("RunsTab", () => {
   it("shows error when finalizeRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.finalizeRun).mockRejectedValue(new Error("finalize failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Yes" }));
     await waitFor(() => expect(screen.getByText("finalize failed")).toBeInTheDocument());
   });
 
-  it("does not finalize run when confirm cancelled", async () => {
+  it("does not finalize run when inline confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Complete Run"));
     await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(screen.getByRole("button", { name: "No" }));
     expect(client.finalizeRun).not.toHaveBeenCalled();
+    expect(screen.getByText("Complete Run")).toBeInTheDocument();
   });
 
   it("opens record form even when getCase fails to fetch body", async () => {
@@ -488,24 +498,28 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
   });
 
-  it("does not call recordResult when bulk pass confirm cancelled", async () => {
+  it("does not call recordResult when bulk pass inline confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("All Passed (1)"));
     await userEvent.click(screen.getByText("All Passed (1)"));
+    await waitFor(() => screen.getByText("Pass all?"));
+    await userEvent.click(screen.getByRole("button", { name: "No" }));
     expect(client.recordResult).not.toHaveBeenCalled();
+    expect(screen.getByText("All Passed (1)")).toBeInTheDocument();
   });
 
-  it("does not delete run when confirm cancelled", async () => {
+  it("does not delete run when inline confirm cancelled", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RunsTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel delete" }));
     expect(client.deleteRun).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" })).toBeInTheDocument();
   });
 
   it("shows Blocked styling and placeholder in record form", async () => {

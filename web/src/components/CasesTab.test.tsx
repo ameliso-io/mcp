@@ -76,10 +76,10 @@ describe("CasesTab", () => {
 
   it("calls deleteCase when delete confirmed", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: "cases/auth/login.md" } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
-    await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
     await waitFor(() =>
       expect(client.deleteCase).toHaveBeenCalledWith(
         expect.objectContaining({ casePath: "auth/login" })
@@ -87,12 +87,13 @@ describe("CasesTab", () => {
     );
   });
 
-  it("does not call deleteCase when confirm cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("does not call deleteCase when inline confirm cancelled", async () => {
     render(<CasesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel delete" }));
     expect(client.deleteCase).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete auth/login" })).toBeInTheDocument();
   });
 
   it("opens edit form with pre-filled values when Edit clicked", async () => {
@@ -163,10 +164,10 @@ describe("CasesTab", () => {
 
   it("shows error when deleteCase fails", async () => {
     vi.mocked(client.deleteCase).mockRejectedValue(new Error("delete failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<CasesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("Delete"));
-    await userEvent.click(screen.getByText("Delete"));
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
     await waitFor(() => expect(screen.getByText("delete failed")).toBeInTheDocument());
   });
 
@@ -271,12 +272,12 @@ describe("CasesTab", () => {
 
   it("collapses expanded case when it is deleted", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue({ filePath: "cases/auth/login.md" } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
     await waitFor(() => screen.getByText(/Go to \/login/));
-    await userEvent.click(screen.getByText("Delete"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
     await waitFor(() =>
       expect(client.deleteCase).toHaveBeenCalledWith(
         expect.objectContaining({ casePath: "auth/login" })

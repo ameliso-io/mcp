@@ -79,22 +79,23 @@ describe("RepositoriesTab", () => {
     await waitFor(() => expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
   });
 
-  it("calls removeRepository after confirm", async () => {
+  it("calls removeRepository after inline confirm", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByText("Remove"));
-    await userEvent.click(screen.getByText("Remove"));
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
     await waitFor(() => expect(client.removeRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
   });
 
-  it("does not call removeRepository when confirm cancelled", async () => {
+  it("does not call removeRepository when inline confirm cancelled", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByText("Remove"));
-    await userEvent.click(screen.getByText("Remove"));
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel remove" }));
     expect(client.removeRepository).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Remove owner/repo" })).toBeInTheDocument();
   });
 
   it("shows and dismisses error", async () => {
@@ -129,10 +130,10 @@ describe("RepositoriesTab", () => {
   it("shows error when removeRepository fails", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     vi.mocked(client.removeRepository).mockRejectedValue(new Error("remove failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByText("Remove"));
-    await userEvent.click(screen.getByText("Remove"));
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
     await waitFor(() => expect(screen.getByText("remove failed")).toBeInTheDocument());
   });
 

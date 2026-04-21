@@ -53,6 +53,7 @@ export default function CasesTab({ repoId }: Props) {
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
@@ -182,10 +183,10 @@ export default function CasesTab({ repoId }: Props) {
   }
 
   async function handleDelete(casePath: string) {
-    if (!confirm(`Delete case "${casePath}"?`)) return;
     try {
       await client.deleteCase({ repoId, casePath });
       if (expandedPath === casePath) setExpandedPath(null);
+      setConfirmingDelete(null);
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -560,16 +561,45 @@ export default function CasesTab({ repoId }: Props) {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(c.path);
-                      }}
-                      aria-label={`Delete ${c.path}`}
-                      className={styles.btnDangerSm}
-                    >
-                      Delete
-                    </button>
+                    {confirmingDelete === c.path ? (
+                      <>
+                        <span className={styles.confirmText}>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(c.path);
+                          }}
+                          aria-label={`Confirm delete ${c.path}`}
+                          className={styles.btnDangerSm}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmingDelete(null);
+                          }}
+                          aria-label="Cancel delete"
+                          className={styles.btnOutlineSm}
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmingDelete(c.path);
+                        }}
+                        aria-label={`Delete ${c.path}`}
+                        className={styles.btnDangerSm}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

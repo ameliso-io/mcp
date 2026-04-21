@@ -21,6 +21,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const prevActiveRef = useRef(activeRepoId);
 
   const load = useCallback(async () => {
@@ -124,10 +125,10 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     : repos;
 
   async function handleRemove(id: string) {
-    if (!confirm("Remove this repository connection?")) return;
     setError(null);
     try {
       await client.removeRepository({ id });
+      setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       setError(errorMessage(e));
@@ -266,9 +267,36 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
                 >
                   {syncing === repo.id ? "Syncing…" : "Sync"}
                 </button>
-                <button className={styles.btnDanger} onClick={() => handleRemove(repo.id)}>
-                  Remove
-                </button>
+                {confirmingRemove === repo.id ? (
+                  <>
+                    <span className={styles.confirmText}>Remove?</span>
+                    <button
+                      type="button"
+                      className={styles.btnDanger}
+                      onClick={() => handleRemove(repo.id)}
+                      aria-label={`Confirm remove ${repo.fullName}`}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btnOutline}
+                      onClick={() => setConfirmingRemove(null)}
+                      aria-label="Cancel remove"
+                    >
+                      No
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.btnDanger}
+                    onClick={() => setConfirmingRemove(repo.id)}
+                    aria-label={`Remove ${repo.fullName}`}
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             </div>
             {repo.addedAt && <div className={styles.label}>Added {repo.addedAt}</div>}
