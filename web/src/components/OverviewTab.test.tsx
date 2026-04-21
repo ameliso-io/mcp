@@ -4,7 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import OverviewTab from './OverviewTab'
 import { client } from '../client'
 import { ResultStatus, RunStatus } from '../gen/ameliso/v1/types_pb'
-import type { CoverageEntry, RunMeta } from '../gen/ameliso/v1/types_pb'
+import type { AffectedCase, CoverageEntry, RunMeta } from '../gen/ameliso/v1/types_pb'
 
 vi.mock('../client')
 
@@ -68,6 +68,59 @@ describe('OverviewTab', () => {
     await userEvent.click(screen.getByText('Check Diff'))
     await waitFor(() => expect(client.getAffectedCases).toHaveBeenCalledWith(
       expect.objectContaining({ repoPath: '/repo' })
+    ))
+  })
+
+  it('shows "no cases affected" when diff returns empty list', async () => {
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText(/No cases affected/)).toBeInTheDocument())
+  })
+
+  it('shows affected cases list when diff returns cases', async () => {
+    const affectedCase = {
+      case: { path: 'auth/login', title: 'User Login', priority: 'high', tags: [], description: '', createdAt: '', updatedAt: '' },
+      reason: 'modified',
+    } as unknown as AffectedCase
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [affectedCase], reason: '' } as never)
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('modified')).toBeInTheDocument())
+  })
+
+  it('calls onGoToRuns when Go to Runs clicked', async () => {
+    const activeRun = {
+      id: 'run-xyz', tester: 'bob', environment: 'prod',
+      suite: 'smoke', date: '2026-01-01', status: RunStatus.IN_PROGRESS,
+    } as unknown as RunMeta
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never)
+    const onGoToRuns = vi.fn()
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} onGoToRuns={onGoToRuns} />)
+    await waitFor(() => screen.getByText('Go to Runs'))
+    await userEvent.click(screen.getByText('Go to Runs'))
+    expect(onGoToRuns).toHaveBeenCalled()
+  })
+
+  it('shows affectedError when getAffectedCases throws', async () => {
+    vi.mocked(client.getAffectedCases).mockRejectedValue(new Error('network error'))
+    render(<OverviewTab repoPath="/repo" onRepoPathChange={() => {}} />)
+    await waitFor(() => screen.getByText('Check Diff'))
+    await userEvent.click(screen.getByText('Check Diff'))
+    await waitFor(() => expect(screen.getByText('network error')).toBeInTheDocument())
+  })
+
+  it('loads repo on form submit', async () => {
+    const onRepoPathChange = vi.fn()
+    render(<OverviewTab repoPath="" onRepoPathChange={onRepoPathChange} />)
+    const input = screen.getByPlaceholderText('/path/to/repo')
+    await userEvent.type(input, '/new/repo')
+    await userEvent.click(screen.getByText('Load'))
+    expect(onRepoPathChange).toHaveBeenCalledWith('/new/repo')
+    await waitFor(() => expect(client.getCoverageReport).toHaveBeenCalledWith(
+      expect.objectContaining({ repoPath: '/new/repo' })
     ))
   })
 })

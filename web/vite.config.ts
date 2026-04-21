@@ -22,10 +22,10 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/gen/**', 'src/test-setup.ts'],
       thresholds: {
-        statements: 93,
-        branches: 80,
+        statements: 95,
+        branches: 81,
         functions: 60,
-        lines: 93,
+        lines: 95,
       },
     },
   },
