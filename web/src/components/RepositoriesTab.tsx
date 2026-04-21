@@ -179,7 +179,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
           <p className={styles.emptyTitle}>No repositories connected</p>
           {configured ? (
             <p className={styles.emptyDesc}>
-              Click "Connect GitHub Repo" to install the GitHub App on your repositories.
+              Click &quot;Connect GitHub Repo&quot; to install the GitHub App on your repositories.
             </p>
           ) : (
             <p className={styles.emptyDesc}>
@@ -191,7 +191,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
 
       {!loading && repos.length > 0 && filteredRepos.length === 0 && (
         <div className={styles.emptyCard}>
-          <p className={styles.emptyTitle}>No results for "{search}"</p>
+          <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
             onClick={() => setSearch("")}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}

@@ -134,7 +134,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No repository selected</p>
           <p className={styles.emptyDesc}>
-            Go to the Repositories tab and click "Use" on a connected repository.
+            Go to the Repositories tab and click &quot;Use&quot; on a connected repository.
           </p>
         </div>
       )}
@@ -222,9 +222,7 @@ export default function OverviewTab({ repoId, onGoToRuns }: Props) {
 
       {repoId && (
         <div className={styles.card}>
-          <p className={`${styles.label} ${styles.sectionLabel}`}>
-            Affected Cases by Git Diff
-          </p>
+          <p className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</p>
           <form onSubmit={handleAffected} className={styles.affectedForm}>
             <input
               type="text"
