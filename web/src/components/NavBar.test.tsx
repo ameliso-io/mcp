@@ -58,10 +58,7 @@ describe("NavBar", () => {
       "href",
       `${BASE_PATH}/cases`
     );
-    expect(screen.getByRole("link", { name: "Runs" })).toHaveAttribute(
-      "href",
-      `${BASE_PATH}/runs`
-    );
+    expect(screen.getByRole("link", { name: "Runs" })).toHaveAttribute("href", `${BASE_PATH}/runs`);
     expect(screen.getByRole("link", { name: "Suites" })).toHaveAttribute(
       "href",
       `${BASE_PATH}/suites`

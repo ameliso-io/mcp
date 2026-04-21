@@ -10,11 +10,12 @@ import styles from "./SuitesTab.module.css";
 
 interface Props {
   repoId: string;
+  basePath: string;
   initialExpanded?: string;
   onExpandedChange?: (slug: string | null) => void;
 }
 
-export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }: Props) {
+export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -386,7 +387,7 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                       </span>
                     </button>
                     <Link
-                      href={`/runs?suite=${encodeURIComponent(suite.slug)}`}
+                      href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as `${string}/runs${string}`}
                       aria-label={`Run ${suite.slug}`}
                       className={styles.btnGreenSm}
                     >

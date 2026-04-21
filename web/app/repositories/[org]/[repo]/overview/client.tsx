@@ -6,8 +6,8 @@ import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 function OverviewInner() {
-  const { repoId } = useRepoParams();
-  return <OverviewTab repoId={repoId} />;
+  const { repoId, basePath } = useRepoParams();
+  return <OverviewTab repoId={repoId} basePath={basePath} />;
 }
 
 export default function OverviewPageClient() {

@@ -11,6 +11,7 @@ import styles from "./OverviewTab.module.css";
 
 interface Props {
   repoId: string;
+  basePath: string;
 }
 
 function statusSortOrder(s: ResultStatus): number {
@@ -47,7 +48,7 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoId }: Props) {
+export default function OverviewTab({ repoId, basePath }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -191,7 +192,7 @@ export default function OverviewTab({ repoId }: Props) {
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
-                <Link href="/runs" className={styles.goToRunsBtn}>
+                <Link href={`${basePath}/runs` as `${string}/runs`} className={styles.goToRunsBtn}>
                   Go to Runs
                 </Link>
               </div>

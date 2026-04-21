@@ -31,6 +31,7 @@ function SuitesInner() {
   return (
     <SuitesTab
       repoId={repoId}
+      basePath={basePath}
       initialExpanded={initialExpanded}
       onExpandedChange={handleExpandedChange}
     />
