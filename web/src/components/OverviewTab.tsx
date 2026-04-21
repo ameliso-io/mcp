@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useId } from 'react'
 import { client } from '../client'
 import { errorMessage } from '../errorMessage'
 import type { AffectedCase, CoverageEntry, RunMeta } from '../gen/ameliso/v1/types_pb'
@@ -48,6 +48,8 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
   const [affected, setAffected] = useState<AffectedCase[] | null>(null)
   const [affectedLoading, setAffectedLoading] = useState(false)
   const [affectedError, setAffectedError] = useState<string | null>(null)
+  const repoPathId = useId()
+  const sinceRefId = useId()
 
   const load = useCallback(async (path: string) => {
     if (!path) return
@@ -118,9 +120,9 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
       <h2 className={styles.title}>Overview</h2>
 
       <div className={styles.card}>
-        <p className={styles.label}>Repository Path</p>
+        <label htmlFor={repoPathId} className={styles.label}>Repository Path</label>
         <form onSubmit={handleSubmit} className={styles.repoForm}>
-          <input type="text" value={inputPath} onChange={e => setInputPath(e.target.value)} placeholder="/path/to/repo" className={styles.repoInput} />
+          <input id={repoPathId} type="text" value={inputPath} onChange={e => setInputPath(e.target.value)} placeholder="/path/to/repo" className={styles.repoInput} />
           <button type="submit" className={styles.btn}>Load</button>
         </form>
       </div>
@@ -209,9 +211,9 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
 
       {repoPath && (
         <div className={styles.card}>
-          <p className={styles.label}>Affected Cases by Git Diff</p>
+          <label htmlFor={sinceRefId} className={styles.label}>Affected Cases by Git Diff</label>
           <form onSubmit={handleAffected} className={styles.affectedForm}>
-            <input type="text" value={sinceRef} onChange={e => setSinceRef(e.target.value)} placeholder="Since ref (default: last run commit)" className={styles.repoInput} />
+            <input id={sinceRefId} type="text" value={sinceRef} onChange={e => setSinceRef(e.target.value)} placeholder="Since ref (default: last run commit)" className={styles.repoInput} />
             <button type="submit" disabled={affectedLoading} className={styles.btn}>
               {affectedLoading ? 'Checking…' : 'Check Diff'}
             </button>
@@ -219,7 +221,7 @@ export default function OverviewTab({ repoPath, onRepoPathChange, onGoToRuns }: 
           {affectedError && (
             <div className={styles.inlineError}>
               <span>{affectedError}</span>
-              <button className={styles.inlineErrorDismiss} onClick={() => setAffectedError(null)}>×</button>
+              <button className={styles.inlineErrorDismiss} onClick={() => setAffectedError(null)} aria-label="Dismiss error">×</button>
             </div>
           )}
           {affected !== null && (
