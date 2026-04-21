@@ -221,7 +221,11 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         </div>
       )}
 
-      {loading && <div className={styles.loadingMsg} role="status">Loading…</div>}
+      {loading && (
+        <div className={styles.loadingMsg} role="status">
+          Loading…
+        </div>
+      )}
 
       {!loading && suites.length === 0 && !error && (
         <div className={styles.emptyCard}>No suites found.</div>
@@ -335,7 +339,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
                       <div className={styles.caseList}>
                         {expandedCases.map((c) => (
                           <div key={c.path} className={styles.caseRow}>
-                            <span className={styles.caseDot} data-priority={c.priority} />
+                            <span className={styles.caseDot} data-priority={c.priority} aria-hidden="true" />
                             <span className={styles.casePath}>{c.path}</span>
                             <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map((t) => (
