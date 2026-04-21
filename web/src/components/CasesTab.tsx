@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue } from "react";
 import { client } from "../client";
 import { errorMessage } from "../errorMessage";
 import type { Case } from "../gen/ameliso/v1/types_pb";
 import { Priority } from "../gen/ameliso/v1/types_pb";
-import MarkdownBody from "./MarkdownBody";
+import dynamic from "next/dynamic";
+
+const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
 interface Props {
   repoId: string;
@@ -67,6 +69,7 @@ function priorityLabel(p: string): string {
 
 export default function CasesTab({ repoId }: Props) {
   const [cases, setCases] = useState<Case[]>([]);
+  const deferredCases = useDeferredValue(cases);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -74,6 +77,7 @@ export default function CasesTab({ repoId }: Props) {
   const [priorityFilter, setPriorityFilter] = useState<Priority>(Priority.UNSPECIFIED);
   const [tagFilter, setTagFilter] = useState("");
   const [sortBy, setSortBy] = useState<"path" | "priority">("priority");
+  const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Create case form
@@ -249,7 +253,8 @@ export default function CasesTab({ repoId }: Props) {
     );
   }
 
-  const allTags = Array.from(new Set(cases.flatMap((c) => c.tags)));
+  const allTags = Array.from(new Set(deferredCases.flatMap((c) => c.tags)));
+  const isStale = cases !== deferredCases;
 
   return (
     <div>
@@ -457,15 +462,15 @@ export default function CasesTab({ repoId }: Props) {
         )}
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as "path" | "priority")}
+          onChange={(e) => startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))}
           style={{ ...inputStyle, width: "auto" }}
         >
           <option value="priority">Sort: Priority</option>
           <option value="path">Sort: Path</option>
         </select>
-        {!loading && cases.length > 0 && (
-          <span style={{ fontSize: "13px", color: "#94a3b8", whiteSpace: "nowrap" }}>
-            {cases.length} case{cases.length !== 1 ? "s" : ""}
+        {!loading && deferredCases.length > 0 && (
+          <span style={{ fontSize: "13px", color: "#94a3b8", whiteSpace: "nowrap", ...(isStale ? { opacity: 0.5 } : {}) }}>
+            {deferredCases.length} case{deferredCases.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -505,14 +510,14 @@ export default function CasesTab({ repoId }: Props) {
         <div style={{ textAlign: "center", color: "#64748b", padding: "40px" }}>Loading…</div>
       )}
 
-      {!loading && cases.length === 0 && !error && (
+      {!loading && deferredCases.length === 0 && !error && (
         <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "40px" }}>
           No cases found.
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {[...cases]
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", ...(isStale ? { opacity: 0.6, pointerEvents: "none" as const } : {}) }}>
+        {[...deferredCases]
           .sort((a, b) => {
             if (sortBy === "priority") {
               const ord = { high: 0, medium: 1, low: 2 } as Record<string, number>;

@@ -1,5 +1,5 @@
 .noRepo {
-  color: #64748b;
+  color: var(--color-muted);
   padding: 40px;
   text-align: center;
 }
@@ -21,7 +21,7 @@
   background: white;
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   margin-bottom: 16px;
 }
 
@@ -55,7 +55,7 @@
 
 .label {
   font-size: 13px;
-  color: #64748b;
+  color: var(--color-muted);
   display: block;
   margin-bottom: 4px;
 }
@@ -63,7 +63,7 @@
 .input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
   box-sizing: border-box;
@@ -71,9 +71,9 @@
 
 .errorCard {
   composes: card;
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #991b1b;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -82,7 +82,7 @@
 .errorDismiss {
   background: none;
   border: none;
-  color: #991b1b;
+  color: var(--color-danger-text);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -92,13 +92,13 @@
 
 .loadingMsg {
   text-align: center;
-  color: #64748b;
+  color: var(--color-muted);
   padding: 40px;
 }
 
 .emptyCard {
   composes: card;
-  color: #64748b;
+  color: var(--color-muted);
   text-align: center;
   padding: 40px;
 }
@@ -113,13 +113,19 @@
   composes: card;
   margin-bottom: 0;
   cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.suiteCard:hover {
+  border-color: var(--color-muted);
 }
 
 .suiteCardExpanded {
   composes: card;
   margin-bottom: 0;
   cursor: pointer;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
 .suiteRow {
@@ -136,14 +142,14 @@
 
 .suiteSlug {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-subtle);
   font-family: monospace;
 }
 
 .caseCount {
   font-size: 12px;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--color-muted);
+  background: var(--color-surface-alt);
   padding: 3px 8px;
   border-radius: 4px;
 }
@@ -151,26 +157,25 @@
 .suiteDesc {
   margin: 8px 0 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--color-muted);
 }
 
 .expandedPanel {
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   margin-bottom: 16px;
   margin-top: 0;
   border-top: none;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
-  background: #f8fafc;
 }
 
 .expandedLoading {
   margin: 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--color-muted);
 }
 
 .caseList {
@@ -183,7 +188,7 @@
   padding: 10px 12px;
   background: white;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -199,7 +204,7 @@
 .casePath {
   font-size: 13px;
   font-family: monospace;
-  color: #64748b;
+  color: var(--color-muted);
   flex-shrink: 0;
 }
 
@@ -211,8 +216,8 @@
 
 .tag {
   font-size: 11px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--color-surface-alt);
+  color: var(--color-muted);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -221,7 +226,7 @@
   padding: 8px 12px;
   background: white;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   font-size: 14px;
   font-family: monospace;
   color: #334155;
@@ -230,7 +235,7 @@
 .noCase {
   margin: 0;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--color-subtle);
 }
 
 .formActions {
@@ -241,17 +246,21 @@
 
 .btn {
   padding: 8px 16px;
-  background: #1e293b;
+  background: var(--color-ink);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+}
+
+.btn:hover {
+  background: var(--color-ink-hover);
 }
 
 .btnGreen {
   padding: 8px 20px;
-  background: #16a34a;
+  background: var(--color-success);
   color: white;
   border: none;
   border-radius: 6px;
@@ -259,8 +268,12 @@
   font-size: 14px;
 }
 
+.btnGreen:hover:not(:disabled) {
+  background: var(--color-success-hover);
+}
+
 .btnGreenSm {
-  background: #16a34a;
+  background: var(--color-success);
   border: none;
   color: white;
   border-radius: 4px;
@@ -270,9 +283,13 @@
   font-weight: 600;
 }
 
+.btnGreenSm:hover {
+  background: var(--color-success-hover);
+}
+
 .btnOutlineSm {
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   color: #334155;
   border-radius: 4px;
   padding: 4px 10px;
@@ -280,19 +297,27 @@
   font-size: 12px;
 }
 
+.btnOutlineSm:hover {
+  background: var(--color-surface);
+}
+
 .btnDangerSm {
   background: none;
-  border: 1px solid #fecaca;
-  color: #ef4444;
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
   font-size: 12px;
 }
 
+.btnDangerSm:hover {
+  background: var(--color-danger-bg);
+}
+
 .btnSaveSm {
   padding: 6px 16px;
-  background: #16a34a;
+  background: var(--color-success);
   color: white;
   border: none;
   border-radius: 6px;
@@ -300,11 +325,19 @@
   font-size: 13px;
 }
 
+.btnSaveSm:hover:not(:disabled) {
+  background: var(--color-success-hover);
+}
+
 .btnCancelSm {
   padding: 6px 16px;
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
+}
+
+.btnCancelSm:hover {
+  background: var(--color-surface);
 }

@@ -1,11 +1,11 @@
 .header {
-  background-color: #1e293b;
+  background-color: var(--color-ink);
   color: white;
   padding: 0 24px;
   display: flex;
   align-items: center;
   gap: 32px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid var(--color-ink-hover);
 }
 
 .logo {
@@ -13,7 +13,7 @@
   font-weight: 700;
   letter-spacing: -0.5px;
   padding: 16px 0;
-  color: #e2e8f0;
+  color: var(--color-border);
 }
 
 .nav {
@@ -22,7 +22,7 @@
 }
 
 .link {
-  color: #94a3b8;
+  color: var(--color-subtle);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
@@ -35,11 +35,11 @@
 }
 
 .link:hover {
-  color: #e2e8f0;
+  color: var(--color-border);
   background-color: #293548;
 }
 
 .linkActive {
-  background-color: #334155;
+  background-color: var(--color-ink-hover);
   color: white;
 }
