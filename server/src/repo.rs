@@ -312,22 +312,32 @@ pub fn create_case(
 pub fn update_case(
     repo: &Path,
     case_path: &str,
-    title: &str,
-    description: &str,
-    tags: Vec<String>,
-    priority: &str,
+    title: Option<&str>,
+    description: Option<&str>,
+    tags: Option<Vec<String>>,
+    priority: Option<&str>,
     body: Option<&str>,
 ) -> RResult<LoadedCase> {
     validate_slug_path(case_path, "case")?;
-    validate_priority(priority)?;
+    if let Some(p) = priority {
+        validate_priority(p)?;
+    }
     let file = case_file_path(repo, case_path);
     let content = std::fs::read_to_string(&file)
         .map_err(|_| RepoError::NotFound(format!("case not found: {}", case_path)))?;
     let (mut fm, existing_body) = parse_fm::<CaseFm>(&content)?;
-    fm.title = title.to_owned();
-    fm.description = description.to_owned();
-    fm.tags = tags;
-    fm.priority = priority.to_owned();
+    if let Some(t) = title {
+        fm.title = t.to_owned();
+    }
+    if let Some(d) = description {
+        fm.description = d.to_owned();
+    }
+    if let Some(t) = tags {
+        fm.tags = t;
+    }
+    if let Some(p) = priority {
+        fm.priority = p.to_owned();
+    }
     fm.updated_at = Local::now().format("%Y-%m-%d").to_string();
     let body = body.unwrap_or(&existing_body);
     write_case_file(&file, &fm, body)?;

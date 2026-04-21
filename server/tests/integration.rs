@@ -675,6 +675,39 @@ async fn update_case_preserves_body_when_omitted() {
 }
 
 #[tokio::test]
+async fn update_case_partial_preserves_unchanged_fields() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "billing/invoice", "Invoice Check");
+
+    // Update only priority; title/description/tags left empty (preserve)
+    c.update_case(Request::new(pb::UpdateCaseRequest {
+        repo_path: rp.clone(),
+        case_path: "billing/invoice".to_owned(),
+        priority: ameliso_server::proto::ameliso_v1::Priority::High as i32,
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let resp = c
+        .get_case(Request::new(pb::GetCaseRequest {
+            repo_path: rp,
+            case_path: "billing/invoice".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner();
+
+    let case = resp.case.unwrap();
+    assert_eq!(case.title, "Invoice Check", "title preserved after partial update");
+    assert_eq!(case.priority, "high");
+}
+
+#[tokio::test]
 async fn update_suite_changes_cases() {
     let addr = start_server().await;
     let mut c = client(addr).await;

@@ -103,14 +103,16 @@ struct FinalizeRunRequest {
 struct UpdateCaseRequest {
     repo_path: String,
     case_path: String,
-    title: String,
-    description: String,
-    #[schemars(description = "Comma-separated tags (optional)")]
+    #[schemars(description = "New title. Omit to keep existing.")]
+    title: Option<String>,
+    #[schemars(description = "New one-line description. Omit to keep existing.")]
+    description: Option<String>,
+    #[schemars(description = "Comma-separated tags. Omit to keep existing; pass empty string to clear.")]
     tags: Option<String>,
-    #[schemars(description = "low | medium | high (default: medium)")]
+    #[schemars(description = "low | medium | high. Omit to keep existing.")]
     priority: Option<String>,
     #[schemars(
-        description = "Replace the full markdown body. If omitted, existing body is preserved."
+        description = "Replace the full markdown body. Omit to keep existing."
     )]
     body: Option<String>,
 }
@@ -508,28 +510,24 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Update an existing test case's metadata and optionally replace its body."
+        description = "Update an existing test case. All fields are optional — omit any field to preserve its current value. Useful for changing just priority or tags without re-specifying title/description."
     )]
     fn update_case(&self, Parameters(req): Parameters<UpdateCaseRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
-        let tag_list: Vec<String> = req
-            .tags
-            .as_deref()
-            .unwrap_or("")
-            .split(',')
-            .map(|s| s.trim().to_owned())
-            .filter(|s| !s.is_empty())
-            .collect();
-        let pri = req.priority.as_deref().unwrap_or("medium");
-        let body = req.body.as_deref();
+        let tags = req.tags.as_deref().map(|raw| {
+            raw.split(',')
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+        });
         match repo::update_case(
             &repo,
             &req.case_path,
-            &req.title,
-            &req.description,
-            tag_list,
-            pri,
-            body,
+            req.title.as_deref(),
+            req.description.as_deref(),
+            tags,
+            req.priority.as_deref(),
+            req.body.as_deref(),
         ) {
             Ok(c) => format!("updated: cases/{}.md", c.case_path),
             Err(e) => format!("error: {e}"),

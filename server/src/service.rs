@@ -206,18 +206,17 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::UpdateCaseResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let priority = priority_from_i32(req.priority).unwrap_or("medium");
-        let body = if req.body.is_empty() {
-            None
-        } else {
-            Some(req.body.as_str())
-        };
+        let priority = priority_from_i32(req.priority);
+        let title = if req.title.is_empty() { None } else { Some(req.title.as_str()) };
+        let description = if req.description.is_empty() { None } else { Some(req.description.as_str()) };
+        let tags = if req.tags.is_empty() { None } else { Some(req.tags) };
+        let body = if req.body.is_empty() { None } else { Some(req.body.as_str()) };
         let case = repo::update_case(
             &repo,
             &req.case_path,
-            &req.title,
-            &req.description,
-            req.tags,
+            title,
+            description,
+            tags,
             priority,
             body,
         )

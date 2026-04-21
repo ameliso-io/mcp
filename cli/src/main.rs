@@ -81,15 +81,15 @@ enum CasesCmd {
         #[arg(long, env = "AMELISO_REPO")]
         repo: PathBuf,
         case_path: String,
-        #[arg(long)]
-        title: String,
-        #[arg(long)]
-        description: String,
-        #[arg(long, help = "Comma-separated tags")]
+        #[arg(long, help = "New title (omit to keep existing)")]
+        title: Option<String>,
+        #[arg(long, help = "New description (omit to keep existing)")]
+        description: Option<String>,
+        #[arg(long, help = "Comma-separated tags (omit to keep existing; pass empty to clear)")]
         tags: Option<String>,
-        #[arg(long, default_value = "medium", help = "low | medium | high")]
-        priority: String,
-        #[arg(long, help = "Replace the full markdown body")]
+        #[arg(long, help = "low | medium | high (omit to keep existing)")]
+        priority: Option<String>,
+        #[arg(long, help = "Replace the full markdown body (omit to keep existing)")]
         body: Option<String>,
     },
     #[command(about = "Delete a test case")]
@@ -293,14 +293,16 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             priority,
             body,
         } => {
-            let tag_list = parse_tags(tags.as_deref());
+            let tag_list: Option<Vec<String>> = tags.as_deref().map(|s| {
+                s.split(',').map(|t| t.trim().to_owned()).filter(|t| !t.is_empty()).collect()
+            });
             let c = repo::update_case(
                 &repo,
                 &case_path,
-                &title,
-                &description,
+                title.as_deref(),
+                description.as_deref(),
                 tag_list,
-                &priority,
+                priority.as_deref(),
                 body.as_deref(),
             )?;
             println!("Updated: cases/{}.md", c.case_path);
