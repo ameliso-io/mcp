@@ -21,7 +21,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
+  const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const prevActiveRef = useRef(activeRepoId);
@@ -57,7 +57,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       }
-      setAnnouncement("Repositories refreshed");
+      announce("Repositories refreshed");
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -100,9 +100,9 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
     prevActiveRef.current = activeRepoId;
     if (activeRepoId) {
       const repo = repos.find((r) => r.id === activeRepoId);
-      if (repo) setAnnouncement(`${repo.fullName} selected`);
+      if (repo) announce(`${repo.fullName} selected`);
     } else {
-      setAnnouncement("Repository deselected");
+      announce("Repository deselected");
     }
   }, [activeRepoId, repos]);
 
@@ -113,7 +113,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       const res = await client.syncRepository({ id });
       if (res.repository) {
         setRepos((prev) => prev.map((r) => (r.id === id ? res.repository! : r)));
-        setAnnouncement(`Sync completed for ${res.repository.fullName}`);
+        announce(`Sync completed for ${res.repository.fullName}`);
       }
     } catch (e) {
       setError(errorMessage(e));
@@ -145,7 +145,7 @@ export default function RepositoriesTab({ onRepoSelect, activeRepoId }: Props) {
       await client.removeRepository({ id });
       setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
-      setAnnouncement(`${repo?.fullName ?? id} removed`);
+      announce(`${repo?.fullName ?? id} removed`);
     } catch (e) {
       setError(errorMessage(e));
     }
