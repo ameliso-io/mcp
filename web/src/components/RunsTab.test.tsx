@@ -1022,6 +1022,19 @@ describe("RunsTab", () => {
     expect(screen.getByText("staging")).toBeInTheDocument();
   });
 
+  it("does not show Record button for completed run", async () => {
+    const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [] },
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("No results recorded.")).toBeInTheDocument());
+    expect(screen.queryByText("Record")).not.toBeInTheDocument();
+  });
+
   it("does not show suite/tester/environment labels when run fields are empty", async () => {
     const bareRun = {
       ...mockRun,
