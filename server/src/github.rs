@@ -525,7 +525,10 @@ jCzFIYdciSH3XQUnT03k+b+uOCYpQlu6Xce8POyogm1+5kfLefwP0A==\n\
         let result = compare("owner", "repo", "abc123", "tok").await;
         assert!(result.is_err(), "expected an error for 404 response");
         let msg = format!("{:#}", result.err().unwrap());
-        assert!(msg.contains("compare: bad status") || msg.contains("404"), "err: {msg}");
+        assert!(
+            msg.contains("compare: bad status") || msg.contains("404"),
+            "err: {msg}"
+        );
         unsafe {
             std::env::remove_var("AMELISO_GITHUB_API");
         }
