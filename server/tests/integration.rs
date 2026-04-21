@@ -703,7 +703,10 @@ async fn update_case_partial_preserves_unchanged_fields() {
         .into_inner();
 
     let case = resp.case.unwrap();
-    assert_eq!(case.title, "Invoice Check", "title preserved after partial update");
+    assert_eq!(
+        case.title, "Invoice Check",
+        "title preserved after partial update"
+    );
     assert_eq!(case.priority, "high");
 }
 
@@ -751,6 +754,51 @@ async fn update_suite_changes_cases() {
     assert_eq!(suite.name, "Smoke Suite");
     assert_eq!(suite.cases.len(), 2);
     assert!(suite.cases.contains(&"billing/checkout".to_owned()));
+}
+
+#[tokio::test]
+async fn update_suite_partial_preserves_unchanged_fields() {
+    let addr = start_server().await;
+    let mut c = client(addr).await;
+    let tmp = TempDir::new().unwrap();
+    let rp = repo_path(&tmp);
+
+    write_case(tmp.path(), "auth/login", "Login");
+
+    c.create_suite(Request::new(pb::CreateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        name: "Smoke Tests".to_owned(),
+        cases: vec!["auth/login".to_owned()],
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    // Update only description; name and cases left empty (preserve)
+    c.update_suite(Request::new(pb::UpdateSuiteRequest {
+        repo_path: rp.clone(),
+        slug: "smoke".to_owned(),
+        description: "Basic smoke coverage".to_owned(),
+        ..Default::default()
+    }))
+    .await
+    .unwrap();
+
+    let suite = c
+        .get_suite(Request::new(pb::GetSuiteRequest {
+            repo_path: rp,
+            slug: "smoke".to_owned(),
+        }))
+        .await
+        .unwrap()
+        .into_inner()
+        .suite
+        .unwrap();
+
+    assert_eq!(suite.name, "Smoke Tests", "name preserved after partial update");
+    assert_eq!(suite.description, "Basic smoke coverage");
+    assert_eq!(suite.cases.len(), 1, "cases preserved after partial update");
 }
 
 #[tokio::test]

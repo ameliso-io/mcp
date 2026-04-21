@@ -694,22 +694,28 @@ pub fn delete_suite(repo: &Path, slug: &str) -> RResult<()> {
 pub fn update_suite(
     repo: &Path,
     slug: &str,
-    name: &str,
-    description: Option<String>,
-    cases: Vec<String>,
+    name: Option<&str>,
+    description: Option<Option<String>>,
+    cases: Option<Vec<String>>,
 ) -> RResult<SuiteYaml> {
     validate_slug_path(slug, "suite")?;
-    validate_suite_cases(repo, &cases)?;
     let path = suites_dir(repo).join(format!("{}.yaml", slug));
     if !path.exists() {
         return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
     }
-    let suite = SuiteYaml {
-        name: name.to_owned(),
-        description,
-        cases,
-    };
-    let yaml = serde_yaml::to_string(&suite).context("serializing suite")?;
+    let content = std::fs::read_to_string(&path).context("reading suite file")?;
+    let mut existing: SuiteYaml = serde_yaml::from_str(&content).context("parsing suite yaml")?;
+    if let Some(n) = name {
+        existing.name = n.to_owned();
+    }
+    if let Some(d) = description {
+        existing.description = d;
+    }
+    if let Some(c) = cases {
+        validate_suite_cases(repo, &c)?;
+        existing.cases = c;
+    }
+    let yaml = serde_yaml::to_string(&existing).context("serializing suite")?;
     std::fs::write(path, yaml).context("writing suite file")?;
-    Ok(suite)
+    Ok(existing)
 }

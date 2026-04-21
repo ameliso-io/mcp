@@ -85,7 +85,10 @@ enum CasesCmd {
         title: Option<String>,
         #[arg(long, help = "New description (omit to keep existing)")]
         description: Option<String>,
-        #[arg(long, help = "Comma-separated tags (omit to keep existing; pass empty to clear)")]
+        #[arg(
+            long,
+            help = "Comma-separated tags (omit to keep existing; pass empty to clear)"
+        )]
         tags: Option<String>,
         #[arg(long, help = "low | medium | high (omit to keep existing)")]
         priority: Option<String>,
@@ -188,12 +191,12 @@ enum SuitesCmd {
         #[arg(long, env = "AMELISO_REPO")]
         repo: PathBuf,
         slug: String,
-        #[arg(long)]
-        name: String,
-        #[arg(long)]
+        #[arg(long, help = "New name (omit to keep existing)")]
+        name: Option<String>,
+        #[arg(long, help = "New description (omit to keep existing)")]
         description: Option<String>,
-        #[arg(long, help = "Comma-separated case paths")]
-        cases: String,
+        #[arg(long, help = "Comma-separated case paths — replaces full list (omit to keep existing)")]
+        cases: Option<String>,
     },
     #[command(about = "Delete a suite")]
     Delete {
@@ -294,7 +297,10 @@ fn run_cases(cmd: CasesCmd) -> Result<()> {
             body,
         } => {
             let tag_list: Option<Vec<String>> = tags.as_deref().map(|s| {
-                s.split(',').map(|t| t.trim().to_owned()).filter(|t| !t.is_empty()).collect()
+                s.split(',')
+                    .map(|t| t.trim().to_owned())
+                    .filter(|t| !t.is_empty())
+                    .collect()
             });
             let c = repo::update_case(
                 &repo,
@@ -567,12 +573,14 @@ fn run_suites(cmd: SuitesCmd) -> Result<()> {
             description,
             cases,
         } => {
-            let case_list: Vec<String> = cases
-                .split(',')
-                .map(|s| s.trim().to_owned())
-                .filter(|s| !s.is_empty())
-                .collect();
-            repo::update_suite(&repo, &slug, &name, description, case_list)?;
+            let case_list = cases.as_deref().map(|raw| {
+                raw.split(',')
+                    .map(|s| s.trim().to_owned())
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>()
+            });
+            let desc = description.map(|d| if d.is_empty() { None } else { Some(d) });
+            repo::update_suite(&repo, &slug, name.as_deref(), desc, case_list)?;
             println!("Updated: suites/{slug}.yaml");
         }
         SuitesCmd::Delete { repo, slug } => {

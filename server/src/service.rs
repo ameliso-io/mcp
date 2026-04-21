@@ -207,10 +207,26 @@ impl AmelisoService for AmelisoServer {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
         let priority = priority_from_i32(req.priority);
-        let title = if req.title.is_empty() { None } else { Some(req.title.as_str()) };
-        let description = if req.description.is_empty() { None } else { Some(req.description.as_str()) };
-        let tags = if req.tags.is_empty() { None } else { Some(req.tags) };
-        let body = if req.body.is_empty() { None } else { Some(req.body.as_str()) };
+        let title = if req.title.is_empty() {
+            None
+        } else {
+            Some(req.title.as_str())
+        };
+        let description = if req.description.is_empty() {
+            None
+        } else {
+            Some(req.description.as_str())
+        };
+        let tags = if req.tags.is_empty() {
+            None
+        } else {
+            Some(req.tags)
+        };
+        let body = if req.body.is_empty() {
+            None
+        } else {
+            Some(req.body.as_str())
+        };
         let case = repo::update_case(
             &repo,
             &req.case_path,
@@ -292,13 +308,15 @@ impl AmelisoService for AmelisoServer {
     ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
         let req = request.into_inner();
         let repo = PathBuf::from(&req.repo_path);
-        let desc = if req.description.is_empty() {
+        let name = if req.name.is_empty() { None } else { Some(req.name.as_str()) };
+        let description = if req.description.is_empty() {
             None
         } else {
-            Some(req.description.clone())
+            Some(Some(req.description.clone()))
         };
+        let cases = if req.cases.is_empty() { None } else { Some(req.cases) };
         let suite =
-            repo::update_suite(&repo, &req.slug, &req.name, desc, req.cases).map_err(repo_err)?;
+            repo::update_suite(&repo, &req.slug, name, description, cases).map_err(repo_err)?;
         Ok(Response::new(pb::UpdateSuiteResponse {
             suite: Some(suite_to_pb(&req.slug, &suite)),
         }))

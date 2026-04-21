@@ -107,13 +107,13 @@ struct UpdateCaseRequest {
     title: Option<String>,
     #[schemars(description = "New one-line description. Omit to keep existing.")]
     description: Option<String>,
-    #[schemars(description = "Comma-separated tags. Omit to keep existing; pass empty string to clear.")]
+    #[schemars(
+        description = "Comma-separated tags. Omit to keep existing; pass empty string to clear."
+    )]
     tags: Option<String>,
     #[schemars(description = "low | medium | high. Omit to keep existing.")]
     priority: Option<String>,
-    #[schemars(
-        description = "Replace the full markdown body. Omit to keep existing."
-    )]
+    #[schemars(description = "Replace the full markdown body. Omit to keep existing.")]
     body: Option<String>,
 }
 
@@ -137,6 +137,18 @@ struct CreateSuiteRequest {
     description: Option<String>,
     #[schemars(description = "Comma-separated case paths")]
     cases: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct UpdateSuiteRequest {
+    repo_path: String,
+    slug: String,
+    #[schemars(description = "New name. Omit to keep existing.")]
+    name: Option<String>,
+    #[schemars(description = "New description. Omit to keep existing.")]
+    description: Option<String>,
+    #[schemars(description = "Comma-separated case paths (full replacement). Omit to keep existing list.")]
+    cases: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -686,17 +698,21 @@ impl AmelisoMcp {
         }
     }
 
-    #[tool(description = "Update an existing test suite's name, description, or case list.")]
-    fn update_suite(&self, Parameters(req): Parameters<CreateSuiteRequest>) -> String {
+    #[tool(
+        description = "Update an existing test suite. All fields optional — omit any to preserve current value. To replace the full case list, pass comma-separated case paths in cases. Cases must already exist."
+    )]
+    fn update_suite(&self, Parameters(req): Parameters<UpdateSuiteRequest>) -> String {
         let repo = PathBuf::from(&req.repo_path);
-        let case_list: Vec<String> = req
-            .cases
-            .split(',')
-            .map(|s| s.trim().to_owned())
-            .filter(|s| !s.is_empty())
-            .collect();
-        let desc = req.description.filter(|s| !s.is_empty());
-        match repo::update_suite(&repo, &req.slug, &req.name, desc, case_list) {
+        let cases = req.cases.as_deref().map(|raw| {
+            raw.split(',')
+                .map(|s| s.trim().to_owned())
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+        });
+        let desc = req
+            .description
+            .map(|d| if d.is_empty() { None } else { Some(d) });
+        match repo::update_suite(&repo, &req.slug, req.name.as_deref(), desc, cases) {
             Ok(_) => format!("updated: suites/{}.yaml", req.slug),
             Err(e) => format!("error: {e}"),
         }
