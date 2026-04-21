@@ -6,29 +6,13 @@ import { errorMessage } from "../errorMessage";
 import type { Case } from "../gen/ameliso/v1/types_pb";
 import { Priority } from "../gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
+import styles from "./CasesTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
 interface Props {
   repoId: string;
 }
-
-const card = {
-  background: "white",
-  borderRadius: "8px",
-  padding: "20px",
-  border: "1px solid #e2e8f0",
-  marginBottom: "16px",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: "6px",
-  fontSize: "14px",
-  boxSizing: "border-box",
-};
 
 function stringToPriority(p: string): Priority {
   switch (p) {
@@ -40,19 +24,6 @@ function stringToPriority(p: string): Priority {
       return Priority.LOW;
     default:
       return Priority.MEDIUM;
-  }
-}
-
-function priorityColor(p: string): string {
-  switch (p) {
-    case "high":
-      return "#ef4444";
-    case "medium":
-      return "#f97316";
-    case "low":
-      return "#22c55e";
-    default:
-      return "#94a3b8";
   }
 }
 
@@ -248,11 +219,7 @@ export default function CasesTab({ repoId }: Props) {
   }
 
   if (!repoId) {
-    return (
-      <div style={{ color: "#64748b", padding: "40px", textAlign: "center" }}>
-        Set a repository path in the Overview tab first.
-      </div>
-    );
+    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   const allTags = Array.from(new Set(deferredCases.flatMap((c) => c.tags)));
@@ -260,106 +227,49 @@ export default function CasesTab({ repoId }: Props) {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700" }}>Cases</h2>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          style={{
-            padding: "8px 16px",
-            background: "#1e293b",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
+      <div className={styles.header}>
+        <h2 className={styles.title}>Cases</h2>
+        <button onClick={() => setShowCreate(!showCreate)} className={styles.btn}>
           {showCreate ? "Cancel" : "+ New Case"}
         </button>
       </div>
 
       {showCreate && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px" }}>Create Case</h3>
-          <form
-            onSubmit={handleCreate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}
-          >
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Create Case</h3>
+          <form onSubmit={handleCreate} className={styles.formGrid}>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Path (e.g. auth/login)
-              </label>
+              <label className={styles.label}>Path (e.g. auth/login)</label>
               <input
                 value={newPath}
                 onChange={(e) => setNewPath(e.target.value)}
                 required
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Title
-              </label>
+              <label className={styles.label}>Title</label>
               <input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 required
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Description
-              </label>
+            <div className={styles.fullCol}>
+              <label className={styles.label}>Description</label>
               <input
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Priority
-              </label>
+              <label className={styles.label}>Priority</label>
               <select
                 value={newPriority}
                 onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
-                style={inputStyle}
+                className={styles.input}
               >
                 <option value={Priority.LOW}>Low</option>
                 <option value={Priority.MEDIUM}>Medium</option>
@@ -367,60 +277,25 @@ export default function CasesTab({ repoId }: Props) {
               </select>
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Tags (comma-separated)
-              </label>
+              <label className={styles.label}>Tags (comma-separated)</label>
               <input
                 value={newTags}
                 onChange={(e) => setNewTags(e.target.value)}
-                style={inputStyle}
+                className={styles.input}
               />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
-                Steps / Body (Markdown)
-              </label>
+            <div className={styles.fullCol}>
+              <label className={styles.label}>Steps / Body (Markdown)</label>
               <textarea
                 value={newBody}
                 onChange={(e) => setNewBody(e.target.value)}
                 placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
                 rows={6}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  fontFamily: "monospace",
-                  fontSize: "13px",
-                }}
+                className={styles.textarea}
               />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <button
-                type="submit"
-                disabled={creating}
-                style={{
-                  padding: "8px 20px",
-                  background: "#16a34a",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create"}
               </button>
             </div>
@@ -428,20 +303,18 @@ export default function CasesTab({ repoId }: Props) {
         </div>
       )}
 
-      <div
-        style={{ ...card, display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}
-      >
+      <div className={styles.filterBar}>
         <input
           type="text"
           placeholder="Search cases…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ ...inputStyle, flex: 1, minWidth: "200px" }}
+          className={styles.searchInput}
         />
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(Number(e.target.value) as Priority)}
-          style={{ ...inputStyle, width: "auto" }}
+          className={styles.filterSelect}
         >
           <option value={Priority.UNSPECIFIED}>All priorities</option>
           <option value={Priority.LOW}>Low</option>
@@ -452,7 +325,7 @@ export default function CasesTab({ repoId }: Props) {
           <select
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
-            style={{ ...inputStyle, width: "auto" }}
+            className={styles.filterSelect}
           >
             <option value="">All tags</option>
             {allTags.map((t) => (
@@ -467,74 +340,34 @@ export default function CasesTab({ repoId }: Props) {
           onChange={(e) =>
             startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))
           }
-          style={{ ...inputStyle, width: "auto" }}
+          className={styles.filterSelect}
         >
           <option value="priority">Sort: Priority</option>
           <option value="path">Sort: Path</option>
         </select>
         {!loading && deferredCases.length > 0 && (
-          <span
-            style={{
-              fontSize: "13px",
-              color: "#94a3b8",
-              whiteSpace: "nowrap",
-              ...(isStale ? { opacity: 0.5 } : {}),
-            }}
-          >
+          <span className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}>
             {deferredCases.length} case{deferredCases.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
 
       {error && (
-        <div
-          style={{
-            ...card,
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#991b1b",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
+        <div className={styles.errorCard}>
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#991b1b",
-              cursor: "pointer",
-              fontSize: "16px",
-              lineHeight: 1,
-              padding: "0 0 0 12px",
-              flexShrink: 0,
-            }}
-          >
+          <button onClick={() => setError(null)} className={styles.errorDismiss}>
             ×
           </button>
         </div>
       )}
 
-      {loading && (
-        <div style={{ textAlign: "center", color: "#64748b", padding: "40px" }}>Loading…</div>
-      )}
+      {loading && <div className={styles.loadingMsg}>Loading…</div>}
 
       {!loading && deferredCases.length === 0 && !error && (
-        <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "40px" }}>
-          No cases found.
-        </div>
+        <div className={styles.emptyCard}>No cases found.</div>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          ...(isStale ? { opacity: 0.6, pointerEvents: "none" as const } : {}),
-        }}
-      >
+      <div className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}>
         {[...deferredCases]
           .sort((a, b) => {
             if (sortBy === "priority") {
@@ -547,143 +380,68 @@ export default function CasesTab({ repoId }: Props) {
           .map((c) => (
             <div key={c.path}>
               <div
-                style={{
-                  ...card,
-                  marginBottom: 0,
-                  borderBottomLeftRadius:
-                    expandedPath === c.path || editingPath === c.path ? 0 : "8px",
-                  borderBottomRightRadius:
-                    expandedPath === c.path || editingPath === c.path ? 0 : "8px",
-                }}
+                className={
+                  expandedPath === c.path || editingPath === c.path
+                    ? styles.caseCardOpen
+                    : styles.caseCard
+                }
               >
                 {editingPath === c.path ? (
-                  <form
-                    onSubmit={handleUpdate}
-                    style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}
-                  >
+                  <form onSubmit={handleUpdate} className={styles.formGridSm}>
                     <div>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
-                        Title
-                      </label>
+                      <label className={styles.labelSm}>Title</label>
                       <input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         required
-                        style={inputStyle}
+                        className={styles.input}
                       />
                     </div>
                     <div>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
-                        Priority
-                      </label>
+                      <label className={styles.labelSm}>Priority</label>
                       <select
                         value={editPriority}
                         onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
-                        style={inputStyle}
+                        className={styles.input}
                       >
                         <option value={Priority.LOW}>Low</option>
                         <option value={Priority.MEDIUM}>Medium</option>
                         <option value={Priority.HIGH}>High</option>
                       </select>
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
-                        Description
-                      </label>
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>Description</label>
                       <input
                         value={editDesc}
                         onChange={(e) => setEditDesc(e.target.value)}
-                        style={inputStyle}
+                        className={styles.input}
                       />
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
-                        Tags (comma-separated)
-                      </label>
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>Tags (comma-separated)</label>
                       <input
                         value={editTags}
                         onChange={(e) => setEditTags(e.target.value)}
-                        style={inputStyle}
+                        className={styles.input}
                       />
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
-                        Steps / Body (Markdown)
-                      </label>
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>Steps / Body (Markdown)</label>
                       <textarea
                         value={editBody}
                         onChange={(e) => setEditBody(e.target.value)}
                         rows={8}
-                        style={{
-                          ...inputStyle,
-                          resize: "vertical",
-                          fontFamily: "monospace",
-                          fontSize: "13px",
-                        }}
+                        className={styles.textarea}
                       />
                     </div>
-                    <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px" }}>
-                      <button
-                        type="submit"
-                        disabled={saving}
-                        style={{
-                          padding: "6px 16px",
-                          background: "#16a34a",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                        }}
-                      >
+                    <div className={styles.formActions}>
+                      <button type="submit" disabled={saving} className={styles.btnSaveSm}>
                         {saving ? "Saving…" : "Save"}
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingPath(null)}
-                        style={{
-                          padding: "6px 16px",
-                          background: "none",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                        }}
+                        className={styles.btnCancelSm}
                       >
                         Cancel
                       </button>
@@ -691,96 +449,41 @@ export default function CasesTab({ repoId }: Props) {
                   </form>
                 ) : (
                   <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "12px",
-                      cursor: "pointer",
-                    }}
+                    className={styles.caseRow}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={expandedPath === c.path}
                     onClick={() => toggleExpand(c.path)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleExpand(c.path);
+                      }
+                    }}
                   >
-                    <div
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: priorityColor(c.priority),
-                        marginTop: "6px",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span
-                          style={{ fontSize: "13px", color: "#94a3b8", fontFamily: "monospace" }}
-                        >
-                          {c.path}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: priorityColor(c.priority),
-                            fontWeight: "600",
-                          }}
-                        >
+                    <span className={styles.priorityDot} data-priority={c.priority} />
+                    <div className={styles.caseInfo}>
+                      <div className={styles.caseMeta}>
+                        <span className={styles.casePath}>{c.path}</span>
+                        <span className={styles.priorityBadge} data-priority={c.priority}>
                           {priorityLabel(c.priority)}
                         </span>
                         {c.tags.map((t) => (
-                          <span
-                            key={t}
-                            style={{
-                              fontSize: "11px",
-                              background: "#f1f5f9",
-                              color: "#64748b",
-                              padding: "2px 6px",
-                              borderRadius: "4px",
-                            }}
-                          >
+                          <span key={t} className={styles.tag}>
                             {t}
                           </span>
                         ))}
                       </div>
-                      <p style={{ margin: "4px 0 0", fontWeight: "600", fontSize: "15px" }}>
-                        {c.title}
-                      </p>
-                      {c.description && (
-                        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
-                          {c.description}
-                        </p>
-                      )}
+                      <p className={styles.caseTitle}>{c.title}</p>
+                      {c.description && <p className={styles.caseDesc}>{c.description}</p>}
                     </div>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#94a3b8",
-                        flexShrink: 0,
-                        marginTop: "2px",
-                      }}
-                    >
-                      {expandedPath === c.path ? "▲" : "▼"}
-                    </span>
+                    <span className={styles.chevron}>{expandedPath === c.path ? "▲" : "▼"}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         startEdit(c);
                       }}
-                      style={{
-                        background: "none",
-                        border: "1px solid #e2e8f0",
-                        color: "#334155",
-                        borderRadius: "4px",
-                        padding: "4px 10px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        flexShrink: 0,
-                      }}
+                      className={styles.btnOutlineSm}
                     >
                       Edit
                     </button>
@@ -789,16 +492,7 @@ export default function CasesTab({ repoId }: Props) {
                         e.stopPropagation();
                         handleDelete(c.path);
                       }}
-                      style={{
-                        background: "none",
-                        border: "1px solid #fecaca",
-                        color: "#ef4444",
-                        borderRadius: "4px",
-                        padding: "4px 10px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        flexShrink: 0,
-                      }}
+                      className={styles.btnDangerSm}
                     >
                       Delete
                     </button>
@@ -807,26 +501,13 @@ export default function CasesTab({ repoId }: Props) {
               </div>
 
               {expandedPath === c.path && editingPath !== c.path && (
-                <div
-                  style={{
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderTop: "none",
-                    borderBottomLeftRadius: "8px",
-                    borderBottomRightRadius: "8px",
-                    padding: "16px 20px",
-                  }}
-                >
+                <div className={styles.expandedPanel}>
                   {bodyLoading ? (
-                    <p style={{ color: "#64748b", fontSize: "14px", margin: 0 }}>Loading…</p>
+                    <p className={styles.expandedLoading}>Loading…</p>
                   ) : expandedBody ? (
                     <MarkdownBody body={expandedBody} />
                   ) : (
-                    <p
-                      style={{ color: "#94a3b8", fontSize: "14px", margin: 0, fontStyle: "italic" }}
-                    >
-                      No body.
-                    </p>
+                    <p className={styles.noBody}>No body.</p>
                   )}
                 </div>
               )}
