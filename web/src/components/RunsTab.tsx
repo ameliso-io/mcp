@@ -95,6 +95,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
   const [recording, setRecording] = useState(false)
   const [caseBody, setCaseBody] = useState<string | null>(null)
   const [caseBodyLoading, setCaseBodyLoading] = useState(false)
+  const [bulkPassing, setBulkPassing] = useState(false)
 
   const consumedRef = useRef(false)
   useEffect(() => {
@@ -254,6 +255,28 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
       load()
     } catch (e) {
       setError(errorMessage(e))
+    }
+  }
+
+  async function handleBulkPass(runId: string) {
+    if (pendingCases.length === 0) return
+    if (!confirm(`Mark all ${pendingCases.length} pending case${pendingCases.length !== 1 ? 's' : ''} as Passed?`)) return
+    setBulkPassing(true)
+    try {
+      const res = await client.bulkRecordResults({
+        repoPath,
+        runId,
+        results: pendingCases.map(c => ({ casePath: c.path, status: ResultStatus.PASSED, notes: '' })),
+      })
+      setPendingCases(res.results.length > 0 ? [] : pendingCases)
+      // Refresh pending list
+      const pending = await client.getPendingCases({ repoPath, runId })
+      setPendingCases(pending.cases)
+      setTotalInScope(pending.totalInScope)
+    } catch (e) {
+      setError(errorMessage(e))
+    } finally {
+      setBulkPassing(false)
     }
   }
 
@@ -566,6 +589,23 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                       </p>
                       {run.status === RunStatus.IN_PROGRESS && (
                         <div style={{ display: 'flex', gap: '8px' }}>
+                          {pendingCases.length > 0 && (
+                            <button
+                              onClick={() => handleBulkPass(run.id)}
+                              disabled={bulkPassing}
+                              style={{
+                                padding: '6px 14px',
+                                background: '#0ea5e9',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                              }}
+                            >
+                              {bulkPassing ? 'Marking…' : `All Passed (${pendingCases.length})`}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleFinalize(run.id, RunStatus.COMPLETED)}
                             style={{
