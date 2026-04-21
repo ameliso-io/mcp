@@ -410,6 +410,16 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText(/Refresh All/)).not.toBeInTheDocument();
   });
 
+  it("whitespace-only search shows all repos (trim makes q empty)", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByPlaceholderText("Search repositories…"));
+    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "   ");
+    // Trimmed query is empty — all repos are returned, no "no results" state.
+    expect(screen.getByText("owner/repo")).toBeInTheDocument();
+    expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
+  });
+
   it("does not show Active badge when repo is not the active repo", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="other/repo" />);

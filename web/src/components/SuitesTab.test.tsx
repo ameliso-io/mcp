@@ -513,8 +513,22 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("No cases in this suite.")).toBeInTheDocument());
+  });
+
+  it("filters whitespace-only entries from cases field during create", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Suite"));
+    const inputs = screen.getAllByRole("textbox");
+    await userEvent.type(inputs[0], "smoke");
+    await userEvent.type(inputs[1], "Smoke Tests");
+    // Trailing comma and whitespace-only segment should be filtered out.
+    await userEvent.type(inputs[3], "auth/login, , auth/logout,");
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
-      expect(screen.getByText("No cases in this suite.")).toBeInTheDocument()
+      expect(client.createSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ cases: ["auth/login", "auth/logout"] })
+      )
     );
   });
 
