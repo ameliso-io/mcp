@@ -526,8 +526,7 @@ export default function RunsTab({ repoPath, initialSuite, onInitialSuiteConsumed
                                 </div>
                                 <div className={styles.notesWrap}>
                                   <label
-                                    className={styles.labelSm}
-                                    style={{ color: isNoteRequired ? '#dc2626' : undefined }}
+                                    className={isNoteRequired ? styles.labelSmErr : styles.labelSm}
                                   >
                                     Notes{isNoteRequired ? ' *' : ''}
                                   </label>

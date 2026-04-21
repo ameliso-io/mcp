@@ -91,6 +91,11 @@
   margin-bottom: 4px;
 }
 
+.labelSmErr {
+  composes: labelSm;
+  color: var(--color-danger-hover);
+}
+
 .input {
   width: 100%;
   padding: 8px 12px;
