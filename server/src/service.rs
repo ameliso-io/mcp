@@ -1840,6 +1840,24 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn handle_git_hub_callback_rejects_when_github_not_configured() {
+        let _g = ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::remove_var("GITHUB_APP_ID");
+            std::env::remove_var("GITHUB_APP_PRIVATE_KEY");
+        }
+        let s = server();
+        let err = s
+            .handle_git_hub_callback(Request::new(pb::HandleGitHubCallbackRequest {
+                installation_id: "inst-1".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::FailedPrecondition);
+        assert!(err.message().contains("GitHub App not configured"));
+    }
+
+    #[tokio::test]
     async fn sync_repository_rejects_empty_id() {
         let s = server();
         let err = s
@@ -1913,7 +1931,9 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("status must be completed or aborted"));
+        assert!(err
+            .message()
+            .contains("status must be completed or aborted"));
     }
 
     // ── invalid helper ────────────────────────────────────────────────────────
