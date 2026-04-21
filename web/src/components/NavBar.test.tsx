@@ -71,4 +71,11 @@ describe("NavBar", () => {
     render(<NavBar />);
     expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
   });
+
+  it("logo is a link to /overview", () => {
+    render(<NavBar />);
+    const logoLink = screen.getByRole("link", { name: "Ameliso" });
+    expect(logoLink).toBeInTheDocument();
+    expect(logoLink).toHaveAttribute("href", "/overview");
+  });
 });

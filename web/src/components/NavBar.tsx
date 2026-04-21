@@ -17,7 +17,9 @@ export default function NavBar() {
 
   return (
     <header className={styles.header}>
-      <span className={styles.logo}>Ameliso</span>
+      <Link href="/overview" className={styles.logo}>
+        Ameliso
+      </Link>
       <nav className={styles.nav} aria-label="Main navigation">
         {NAV_ITEMS.map(({ href, label }) => {
           const active = pathname === href || (pathname === "/" && href === "/overview");
