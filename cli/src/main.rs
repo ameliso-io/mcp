@@ -154,6 +154,8 @@ enum CasesCmd {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         case_path: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Create a new test case")]
     Create {
@@ -218,6 +220,8 @@ enum RunsCmd {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         run_id: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Create a new test run")]
     Create {
@@ -293,6 +297,8 @@ enum SuitesCmd {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         slug: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Create a new suite")]
     Create {
@@ -410,21 +416,37 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 println!("\n{} case(s)", cases.len());
             }
         }
-        CasesCmd::Get { repo_id, case_path } => {
+        CasesCmd::Get { repo_id, case_path, json } => {
             let resp = c
                 .get_case(pb::GetCaseRequest { repo_id, case_path })
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
             let case = resp.case.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no case"))?;
-            println!("path:        {}", case.path);
-            println!("title:       {}", case.title);
-            println!("description: {}", case.description);
-            println!("tags:        {}", case.tags.join(", "));
-            println!("priority:    {}", case.priority);
-            println!("created_at:  {}", case.created_at);
-            println!("updated_at:  {}", case.updated_at);
-            println!("\n{}", resp.body);
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "path": case.path,
+                        "title": case.title,
+                        "description": case.description,
+                        "tags": case.tags,
+                        "priority": case.priority,
+                        "created_at": case.created_at,
+                        "updated_at": case.updated_at,
+                        "body": resp.body,
+                    }))?
+                );
+            } else {
+                println!("path:        {}", case.path);
+                println!("title:       {}", case.title);
+                println!("description: {}", case.description);
+                println!("tags:        {}", case.tags.join(", "));
+                println!("priority:    {}", case.priority);
+                println!("created_at:  {}", case.created_at);
+                println!("updated_at:  {}", case.updated_at);
+                println!("\n{}", resp.body);
+            }
         }
         CasesCmd::Create {
             repo_id,
@@ -577,7 +599,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 println!("\n{} run(s)", runs.len());
             }
         }
-        RunsCmd::Get { repo_id, run_id } => {
+        RunsCmd::Get { repo_id, run_id, json } => {
             let run = c
                 .get_run(pb::GetRunRequest {
                     repo_id: repo_id.clone(),
@@ -589,53 +611,79 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .run
                 .ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
             let meta = run.meta.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no run meta"))?;
-            println!("id:     {}", meta.id);
-            println!("date:   {}", meta.date);
-            println!("tester: {}", meta.tester);
-            println!("status: {}", run_status_i32_to_str(meta.status));
-            if !meta.environment.is_empty() {
-                println!("env:    {}", meta.environment);
-            }
-            if !meta.suite.is_empty() {
-                println!("suite:  {}", meta.suite);
-            }
-            let passed = run
-                .results
-                .iter()
-                .filter(|r| r.status == pb::ResultStatus::Passed as i32)
-                .count();
-            let failed = run
-                .results
-                .iter()
-                .filter(|r| r.status == pb::ResultStatus::Failed as i32)
-                .count();
-            let blocked = run
-                .results
-                .iter()
-                .filter(|r| r.status == pb::ResultStatus::Blocked as i32)
-                .count();
-            let skipped = run
-                .results
-                .iter()
-                .filter(|r| r.status == pb::ResultStatus::Skipped as i32)
-                .count();
-            println!(
-                "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
-                passed,
-                failed,
-                blocked,
-                skipped,
-                run.results.len()
-            );
-            println!("\nResults ({}):", run.results.len());
-            for r in &run.results {
+            if json {
+                let results: Vec<_> = run
+                    .results
+                    .iter()
+                    .map(|r| {
+                        serde_json::json!({
+                            "case_path": r.case_path,
+                            "status": result_status_i32_to_str(r.status),
+                            "notes": r.notes,
+                        })
+                    })
+                    .collect();
                 println!(
-                    "  {:40} {}",
-                    r.case_path,
-                    result_status_i32_to_str(r.status)
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "id": meta.id,
+                        "date": meta.date,
+                        "tester": meta.tester,
+                        "status": run_status_i32_to_str(meta.status),
+                        "suite": meta.suite,
+                        "environment": meta.environment,
+                        "results": results,
+                    }))?
                 );
-                if !r.notes.trim().is_empty() {
-                    println!("    notes: {}", r.notes.trim());
+            } else {
+                println!("id:     {}", meta.id);
+                println!("date:   {}", meta.date);
+                println!("tester: {}", meta.tester);
+                println!("status: {}", run_status_i32_to_str(meta.status));
+                if !meta.environment.is_empty() {
+                    println!("env:    {}", meta.environment);
+                }
+                if !meta.suite.is_empty() {
+                    println!("suite:  {}", meta.suite);
+                }
+                let passed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.status == pb::ResultStatus::Passed as i32)
+                    .count();
+                let failed = run
+                    .results
+                    .iter()
+                    .filter(|r| r.status == pb::ResultStatus::Failed as i32)
+                    .count();
+                let blocked = run
+                    .results
+                    .iter()
+                    .filter(|r| r.status == pb::ResultStatus::Blocked as i32)
+                    .count();
+                let skipped = run
+                    .results
+                    .iter()
+                    .filter(|r| r.status == pb::ResultStatus::Skipped as i32)
+                    .count();
+                println!(
+                    "summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
+                    passed,
+                    failed,
+                    blocked,
+                    skipped,
+                    run.results.len()
+                );
+                println!("\nResults ({}):", run.results.len());
+                for r in &run.results {
+                    println!(
+                        "  {:40} {}",
+                        r.case_path,
+                        result_status_i32_to_str(r.status)
+                    );
+                    if !r.notes.trim().is_empty() {
+                        println!("    notes: {}", r.notes.trim());
+                    }
                 }
             }
         }
@@ -912,7 +960,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 }
             }
         }
-        SuitesCmd::Get { repo_id, slug } => {
+        SuitesCmd::Get { repo_id, slug, json } => {
             let suite = c
                 .get_suite(pb::GetSuiteRequest {
                     repo_id,
@@ -923,14 +971,26 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 .into_inner()
                 .suite
                 .ok_or_else(|| anyhow::anyhow!("server returned no suite"))?;
-            println!("slug:        {slug}");
-            println!("name:        {}", suite.name);
-            if !suite.description.is_empty() {
-                println!("description: {}", suite.description);
-            }
-            println!("cases ({}):", suite.cases.len());
-            for path in &suite.cases {
-                println!("  {path}");
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "slug": slug,
+                        "name": suite.name,
+                        "description": suite.description,
+                        "cases": suite.cases,
+                    }))?
+                );
+            } else {
+                println!("slug:        {slug}");
+                println!("name:        {}", suite.name);
+                if !suite.description.is_empty() {
+                    println!("description: {}", suite.description);
+                }
+                println!("cases ({}):", suite.cases.len());
+                for path in &suite.cases {
+                    println!("  {path}");
+                }
             }
         }
         SuitesCmd::Create {
@@ -1559,6 +1619,45 @@ mod tests {
             .expect("should parse");
         if let Commands::Cases(CasesCmd::List { json, .. }) = cli.command {
             assert!(!json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_get_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "get", "--repo-id", "owner/repo", "--json", "auth/login",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::Get { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_get_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "get", "--repo-id", "owner/repo", "--json", "2026-01-01-smoke",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Get { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_suites_get_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "suites", "get", "--repo-id", "owner/repo", "--json", "smoke",
+        ])
+        .expect("should parse");
+        if let Commands::Suites(SuitesCmd::Get { json, .. }) = cli.command {
+            assert!(json);
         } else {
             panic!("wrong variant");
         }
