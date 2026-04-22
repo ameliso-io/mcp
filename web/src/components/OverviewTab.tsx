@@ -9,6 +9,7 @@ import { errorMessage } from "@/errorMessage";
 import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/types_pb";
 import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useInterval } from "@/hooks/useInterval";
 
 interface Props {
   repoId: string;
@@ -114,8 +115,6 @@ export default function OverviewTab({ repoId, basePath }: Props) {
 
   useEffect(() => () => loadAbortRef.current?.abort(), []);
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   useEffect(() => {
     setCoverageFilter(ResultStatus.UNSPECIFIED);
   }, [repoId]);
@@ -127,15 +126,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   }, [repoId, load]);
 
   // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
-  useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => load(repoId, true), 30_000);
-    }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [repoId, activeRuns.length, load]);
+  useInterval(() => load(repoId, true), repoId && activeRuns.length > 0 ? 30_000 : null);
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
