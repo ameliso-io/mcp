@@ -130,18 +130,6 @@
   color: var(--color-on-primary);
 }
 
-.badgeCloned {
-  composes: badge;
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.badgeNotCloned {
-  composes: badge;
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
-}
-
 .repoUrl {
   font-size: 12px;
   color: var(--color-muted);
@@ -150,12 +138,6 @@
 
 .repoUrlLink {
   color: var(--color-primary);
-}
-
-.repoPath {
-  font-size: 12px;
-  color: var(--color-subtle);
-  font-family: monospace;
 }
 
 .searchInput {
