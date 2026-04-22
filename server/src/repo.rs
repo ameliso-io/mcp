@@ -1234,6 +1234,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_suite_valid_slug_passes_validation_and_hits_db() {
+        let err = update_suite(&lazy_pool(), "owner/repo", "regression", None, None, None)
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
     async fn delete_suite_invalid_slug_returns_invalid_arg() {
         let err = delete_suite(&lazy_pool(), "owner/repo", "bad slug!")
             .await
@@ -1415,9 +1423,16 @@ mod tests {
     async fn create_suite_empty_cases_skips_case_validation_and_hits_db() {
         // cases: vec![] — validate_suite_cases loop body never executes;
         // passes straight to INSERT → DB error.
-        let err = create_suite(&lazy_pool(), "owner/repo", "smoke", "Smoke Tests", None, vec![])
-            .await
-            .unwrap_err();
+        let err = create_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "Smoke Tests",
+            None,
+            vec![],
+        )
+        .await
+        .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
