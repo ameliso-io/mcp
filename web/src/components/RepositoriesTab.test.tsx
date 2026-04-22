@@ -439,9 +439,24 @@ describe("RepositoriesTab", () => {
   });
 
   it("Refresh All keeps repos with different installationIds after update", async () => {
-    const repoA = makeRepo({ id: "org/alpha", name: "alpha", fullName: "org/alpha", installationId: "inst-1" });
-    const repoB = makeRepo({ id: "org/beta", name: "beta", fullName: "org/beta", installationId: "inst-2" });
-    const repoAUpdated = makeRepo({ id: "org/alpha", name: "alpha-updated", fullName: "org/alpha", installationId: "inst-1" });
+    const repoA = makeRepo({
+      id: "org/alpha",
+      name: "alpha",
+      fullName: "org/alpha",
+      installationId: "inst-1",
+    });
+    const repoB = makeRepo({
+      id: "org/beta",
+      name: "beta",
+      fullName: "org/beta",
+      installationId: "inst-2",
+    });
+    const repoAUpdated = makeRepo({
+      id: "org/alpha",
+      name: "alpha-updated",
+      fullName: "org/alpha",
+      installationId: "inst-1",
+    });
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [repoA, repoB] } as never);
     vi.mocked(client.handleGitHubCallback)
       .mockResolvedValueOnce({ repositories: [repoAUpdated] } as never)
