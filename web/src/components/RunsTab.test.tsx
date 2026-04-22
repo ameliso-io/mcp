@@ -348,6 +348,30 @@ describe("RunsTab", () => {
     );
   });
 
+  it("removes run from list after finalize when status filter no longer matches", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
+    vi.mocked(client.finalizeRun).mockResolvedValue(
+      makeFinalizeRunResponse({ run: makeRunMeta({ ...mockRun, status: RunStatus.COMPLETED }) })
+    );
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        initialStatusFilter={RunStatus.IN_PROGRESS}
+        onStatusFilterChange={() => {}}
+      />
+    );
+    await waitFor(() => screen.getByText(mockRun.id));
+    await userEvent.click(screen.getByText(mockRun.id));
+    await waitFor(() => screen.getByText("Complete Run"));
+    await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(
+      screen.getByRole("button", { name: `Confirm complete run ${mockRun.id}` })
+    );
+    await waitFor(() => expect(screen.queryByText(mockRun.id)).not.toBeInTheDocument());
+    expect(client.listRuns).toHaveBeenCalledTimes(1);
+  });
+
   it("bulk pass confirm button uses plural 'cases' label when multiple pending", async () => {
     const case2 = makeCase({ path: "auth/logout", title: "User Logout" });
     vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
