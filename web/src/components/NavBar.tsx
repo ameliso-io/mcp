@@ -8,11 +8,11 @@ interface Props {
 }
 
 export default function NavBar({ basePath }: Props) {
-  const tabItems: { href: Route<string>; label: string }[] = [
-    { href: `${basePath}/overview` as Route<string>, label: "Overview" },
-    { href: `${basePath}/cases` as Route<string>, label: "Cases" },
-    { href: `${basePath}/suites` as Route<string>, label: "Suites" },
-    { href: `${basePath}/runs` as Route<string>, label: "Runs" },
+  const tabItems: { href: Route; label: string }[] = [
+    { href: `${basePath}/overview` as Route, label: "Overview" },
+    { href: `${basePath}/cases` as Route, label: "Cases" },
+    { href: `${basePath}/suites` as Route, label: "Suites" },
+    { href: `${basePath}/runs` as Route, label: "Runs" },
   ];
 
   return (

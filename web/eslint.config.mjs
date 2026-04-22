@@ -45,23 +45,8 @@ const config = [
   { ignores: ["src/gen/**", "coverage/**"] },
   ...agentConfig,
   ...nextOnly,
-  // Test files are excluded from tsconfig.json. Disable type-aware linting for them.
-  ...tseslint.config({
-    files: TEST_FILES,
-    extends: [tseslint.configs.disableTypeChecked],
-  }),
-  // Test-file-specific overrides for non-type-aware rules
-  {
-    files: TEST_FILES,
-    rules: {
-      // Tests use ! for array index access (noUncheckedIndexedAccess) and DOM queries
-      "@typescript-eslint/no-non-null-assertion": "off",
-      // Tests use empty arrow functions as stubs/mocks
-      "@typescript-eslint/no-empty-function": "off",
-      // Tests use literal error messages to verify error handling logic
-      "error/no-literal-error-message": "off",
-    },
-  },
+
+  // --- Global overrides (apply to all files) ---
   {
     rules: {
       // False positive: useEffect(() => { load() }, [load]) is idiomatic
@@ -84,9 +69,14 @@ const config = [
       "max-lines": "off",
       "max-lines-per-function": "off",
 
+      // attributes: false — async onClick handlers are fine in React
+      "@typescript-eslint/no-misused-promises": [
+        "error",
+        { checksVoidReturn: { attributes: false } },
+      ],
+      "@typescript-eslint/no-floating-promises": "error",
+
       // TODO: enable and fix incrementally
-      "@typescript-eslint/no-misused-promises": "off",
-      "@typescript-eslint/no-floating-promises": "off",
       "@typescript-eslint/restrict-template-expressions": "off",
       "early-return/prefer-early-return": "off",
       "@typescript-eslint/no-unnecessary-condition": "off",
@@ -94,6 +84,27 @@ const config = [
       "default/no-hardcoded-urls": "off",
       "default/no-default-params": "off",
       "security/detect-object-injection": "off",
+    },
+  },
+
+  // --- Test file overrides (applied AFTER globals, so they win) ---
+  // Test files are excluded from tsconfig.json. Disable type-aware linting for them.
+  ...tseslint.config({
+    files: TEST_FILES,
+    extends: [tseslint.configs.disableTypeChecked],
+  }),
+  {
+    files: TEST_FILES,
+    rules: {
+      // Tests use ! for array index access (noUncheckedIndexedAccess) and DOM queries
+      "@typescript-eslint/no-non-null-assertion": "off",
+      // Tests use empty arrow functions as stubs/mocks
+      "@typescript-eslint/no-empty-function": "off",
+      // Tests use literal error messages to verify error handling logic
+      "error/no-literal-error-message": "off",
+      // Type-aware rules require tsconfig wiring not set up for test files
+      "@typescript-eslint/no-misused-promises": "off",
+      "@typescript-eslint/no-floating-promises": "off",
     },
   },
 ];

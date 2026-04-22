@@ -12,7 +12,7 @@ interface Props {
 
 export default function MarkdownBody({ body, maxHeight }: Props) {
   const html = useMemo(() => {
-    const raw = marked(body, { async: false }) as string;
+    const raw = marked(body, { async: false });
     return DOMPurify.sanitize(raw);
   }, [body]);
   return (

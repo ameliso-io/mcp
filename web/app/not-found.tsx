@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { pageMetadata } from "@/lib/metadata";
 import styles from "./app.module.css";
+import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata("Not Found", "The page you requested could not be found");
 

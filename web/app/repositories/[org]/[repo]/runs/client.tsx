@@ -32,7 +32,7 @@ function RunsInner() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
     const qs = params.toString();
-    router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route<string>);
+    router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
   }
 
   const handleStatusFilterChange = useCallback(
@@ -45,7 +45,7 @@ function RunsInner() {
         params.delete("status");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route<string>);
+      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
     },
     [router, searchParams, basePath]
   );

@@ -3,12 +3,12 @@
 import type { Route } from "next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import styles from "./OverviewTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/types_pb";
 import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
-import styles from "./OverviewTab.module.css";
 
 interface Props {
   repoId: string;
@@ -94,7 +94,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
 
   useEffect(() => {
     if (repoId) {
-      load(repoId);
+      void load(repoId);
     }
   }, [repoId, load]);
 
@@ -102,7 +102,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => load(repoId, true), 30_000);
+      pollRef.current = setInterval(() => void load(repoId, true), 30_000);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -144,7 +144,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+            }}
             className={styles.errorDismiss}
             aria-label="Dismiss"
           >
@@ -193,7 +195,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
-                <Link href={`${basePath}/runs` as Route<string>} className={styles.goToRunsBtn}>
+                <Link href={`${basePath}/runs` as Route} className={styles.goToRunsBtn}>
                   Go to Runs
                 </Link>
               </div>
@@ -262,7 +264,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               type="text"
               aria-label="Git ref to compare from (leave empty to use last run commit)"
               value={sinceRef}
-              onChange={(e) => setSinceRef(e.target.value)}
+              onChange={(e) => {
+                setSinceRef(e.target.value);
+              }}
               placeholder="Since ref (default: last run commit)"
               className={styles.repoInput}
             />
@@ -275,7 +279,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               <span>{affectedError}</span>
               <button
                 type="button"
-                onClick={() => setAffectedError(null)}
+                onClick={() => {
+                  setAffectedError(null);
+                }}
                 className={styles.inlineErrorDismiss}
                 aria-label="Dismiss"
               >
