@@ -94,25 +94,26 @@ export default function RepositoriesTab({
     )
       return;
     onInstallationHandled?.();
+    const id = installationId;
     const ctrl = new AbortController();
     const { signal } = ctrl;
-    setLoading(true);
-    setError(null);
-    client
-      .handleGitHubCallback({ installationId }, { signal })
-      .then((res) => {
+    async function run() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await client.handleGitHubCallback({ installationId: id }, { signal });
         if (signal.aborted) return;
         setRepos((prev) => {
           const ids = new Set(res.repositories.map((r) => r.id));
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
-      })
-      .catch((e: unknown) => {
+      } catch (e: unknown) {
         if (!signal.aborted) setError(errorMessage(e));
-      })
-      .finally(() => {
+      } finally {
         if (!signal.aborted) setLoading(false);
-      });
+      }
+    }
+    void run();
     return () => {
       ctrl.abort();
     };
