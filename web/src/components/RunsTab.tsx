@@ -705,7 +705,7 @@ export default function RunsTab({
             </div>
 
             {selectedRunId === run.id && (
-              <div className={styles.expandedPanel}>
+              <div className={styles.expandedPanel} aria-busy={loadingPending}>
                 {loadingPending ? (
                   <div className={styles.panelLoading} role="status">
                     Loading…
