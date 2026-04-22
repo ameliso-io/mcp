@@ -56,6 +56,7 @@ pub struct RunRow {
     pub suite: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct LoadedRun {
     pub meta: RunRow,
     pub results: Vec<LoadedResult>,
@@ -1321,16 +1322,9 @@ mod tests {
     async fn create_run_no_suite_passes_validation_and_hits_db() {
         // suite: None — outer `if let Some(ref suite_slug) = suite` is false, skipping
         // all suite validation; passes pre-DB checks → DB error.
-        let err = create_run(
-            &lazy_pool(),
-            "owner/repo",
-            "smoke",
-            "tester",
-            None,
-            None,
-        )
-        .await
-        .unwrap_err();
+        let err = create_run(&lazy_pool(), "owner/repo", "smoke", "tester", None, None)
+            .await
+            .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
@@ -1370,14 +1364,9 @@ mod tests {
     #[tokio::test]
     async fn finalize_run_valid_inputs_passes_validation_and_hits_db() {
         // Both validations pass (valid status, run_id) → DB error.
-        let err = finalize_run(
-            &lazy_pool(),
-            "owner/repo",
-            "2026-04-21-smoke",
-            "completed",
-        )
-        .await
-        .unwrap_err();
+        let err = finalize_run(&lazy_pool(), "owner/repo", "2026-04-21-smoke", "completed")
+            .await
+            .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
@@ -1396,5 +1385,71 @@ mod tests {
         .await
         .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_case_valid_path_passes_validation_and_hits_db() {
+        let err = get_case(&lazy_pool(), "owner/repo", "auth/login")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn delete_case_valid_path_passes_validation_and_hits_db() {
+        let err = delete_case(&lazy_pool(), "owner/repo", "auth/login")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_suite_valid_slug_passes_validation_and_hits_db() {
+        let err = get_suite(&lazy_pool(), "owner/repo", "regression")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_suite_empty_cases_skips_case_validation_and_hits_db() {
+        // cases: vec![] — validate_suite_cases loop body never executes;
+        // passes straight to INSERT → DB error.
+        let err = create_suite(&lazy_pool(), "owner/repo", "smoke", "Smoke Tests", None, vec![])
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn delete_suite_valid_slug_passes_validation_and_hits_db() {
+        let err = delete_suite(&lazy_pool(), "owner/repo", "regression")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_run_valid_run_id_passes_validation_and_hits_db() {
+        let err = get_run(&lazy_pool(), "owner/repo", "2026-04-21-smoke")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn delete_run_valid_run_id_passes_validation_and_hits_db() {
+        let err = delete_run(&lazy_pool(), "owner/repo", "2026-04-21-smoke")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_pending_cases_valid_run_id_passes_validation_and_hits_db() {
+        let err = get_pending_cases(&lazy_pool(), "owner/repo", "2026-04-21-smoke")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 }
