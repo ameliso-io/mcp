@@ -1496,4 +1496,75 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.getByText("rename failed")).toBeInTheDocument());
   });
+
+  it("shows recorded results section when in-progress run has results", async () => {
+    const result = makeCaseResult({ casePath: "auth/login", status: ResultStatus.PASSED });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: mockRun, results: [result] },
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("Recorded (1)")).toBeInTheDocument());
+    expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
+  });
+
+  it("calls getRun and listCases when in-progress run is expanded", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() =>
+      expect(client.getRun).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: "2026-01-01-smoke" })
+      )
+    );
+    expect(client.listCases).toHaveBeenCalledWith(
+      expect.objectContaining({ repoId: "owner/repo" })
+    );
+  });
+
+  it("updates recorded results section after recording a result", async () => {
+    const result = makeCaseResult({ casePath: "auth/login", status: ResultStatus.FAILED, notes: "error" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getRun)
+      .mockResolvedValueOnce({ run: { meta: mockRun, results: [] } } as never)
+      .mockResolvedValueOnce({ run: { meta: mockRun, results: [result] } } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    await waitFor(() => screen.getByText("Save Result"));
+    await userEvent.click(screen.getByText("Save Result"));
+    await waitFor(() => expect(screen.getByText("Recorded (1)")).toBeInTheDocument());
+  });
+
+  it("updates recorded results after bulk pass", async () => {
+    const result = makeCaseResult({ casePath: "auth/login", status: ResultStatus.PASSED });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getRun)
+      .mockResolvedValueOnce({ run: { meta: mockRun, results: [] } } as never)
+      .mockResolvedValueOnce({ run: { meta: mockRun, results: [result] } } as never);
+    vi.mocked(client.bulkRecordResults).mockResolvedValue({
+      results: [result],
+      pendingCount: 0,
+      totalInScope: 1,
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByRole("button", { name: /All Passed/ }));
+    await userEvent.click(screen.getByRole("button", { name: /All Passed/ }));
+    await waitFor(() =>
+      screen.getByRole("button", {
+        name: `Confirm pass all 1 pending case`,
+      })
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: `Confirm pass all 1 pending case` })
+    );
+    await waitFor(() => expect(screen.getByText("Recorded (1)")).toBeInTheDocument());
+  });
 });

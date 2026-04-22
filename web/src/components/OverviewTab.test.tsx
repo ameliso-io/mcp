@@ -749,9 +749,9 @@ describe("OverviewTab", () => {
     // Switch to a different repo
     rerender(<OverviewTab repoId="other/repo" basePath="/repositories/other/repo" />);
     await waitFor(() =>
-      expect(
-        screen.getByRole("combobox", { name: "Filter coverage by status" })
-      ).toHaveValue(String(ResultStatus.UNSPECIFIED))
+      expect(screen.getByRole("combobox", { name: "Filter coverage by status" })).toHaveValue(
+        String(ResultStatus.UNSPECIFIED)
+      )
     );
     // Reload should use UNSPECIFIED filter for the new repo
     await waitFor(() =>

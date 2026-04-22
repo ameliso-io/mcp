@@ -208,9 +208,15 @@ export default function RunsTab({
     setCaseBody(null);
     try {
       if (status === RunStatus.IN_PROGRESS) {
-        const res = await client.getPendingCases({ repoId, runId });
-        setPendingCases(res.cases);
-        setTotalInScope(res.totalInScope);
+        const [pendingRes, runRes, casesRes] = await Promise.all([
+          client.getPendingCases({ repoId, runId }),
+          client.getRun({ repoId, runId }),
+          client.listCases({ repoId }),
+        ]);
+        setPendingCases(pendingRes.cases);
+        setTotalInScope(pendingRes.totalInScope);
+        setRecordedResults(runRes.run?.results ?? []);
+        setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
       } else {
         const [runRes, casesRes] = await Promise.all([
           client.getRun({ repoId, runId }),
@@ -245,10 +251,14 @@ export default function RunsTab({
       setRecordStatus(ResultStatus.PASSED);
       setCaseBody(null);
       announce("Result recorded");
-      // Refresh pending
-      const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-      setPendingCases(res.cases);
-      setTotalInScope(res.totalInScope);
+      // Refresh pending and recorded results
+      const [pendingRes, runRes] = await Promise.all([
+        client.getPendingCases({ repoId, runId: selectedRunId }),
+        client.getRun({ repoId, runId: selectedRunId }),
+      ]);
+      setPendingCases(pendingRes.cases);
+      setTotalInScope(pendingRes.totalInScope);
+      setRecordedResults(runRes.run?.results ?? []);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -310,6 +320,8 @@ export default function RunsTab({
       setTotalInScope(resp.totalInScope);
       setRecordingCase(null);
       setCaseBody(null);
+      const runRes = await client.getRun({ repoId, runId });
+      setRecordedResults(runRes.run?.results ?? []);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -881,6 +893,33 @@ export default function RunsTab({
 
                     {pendingCases.length === 0 && (
                       <p className={styles.allDone}>All cases have results recorded.</p>
+                    )}
+
+                    {recordedResults.length > 0 && (
+                      <div className={styles.recordedSection}>
+                        <h4 className={styles.recordedLabel}>
+                          Recorded ({recordedResults.length})
+                        </h4>
+                        <ul className={styles.resultList} role="list">
+                          {recordedResults.map((r) => (
+                            <li key={r.casePath} className={styles.resultRow}>
+                              <span
+                                className={styles.resultStatusBadge}
+                                data-status={ResultStatus[r.status]}
+                              >
+                                {statusLabel(r.status)}
+                              </span>
+                              <span className={styles.resultPath}>{r.casePath}</span>
+                              {caseTitleMap.get(r.casePath)?.title && (
+                                <span className={styles.resultTitle}>
+                                  {caseTitleMap.get(r.casePath)?.title}
+                                </span>
+                              )}
+                              {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
 
                     <ul className={styles.pendingList} role="list">

@@ -424,6 +424,19 @@
   font-size: 14px;
 }
 
+.recordedSection {
+  margin-bottom: 16px;
+}
+
+.recordedLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .pendingList {
   display: flex;
   flex-direction: column;
