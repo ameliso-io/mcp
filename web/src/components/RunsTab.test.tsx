@@ -188,6 +188,38 @@ describe("RunsTab", () => {
     );
   });
 
+  it("discards stale listRuns response when status filter changes before first load resolves", async () => {
+    let resolveFirst!: (v: ReturnType<typeof makeListRunsResponse>) => void;
+    let resolveSecond!: (v: ReturnType<typeof makeListRunsResponse>) => void;
+    const inProgressRun = makeRunMeta({ id: "run-ip", suite: "smoke", status: RunStatus.IN_PROGRESS });
+    vi.mocked(client.listRuns)
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res as typeof resolveFirst;
+          }) as ReturnType<typeof client.listRuns>
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveSecond = res as typeof resolveSecond;
+          }) as ReturnType<typeof client.listRuns>
+      );
+
+    render(<RunsTab repoId="owner/repo" />);
+    // Change filter to trigger second load before first resolves
+    await userEvent.click(screen.getByRole("button", { name: "In Progress" }));
+    // Resolve second first (out of order)
+    resolveSecond(makeListRunsResponse({ runs: [inProgressRun] }));
+    await waitFor(() => screen.getByText("run-ip"));
+    // Now resolve first (stale) — must not overwrite second result
+    resolveFirst(makeListRunsResponse({ runs: [mockRun] }));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(mockRun.id)).not.toBeInTheDocument();
+    expect(screen.getByText("run-ip")).toBeInTheDocument();
+
+  });
+
   it("calls onStatusFilterChange when filter button clicked", async () => {
     const onStatusFilterChange = vi.fn();
     render(<RunsTab repoId="owner/repo" onStatusFilterChange={onStatusFilterChange} />);
