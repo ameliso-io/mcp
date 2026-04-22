@@ -614,7 +614,7 @@ describe("OverviewTab", () => {
       ],
       runCount: 1,
     } as never);
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("Login")).toBeInTheDocument());
     // PASSED (Login) must appear before UNSPECIFIED (Reset) in DOM — sort order 4 < 5.
     const body = document.body.innerHTML;

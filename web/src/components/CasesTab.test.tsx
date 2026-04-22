@@ -817,10 +817,10 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "auth/new");
-    await userEvent.type(inputs[1], "New Case");
+    await userEvent.type(inputs[0]!, "auth/new");
+    await userEvent.type(inputs[1]!, "New Case");
     // Input with leading/trailing commas and whitespace-only segment
-    await userEvent.type(inputs[3], "auth, , smoke,");
+    await userEvent.type(inputs[3]!, "auth, , smoke,");
     await userEvent.click(screen.getByText("Create"));
     await waitFor(() =>
       expect(client.createCase).toHaveBeenCalledWith(

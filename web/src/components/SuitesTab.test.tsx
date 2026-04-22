@@ -581,20 +581,20 @@ describe("SuitesTab", () => {
     const emptySuite = { ...mockSuite, cases: [] } as unknown as Suite;
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [emptySuite] } as never);
     vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
-    render(<SuitesTab repoId="owner/repo" />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByText("Smoke Tests"));
     await waitFor(() => expect(screen.getByText("No cases in this suite.")).toBeInTheDocument());
   });
 
   it("filters whitespace-only entries from cases field during create", async () => {
-    render(<SuitesTab repoId="owner/repo" />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.type(inputs[0], "smoke");
-    await userEvent.type(inputs[1], "Smoke Tests");
+    await userEvent.type(inputs[0]!, "smoke");
+    await userEvent.type(inputs[1]!, "Smoke Tests");
     // Trailing comma and whitespace-only segment should be filtered out.
-    await userEvent.type(inputs[3], "auth/login, , auth/logout,");
+    await userEvent.type(inputs[3]!, "auth/login, , auth/logout,");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     await waitFor(() =>
       expect(client.createSuite).toHaveBeenCalledWith(
@@ -606,12 +606,12 @@ describe("SuitesTab", () => {
   it('shows "1 case" (singular) when suite has exactly one case', async () => {
     const oneCaseSuite = { ...mockSuite, cases: ["auth/login"] } as unknown as Suite;
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [oneCaseSuite] } as never);
-    render(<SuitesTab repoId="owner/repo" />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());
   });
 
   it("does not call createSuite when create form submitted with empty slug", async () => {
-    render(<SuitesTab repoId="owner/repo" />);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("+ New Suite"));
     await userEvent.click(screen.getByText("+ New Suite"));
     // fireEvent bypasses HTML5 required validation — triggers guard: !newSlug
