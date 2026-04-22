@@ -170,6 +170,12 @@
   padding: 0;
 }
 
+.listStale {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
 .runCard {
   composes: card;
   margin-bottom: 0;

@@ -411,6 +411,9 @@ export default function RunsTab({
   const deferredFilteredResults = useDeferredValue(filteredResults);
   const isResultsStale = filteredResults !== deferredFilteredResults;
 
+  const deferredRuns = useDeferredValue(runs);
+  const isRunsStale = runs !== deferredRuns;
+
   if (!repoId) {
     return (
       <div className={styles.noRepo}>
@@ -567,12 +570,16 @@ export default function RunsTab({
         </div>
       )}
 
-      {!loading && runs.length === 0 && !error && (
+      {!loading && deferredRuns.length === 0 && !error && (
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
-      <ul className={styles.list} aria-busy={loading} role="list">
-        {runs.map((run) => (
+      <ul
+        className={isRunsStale ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading || isRunsStale || undefined}
+        role="list"
+      >
+        {deferredRuns.map((run) => (
           <li key={run.id}>
             <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>
@@ -693,7 +700,15 @@ export default function RunsTab({
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <ul className={isResultsStale ? `${styles.resultList} ${styles.resultListStale}` : styles.resultList} role="list" aria-busy={isResultsStale}>
+                      <ul
+                        className={
+                          isResultsStale
+                            ? `${styles.resultList} ${styles.resultListStale}`
+                            : styles.resultList
+                        }
+                        role="list"
+                        aria-busy={isResultsStale}
+                      >
                         {deferredFilteredResults.map((r) => {
                           const caseEntry = caseTitleMap.get(r.casePath);
                           return (
