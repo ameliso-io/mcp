@@ -325,11 +325,10 @@ export default function CasesTab({
             aria-label="Create Case"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setShowCreate(false);
-                lastFocusRef.current?.focus();
-              }
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              setShowCreate(false);
+              lastFocusRef.current?.focus();
             }}
             className={styles.formGrid}
           >
@@ -540,11 +539,10 @@ export default function CasesTab({
                     aria-label={`Edit case ${c.path}`}
                     onSubmit={handleUpdate}
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        e.preventDefault();
-                        setEditingPath(null);
-                        lastFocusRef.current?.focus();
-                      }
+                      if (e.key !== "Escape") return;
+                      e.preventDefault();
+                      setEditingPath(null);
+                      lastFocusRef.current?.focus();
                     }}
                     className={styles.formGridSm}
                   >

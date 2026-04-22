@@ -657,4 +657,16 @@ describe("SuitesTab", () => {
     );
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
   });
+
+  it("does not auto-expand when initialExpanded slug does not match any suite", async () => {
+    render(
+      <SuitesTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialExpanded="nonexistent-slug"
+      />
+    );
+    await waitFor(() => expect(screen.getByText("Smoke Tests")).toBeInTheDocument());
+    expect(screen.queryByText("User Login")).not.toBeInTheDocument();
+  });
 });

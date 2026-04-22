@@ -14,6 +14,6 @@ export function generateImageMetadata() {
 }
 
 export default function Icon({ id }: { id: string }) {
-  const s = (Number(id) as Size) || 32;
+  const s = (Number(id) || 32) as Size;
   return renderIcon(s);
 }

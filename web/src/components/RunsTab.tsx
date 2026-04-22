@@ -98,12 +98,11 @@ export default function RunsTab({
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
-    if (initialSuite && !consumedRef.current) {
-      consumedRef.current = true;
-      setNewSuite(initialSuite);
-      setShowCreate(true);
-      onInitialSuiteConsumed?.();
-    }
+    if (!initialSuite || consumedRef.current) return;
+    consumedRef.current = true;
+    setNewSuite(initialSuite);
+    setShowCreate(true);
+    onInitialSuiteConsumed?.();
   }, [initialSuite, onInitialSuiteConsumed]);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
@@ -382,11 +381,10 @@ export default function RunsTab({
             aria-label="Create Run"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setShowCreate(false);
-                lastFocusRef.current?.focus();
-              }
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              setShowCreate(false);
+              lastFocusRef.current?.focus();
             }}
             className={styles.formGrid}
           >
@@ -680,8 +678,7 @@ export default function RunsTab({
                         {pendingCases.length} pending
                         <span className={styles.refreshHint}>auto-refresh 30s</span>
                       </h3>
-                      {run.status === RunStatus.IN_PROGRESS && (
-                        <div className={styles.pendingActions}>
+                      <div className={styles.pendingActions}>
                           {pendingCases.length > 0 &&
                             (confirmingBulkPass === run.id ? (
                               <>
@@ -781,7 +778,6 @@ export default function RunsTab({
                             </>
                           )}
                         </div>
-                      )}
                     </div>
 
                     {pendingCases.length === 0 && (
@@ -794,20 +790,18 @@ export default function RunsTab({
                           <div className={styles.pendingRow}>
                             <span className={styles.pendingPath}>{c.path}</span>
                             <span className={styles.pendingTitle}>{c.title}</span>
-                            {run.status === RunStatus.IN_PROGRESS && (
-                              <button
-                                type="button"
-                                onClick={() => openRecord(c.path)}
-                                aria-label={
-                                  recordingCase === c.path
-                                    ? `Cancel recording ${c.path}`
-                                    : `Record result for ${c.path}`
-                                }
-                                className={styles.btnRecordSm}
-                              >
-                                {recordingCase === c.path ? "Cancel" : "Record"}
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => openRecord(c.path)}
+                              aria-label={
+                                recordingCase === c.path
+                                  ? `Cancel recording ${c.path}`
+                                  : `Record result for ${c.path}`
+                              }
+                              className={styles.btnRecordSm}
+                            >
+                              {recordingCase === c.path ? "Cancel" : "Record"}
+                            </button>
                           </div>
 
                           {recordingCase === c.path && (
@@ -827,12 +821,11 @@ export default function RunsTab({
                                 aria-label={`Record result for ${recordingCase}`}
                                 onSubmit={handleRecord}
                                 onKeyDown={(e) => {
-                                  if (e.key === "Escape") {
-                                    e.preventDefault();
-                                    setRecordingCase(null);
-                                    setCaseBody(null);
-                                    lastFocusRef.current?.focus();
-                                  }
+                                  if (e.key !== "Escape") return;
+                                  e.preventDefault();
+                                  setRecordingCase(null);
+                                  setCaseBody(null);
+                                  lastFocusRef.current?.focus();
                                 }}
                                 className={styles.recordForm}
                               >
