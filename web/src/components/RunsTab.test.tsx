@@ -347,6 +347,17 @@ describe("RunsTab", () => {
     );
   });
 
+  it("removes run from list after deleteRun without re-fetching", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
+    await waitFor(() => expect(screen.queryByText(mockRun.id)).not.toBeInTheDocument());
+    expect(client.listRuns).toHaveBeenCalledTimes(1);
+  });
+
   it("shows result badges for completed run", async () => {
     const completedRun = makeRunMeta({
       tester: "alice",
