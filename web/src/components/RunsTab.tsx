@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, useTransition } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useTransition, useDeferredValue } from "react";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
 import { client } from "@/client";
@@ -428,6 +428,8 @@ export default function RunsTab({
         : recordedResults,
     [recordedResults, resultStatusFilter]
   );
+  const deferredFilteredResults = useDeferredValue(filteredResults);
+  const isResultsStale = filteredResults !== deferredFilteredResults;
 
   if (!repoId) {
     return (
@@ -790,8 +792,8 @@ export default function RunsTab({
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <ul className={styles.resultList} role="list">
-                        {filteredResults.map((r) => {
+                      <ul className={styles.resultList} role="list" aria-busy={isResultsStale}>
+                        {deferredFilteredResults.map((r) => {
                           const caseEntry = caseTitleMap.get(r.casePath);
                           return (
                             <li key={r.casePath} className={styles.resultRow}>
