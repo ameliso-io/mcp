@@ -600,7 +600,9 @@ export default function RunsTab({
             </button>
             <button
               type="button"
-              onClick={() => setError(null)}
+              onClick={() => {
+                setError(null);
+              }}
               className={styles.errorDismiss}
               aria-label="Dismiss"
             >
@@ -776,9 +778,11 @@ export default function RunsTab({
                             <button
                               key={s.label}
                               type="button"
-                              onClick={() =>
-                                setResultStatusFilter((rsf) => (rsf === s.status ? null : s.status))
-                              }
+                              onClick={() => {
+                                setResultStatusFilter((rsf) =>
+                                  rsf === s.status ? null : s.status
+                                );
+                              }}
                               aria-pressed={resultStatusFilter === s.status}
                               className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
                               data-status={ResultStatus[s.status]}
@@ -789,7 +793,9 @@ export default function RunsTab({
                         {resultStatusFilter !== null && (
                           <button
                             type="button"
-                            onClick={() => setResultStatusFilter(null)}
+                            onClick={() => {
+                              setResultStatusFilter(null);
+                            }}
                             className={styles.showAllBtn}
                           >
                             Show all

@@ -721,15 +721,15 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByRole("button", { name: "Delete smoke" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
-    await waitFor(() =>
-      expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument());
     expect(client.listSuites).toHaveBeenCalledTimes(1);
   });
 
   it("updates suite in list from updateSuite response without re-fetching", async () => {
     const updatedSuite = makeSuite({ slug: "smoke", name: "Updated Smoke", cases: [] });
-    vi.mocked(client.updateSuite).mockResolvedValue(makeUpdateSuiteResponse({ suite: updatedSuite }));
+    vi.mocked(client.updateSuite).mockResolvedValue(
+      makeUpdateSuiteResponse({ suite: updatedSuite })
+    );
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));

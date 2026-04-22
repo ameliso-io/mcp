@@ -796,7 +796,9 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
 
     // resolve stale first fetch — should not overwrite second body
-    await act(async () => resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" })));
+    await act(async () =>
+      resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }))
+    );
     expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
   });

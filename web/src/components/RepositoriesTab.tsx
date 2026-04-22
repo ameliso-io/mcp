@@ -250,7 +250,9 @@ export default function RepositoriesTab({
             </button>
             <button
               type="button"
-              onClick={() => setError(null)}
+              onClick={() => {
+                setError(null);
+              }}
               className={styles.errorDismiss}
               aria-label="Dismiss"
             >

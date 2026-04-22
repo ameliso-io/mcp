@@ -11,12 +11,12 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import styles from "./CasesTab.module.css";
+import LoadingSpinner from "./LoadingSpinner";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
-import LoadingSpinner from "./LoadingSpinner";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
   ssr: false,
@@ -600,7 +600,9 @@ export default function CasesTab({
             </button>
             <button
               type="button"
-              onClick={() => setError(null)}
+              onClick={() => {
+                setError(null);
+              }}
               className={styles.errorDismiss}
               aria-label="Dismiss"
             >
@@ -653,7 +655,9 @@ export default function CasesTab({
                       <input
                         autoFocus
                         value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
+                        onChange={(e) => {
+                          setEditTitle(e.target.value);
+                        }}
                         required
                         className={styles.input}
                       />
@@ -664,7 +668,9 @@ export default function CasesTab({
                       Priority
                       <select
                         value={editPriority}
-                        onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
+                        onChange={(e) => {
+                          setEditPriority(Number(e.target.value));
+                        }}
                         className={styles.input}
                       >
                         <option value={Priority.LOW}>Low</option>
@@ -678,7 +684,9 @@ export default function CasesTab({
                       Description
                       <input
                         value={editDesc}
-                        onChange={(e) => setEditDesc(e.target.value)}
+                        onChange={(e) => {
+                          setEditDesc(e.target.value);
+                        }}
                         className={styles.input}
                       />
                     </label>
@@ -688,7 +696,9 @@ export default function CasesTab({
                       Tags (comma-separated)
                       <input
                         value={editTags}
-                        onChange={(e) => setEditTags(e.target.value)}
+                        onChange={(e) => {
+                          setEditTags(e.target.value);
+                        }}
                         className={styles.input}
                       />
                     </label>
@@ -698,7 +708,9 @@ export default function CasesTab({
                       Steps / Body (Markdown)
                       <textarea
                         value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
+                        onChange={(e) => {
+                          setEditBody(e.target.value);
+                        }}
                         rows={8}
                         className={styles.textarea}
                       />
@@ -773,7 +785,9 @@ export default function CasesTab({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setConfirmingDelete(null)}
+                        onClick={() => {
+                          setConfirmingDelete(null);
+                        }}
                         aria-label="Cancel delete"
                         className={styles.btnOutlineSm}
                         autoFocus
@@ -784,7 +798,9 @@ export default function CasesTab({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmingDelete(c.path)}
+                      onClick={() => {
+                        setConfirmingDelete(c.path);
+                      }}
                       aria-label={`Delete ${c.path}`}
                       className={styles.btnDangerSm}
                     >

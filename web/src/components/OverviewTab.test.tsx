@@ -777,9 +777,11 @@ describe("OverviewTab", () => {
       );
     vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse());
 
-    const { rerender } = render(<OverviewTab repoId="owner/repo" />);
+    const { rerender } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await act(async () => {
-      rerender(<OverviewTab repoId="owner/repo2" />);
+      rerender(<OverviewTab repoId="owner/repo2" basePath="/repositories/owner/repo2" />);
     });
 
     resolveSecond(makeGetCoverageReportResponse({ entries: [newEntry], runCount: 1 }));

@@ -206,7 +206,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => setError(null)}
+              onClick={() => {
+                setError(null);
+              }}
               className={styles.errorDismiss}
               aria-label="Dismiss"
             >
