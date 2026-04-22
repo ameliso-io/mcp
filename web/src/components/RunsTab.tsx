@@ -6,6 +6,7 @@ import styles from "./RunsTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useInterval } from "@/hooks/useInterval";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 
@@ -114,26 +115,18 @@ export default function RunsTab({
   }, [initialSuite, onInitialSuiteConsumed]);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
-  const pendingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    if (pendingPollRef.current) clearInterval(pendingPollRef.current);
-    const selectedRun = runs.find((r) => r.id === selectedRunId);
-    if (selectedRun?.status === RunStatus.IN_PROGRESS && selectedRunId) {
-      const runId = selectedRunId;
-      pendingPollRef.current = setInterval(async () => {
-        try {
-          const res = await client.getPendingCases({ repoId, runId });
-          setPendingCases(res.cases);
-          setTotalInScope(res.totalInScope);
-        } catch {
-          // silently ignore poll errors
-        }
-      }, 30_000);
+  const selectedRun = runs.find((r) => r.id === selectedRunId);
+  const isSelectedInProgress = selectedRun?.status === RunStatus.IN_PROGRESS && !!selectedRunId;
+  useInterval(async () => {
+    if (!selectedRunId) return;
+    try {
+      const res = await client.getPendingCases({ repoId, runId: selectedRunId });
+      setPendingCases(res.cases);
+      setTotalInScope(res.totalInScope);
+    } catch {
+      // silently ignore poll errors
     }
-    return () => {
-      if (pendingPollRef.current) clearInterval(pendingPollRef.current);
-    };
-  }, [repoId, selectedRunId, runs]);
+  }, isSelectedInProgress ? 30_000 : null);
 
   const loadAbortRef = useRef<AbortController | null>(null);
 
