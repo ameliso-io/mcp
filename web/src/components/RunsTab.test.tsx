@@ -1510,6 +1510,20 @@ describe("RunsTab", () => {
     expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
   });
 
+  it("shows case title in recorded results when caseTitleMap has matching case", async () => {
+    const result = makeCaseResult({ casePath: "auth/login", status: ResultStatus.PASSED });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: mockRun, results: [result] },
+    } as never);
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(screen.getByText("Recorded (1)")).toBeInTheDocument());
+    expect(screen.getAllByText("User Login").length).toBeGreaterThan(0);
+  });
+
   it("calls getRun and listCases when in-progress run is expanded", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" />);
