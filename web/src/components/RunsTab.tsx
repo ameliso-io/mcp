@@ -63,11 +63,13 @@ export default function RunsTab({
 
   // Create run form
   const [showCreate, setShowCreate] = useState(false);
-  const [newSlug, setNewSlug] = useState("");
-  const [newTester, setNewTester] = useState("");
-  const [newEnv, setNewEnv] = useState("");
-  const [newSuite, setNewSuite] = useState("");
-  const [newCases, setNewCases] = useState("");
+  const [createForm, setCreateForm] = useState({
+    slug: "",
+    tester: "",
+    env: "",
+    suite: "",
+    cases: "",
+  });
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
@@ -104,7 +106,7 @@ export default function RunsTab({
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
       consumedRef.current = true;
-      setNewSuite(initialSuite);
+      setCreateForm((f) => ({ ...f, suite: initialSuite }));
       setShowCreate(true);
       onInitialSuiteConsumed?.();
     }
@@ -163,17 +165,17 @@ export default function RunsTab({
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newSlug) return;
+    if (!repoId || !createForm.slug) return;
     setCreating(true);
     try {
       const created = await client.createRun({
         repoId,
-        slug: newSlug,
-        tester: newTester,
-        environment: newEnv,
-        suite: newSuite,
-        cases: newCases
-          ? newCases
+        slug: createForm.slug,
+        tester: createForm.tester,
+        environment: createForm.env,
+        suite: createForm.suite,
+        cases: createForm.cases
+          ? createForm.cases
               .split(",")
               .map((c) => c.trim())
               .filter(Boolean)
@@ -181,11 +183,7 @@ export default function RunsTab({
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
-      setNewSlug("");
-      setNewTester("");
-      setNewEnv("");
-      setNewSuite("");
-      setNewCases("");
+      setCreateForm({ slug: "", tester: "", env: "", suite: "", cases: "" });
       announce("Run created");
       await load();
       // Auto-expand the newly created run
@@ -454,9 +452,9 @@ export default function RunsTab({
               <label className={styles.label}>
                 Slug
                 <input
-                  value={newSlug}
+                  value={createForm.slug}
                   onChange={(e) => {
-                    setNewSlug(e.target.value);
+                    setCreateForm((f) => ({ ...f, slug: e.target.value }));
                   }}
                   required
                   autoFocus
@@ -468,9 +466,9 @@ export default function RunsTab({
               <label className={styles.label}>
                 Tester
                 <input
-                  value={newTester}
+                  value={createForm.tester}
                   onChange={(e) => {
-                    setNewTester(e.target.value);
+                    setCreateForm((f) => ({ ...f, tester: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -480,9 +478,9 @@ export default function RunsTab({
               <label className={styles.label}>
                 Environment
                 <input
-                  value={newEnv}
+                  value={createForm.env}
                   onChange={(e) => {
-                    setNewEnv(e.target.value);
+                    setCreateForm((f) => ({ ...f, env: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -492,9 +490,9 @@ export default function RunsTab({
               <label className={styles.label}>
                 Suite (optional)
                 <input
-                  value={newSuite}
+                  value={createForm.suite}
                   onChange={(e) => {
-                    setNewSuite(e.target.value);
+                    setCreateForm((f) => ({ ...f, suite: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -504,9 +502,9 @@ export default function RunsTab({
               <label className={styles.label}>
                 Inline cases (optional, comma-separated paths)
                 <input
-                  value={newCases}
+                  value={createForm.cases}
                   onChange={(e) => {
-                    setNewCases(e.target.value);
+                    setCreateForm((f) => ({ ...f, cases: e.target.value }));
                   }}
                   className={styles.input}
                   placeholder="auth/login, billing/checkout"
