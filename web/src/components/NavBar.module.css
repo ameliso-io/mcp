@@ -1,11 +1,11 @@
 .header {
-  background-color: var(--color-ink);
-  color: var(--color-on-primary);
+  background-color: var(--color-nav-bg);
+  color: var(--color-nav-active-text);
   padding: 0 24px;
   display: flex;
   align-items: center;
   gap: 32px;
-  border-bottom: 1px solid var(--color-ink-hover);
+  border-bottom: 1px solid var(--color-nav-border);
 }
 
 .logo {
@@ -13,7 +13,7 @@
   font-weight: 700;
   letter-spacing: -0.5px;
   padding: 16px 0;
-  color: var(--color-border);
+  color: var(--color-nav-logo);
   text-decoration: none;
 }
 
@@ -23,7 +23,7 @@
 }
 
 .link {
-  color: var(--color-subtle);
+  color: var(--color-nav-link);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
@@ -36,13 +36,13 @@
 }
 
 .link:hover {
-  color: var(--color-border);
-  background-color: var(--color-ink-active);
+  color: var(--color-nav-logo);
+  background-color: var(--color-nav-link-hover-bg);
 }
 
 .linkActive {
-  background-color: var(--color-ink-hover);
-  color: var(--color-on-primary);
+  background-color: var(--color-nav-active-bg);
+  color: var(--color-nav-active-text);
 }
 
 .navLinkLabel[data-pending="true"] {
