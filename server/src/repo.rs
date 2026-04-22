@@ -209,7 +209,9 @@ pub async fn create_case(
     .rows_affected();
 
     if rows_affected == 0 {
-        return Err(RepoError::AlreadyExists(format!("case already exists: {case_path}")));
+        return Err(RepoError::AlreadyExists(format!(
+            "case already exists: {case_path}"
+        )));
     }
 
     Ok(LoadedCase {
@@ -254,7 +256,9 @@ pub async fn update_case(
             .await
             .map_err(map_db)?;
             if conflict {
-                return Err(RepoError::AlreadyExists(format!("case already exists: {np}")));
+                return Err(RepoError::AlreadyExists(format!(
+                    "case already exists: {np}"
+                )));
             }
             // Rename: update case_path, fix suites referencing old path, fix results, fix run_cases.
             let rows =
@@ -326,7 +330,9 @@ pub async fn update_case(
     .map_err(map_db)?
     .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("case not found: {effective_path}")));
+        return Err(RepoError::NotFound(format!(
+            "case not found: {effective_path}"
+        )));
     }
 
     Ok(LoadedCase {
@@ -474,7 +480,9 @@ pub async fn create_suite(
     .rows_affected();
 
     if rows == 0 {
-        return Err(RepoError::AlreadyExists(format!("suite already exists: {slug}")));
+        return Err(RepoError::AlreadyExists(format!(
+            "suite already exists: {slug}"
+        )));
     }
 
     Ok(SuiteRow {
@@ -509,7 +517,9 @@ pub async fn update_suite(
             .await
             .map_err(map_db)?;
             if conflict {
-                return Err(RepoError::AlreadyExists(format!("suite already exists: {ns}")));
+                return Err(RepoError::AlreadyExists(format!(
+                    "suite already exists: {ns}"
+                )));
             }
             // Rename: update slug and also update any runs that reference the old slug.
             let rows = sqlx::query("UPDATE suites SET slug=$3 WHERE repo_id=$1 AND slug=$2")
@@ -559,7 +569,9 @@ pub async fn update_suite(
     .map_err(map_db)?
     .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("suite not found: {effective_slug}")));
+        return Err(RepoError::NotFound(format!(
+            "suite not found: {effective_slug}"
+        )));
     }
 
     Ok(SuiteRow {
@@ -652,7 +664,9 @@ pub async fn create_run(
             .await
             .map_err(map_db)?;
             if !exists {
-                return Err(RepoError::NotFound(format!("suite not found: {suite_slug}")));
+                return Err(RepoError::NotFound(format!(
+                    "suite not found: {suite_slug}"
+                )));
             }
         }
     }
@@ -677,7 +691,9 @@ pub async fn create_run(
     .rows_affected();
 
     if rows == 0 {
-        return Err(RepoError::AlreadyExists(format!("run already exists: {run_id}")));
+        return Err(RepoError::AlreadyExists(format!(
+            "run already exists: {run_id}"
+        )));
     }
 
     if !inline_cases.is_empty() {
@@ -729,7 +745,9 @@ pub async fn record_result(
             return Err(RepoError::NotFound(format!("run not found: {run_id}")));
         }
         Some("completed" | "aborted") => {
-            return Err(RepoError::ClosedRun(format!("run {run_id} is closed; cannot record results")));
+            return Err(RepoError::ClosedRun(format!(
+                "run {run_id} is closed; cannot record results"
+            )));
         }
         _ => {}
     }
@@ -800,7 +818,9 @@ pub async fn finalize_run(
     match current.as_deref() {
         None => return Err(RepoError::NotFound(format!("run not found: {run_id}"))),
         Some("completed" | "aborted") => {
-            return Err(RepoError::ClosedRun(format!("run {run_id} is already closed")));
+            return Err(RepoError::ClosedRun(format!(
+                "run {run_id} is already closed"
+            )));
         }
         _ => {}
     }
@@ -822,8 +842,14 @@ pub async fn finalize_run(
 
 pub async fn delete_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<()> {
     validate_slug_path(run_id, "run")?;
-    // Delete results first (no FK cascade defined), then the run.
+    // Delete child rows first (no FK cascade defined), then the run.
     sqlx::query("DELETE FROM results WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .execute(pool)
@@ -852,7 +878,9 @@ pub async fn update_run(
     validate_slug_path(new_slug, "new_slug")?;
     // run_id format: YYYY-MM-DD-{slug}. Extract date prefix (first 10 chars).
     let date_prefix = run_id.get(..10).ok_or_else(|| {
-        RepoError::InvalidArg(format!("run_id '{run_id}' does not start with a date prefix (YYYY-MM-DD)"))
+        RepoError::InvalidArg(format!(
+            "run_id '{run_id}' does not start with a date prefix (YYYY-MM-DD)"
+        ))
     })?;
     let new_run_id = format!("{date_prefix}-{new_slug}");
     if new_run_id == run_id {
@@ -866,7 +894,9 @@ pub async fn update_run(
             .await
             .map_err(map_db)?;
     if conflict {
-        return Err(RepoError::AlreadyExists(format!("run already exists: {new_run_id}")));
+        return Err(RepoError::AlreadyExists(format!(
+            "run already exists: {new_run_id}"
+        )));
     }
     let rows = sqlx::query("UPDATE runs SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
