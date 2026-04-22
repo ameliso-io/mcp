@@ -3695,4 +3695,63 @@ mod tests {
         // Distinct from dot_suffix which hits '.' via the ' ' and '/' prefix loop paths.
         assert!(text_references_case("auth/login.md", "auth/login"));
     }
+
+    #[tokio::test]
+    async fn update_run_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn update_run_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn update_run_rejects_empty_new_slug() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("new_slug is required"));
+    }
+
+    #[tokio::test]
+    async fn update_run_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
 }
