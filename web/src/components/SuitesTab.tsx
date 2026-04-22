@@ -233,6 +233,8 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     setNewSlug(e.target.value);
                   }}
                   required
+                  pattern="[a-z0-9_-]+"
+                  title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
                   autoFocus
                   className={styles.input}
                   placeholder="e.g. smoke"
@@ -376,6 +378,8 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                         onChange={(e) => {
                           setEditNewSlug(e.target.value);
                         }}
+                        pattern="[a-z0-9_-]+"
+                        title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
                         className={styles.input}
                         placeholder="leave blank to keep current slug"
                       />

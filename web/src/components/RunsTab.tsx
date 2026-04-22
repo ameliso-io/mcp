@@ -427,6 +427,8 @@ export default function RunsTab({
                     setNewSlug(e.target.value);
                   }}
                   required
+                  pattern="[a-z0-9_-]+"
+                  title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
                   autoFocus
                   className={styles.input}
                 />
@@ -608,6 +610,8 @@ export default function RunsTab({
                       setRenameNewSlug(e.target.value);
                     }}
                     required
+                    pattern="[a-z0-9_-]+"
+                    title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
                     autoFocus
                     className={styles.renameInput}
                     placeholder="new-slug"

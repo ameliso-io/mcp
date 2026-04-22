@@ -346,6 +346,8 @@ export default function CasesTab({
                     setNewPath(e.target.value);
                   }}
                   required
+                  pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
+                  title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
                   autoFocus
                   className={styles.input}
                 />
@@ -636,6 +638,8 @@ export default function CasesTab({
                           onChange={(e) => {
                             setEditNewPath(e.target.value);
                           }}
+                          pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
+                          title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
                           className={styles.input}
                           placeholder="leave blank to keep current path"
                         />
