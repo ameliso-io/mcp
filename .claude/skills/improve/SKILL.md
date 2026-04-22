@@ -3,74 +3,67 @@ description: Make Ameliso better — pick the highest-value improvement for serv
 allowed-tools: Bash(git *), Bash(pnpm *), Bash(cargo *), Bash(buf *), Read, Edit, Write, Grep, Glob, WebFetch, mcp__centy__centy_v1_CentyDaemon_ListItems, mcp__centy__IsRunning
 ---
 
-Follow these steps exactly, in order.
+```mermaid
+flowchart TD
+    START(["/improve invoked"]) --> S1
 
-## Step 1 — Load authoritative context
+    S1["Step 1 — Load context
+    Read GOAL.md + CONTRIBUTING.md
+    No memory shortcuts"]
 
-Read before touching anything else:
+    S1 --> S2["Step 2 — Check Centy issues
+    mcp__centy__centy_v1_CentyDaemon_ListItems
+    item_type=issues · filter status open/in-progress
+    Sort by priority (1=highest)"]
 
-1. `GOAL.md` — product vision; every improvement must move toward this
-2. `CONTRIBUTING.md` — hard engineering constraints; violations are not acceptable
+    S2 --> CENTY_OK{Daemon available?}
+    CENTY_OK -- no --> S3
+    CENTY_OK -- yes --> S3
 
-Do not skip. Do not rely on memory of prior conversations.
+    S3["Step 3 — Sync repo via subagent
+    Spawn general-purpose Agent with Bash tools:
+    git fetch origin + git merge origin/main
+    Subagent resolves conflicts, reports outcome"]
 
-## Step 2 — Check open Centy issues
+    S3 --> SYNC_OK{Subagent: sync clean?}
+    SYNC_OK -- yes --> S4
+    SYNC_OK -- no --> CONFLICT["Subagent resolves conflicts
+    Reports resolution summary"]
+    CONFLICT --> S4
 
-Use `mcp__centy__centy_v1_CentyDaemon_ListItems`:
+    S4["Step 4 — Pick one improvement
+    Priority: Centy P1 → P2 → GOAL.md gaps → test gaps → web UI
+    Scope: server/ and web/ ONLY
+    Never touch cli/src/main.rs or mcp/src/main.rs"]
 
-- `project_path`: current working directory
-- `item_type`: `"issues"`
-- `filter`: `{"status":{"$in":["open","in-progress"]}}`
+    S4 --> DECLARE["State intent:
+    'Implementing X because it advances goal by Y'"]
 
-List all results. Prioritize by priority field (1 = highest).
+    DECLARE --> PROTO{Proto change?}
 
-If Centy daemon is unavailable or no `.centy` folder exists, skip silently.
+    PROTO -- yes --> PROTO_FLOW["service.proto
+    → buf generate in server/
+    → server/src/repo.rs
+    → server/src/service.rs
+    → web/src/"]
+    PROTO -- no --> IMPL
 
-## Step 3 — Survey current state
+    PROTO_FLOW --> IMPL["Implement"]
 
-Sync first:
+    IMPL --> VERIFY{Compiles + all tests pass?}
+    VERIFY -- no --> IMPL
+    VERIFY -- yes --> S5
 
-```sh
-git fetch origin
-git merge origin/main
+    S5["Step 5 — Commit + push
+    Conventional commit message
+    git push immediately (no batching)"]
+
+    S5 --> PUSH_OK{Push succeeds?}
+    PUSH_OK -- no --> FIX["Fix pre-push failure
+    New commit or amend"]
+    FIX --> S5
+    PUSH_OK -- yes --> COMPACT["Compact conversation
+    /compact"]
+    COMPACT --> REPORT["Report: what changed · why it matters · what's next"]
+    REPORT --> DONE([done])
 ```
-
-Resolve any merge conflicts before proceeding.
-
-```sh
-git log --oneline -15
-git status
-```
-
-## Step 4 — Pick one improvement and implement it
-
-**Focus exclusively on `server/` and `web/`.** Do NOT touch `cli/` or `mcp/`.
-
-Select the single highest-value improvement from:
-
-1. Open Centy issues (P1 before P2)
-2. Feature gaps visible from GOAL.md
-3. Test coverage gaps in `server/src/`
-4. Web UI improvements in `web/src/`
-
-State before writing any code:
-
-> "I am implementing X because it advances the goal by Y."
-
-Hard rules:
-
-- **Scope**: server (`server/`) and web (`web/`) only — never touch `cli/src/main.rs` or `mcp/src/main.rs`
-- **Proto changes**: always run `cd server && buf generate` after editing `.proto` files
-- **Proto-first**: new RPCs start in `service.proto` → `buf generate` → `server/src/repo.rs` → `server/src/service.rs` → `web/src/`
-- **Tests**: add validation tests for every new repo function (lazy pool pattern — no DB needed)
-- **Package manager**: `pnpm` only inside `web/`
-- **No half-finished work**: each iteration must compile and all tests pass before commit
-
-## Step 5 — Verify, commit, and push
-
-After each logical unit of work (not just at the end):
-
-1. Commit all changed files with a conventional commit message
-2. **`git push` immediately after every commit** — do not batch commits; push each one as it lands
-3. If push fails (pre-push hook), fix the failure, amend or create a new commit, push again
-4. Report: what changed, why it matters, what to do next
