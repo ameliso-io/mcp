@@ -37,6 +37,8 @@ service AmelisoService {
   rpc GetCoverageReport(GetCoverageReportRequest) returns (GetCoverageReportResponse);
   // Return cases affected by source changes since since_ref (uses GitHub compare API).
   rpc GetAffectedCases(GetAffectedCasesRequest) returns (GetAffectedCasesResponse);
+  // Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
+  rpc GetRepoStatus(GetRepoStatusRequest) returns (GetRepoStatusResponse);
 
   // --- GitHub App ---
   rpc GetGitHubInstallUrl(GetGitHubInstallUrlRequest) returns (GetGitHubInstallUrlResponse);
@@ -275,6 +277,36 @@ message GetAffectedCasesRequest {
 message GetAffectedCasesResponse {
   repeated AffectedCase cases = 1;
   string reason = 2;
+}
+
+// --- Repo Status ---
+
+message GetRepoStatusRequest {
+  string repo_id = 1;
+}
+
+message ActiveRunStatus {
+  string run_id = 1;
+  string tester = 2;
+  string suite = 3;
+  string date = 4;
+  int32 pending_cases = 5;
+  int32 total_in_scope = 6;
+}
+
+message GetRepoStatusResponse {
+  int32 total_cases = 1;
+  int32 high_cases = 2;
+  int32 medium_cases = 3;
+  int32 low_cases = 4;
+  int32 passed = 5;
+  int32 failed = 6;
+  int32 blocked = 7;
+  int32 skipped = 8;
+  int32 never_run = 9;
+  int32 suite_count = 10;
+  int32 run_count = 11;
+  repeated ActiveRunStatus active_runs = 12;
 }
 
 // --- GitHub App ---

@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use tonic::{Request, Response, Status};
 
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
-use crate::repo::{self, RepoError};
+use crate::repo::{self, RepoError, RunRow};
 
 /// Returns true when `text` contains `case_path` as whole path segments.
 /// Prevents `auth/log` from matching inside `auth/login`.
@@ -945,6 +945,91 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn get_repo_status(
+        &self,
+        request: Request<pb::GetRepoStatusRequest>,
+    ) -> Result<Response<pb::GetRepoStatusResponse>, Status> {
+        let repo_id = request.into_inner().repo_id;
+        if repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+
+        let pool = &self.pool;
+        let (cov_res, suites_res, runs_res) = tokio::join!(
+            repo::get_coverage_report(pool, &repo_id),
+            repo::list_suites(pool, &repo_id),
+            repo::list_runs(pool, &repo_id),
+        );
+
+        let (cov_entries, _run_count_cov) = cov_res.map_err(repo_err)?;
+        let suites = suites_res.map_err(repo_err)?;
+        let runs = runs_res.map_err(repo_err)?;
+
+        let mut total_cases = 0i32;
+        let mut high_cases = 0i32;
+        let mut medium_cases = 0i32;
+        let mut low_cases = 0i32;
+        let mut passed = 0i32;
+        let mut failed = 0i32;
+        let mut blocked = 0i32;
+        let mut skipped = 0i32;
+        let mut never_run = 0i32;
+
+        for e in &cov_entries {
+            total_cases += 1;
+            match e.priority.as_str() {
+                "high" => high_cases += 1,
+                "medium" => medium_cases += 1,
+                "low" => low_cases += 1,
+                _ => {}
+            }
+            match e.latest_status.as_str() {
+                "passed" => passed += 1,
+                "failed" => failed += 1,
+                "blocked" => blocked += 1,
+                "skipped" => skipped += 1,
+                _ => never_run += 1,
+            }
+        }
+
+        let active_runs_meta: Vec<&RunRow> = runs
+            .iter()
+            .filter(|r| r.status == "in-progress")
+            .collect();
+
+        let mut active_runs: Vec<pb::ActiveRunStatus> = Vec::new();
+        for run_meta in &active_runs_meta {
+            let (pending, total_in_scope) =
+                match repo::get_pending_cases(pool, &repo_id, &run_meta.run_id).await {
+                    Ok((cases, total)) => (cases.len() as i32, total as i32),
+                    Err(_) => (0, 0),
+                };
+            active_runs.push(pb::ActiveRunStatus {
+                run_id: run_meta.run_id.clone(),
+                tester: run_meta.tester.clone(),
+                suite: run_meta.suite.clone().unwrap_or_default(),
+                date: run_meta.date.clone(),
+                pending_cases: pending,
+                total_in_scope,
+            });
+        }
+
+        Ok(Response::new(pb::GetRepoStatusResponse {
+            total_cases,
+            high_cases,
+            medium_cases,
+            low_cases,
+            passed,
+            failed,
+            blocked,
+            skipped,
+            never_run,
+            suite_count: suites.len() as i32,
+            run_count: runs.len() as i32,
+            active_runs,
+        }))
+    }
+
     async fn get_git_hub_install_url(
         &self,
         _request: Request<pb::GetGitHubInstallUrlRequest>,
@@ -1455,6 +1540,19 @@ mod tests {
             .get_run(Request::new(pb::GetRunRequest {
                 repo_id: "".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_repo_status_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .get_repo_status(Request::new(pb::GetRepoStatusRequest {
+                repo_id: "".to_owned(),
             }))
             .await
             .unwrap_err();

@@ -1246,83 +1246,27 @@ async fn run_affected(
 // ---------------------------------------------------------------------------
 
 async fn run_status(channel: Channel, repo_id: &str, json: bool) -> Result<()> {
-    let mut c1 = client(channel.clone());
-    let mut c2 = client(channel.clone());
-    let mut c3 = client(channel.clone());
-    let (cov_res, suites_res, runs_res) = tokio::join!(
-        c1.get_coverage_report(pb::GetCoverageReportRequest {
+    let mut c = client(channel);
+    let s = c
+        .get_repo_status(pb::GetRepoStatusRequest {
             repo_id: repo_id.to_owned(),
-            status_filter: pb::ResultStatus::Unspecified as i32,
-        }),
-        c2.list_suites(pb::ListSuitesRequest {
-            repo_id: repo_id.to_owned(),
-        }),
-        c3.list_runs(pb::ListRunsRequest {
-            repo_id: repo_id.to_owned(),
-            status: pb::RunStatus::Unspecified as i32,
-        }),
-    );
-    let cov = cov_res.map_err(grpc_err)?.into_inner();
-    let suites = suites_res.map_err(grpc_err)?.into_inner().suites;
-    let runs = runs_res.map_err(grpc_err)?.into_inner().runs;
-
-    let total = cov.entries.len();
-    let mut high = 0usize;
-    let mut medium = 0usize;
-    let mut low = 0usize;
-    let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
-    for e in &cov.entries {
-        if let Some(case) = &e.case {
-            match case.priority.as_str() {
-                "high" => high += 1,
-                "medium" => medium += 1,
-                "low" => low += 1,
-                _ => {}
-            }
-        }
-        *counts
-            .entry(result_status_i32_to_str(e.latest_status))
-            .or_insert(0) += 1;
-    }
-
-    let active: Vec<&pb::RunMeta> = runs
-        .iter()
-        .filter(|r| r.status == pb::RunStatus::InProgress as i32)
-        .collect();
-
-    let pending_futures: Vec<_> = active
-        .iter()
-        .map(|r| {
-            let mut c = client(channel.clone());
-            let repo_id = repo_id.to_owned();
-            let run_id = r.id.clone();
-            async move {
-                c.get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
-                    .await
-            }
         })
-        .collect();
-    let pending_results = futures::future::join_all(pending_futures).await;
+        .await
+        .map_err(grpc_err)?
+        .into_inner();
 
     if json {
-        let active_json: Vec<_> = active
+        let active_json: Vec<_> = s
+            .active_runs
             .iter()
-            .zip(pending_results.iter())
-            .map(|(r, pend_res)| {
-                let (pending, total_in_scope) = match pend_res {
-                    Ok(resp) => {
-                        let inner = resp.get_ref();
-                        (inner.cases.len(), inner.total_in_scope as usize)
-                    }
-                    Err(_) => (0, 0),
-                };
+            .map(|r| {
                 serde_json::json!({
-                    "id": r.id,
+                    "id": r.run_id,
                     "tester": r.tester,
                     "suite": r.suite,
                     "date": r.date,
-                    "pending": pending,
-                    "total_in_scope": total_in_scope,
+                    "pending": r.pending_cases,
+                    "total_in_scope": r.total_in_scope,
                 })
             })
             .collect();
@@ -1330,20 +1274,20 @@ async fn run_status(channel: Channel, repo_id: &str, json: bool) -> Result<()> {
             "{}",
             serde_json::to_string_pretty(&serde_json::json!({
                 "cases": {
-                    "total": total,
-                    "high": high,
-                    "medium": medium,
-                    "low": low,
+                    "total": s.total_cases,
+                    "high": s.high_cases,
+                    "medium": s.medium_cases,
+                    "low": s.low_cases,
                 },
                 "coverage": {
-                    "passed": counts.get("passed").copied().unwrap_or(0),
-                    "failed": counts.get("failed").copied().unwrap_or(0),
-                    "blocked": counts.get("blocked").copied().unwrap_or(0),
-                    "skipped": counts.get("skipped").copied().unwrap_or(0),
-                    "never": counts.get("never").copied().unwrap_or(0),
+                    "passed": s.passed,
+                    "failed": s.failed,
+                    "blocked": s.blocked,
+                    "skipped": s.skipped,
+                    "never": s.never_run,
                 },
-                "suite_count": suites.len(),
-                "run_count": runs.len(),
+                "suite_count": s.suite_count,
+                "run_count": s.run_count,
                 "active_runs": active_json,
             }))?
         );
@@ -1351,43 +1295,33 @@ async fn run_status(channel: Channel, repo_id: &str, json: bool) -> Result<()> {
     }
 
     println!(
-        "Cases:    {} total  ({high} high, {medium} medium, {low} low)",
-        total
+        "Cases:    {} total  ({} high, {} medium, {} low)",
+        s.total_cases, s.high_cases, s.medium_cases, s.low_cases
     );
     println!(
         "Coverage: {} passed, {} failed, {} blocked, {} skipped, {} never run",
-        counts.get("passed").copied().unwrap_or(0),
-        counts.get("failed").copied().unwrap_or(0),
-        counts.get("blocked").copied().unwrap_or(0),
-        counts.get("skipped").copied().unwrap_or(0),
-        counts.get("never").copied().unwrap_or(0),
+        s.passed, s.failed, s.blocked, s.skipped, s.never_run
     );
-    println!("Suites:   {}", suites.len());
-    println!("Runs:     {} total", runs.len());
+    println!("Suites:   {}", s.suite_count);
+    println!("Runs:     {} total", s.run_count);
 
-    if active.is_empty() {
+    if s.active_runs.is_empty() {
         println!("Active:   none");
     } else {
-        println!("Active runs ({}):", active.len());
-        for (r, pend_res) in active.iter().zip(pending_results) {
+        println!("Active runs ({}):", s.active_runs.len());
+        for r in &s.active_runs {
             let suite_part = if r.suite.is_empty() {
                 String::new()
             } else {
                 format!("  suite: {}", r.suite)
             };
-            let pending_part = match pend_res {
-                Ok(resp) => {
-                    let resp = resp.into_inner();
-                    let pending = resp.cases.len();
-                    let total = resp.total_in_scope as usize;
-                    let done = total.saturating_sub(pending);
-                    format!("  {done}/{total} done, {pending} pending")
-                }
-                Err(_) => String::new(),
-            };
+            let pending = r.pending_cases as usize;
+            let total = r.total_in_scope as usize;
+            let done = total.saturating_sub(pending);
+            let pending_part = format!("  {done}/{total} done, {pending} pending");
             println!(
                 "  [{}]  tester: {}{}{}",
-                r.id, r.tester, suite_part, pending_part
+                r.run_id, r.tester, suite_part, pending_part
             );
         }
     }

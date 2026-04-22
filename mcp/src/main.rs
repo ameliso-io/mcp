@@ -316,111 +316,47 @@ impl AmelisoMcp {
         description = "Get an overview of the test repo: total cases by priority, coverage stats (never/passed/failed/blocked/skipped), active in-progress runs with pending counts, and suite count. Use this first to understand the testing state before diving into details."
     )]
     async fn repo_status(&self, Parameters(req): Parameters<RepoIdRequest>) -> String {
-        let mut c1 = self.client();
-        let mut c2 = self.client();
-        let mut c3 = self.client();
-        let (cov_res, runs_res, suites_res) = tokio::join!(
-            c1.get_coverage_report(pb::GetCoverageReportRequest {
+        let mut c = self.client();
+        let s = match c
+            .get_repo_status(pb::GetRepoStatusRequest {
                 repo_id: req.repo_id.clone(),
-                status_filter: pb::ResultStatus::Unspecified as i32,
-            }),
-            c2.list_runs(pb::ListRunsRequest {
-                repo_id: req.repo_id.clone(),
-                status: pb::RunStatus::Unspecified as i32,
-            }),
-            c3.list_suites(pb::ListSuitesRequest {
-                repo_id: req.repo_id.clone(),
-            }),
-        );
-        let cov = match cov_res {
+            })
+            .await
+        {
             Ok(r) => r.into_inner(),
             Err(e) => return format!("error: {e}"),
         };
-        let runs = match runs_res {
-            Ok(r) => r.into_inner().runs,
-            Err(e) => return format!("error listing runs: {e}"),
-        };
-        let suite_count = match suites_res {
-            Ok(r) => r.into_inner().suites.len(),
-            Err(_) => 0,
-        };
-        let client = self.client();
-
-        let total = cov.entries.len();
-        let mut high = 0usize;
-        let mut medium = 0usize;
-        let mut low = 0usize;
-        let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
-        for e in &cov.entries {
-            if let Some(c) = &e.case {
-                match c.priority.as_str() {
-                    "high" => high += 1,
-                    "medium" => medium += 1,
-                    "low" => low += 1,
-                    _ => {}
-                }
-            }
-            *counts
-                .entry(result_status_i32_to_str(e.latest_status))
-                .or_insert(0) += 1;
-        }
-
-        let active: Vec<&pb::RunMeta> = runs
-            .iter()
-            .filter(|r| r.status == pb::RunStatus::InProgress as i32)
-            .collect();
 
         let mut lines = vec![
-            format!("Cases: {total} total ({high} high, {medium} medium, {low} low priority)"),
+            format!(
+                "Cases: {} total ({} high, {} medium, {} low priority)",
+                s.total_cases, s.high_cases, s.medium_cases, s.low_cases
+            ),
             format!(
                 "Coverage: {} passed, {} failed, {} blocked, {} skipped, {} never run",
-                counts.get("passed").copied().unwrap_or(0),
-                counts.get("failed").copied().unwrap_or(0),
-                counts.get("blocked").copied().unwrap_or(0),
-                counts.get("skipped").copied().unwrap_or(0),
-                counts.get("never").copied().unwrap_or(0),
+                s.passed, s.failed, s.blocked, s.skipped, s.never_run
             ),
-            format!("Suites: {suite_count}"),
-            format!("Runs: {} total", runs.len()),
+            format!("Suites: {}", s.suite_count),
+            format!("Runs: {} total", s.run_count),
         ];
 
-        if active.is_empty() {
+        if s.active_runs.is_empty() {
             lines.push("Active runs: none".to_owned());
         } else {
-            lines.push(format!("Active runs ({}):", active.len()));
-            // Fetch pending counts for all active runs concurrently.
-            let pending_futures: Vec<_> = active
-                .iter()
-                .map(|r| {
-                    let mut c = client.clone();
-                    let repo_id = req.repo_id.clone();
-                    let run_id = r.id.clone();
-                    async move {
-                        c.get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
-                            .await
-                    }
-                })
-                .collect();
-            let pending_results = futures::future::join_all(pending_futures).await;
-            for (r, pend_res) in active.iter().zip(pending_results) {
+            lines.push(format!("Active runs ({}):", s.active_runs.len()));
+            for r in &s.active_runs {
                 let suite_part = if r.suite.is_empty() {
                     String::new()
                 } else {
                     format!(" suite: {}", r.suite)
                 };
-                let pending_part = match pend_res {
-                    Ok(resp) => {
-                        let resp = resp.into_inner();
-                        let pending = resp.cases.len();
-                        let total = resp.total_in_scope as usize;
-                        let done = total.saturating_sub(pending);
-                        format!(" ({done}/{total} done, {pending} pending)")
-                    }
-                    Err(_) => String::new(),
-                };
+                let pending = r.pending_cases as usize;
+                let total = r.total_in_scope as usize;
+                let done = total.saturating_sub(pending);
+                let pending_part = format!(" ({done}/{total} done, {pending} pending)");
                 lines.push(format!(
                     "  [{}] tester: {}{}{}",
-                    r.id, r.tester, suite_part, pending_part
+                    r.run_id, r.tester, suite_part, pending_part
                 ));
             }
         }

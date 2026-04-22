@@ -92,7 +92,7 @@ See [AGENTS.md](AGENTS.md) for full agent usage guide.
 
 ### gRPC server
 
-The gRPC server exposes all 25 RPCs defined in `server/proto/ameliso/v1/service.proto`.
+The gRPC server exposes all 26 RPCs defined in `server/proto/ameliso/v1/service.proto`.
 
 ```sh
 ameliso-server         # listens on [::1]:50051
