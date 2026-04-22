@@ -338,6 +338,16 @@ enum RunsCmd {
         repo_id: String,
         run_id: String,
     },
+    #[command(about = "Rename a run's slug (date prefix is preserved)")]
+    Update {
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
+        run_id: String,
+        #[arg(long, help = "New slug portion (date prefix is kept; new run_id = {date}-{new_slug})")]
+        new_slug: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
+    },
     #[command(
         about = "Record multiple results in one call",
         long_about = "Record multiple results in one gRPC call. Each entry is case_path:status[:notes]. \
@@ -1100,6 +1110,39 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner();
             println!("Deleted: {}", resp.dir_path);
+        }
+        RunsCmd::Update {
+            repo_id,
+            run_id,
+            new_slug,
+            json,
+        } => {
+            let resp = c
+                .update_run(pb::UpdateRunRequest {
+                    repo_id,
+                    run_id,
+                    new_slug,
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner();
+            let run = resp
+                .run
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "run_id": run.id,
+                        "new_dir_path": resp.new_dir_path,
+                        "status": run.status,
+                    }))?
+                );
+            } else {
+                println!("Renamed: {}", run.id);
+                println!("New dir: {}", resp.new_dir_path);
+            }
         }
         RunsCmd::BulkRecord {
             repo_id,

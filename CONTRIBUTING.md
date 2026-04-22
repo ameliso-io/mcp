@@ -2,7 +2,7 @@
 
 Ameliso is a **git-native manual testing management tool**. It reads and writes
 test cases, runs, and results stored as plain Markdown/YAML files in a
-*controlled repository* (typically your project's git repo).
+_controlled repository_ (typically your project's git repo).
 
 The tool itself lives in this repo (`server/`, `mcp/`, `cli/`).
 The file formats for controlled repositories are defined in [REPO_STRUCTURE.md](REPO_STRUCTURE.md).
@@ -17,18 +17,19 @@ cargo build       # build all crates
 ```
 
 Git hooks activate automatically after `pnpm install`:
+
 - `pre-commit`: `make pre-commit` — fmt (Rust + web), clippy, buf lint, web ESLint, cspell
 - `pre-push`: `make pre-push` — fmt-check, build, test, coverage check
 
 ## Project structure
 
-| Directory | Purpose |
-|-----------|---------|
-| `server/` | gRPC server (tonic 0.12). Implements `AmelisoService` (27 RPCs). |
-| `server/proto/` | Protobuf definitions for `AmelisoService`. |
-| `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 27 RPCs as 25 MCP tools. |
-| `cli/` | CLI binary (clap 4). Wraps all RPCs as subcommands. |
-| `web/` | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
+| Directory       | Purpose                                                                            |
+| --------------- | ---------------------------------------------------------------------------------- |
+| `server/`       | gRPC server (tonic 0.12). Implements `AmelisoService` (27 RPCs).                   |
+| `server/proto/` | Protobuf definitions for `AmelisoService`.                                         |
+| `mcp/`          | MCP server (rmcp 1.5, stdio). Wraps all 27 RPCs as 25 MCP tools.                   |
+| `cli/`          | CLI binary (clap 4). Wraps all RPCs as subcommands.                                |
+| `web/`          | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
 
 ## Engineering constraints
 
@@ -87,4 +88,3 @@ Do not commit generated files from `server/generated/`.
 5. Add a corresponding MCP tool in `mcp/src/main.rs`.
 6. Add a corresponding CLI subcommand in `cli/src/main.rs`.
 7. Add unit tests for the new handler in `server/src/service.rs` (validation tests + passes-validation test).
-8. Update the RPC count in `AGENTS.md`, `README.md`, and `CONTRIBUTING.md`.

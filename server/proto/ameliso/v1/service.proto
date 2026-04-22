@@ -33,6 +33,8 @@ service AmelisoService {
   rpc FinalizeRun(FinalizeRunRequest) returns (FinalizeRunResponse);
   rpc DeleteRun(DeleteRunRequest) returns (DeleteRunResponse);
   rpc GetPendingCases(GetPendingCasesRequest) returns (GetPendingCasesResponse);
+  // Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
+  rpc UpdateRun(UpdateRunRequest) returns (UpdateRunResponse);
 
   // --- Reports ---
   rpc GetCoverageReport(GetCoverageReportRequest) returns (GetCoverageReportResponse);
@@ -282,6 +284,19 @@ message GetPendingCasesRequest {
 message GetPendingCasesResponse {
   repeated Case cases = 1;
   int32 total_in_scope = 2;
+}
+
+message UpdateRunRequest {
+  string repo_id = 1;
+  string run_id = 2;
+  // New slug portion only; date prefix (YYYY-MM-DD) is preserved.
+  // The resulting new run_id will be "{date_prefix}-{new_slug}".
+  string new_slug = 3;
+}
+
+message UpdateRunResponse {
+  RunMeta run = 1;
+  string new_dir_path = 2;
 }
 
 // --- Reports ---

@@ -1,6 +1,6 @@
 ---
-description: Make the Workbench project better — pick the highest-value improvement, implement it, verify it builds, and push. Workbench is a unified engineering inbox that lets engineers delegate Slack/PR/CI/JIRA items to Claude Code.
-allowed-tools: Bash(git *), Bash(pnpm *), Bash(cargo *), Read, Edit, Write, Grep, Glob, WebFetch, mcp__centy__centy_v1_CentyDaemon_ListItems, mcp__centy__IsRunning
+description: Make Ameliso better — pick the highest-value improvement for server or web, implement it end-to-end, verify it builds and tests pass, commit and push.
+allowed-tools: Bash(git *), Bash(pnpm *), Bash(cargo *), Bash(buf *), Read, Edit, Write, Grep, Glob, WebFetch, mcp__centy__centy_v1_CentyDaemon_ListItems, mcp__centy__IsRunning
 ---
 
 Follow these steps exactly, in order.
@@ -17,11 +17,12 @@ Do not skip. Do not rely on memory of prior conversations.
 ## Step 2 — Check open Centy issues
 
 Use `mcp__centy__centy_v1_CentyDaemon_ListItems`:
+
 - `project_path`: current working directory
 - `item_type`: `"issues"`
 - `filter`: `{"status":{"$in":["open","in-progress"]}}`
 
-List all results. If zero open/in-progress issues are returned, invoke the `ensure-tasks` skill now and wait for it to finish before continuing.
+List all results. Prioritize by priority field (1 = highest).
 
 If Centy daemon is unavailable or no `.centy` folder exists, skip silently.
 
@@ -41,42 +42,38 @@ git log --oneline -15
 git status
 ```
 
-Scan top-level dirs. For each one with code, read its entry-point to understand actual vs. intended behavior.
+## Step 4 — Pick one improvement and implement it
 
-## Step 4 — Gap analysis
+**Focus exclusively on `server/` and `web/`.** Do NOT touch `cli/` or `mcp/`.
 
-**A. Feature gaps** (things in GOAL.md not built yet) — ranked by impact:
-1. One-click "Delegate to Claude Code" action on any inbox item
-2. Auto-delegation rules (e.g., "any Slack auth question → Claude handles it")
-3. GitHub PR source (reviews requested, CI failures, merge conflicts)
-4. JIRA ticket source
-5. Cross-source unified view
+Select the single highest-value improvement from:
 
-**B. Explicit TODOs and open Centy issues** — list every open/in-progress issue from Step 2. Prioritize these over your own gap analysis unless they conflict with GOAL.md.
-
-**C. Quality / contributing-rules violations:**
-- Domain logic duplicated across `web/` and `tui/` that should live in `logic/`
-
-## Step 5 — Pick one improvement and implement it
-
-Select the single highest-value improvement that:
-- Best advances the core goal (Claude Code delegation > more integrations > plumbing)
-- Is completable in one focused session (prefer concrete + testable over large rewrites)
-- Obeys every rule in `CONTRIBUTING.md`
+1. Open Centy issues (P1 before P2)
+2. Feature gaps visible from GOAL.md
+3. Test coverage gaps in `server/src/`
+4. Web UI improvements in `web/src/`
 
 State before writing any code:
+
 > "I am implementing X because it advances the goal by Y."
 
 Hard rules:
-- **Package manager**: `pnpm` only — never `npm install` or `yarn`
-- **Service communication**: gRPC only — never REST, GraphQL, or WebSocket for service-to-service calls
-- **Language**: new backend services → Rust; new shared logic → `logic/` as Rust compiled to WASM; TypeScript only for UI glue
-- **No logic duplication**: if computation runs in both `web/` and `tui/`, it goes in `logic/src/lib.rs` — never copy-pasted
 
-## Step 6 — Verify and report
+- **Scope**: server (`server/`) and web (`web/`) only — never touch `cli/src/main.rs` or `mcp/src/main.rs`
+- **Proto changes**: always run `cd server && buf generate` after editing `.proto` files
+- **Proto-first**: new RPCs start in `service.proto` → `buf generate` → `server/src/repo.rs` → `server/src/service.rs` → `web/src/`
+- **Tests**: add validation tests for every new repo function (lazy pool pattern — no DB needed)
+- **Package manager**: `pnpm` only inside `web/`
+- **No half-finished work**: each iteration must compile and all tests pass before commit
 
-1. Run build + type-check for every package touched (`pnpm build`, `cargo check`, etc.)
-2. Fix any errors before reporting done
-3. Commit all changed files with a clear message
-4. Push to origin
-5. Report: what changed (file list + one-line summary per file), why it matters, what the next improvement is
+## Step 5 — Verify, commit, and push
+
+After each logical unit of work (not just at the end):
+
+1. `cargo build --manifest-path server/Cargo.toml` — must succeed
+2. `cargo test --manifest-path server/Cargo.toml` — all tests pass
+3. `npm run test:typecheck` inside `web/` — no TypeScript errors
+4. Commit all changed files with a conventional commit message
+5. **`git push` immediately after every commit** — do not batch commits; push each one as it lands
+6. If push fails (pre-push hook), fix the failure, amend or create a new commit, push again
+7. Report: what changed, why it matters, what to do next

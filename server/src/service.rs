@@ -837,6 +837,30 @@ impl AmelisoService for AmelisoServer {
         Ok(Response::new(pb::DeleteRunResponse { dir_path }))
     }
 
+    async fn update_run(
+        &self,
+        request: Request<pb::UpdateRunRequest>,
+    ) -> Result<Response<pb::UpdateRunResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
+        }
+        if req.new_slug.is_empty() {
+            return Err(invalid("new_slug is required"));
+        }
+        let run = repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
+            .await
+            .map_err(repo_err)?;
+        let new_dir_path = format!("runs/{}", run.run_id);
+        Ok(Response::new(pb::UpdateRunResponse {
+            run: Some(run_meta_to_pb(&run)),
+            new_dir_path,
+        }))
+    }
+
     async fn get_pending_cases(
         &self,
         request: Request<pb::GetPendingCasesRequest>,

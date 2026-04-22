@@ -890,6 +890,67 @@ pub async fn delete_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<(
     Ok(())
 }
 
+pub async fn update_run(
+    pool: &PgPool,
+    repo_id: &str,
+    run_id: &str,
+    new_slug: &str,
+) -> RResult<RunRow> {
+    validate_slug_path(run_id, "run")?;
+    validate_slug_path(new_slug, "new_slug")?;
+    // run_id format: YYYY-MM-DD-{slug}. Extract date prefix (first 10 chars).
+    let date_prefix = run_id.get(..10).ok_or_else(|| {
+        RepoError::InvalidArg(format!(
+            "run_id '{}' does not start with a date prefix (YYYY-MM-DD)",
+            run_id
+        ))
+    })?;
+    let new_run_id = format!("{}-{}", date_prefix, new_slug);
+    if new_run_id == run_id {
+        return get_run(pool, repo_id, run_id).await.map(|r| r.meta);
+    }
+    let conflict: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM runs WHERE repo_id=$1 AND run_id=$2)")
+            .bind(repo_id)
+            .bind(&new_run_id)
+            .fetch_one(pool)
+            .await
+            .map_err(map_db)?;
+    if conflict {
+        return Err(RepoError::AlreadyExists(format!(
+            "run already exists: {}",
+            new_run_id
+        )));
+    }
+    let rows = sqlx::query("UPDATE runs SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(&new_run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?
+        .rows_affected();
+    if rows == 0 {
+        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+    }
+    // Cascade to results and run_cases.
+    sqlx::query("UPDATE results SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(&new_run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    sqlx::query("UPDATE run_cases SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(&new_run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    get_run(pool, repo_id, &new_run_id).await.map(|r| r.meta)
+}
+
 // ---------------------------------------------------------------------------
 // Pending cases
 // ---------------------------------------------------------------------------

@@ -214,6 +214,16 @@ struct ListRunsRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct UpdateRunRequest {
+    repo_id: String,
+    run_id: String,
+    #[schemars(
+        description = "New slug portion only (date prefix is preserved). The new run_id will be '{date_prefix}-{new_slug}'."
+    )]
+    new_slug: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct CreateRunRequest {
     repo_id: String,
     #[schemars(description = "Short slug, e.g. smoke or regression")]
@@ -1161,6 +1171,31 @@ impl AmelisoMcp {
             .await
         {
             Ok(r) => format!("deleted: {}", r.into_inner().dir_path),
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Rename a run's slug. The date prefix (YYYY-MM-DD) is preserved; only the slug portion changes. The resulting new run_id is '{date}-{new_slug}'. Cascades to all result files."
+    )]
+    async fn update_run(&self, Parameters(req): Parameters<UpdateRunRequest>) -> String {
+        let mut client = self.client();
+        match client
+            .update_run(pb::UpdateRunRequest {
+                repo_id: req.repo_id,
+                run_id: req.run_id,
+                new_slug: req.new_slug,
+            })
+            .await
+        {
+            Ok(r) => {
+                let resp = r.into_inner();
+                let run = match resp.run {
+                    Some(r) => r,
+                    None => return "error: server returned empty run".to_owned(),
+                };
+                format!("renamed: {}\nnew dir: {}", run.id, resp.new_dir_path)
+            }
             Err(e) => format!("error: {e}"),
         }
     }
