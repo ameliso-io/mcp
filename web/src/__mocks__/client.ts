@@ -7,6 +7,7 @@ export const client = {
   listCases: vi.fn().mockResolvedValue({ cases: [] }),
   getCase: vi.fn().mockResolvedValue({ case: undefined, body: "" }),
   createCase: vi.fn().mockResolvedValue({ case: undefined, filePath: "" }),
+  bulkCreateCases: vi.fn().mockResolvedValue({ cases: [] }),
   updateCase: vi.fn().mockResolvedValue({ case: undefined }),
   deleteCase: vi.fn().mockResolvedValue({ filePath: "" }),
   listSuites: vi.fn().mockResolvedValue({ suites: [] }),

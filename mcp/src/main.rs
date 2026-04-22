@@ -200,6 +200,8 @@ struct UpdateCaseRequest {
     priority: Option<String>,
     #[schemars(description = "Replace the full markdown body. Omit to keep existing.")]
     body: Option<String>,
+    #[schemars(description = "Rename the case to this path. Must be unique within the repo. Omit to keep existing path.")]
+    new_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -304,6 +306,8 @@ struct UpdateSuiteRequest {
         description = "Comma-separated case paths (full replacement). Omit to keep existing list."
     )]
     cases: Option<String>,
+    #[schemars(description = "Rename the suite to this slug. Must be unique within the repo. Omit to keep existing slug.")]
+    new_slug: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -558,7 +562,7 @@ impl AmelisoMcp {
                 }
                 let lines: Vec<String> = cases
                     .iter()
-                    .map(|c| format!("created: {} ({})", c.case_path, c.priority))
+                    .map(|c| format!("created: {} ({})", c.path, c.priority))
                     .collect();
                 format!("{}\ntotal: {} case(s)", lines.join("\n"), cases.len())
             }
@@ -595,6 +599,7 @@ impl AmelisoMcp {
                 tags,
                 priority,
                 body: req.body.unwrap_or_default(),
+                new_path: req.new_path.unwrap_or_default(),
             })
             .await
         {
@@ -1279,6 +1284,7 @@ impl AmelisoMcp {
                 description: req.description.unwrap_or_default(),
                 cases,
                 replace_cases,
+                new_slug: req.new_slug.unwrap_or_default(),
             })
             .await
         {

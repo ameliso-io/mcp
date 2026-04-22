@@ -226,6 +226,8 @@ enum CasesCmd {
         priority: Option<String>,
         #[arg(long, help = "Replace the full markdown body (omit to keep existing)")]
         body: Option<String>,
+        #[arg(long, help = "Rename the case to this path (omit to keep existing)")]
+        new_path: Option<String>,
         #[arg(long, help = "Output as JSON")]
         json: bool,
     },
@@ -400,6 +402,8 @@ enum SuitesCmd {
             help = "Comma-separated case paths — replaces full list (omit to keep existing)"
         )]
         cases: Option<String>,
+        #[arg(long, help = "Rename the suite to this slug (omit to keep existing)")]
+        new_slug: Option<String>,
         #[arg(long, help = "Output as JSON")]
         json: bool,
     },
@@ -600,6 +604,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
             tags,
             priority,
             body,
+            new_path,
             json,
         } => {
             let tag_vec = parse_tags(tags.as_deref().unwrap_or(""));
@@ -616,6 +621,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                     tags: tag_vec,
                     priority: pri,
                     body: body.unwrap_or_default(),
+                    new_path: new_path.unwrap_or_default(),
                 })
                 .await
                 .map_err(grpc_err)?
@@ -1286,6 +1292,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
             name,
             description,
             cases,
+            new_slug,
             json,
         } => {
             let replace_cases = cases.is_some();
@@ -1297,6 +1304,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 description: description.unwrap_or_default(),
                 cases: case_list,
                 replace_cases,
+                new_slug: new_slug.unwrap_or_default(),
             })
             .await
             .map_err(grpc_err)?

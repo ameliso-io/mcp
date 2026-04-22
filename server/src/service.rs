@@ -404,6 +404,11 @@ impl AmelisoService for AmelisoServer {
         } else {
             Some(req.body.as_str())
         };
+        let new_path = if req.new_path.is_empty() {
+            None
+        } else {
+            Some(req.new_path.as_str())
+        };
         let case = repo::update_case(
             &self.pool,
             &req.repo_id,
@@ -413,6 +418,7 @@ impl AmelisoService for AmelisoServer {
             tags,
             priority,
             body,
+            new_path,
         )
         .await
         .map_err(repo_err)?;
@@ -564,6 +570,11 @@ impl AmelisoService for AmelisoServer {
         } else {
             None
         };
+        let new_slug = if req.new_slug.is_empty() {
+            None
+        } else {
+            Some(req.new_slug.as_str())
+        };
         let suite = repo::update_suite(
             &self.pool,
             &req.repo_id,
@@ -571,6 +582,7 @@ impl AmelisoService for AmelisoServer {
             name,
             description,
             cases,
+            new_slug,
         )
         .await
         .map_err(repo_err)?;
@@ -669,10 +681,17 @@ impl AmelisoService for AmelisoServer {
             req.tester
         };
         let inline_cases = req.cases;
-        let meta =
-            repo::create_run(&self.pool, &req.repo_id, &req.slug, &tester, env, suite, inline_cases)
-                .await
-                .map_err(repo_err)?;
+        let meta = repo::create_run(
+            &self.pool,
+            &req.repo_id,
+            &req.slug,
+            &tester,
+            env,
+            suite,
+            inline_cases,
+        )
+        .await
+        .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
@@ -2920,6 +2939,7 @@ mod tests {
                 tags: vec!["smoke".to_owned()],
                 body: "## Steps\n\n1. Navigate to /login".to_owned(),
                 priority: pb::Priority::High as i32,
+                new_path: "".to_owned(),
             }))
             .await
             .unwrap_err();

@@ -288,6 +288,14 @@ export declare type UpdateCaseRequest = Message<"ameliso.v1.UpdateCaseRequest"> 
    * @generated from field: string body = 7;
    */
   body: string;
+
+  /**
+   * When non-empty, rename the case to this path. Must be unique within the repo.
+   * Also updates any suites that reference the old path.
+   *
+   * @generated from field: string new_path = 8;
+   */
+  newPath: string;
 };
 
 /**
@@ -510,6 +518,13 @@ export declare type UpdateSuiteRequest = Message<"ameliso.v1.UpdateSuiteRequest"
    * @generated from field: bool replace_cases = 6;
    */
   replaceCases: boolean;
+
+  /**
+   * When non-empty, rename the suite to this slug. Must be unique within the repo.
+   *
+   * @generated from field: string new_slug = 7;
+   */
+  newSlug: string;
 };
 
 /**

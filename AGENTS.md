@@ -46,7 +46,7 @@ Available tools:
 | `get_case` | Get full case details including steps and body |
 | `create_case` | Create a new case file; priority must be low\|medium\|high |
 | `bulk_create_cases` | Create multiple cases in one call — preferred when setting up a new project or adding a batch; pass a `cases` array of `{case_path, title, priority?, tags?, description?, body?}` |
-| `update_case` | Patch-style update: all fields optional — omit any to keep existing value |
+| `update_case` | Patch-style update: all fields optional — omit any to keep existing value. Pass `new_path` to rename the case (cascades to suites, results, run_cases). |
 | `delete_case` | Delete a case file |
 | `coverage_report` | Latest status per case; filter by status |
 | `list_runs` | List test runs; filter by status; shows suite scope |
@@ -58,7 +58,7 @@ Available tools:
 | `list_suites` | List all suites |
 | `get_suite` | Get a suite by slug |
 | `create_suite` | Create a new suite |
-| `update_suite` | Patch-style update: all fields optional — omit any to keep existing value. Pass `cases` to replace the full case list (including empty to clear all). |
+| `update_suite` | Patch-style update: all fields optional — omit any to keep existing value. Pass `cases` to replace the full case list (including empty to clear all). Pass `new_slug` to rename the suite (cascades to runs). |
 | `delete_suite` | Delete a suite file |
 | `bulk_record_results` | Record multiple case results in one call; returns per-result confirmation + progress |
 | `get_affected_cases` | Cases that may need re-running based on git changes; pass `since_ref` (GitHub) or `changed_files` (local `git diff --name-only` output) |
@@ -97,6 +97,7 @@ ameliso cases create auth/login --title "User Login" --description "..." \
 ameliso cases create auth/login --title "User Login" --json  # machine-readable: { file_path, path, title, priority, tags }
 ameliso cases update auth/login --priority high              # patch: change only priority
 ameliso cases update auth/login --title "User Login Flow" --json  # machine-readable: { file_path, path, title, ... }
+ameliso cases update auth/login --new-path auth/signin       # rename case (cascades to suites, results, run_cases)
 ameliso cases delete auth/login --json                       # machine-readable: { file_path }
 ameliso cases bulk-create auth/login:"User Login":high billing/checkout:Checkout:medium
 ameliso cases bulk-create auth/login:"User Login":high --json  # machine-readable: [{ case_path, title, priority, tags }]
@@ -132,6 +133,7 @@ ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/chec
 ameliso suites create smoke --name "Smoke Suite" --cases auth/login --json  # machine-readable: { file_path, slug, name, case_count }
 ameliso suites update smoke --cases auth/login,billing/checkout,payments/refund  # patch: change only cases
 ameliso suites update smoke --cases auth/login --json  # machine-readable: { file_path, slug, name, case_count }
+ameliso suites update smoke --new-slug smoke-v2        # rename suite (cascades to runs)
 ameliso suites delete smoke --json                     # machine-readable: { file_path }
 
 # Reports
