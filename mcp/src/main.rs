@@ -415,7 +415,10 @@ impl AmelisoMcp {
         {
             Ok(r) => {
                 let r = r.into_inner();
-                let c = r.case.as_ref().unwrap();
+                let c = match r.case.as_ref() {
+                    Some(c) => c,
+                    None => return "error: server returned empty case".to_owned(),
+                };
                 format!(
                     "path: {}\ntitle: {}\ndescription: {}\ntags: {}\npriority: {}\ncreated_at: {}\nupdated_at: {}\n\n{}",
                     c.path,
@@ -460,7 +463,10 @@ impl AmelisoMcp {
         {
             Ok(r) => {
                 let r = r.into_inner();
-                let c = r.case.as_ref().unwrap();
+                let c = match r.case.as_ref() {
+                    Some(c) => c,
+                    None => return "error: server returned empty case".to_owned(),
+                };
                 format!(
                     "created: {}\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
                     r.file_path,
@@ -511,7 +517,10 @@ impl AmelisoMcp {
             .await
         {
             Ok(r) => {
-                let c = r.into_inner().case.unwrap();
+                let c = match r.into_inner().case {
+                    Some(c) => c,
+                    None => return "error: server returned empty case".to_owned(),
+                };
                 format!(
                     "updated: cases/{}.md\ntitle: {}\ndescription: {}\npriority: {}\ntags: {}",
                     c.path,
@@ -678,7 +687,10 @@ impl AmelisoMcp {
             Ok(r) => r.into_inner(),
             Err(e) => return format!("error: {e}"),
         };
-        let meta = created.run.as_ref().unwrap();
+        let meta = match created.run.as_ref() {
+            Some(m) => m,
+            None => return "error: server returned empty run".to_owned(),
+        };
         let scope_msg = match client
             .get_pending_cases(pb::GetPendingCasesRequest {
                 repo_id: req.repo_id,
@@ -824,7 +836,10 @@ impl AmelisoMcp {
             .await
         {
             Ok(r) => {
-                let meta = r.into_inner().run.unwrap();
+                let meta = match r.into_inner().run {
+                    Some(m) => m,
+                    None => return "error: server returned empty run".to_owned(),
+                };
                 let status_str = run_status_i32_to_str(meta.status);
                 // Fetch run details and pending count concurrently.
                 let mut c2 = self.client();
@@ -841,7 +856,10 @@ impl AmelisoMcp {
                 );
                 let summary = match run_res {
                     Ok(resp) => {
-                        let run = resp.into_inner().run.unwrap();
+                        let run = match resp.into_inner().run {
+                            Some(r) => r,
+                            None => return "error: server returned empty run details".to_owned(),
+                        };
                         let passed = run
                             .results
                             .iter()
@@ -951,10 +969,16 @@ impl AmelisoMcp {
             })
             .await
         {
-            Ok(r) => r.into_inner().run.unwrap(),
+            Ok(r) => match r.into_inner().run {
+                Some(run) => run,
+                None => return "error: server returned empty run".to_owned(),
+            },
             Err(e) => return format!("error: {e}"),
         };
-        let meta = run.meta.as_ref().unwrap();
+        let meta = match run.meta.as_ref() {
+            Some(m) => m,
+            None => return "error: server returned run with no metadata".to_owned(),
+        };
         let mut lines = vec![
             format!("id:     {}", meta.id),
             format!("date:   {}", meta.date),
@@ -1087,7 +1111,10 @@ impl AmelisoMcp {
             .await
         {
             Ok(r) => {
-                let s = r.into_inner().suite.unwrap();
+                let s = match r.into_inner().suite {
+                    Some(s) => s,
+                    None => return "error: server returned empty suite".to_owned(),
+                };
                 let mut lines = vec![format!("slug: {}", req.slug), format!("name: {}", s.name)];
                 if !s.description.is_empty() {
                     lines.push(format!("description: {}", s.description));
@@ -1125,7 +1152,10 @@ impl AmelisoMcp {
         {
             Ok(r) => {
                 let r = r.into_inner();
-                let s = r.suite.unwrap();
+                let s = match r.suite {
+                    Some(s) => s,
+                    None => return "error: server returned empty suite".to_owned(),
+                };
                 format!("created: {} ({} cases)", r.file_path, s.cases.len())
             }
             Err(e) => format!("error: {e}"),
@@ -1160,7 +1190,10 @@ impl AmelisoMcp {
             .await
         {
             Ok(r) => {
-                let s = r.into_inner().suite.unwrap();
+                let s = match r.into_inner().suite {
+                    Some(s) => s,
+                    None => return "error: server returned empty suite".to_owned(),
+                };
                 format!("updated: suites/{}.yaml ({} cases)", s.slug, s.cases.len())
             }
             Err(e) => format!("error: {e}"),
