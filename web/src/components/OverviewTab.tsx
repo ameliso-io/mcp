@@ -149,7 +149,10 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   );
 
   const sortedEntries = useMemo(
-    () => [...entries].sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)),
+    () =>
+      [...entries].sort(
+        (a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)
+      ),
     [entries]
   );
 
@@ -164,12 +167,21 @@ export default function OverviewTab({ repoId, basePath }: Props) {
     [affected]
   );
 
-  const statCases = entries.length;
-  const statPassed = entries.filter((e) => e.latestStatus === ResultStatus.PASSED).length;
-  const statFailed = entries.filter((e) => e.latestStatus === ResultStatus.FAILED).length;
-  const statBlocked = entries.filter((e) => e.latestStatus === ResultStatus.BLOCKED).length;
-  const statSkipped = entries.filter((e) => e.latestStatus === ResultStatus.SKIPPED).length;
-  const statNever = entries.filter((e) => e.latestStatus === ResultStatus.NEVER).length;
+  const { statCases, statPassed, statFailed, statBlocked, statSkipped, statNever } = useMemo(() => {
+    let passed = 0;
+    let failed = 0;
+    let blocked = 0;
+    let skipped = 0;
+    let never = 0;
+    for (const e of entries) {
+      if (e.latestStatus === ResultStatus.PASSED) passed++;
+      else if (e.latestStatus === ResultStatus.FAILED) failed++;
+      else if (e.latestStatus === ResultStatus.BLOCKED) blocked++;
+      else if (e.latestStatus === ResultStatus.SKIPPED) skipped++;
+      else if (e.latestStatus === ResultStatus.NEVER) never++;
+    }
+    return { statCases: entries.length, statPassed: passed, statFailed: failed, statBlocked: blocked, statSkipped: skipped, statNever: never };
+  }, [entries]);
 
   return (
     <div>
@@ -306,27 +318,27 @@ export default function OverviewTab({ repoId, basePath }: Props) {
             </div>
             <ul className={styles.coverageList} role="list">
               {sortedEntries.map((entry) => (
-                  <li key={entry.case?.path} className={styles.coverageRow}>
-                    <span
-                      className={styles.statusDot}
-                      aria-hidden="true"
-                      data-status={ResultStatus[entry.latestStatus]}
-                    />
-                    <span className={styles.coveragePath}>{entry.case?.path}</span>
-                    <span className={styles.coverageTitle}>{entry.case?.title}</span>
-                    {entry.lastRunDate && (
-                      <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
-                        {entry.lastRunDate}
-                      </time>
-                    )}
-                    <span
-                      className={styles.coverageStatus}
-                      data-status={ResultStatus[entry.latestStatus]}
-                    >
-                      {statusLabel(entry.latestStatus)}
-                    </span>
-                  </li>
-                ))}
+                <li key={entry.case?.path} className={styles.coverageRow}>
+                  <span
+                    className={styles.statusDot}
+                    aria-hidden="true"
+                    data-status={ResultStatus[entry.latestStatus]}
+                  />
+                  <span className={styles.coveragePath}>{entry.case?.path}</span>
+                  <span className={styles.coverageTitle}>{entry.case?.title}</span>
+                  {entry.lastRunDate && (
+                    <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
+                      {entry.lastRunDate}
+                    </time>
+                  )}
+                  <span
+                    className={styles.coverageStatus}
+                    data-status={ResultStatus[entry.latestStatus]}
+                  >
+                    {statusLabel(entry.latestStatus)}
+                  </span>
+                </li>
+              ))}
             </ul>
           </div>
         </>
@@ -379,22 +391,22 @@ export default function OverviewTab({ repoId, basePath }: Props) {
             ) : (
               <ul className={styles.affectedList} role="list">
                 {sortedAffected.map((ac, idx) => (
-                    <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
-                      {ac.case?.priority && (
-                        <>
-                          <span
-                            className={styles.priorityDot}
-                            data-priority={ac.case.priority}
-                            aria-hidden="true"
-                          />
-                          <span className="sr-only">{ac.case.priority} priority</span>
-                        </>
-                      )}
-                      <span className={styles.affectedPath}>{ac.case?.path}</span>
-                      <span className={styles.affectedTitle}>{ac.case?.title}</span>
-                      <span className={styles.affectedReason}>{ac.reason}</span>
-                    </li>
-                  ))}
+                  <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
+                    {ac.case?.priority && (
+                      <>
+                        <span
+                          className={styles.priorityDot}
+                          data-priority={ac.case.priority}
+                          aria-hidden="true"
+                        />
+                        <span className="sr-only">{ac.case.priority} priority</span>
+                      </>
+                    )}
+                    <span className={styles.affectedPath}>{ac.case?.path}</span>
+                    <span className={styles.affectedTitle}>{ac.case?.title}</span>
+                    <span className={styles.affectedReason}>{ac.reason}</span>
+                  </li>
+                ))}
               </ul>
             ))}
         </div>
