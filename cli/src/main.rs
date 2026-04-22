@@ -387,7 +387,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            let case = resp.case.as_ref().unwrap();
+            let case = resp.case.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no case"))?;
             println!("path:        {}", case.path);
             println!("title:       {}", case.title);
             println!("description: {}", case.description);
@@ -419,7 +419,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            let case = resp.case.as_ref().unwrap();
+            let case = resp.case.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no case"))?;
             println!("Created: {}", resp.file_path);
             println!("title:       {}", case.title);
             println!("description: {}", case.description);
@@ -460,7 +460,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            let case = resp.case.as_ref().unwrap();
+            let case = resp.case.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no case"))?;
             println!("Updated: cases/{}.md", case.path);
             println!("title:       {}", case.title);
             println!("description: {}", case.description);
@@ -543,8 +543,8 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner()
                 .run
-                .unwrap();
-            let meta = run.meta.as_ref().unwrap();
+                .ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
+            let meta = run.meta.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no run meta"))?;
             println!("id:     {}", meta.id);
             println!("date:   {}", meta.date);
             println!("tester: {}", meta.tester);
@@ -616,7 +616,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            let meta = resp.run.as_ref().unwrap();
+            let meta = resp.run.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
             println!("Created run: {}", meta.id);
             println!("Directory:   {}", resp.dir_path);
             if let Ok(pending_resp) = c
@@ -696,7 +696,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner()
                 .run
-                .unwrap();
+                .ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
             println!(
                 "Finalized run {} as {}",
                 meta.id,
@@ -709,7 +709,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 })
                 .await
             {
-                let run = run_resp.into_inner().run.unwrap();
+                if let Some(run) = run_resp.into_inner().run {
                 let passed = run
                     .results
                     .iter()
@@ -738,6 +738,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                     skipped,
                     run.results.len()
                 );
+                }
             }
         }
         RunsCmd::Pending { repo_id, run_id } => {
@@ -864,7 +865,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner()
                 .suite
-                .unwrap();
+                .ok_or_else(|| anyhow::anyhow!("server returned no suite"))?;
             println!("slug:        {slug}");
             println!("name:        {}", suite.name);
             if !suite.description.is_empty() {
