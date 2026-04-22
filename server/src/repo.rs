@@ -1482,6 +1482,76 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_suite_invalid_new_slug_returns_invalid_arg() {
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            None,
+            None,
+            None,
+            Some("bad slug!"),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_suite_valid_new_slug_passes_validation_and_hits_db() {
+        // Valid new_slug passes slug validation then hits DB (not found).
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            None,
+            None,
+            None,
+            Some("smoke-v2"),
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_case_invalid_new_path_returns_invalid_arg() {
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("bad path!"),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_case_valid_new_path_passes_validation_and_hits_db() {
+        // Valid new_path passes path validation then hits DB (not found).
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("auth/signin"),
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
     async fn delete_suite_invalid_slug_returns_invalid_arg() {
         let err = delete_suite(&lazy_pool(), "owner/repo", "bad slug!")
             .await
