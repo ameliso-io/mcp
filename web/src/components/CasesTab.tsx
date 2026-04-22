@@ -86,6 +86,7 @@ export default function CasesTab({
   const [tagFilter, setTagFilter] = useState(initialTagFilter ?? "");
   const [suiteFilter, setSuiteFilter] = useState("");
   const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
+  const [filterPending, startFilterTransition] = useTransition();
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -520,7 +521,7 @@ export default function CasesTab({
         </div>
       )}
 
-      <div className={styles.filterBar}>
+      <div className={styles.filterBar} aria-busy={filterPending}>
         <input
           type="search"
           aria-label="Search cases"
@@ -536,9 +537,11 @@ export default function CasesTab({
         <select
           aria-label="Filter by priority"
           value={priorityFilter}
-          onChange={(e) => {
-            setPriorityFilter(Number(e.target.value));
-          }}
+          onChange={(e) =>
+            startFilterTransition(() =>
+              setPriorityFilter(Number(e.target.value) as Priority)
+            )
+          }
           className={styles.filterSelect}
         >
           <option value={Priority.UNSPECIFIED}>All priorities</option>
@@ -550,9 +553,9 @@ export default function CasesTab({
           <select
             aria-label="Filter by tag"
             value={tagFilter}
-            onChange={(e) => {
-              setTagFilter(e.target.value);
-            }}
+            onChange={(e) =>
+              startFilterTransition(() => setTagFilter(e.target.value))
+            }
             className={styles.filterSelect}
           >
             <option value="">All tags</option>
