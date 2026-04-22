@@ -106,6 +106,7 @@ ameliso runs finalize 2026-04-21-smoke completed
 ameliso runs finalize 2026-04-21-smoke completed --json  # machine-readable: { run_id, status, passed, failed, ... }
 ameliso runs delete 2026-04-21-smoke
 ameliso runs pending 2026-04-21-smoke
+ameliso runs pending 2026-04-21-smoke --json  # machine-readable: { pending_count, total_in_scope, done, cases[] }
 
 # Suites
 ameliso suites list

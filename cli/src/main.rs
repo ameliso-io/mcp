@@ -287,6 +287,8 @@ enum RunsCmd {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         run_id: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Delete a run directory entirely (removes all recorded results)")]
     Delete {
@@ -912,7 +914,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 }
             }
         }
-        RunsCmd::Pending { repo_id, run_id } => {
+        RunsCmd::Pending { repo_id, run_id, json } => {
             let resp = c
                 .get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
                 .await
@@ -920,7 +922,29 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .into_inner();
             let total = resp.total_in_scope as usize;
             let pending = &resp.cases;
-            if pending.is_empty() {
+            if json {
+                let cases_json: Vec<serde_json::Value> = pending
+                    .iter()
+                    .map(|c| {
+                        serde_json::json!({
+                            "path": c.path,
+                            "title": c.title,
+                            "priority": c.priority,
+                            "tags": c.tags,
+                        })
+                    })
+                    .collect();
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "pending_count": pending.len(),
+                        "total_in_scope": total,
+                        "done": total.saturating_sub(pending.len()),
+                        "cases": cases_json,
+                    }))
+                    .unwrap_or_default()
+                );
+            } else if pending.is_empty() {
                 println!("All {total} case(s) in scope have results recorded.");
             } else {
                 println!(
@@ -2093,6 +2117,22 @@ mod tests {
         ])
         .expect("should parse");
         if let Commands::Suites(SuitesCmd::Create { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_pending_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "pending",
+            "--repo-id", "owner/repo",
+            "--json",
+            "2026-04-22-smoke",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Pending { json, .. }) = cli.command {
             assert!(json);
         } else {
             panic!("wrong variant");
