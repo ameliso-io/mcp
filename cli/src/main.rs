@@ -2411,4 +2411,38 @@ mod tests {
             panic!("wrong variant");
         }
     }
+
+    #[test]
+    fn cli_cases_update_new_path_parses() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "update",
+            "--repo-id", "owner/repo",
+            "auth/login",
+            "--new-path", "auth/signin",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::Update { case_path, new_path, .. }) = cli.command {
+            assert_eq!(case_path, "auth/login");
+            assert_eq!(new_path, Some("auth/signin".to_owned()));
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_suites_update_new_slug_parses() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "suites", "update",
+            "--repo-id", "owner/repo",
+            "smoke",
+            "--new-slug", "smoke-v2",
+        ])
+        .expect("should parse");
+        if let Commands::Suites(SuitesCmd::Update { slug, new_slug, .. }) = cli.command {
+            assert_eq!(slug, "smoke");
+            assert_eq!(new_slug, Some("smoke-v2".to_owned()));
+        } else {
+            panic!("wrong variant");
+        }
+    }
 }
