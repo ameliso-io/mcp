@@ -791,8 +791,8 @@ impl AmelisoService for AmelisoServer {
                 .map_err(repo_err)?;
         Ok(Response::new(pb::BulkRecordResultsResponse {
             results: recorded,
-            pending_count: pending_cases.len() as i32,
-            total_in_scope: total_in_scope as i32,
+            pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
+            total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
         }))
     }
 
@@ -877,7 +877,7 @@ impl AmelisoService for AmelisoServer {
             .map_err(repo_err)?;
         Ok(Response::new(pb::GetPendingCasesResponse {
             cases: pending.iter().map(case_to_pb).collect(),
-            total_in_scope: total as i32,
+            total_in_scope: i32::try_from(total).unwrap_or(i32::MAX),
         }))
     }
 
@@ -923,7 +923,7 @@ impl AmelisoService for AmelisoServer {
 
         Ok(Response::new(pb::GetCoverageReportResponse {
             entries: pb_entries,
-            run_count: run_count as i32,
+            run_count: i32::try_from(run_count).unwrap_or(i32::MAX),
         }))
     }
 
@@ -1161,7 +1161,7 @@ impl AmelisoService for AmelisoServer {
         for run_meta in &active_runs_meta {
             let (pending, total_in_scope) =
                 match repo::get_pending_cases(pool, &repo_id, &run_meta.run_id).await {
-                    Ok((cases, total)) => (cases.len() as i32, total as i32),
+                    Ok((cases, total)) => (i32::try_from(cases.len()).unwrap_or(i32::MAX), i32::try_from(total).unwrap_or(i32::MAX)),
                     Err(_) => (0, 0),
                 };
             active_runs.push(pb::ActiveRunStatus {
@@ -1184,8 +1184,8 @@ impl AmelisoService for AmelisoServer {
             blocked,
             skipped,
             never_run,
-            suite_count: suites.len() as i32,
-            run_count: runs.len() as i32,
+            suite_count: i32::try_from(suites.len()).unwrap_or(i32::MAX),
+            run_count: i32::try_from(runs.len()).unwrap_or(i32::MAX),
             active_runs,
         }))
     }
