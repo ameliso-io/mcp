@@ -32,10 +32,8 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   const expandingRef = useRef<string | null>(null);
   const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
-  const toggleExpandRef = useRef<(slug: string) => void>((_slug: string) => undefined);
   useEffect(() => {
     onExpandedChangeRef.current = onExpandedChange;
-    toggleExpandRef.current = toggleExpand;
   });
   const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -50,28 +48,31 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  async function toggleExpand(slug: string) {
-    if (expanded === slug) {
-      setExpanded(null);
+  const toggleExpand = useCallback(
+    async (slug: string) => {
+      if (expanded === slug) {
+        setExpanded(null);
+        setExpandedCases([]);
+        expandingRef.current = null;
+        onExpandedChangeRef.current?.(null);
+        return;
+      }
+      setExpanded(slug);
       setExpandedCases([]);
-      expandingRef.current = null;
-      onExpandedChangeRef.current?.(null);
-      return;
-    }
-    setExpanded(slug);
-    setExpandedCases([]);
-    expandingRef.current = slug;
-    onExpandedChangeRef.current?.(slug);
-    setExpandedCasesLoading(true);
-    try {
-      const res = await client.listCases({ repoId, suite: slug });
-      if (expandingRef.current === slug) setExpandedCases(res.cases);
-    } catch {
-      // silently fall back — suite.cases paths still visible
-    } finally {
-      if (expandingRef.current === slug) setExpandedCasesLoading(false);
-    }
-  }
+      expandingRef.current = slug;
+      onExpandedChangeRef.current?.(slug);
+      setExpandedCasesLoading(true);
+      try {
+        const res = await client.listCases({ repoId, suite: slug });
+        if (expandingRef.current === slug) setExpandedCases(res.cases);
+      } catch {
+        // silently fall back — suite.cases paths still visible
+      } finally {
+        if (expandingRef.current === slug) setExpandedCasesLoading(false);
+      }
+    },
+    [expanded, repoId]
+  );
 
   function startEdit(suite: Suite) {
     lastFocusRef.current = document.activeElement as HTMLElement;
@@ -118,9 +119,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     if (!slug || suites.length === 0) return;
     if (suites.some((s) => s.slug === slug)) {
       initialExpandedRef.current = null;
-      toggleExpandRef.current(slug);
+      void toggleExpand(slug);
     }
-  }, [suites]);
+  }, [suites, toggleExpand]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
