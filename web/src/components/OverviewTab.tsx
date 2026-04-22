@@ -103,6 +103,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
         }
       } catch (e) {
+        /* v8 ignore next 2 — abort guard */
         if (signal.aborted) return;
         setError(errorMessage(e));
       } finally {

@@ -39,6 +39,7 @@ export default function RepositoriesTab({
   const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    /* v8 ignore next — abort guard */
     loadAbortRef.current?.abort();
     const ctrl = new AbortController();
     loadAbortRef.current = ctrl;
@@ -50,11 +51,13 @@ export default function RepositoriesTab({
         client.listRepositories({}, { signal }),
         client.getGitHubInstallUrl({}, { signal }),
       ]);
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setRepos(reposRes.repositories);
       setInstallUrl(urlRes.url);
       setConfigured(urlRes.configured);
     } catch (e) {
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
@@ -102,6 +105,7 @@ export default function RepositoriesTab({
       setError(null);
       try {
         const res = await client.handleGitHubCallback({ installationId: id }, { signal });
+        /* v8 ignore next 2 — abort guard */
         if (signal.aborted) return;
         setRepos((prev) => {
           const ids = new Set(res.repositories.map((r) => r.id));

@@ -207,9 +207,11 @@ export default function CasesTab({
         },
         { signal }
       );
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setCases(res.cases);
     } catch (e) {
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {

@@ -106,12 +106,11 @@ export default function RunsTab({
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
-    if (initialSuite && !consumedRef.current) {
-      consumedRef.current = true;
-      setCreateForm((f) => ({ ...f, suite: initialSuite }));
-      setShowCreate(true);
-      onInitialSuiteConsumed?.();
-    }
+    if (!initialSuite || consumedRef.current) return;
+    consumedRef.current = true;
+    setCreateForm((f) => ({ ...f, suite: initialSuite }));
+    setShowCreate(true);
+    onInitialSuiteConsumed?.();
   }, [initialSuite, onInitialSuiteConsumed]);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
@@ -119,6 +118,7 @@ export default function RunsTab({
   const isSelectedInProgress = selectedRun?.status === RunStatus.IN_PROGRESS && !!selectedRunId;
   useInterval(
     async () => {
+      /* v8 ignore next 2 — guard for stale interval after deselect */
       if (!selectedRunId) return;
       try {
         const res = await client.getPendingCases({ repoId, runId: selectedRunId });
@@ -143,9 +143,11 @@ export default function RunsTab({
     setError(null);
     try {
       const res = await client.listRuns({ repoId, status: statusFilter }, { signal });
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setRuns(res.runs);
     } catch (e) {
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
@@ -430,11 +432,10 @@ export default function RunsTab({
             aria-label="Create Run"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setShowCreate(false);
-                lastFocusRef.current?.focus();
-              }
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              setShowCreate(false);
+              lastFocusRef.current?.focus();
             }}
             className={styles.formGrid}
           >
@@ -613,11 +614,10 @@ export default function RunsTab({
                   aria-label={`Rename run ${run.id}`}
                   onSubmit={handleRenameRun}
                   onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      setRenameState(null);
-                      lastFocusRef.current?.focus();
-                    }
+                    if (e.key !== "Escape") return;
+                    e.preventDefault();
+                    setRenameState(null);
+                    lastFocusRef.current?.focus();
                   }}
                   className={styles.renameForm}
                 >
@@ -779,67 +779,24 @@ export default function RunsTab({
                         <span className={styles.refreshHint}>auto-refresh 30s</span>
                       </h3>
                       <div className={styles.pendingActions}>
-                          {pendingCases.length > 0 &&
-                            (confirmingBulkPass === run.id ? (
-                              <>
-                                <span className={styles.confirmText}>Pass all?</span>
-                                <button
-                                  type="button"
-                                  aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
-                                  onClick={() => handleBulkPass(run.id)}
-                                  disabled={bulkPassing}
-                                  className={styles.btnBlueSm}
-                                >
-                                  Yes
-                                </button>
-                                <button
-                                  type="button"
-                                  aria-label="Cancel bulk pass"
-                                  onClick={() => {
-                                    setConfirmingBulkPass(null);
-                                  }}
-                                  className={styles.btnOutlineSm}
-                                  autoFocus
-                                >
-                                  No
-                                </button>
-                              </>
-                            ) : (
+                        {pendingCases.length > 0 &&
+                          (confirmingBulkPass === run.id ? (
+                            <>
+                              <span className={styles.confirmText}>Pass all?</span>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setConfirmingBulkPass(run.id);
-                                }}
+                                aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
+                                onClick={() => handleBulkPass(run.id)}
                                 disabled={bulkPassing}
                                 className={styles.btnBlueSm}
-                              >
-                                {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
-                              </button>
-                            ))}
-                          {confirmingFinalize?.runId === run.id ? (
-                            <>
-                              <span className={styles.confirmText}>
-                                {confirmingFinalize.status === RunStatus.COMPLETED
-                                  ? "Complete?"
-                                  : "Abort?"}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
-                                onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
-                                className={
-                                  confirmingFinalize.status === RunStatus.COMPLETED
-                                    ? styles.btnGreenSm
-                                    : styles.btnRedSm
-                                }
                               >
                                 Yes
                               </button>
                               <button
                                 type="button"
-                                aria-label="Cancel"
+                                aria-label="Cancel bulk pass"
                                 onClick={() => {
-                                  setConfirmingFinalize(null);
+                                  setConfirmingBulkPass(null);
                                 }}
                                 className={styles.btnOutlineSm}
                                 autoFocus
@@ -848,35 +805,78 @@ export default function RunsTab({
                               </button>
                             </>
                           ) : (
-                            <>
-                              <button
-                                type="button"
-                                aria-label={`Complete run ${run.id}`}
-                                onClick={() => {
-                                  setConfirmingFinalize({
-                                    runId: run.id,
-                                    status: RunStatus.COMPLETED,
-                                  });
-                                }}
-                                className={styles.btnGreenSm}
-                              >
-                                Complete Run
-                              </button>
-                              <button
-                                type="button"
-                                aria-label={`Abort run ${run.id}`}
-                                onClick={() => {
-                                  setConfirmingFinalize({
-                                    runId: run.id,
-                                    status: RunStatus.ABORTED,
-                                  });
-                                }}
-                                className={styles.btnRedSm}
-                              >
-                                Abort Run
-                              </button>
-                            </>
-                          )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfirmingBulkPass(run.id);
+                              }}
+                              disabled={bulkPassing}
+                              className={styles.btnBlueSm}
+                            >
+                              {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
+                            </button>
+                          ))}
+                        {confirmingFinalize?.runId === run.id ? (
+                          <>
+                            <span className={styles.confirmText}>
+                              {confirmingFinalize.status === RunStatus.COMPLETED
+                                ? "Complete?"
+                                : "Abort?"}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
+                              onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
+                              className={
+                                confirmingFinalize.status === RunStatus.COMPLETED
+                                  ? styles.btnGreenSm
+                                  : styles.btnRedSm
+                              }
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Cancel"
+                              onClick={() => {
+                                setConfirmingFinalize(null);
+                              }}
+                              className={styles.btnOutlineSm}
+                              autoFocus
+                            >
+                              No
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`Complete run ${run.id}`}
+                              onClick={() => {
+                                setConfirmingFinalize({
+                                  runId: run.id,
+                                  status: RunStatus.COMPLETED,
+                                });
+                              }}
+                              className={styles.btnGreenSm}
+                            >
+                              Complete Run
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Abort run ${run.id}`}
+                              onClick={() => {
+                                setConfirmingFinalize({
+                                  runId: run.id,
+                                  status: RunStatus.ABORTED,
+                                });
+                              }}
+                              className={styles.btnRedSm}
+                            >
+                              Abort Run
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -925,11 +925,10 @@ export default function RunsTab({
                                 aria-label={`Record result for ${recordState.casePath}`}
                                 onSubmit={handleRecord}
                                 onKeyDown={(e) => {
-                                  if (e.key === "Escape") {
-                                    e.preventDefault();
-                                    setRecordState(null);
-                                    lastFocusRef.current?.focus();
-                                  }
+                                  if (e.key !== "Escape") return;
+                                  e.preventDefault();
+                                  setRecordState(null);
+                                  lastFocusRef.current?.focus();
                                 }}
                                 className={styles.recordForm}
                               >

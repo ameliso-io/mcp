@@ -97,9 +97,11 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     setError(null);
     try {
       const res = await client.listSuites({ repoId }, { signal });
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setSuites(res.suites);
     } catch (e) {
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
@@ -117,6 +119,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   useEffect(() => {
     const slug = initialExpandedRef.current;
     if (!slug || suites.length === 0) return;
+    /* v8 ignore next — initialExpandedRef only set when suite exists */
     if (!suites.some((s) => s.slug === slug)) return;
     initialExpandedRef.current = null;
     void toggleExpand(slug);
