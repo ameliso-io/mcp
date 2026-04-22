@@ -13,6 +13,23 @@ function RepositoriesInner() {
 
   const installationId = searchParams.get("installation_id") ?? undefined;
   const setupAction = searchParams.get("setup_action") ?? undefined;
+  const initialSearch = searchParams.get("q") ?? "";
+
+  const handleSearchChange = useCallback(
+    (q: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) {
+        params.set("q", q);
+      } else {
+        params.delete("q");
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace(qs ? `/repositories?${qs}` : "/repositories");
+      });
+    },
+    [router, searchParams]
+  );
 
   const handleRepoSelect = useCallback(
     (id: string) => {
@@ -43,6 +60,8 @@ function RepositoriesInner() {
       installationId={installationId}
       setupAction={setupAction}
       onInstallationHandled={handleInstallationHandled}
+      initialSearch={initialSearch}
+      onSearchChange={handleSearchChange}
     />
   );
 }

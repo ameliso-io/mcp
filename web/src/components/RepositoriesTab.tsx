@@ -13,6 +13,8 @@ interface Props {
   installationId?: string | undefined;
   setupAction?: string | undefined;
   onInstallationHandled?: (() => void) | undefined;
+  initialSearch?: string | undefined;
+  onSearchChange?: ((q: string) => void) | undefined;
 }
 
 export default function RepositoriesTab({
@@ -21,6 +23,8 @@ export default function RepositoriesTab({
   installationId,
   setupAction,
   onInstallationHandled,
+  initialSearch,
+  onSearchChange,
 }: Props) {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [installUrl, setInstallUrl] = useState<string>("");
@@ -28,7 +32,7 @@ export default function RepositoriesTab({
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
@@ -238,6 +242,7 @@ export default function RepositoriesTab({
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
+              onSearchChange?.(e.target.value);
             }}
             className={styles.searchInput}
           />
@@ -291,6 +296,7 @@ export default function RepositoriesTab({
             type="button"
             onClick={() => {
               setSearch("");
+              onSearchChange?.("");
             }}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >

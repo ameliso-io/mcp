@@ -589,6 +589,43 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
   });
 
+  it("initializes search input from initialSearch prop", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo({ id: "org/alpha", fullName: "org/alpha" })],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" initialSearch="alpha" />);
+    await waitFor(() => screen.getByText("org/alpha"));
+    expect(screen.getByPlaceholderText("Search repositories…")).toHaveValue("alpha");
+  });
+
+  it("calls onSearchChange when search input changes", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    const onSearchChange = vi.fn();
+    render(
+      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" onSearchChange={onSearchChange} />
+    );
+    await waitFor(() => screen.getByPlaceholderText("Search repositories…"));
+    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "x");
+    expect(onSearchChange).toHaveBeenCalledWith("x");
+  });
+
+  it("calls onSearchChange with empty string when Clear search is clicked", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    const onSearchChange = vi.fn();
+    render(
+      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" onSearchChange={onSearchChange} />
+    );
+    await waitFor(() => screen.getByPlaceholderText("Search repositories…"));
+    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "xyz");
+    await waitFor(() => screen.getByText("Clear search"));
+    await userEvent.click(screen.getByText("Clear search"));
+    expect(onSearchChange).toHaveBeenLastCalledWith("");
+  });
+
   it("Refresh All keeps repos with different installationIds after update", async () => {
     const repoA = makeRepo({
       id: "org/alpha",
