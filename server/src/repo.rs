@@ -2155,6 +2155,40 @@ mod tests {
         assert!(matches!(err, RepoError::ClosedRun(_)));
     }
 
+    #[tokio::test]
+    async fn update_run_invalid_run_id_returns_invalid_arg() {
+        let err = update_run(&lazy_pool(), "owner/repo", "bad run!", "smoke-v2")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_invalid_new_slug_returns_invalid_arg() {
+        let err = update_run(&lazy_pool(), "owner/repo", "2026-01-01-smoke", "bad slug!")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_short_run_id_returns_invalid_arg() {
+        // run_id shorter than 10 chars — date prefix extraction fails.
+        let err = update_run(&lazy_pool(), "owner/repo", "short", "smoke-v2")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_valid_args_passes_validation_and_hits_db() {
+        // Valid run_id + new_slug pass all validation → hits DB (no connection → DB error).
+        let err = update_run(&lazy_pool(), "owner/repo", "2026-01-01-smoke", "smoke-v2")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
     #[sqlx::test]
     #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
     async fn suite_create_list_delete(pool: PgPool) {
