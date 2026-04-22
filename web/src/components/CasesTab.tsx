@@ -474,6 +474,8 @@ export default function CasesTab({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={styles.searchInput}
+          autoComplete="off"
+          spellCheck={false}
         />
         <select
           aria-label="Filter by priority"
