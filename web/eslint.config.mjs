@@ -10,22 +10,20 @@ const tseslint = require("typescript-eslint");
 // eslint-config-agent already covers react, react-hooks, @typescript-eslint, import.
 const nextOnly = coreWebVitals
   .filter((cfg) => {
-    const hasNextPlugin =
-      cfg.plugins && Object.keys(cfg.plugins).some((k) => k === "@next/next");
-    const hasNextRules =
-      cfg.rules && Object.keys(cfg.rules).some((r) => r.startsWith("@next/"));
+    const hasNextPlugin = cfg.plugins && Object.keys(cfg.plugins).some((k) => k === "@next/next");
+    const hasNextRules = cfg.rules && Object.keys(cfg.rules).some((r) => r.startsWith("@next/"));
     return hasNextPlugin || hasNextRules;
   })
   .map((cfg) => {
     const result = { ...cfg };
     if (result.plugins) {
       result.plugins = Object.fromEntries(
-        Object.entries(result.plugins).filter(([k]) => k === "@next/next"),
+        Object.entries(result.plugins).filter(([k]) => k === "@next/next")
       );
     }
     if (result.rules) {
       result.rules = Object.fromEntries(
-        Object.entries(result.rules).filter(([k]) => k.startsWith("@next/")),
+        Object.entries(result.rules).filter(([k]) => k.startsWith("@next/"))
       );
     }
     // Don't override parser — agent config sets @typescript-eslint/parser

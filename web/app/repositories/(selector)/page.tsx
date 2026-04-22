@@ -1,5 +1,5 @@
-import { pageMetadata } from "@/lib/metadata";
 import RepositoriesPageClient from "./client";
+import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "Repositories",

@@ -228,7 +228,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                 Slug
                 <input
                   value={newSlug}
-                  onChange={(e) => { setNewSlug(e.target.value); }}
+                  onChange={(e) => {
+                    setNewSlug(e.target.value);
+                  }}
                   required
                   autoFocus
                   className={styles.input}
@@ -241,7 +243,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                 Name
                 <input
                   value={newName}
-                  onChange={(e) => { setNewName(e.target.value); }}
+                  onChange={(e) => {
+                    setNewName(e.target.value);
+                  }}
                   required
                   className={styles.input}
                   placeholder="e.g. Smoke Tests"
@@ -253,7 +257,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                 Description
                 <input
                   value={newDesc}
-                  onChange={(e) => { setNewDesc(e.target.value); }}
+                  onChange={(e) => {
+                    setNewDesc(e.target.value);
+                  }}
                   className={styles.input}
                 />
               </label>
@@ -263,7 +269,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                 Cases (comma-separated paths)
                 <input
                   value={newCases}
-                  onChange={(e) => { setNewCases(e.target.value); }}
+                  onChange={(e) => {
+                    setNewCases(e.target.value);
+                  }}
                   className={styles.input}
                   placeholder="auth/login, auth/logout"
                 />
@@ -283,7 +291,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => { setError(null); }}
+            onClick={() => {
+              setError(null);
+            }}
             className={styles.errorDismiss}
             aria-label="Dismiss"
           >
@@ -325,7 +335,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       Name
                       <input
                         value={editName}
-                        onChange={(e) => { setEditName(e.target.value); }}
+                        onChange={(e) => {
+                          setEditName(e.target.value);
+                        }}
                         required
                         autoFocus
                         className={styles.input}
@@ -337,7 +349,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       Description
                       <input
                         value={editDesc}
-                        onChange={(e) => { setEditDesc(e.target.value); }}
+                        onChange={(e) => {
+                          setEditDesc(e.target.value);
+                        }}
                         className={styles.input}
                       />
                     </label>
@@ -347,7 +361,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       Cases (comma-separated paths)
                       <input
                         value={editCases}
-                        onChange={(e) => { setEditCases(e.target.value); }}
+                        onChange={(e) => {
+                          setEditCases(e.target.value);
+                        }}
                         className={styles.input}
                       />
                     </label>
@@ -388,9 +404,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       </span>
                     </button>
                     <Link
-                      href={
-                        `${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route
-                      }
+                      href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route}
                       aria-label={`Run ${suite.slug}`}
                       className={styles.btnGreenSm}
                     >
@@ -398,7 +412,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     </Link>
                     <button
                       type="button"
-                      onClick={() => { startEdit(suite); }}
+                      onClick={() => {
+                        startEdit(suite);
+                      }}
                       aria-label={`Edit ${suite.slug}`}
                       className={styles.btnOutlineSm}
                     >
@@ -417,7 +433,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setConfirmingDelete(null); }}
+                          onClick={() => {
+                            setConfirmingDelete(null);
+                          }}
                           aria-label="Cancel delete"
                           className={styles.btnOutlineSm}
                           autoFocus
@@ -428,7 +446,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     ) : (
                       <button
                         type="button"
-                        onClick={() => { setConfirmingDelete(suite.slug); }}
+                        onClick={() => {
+                          setConfirmingDelete(suite.slug);
+                        }}
                         aria-label={`Delete ${suite.slug}`}
                         className={styles.btnDangerSm}
                       >

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import styles from "./NavBar.module.css";
 
 interface Props {
-  href: Route<string>;
+  href: Route;
   label: string;
 }
 

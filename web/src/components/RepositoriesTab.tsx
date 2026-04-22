@@ -92,8 +92,12 @@ export default function RepositoriesTab({
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       })
-      .catch((e: unknown) => { setError(errorMessage(e)); })
-      .finally(() => { setLoading(false); });
+      .catch((e: unknown) => {
+        setError(errorMessage(e));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {
@@ -205,7 +209,9 @@ export default function RepositoriesTab({
             aria-label="Search repositories"
             placeholder="Search repositories…"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
             className={styles.searchInput}
           />
           <span className={styles.searchIcon} aria-hidden="true">
@@ -219,7 +225,9 @@ export default function RepositoriesTab({
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => { setError(null); }}
+            onClick={() => {
+              setError(null);
+            }}
             className={styles.errorDismiss}
             aria-label="Dismiss"
           >
@@ -254,7 +262,9 @@ export default function RepositoriesTab({
           <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
             type="button"
-            onClick={() => { setSearch(""); }}
+            onClick={() => {
+              setSearch("");
+            }}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >
             Clear search
@@ -289,7 +299,9 @@ export default function RepositoriesTab({
                     <button
                       type="button"
                       className={styles.btnPrimary}
-                      onClick={() => { onRepoSelect(repo.id); }}
+                      onClick={() => {
+                        onRepoSelect(repo.id);
+                      }}
                     >
                       Use
                     </button>
@@ -297,7 +309,9 @@ export default function RepositoriesTab({
                     <button
                       type="button"
                       className={styles.btnOutline}
-                      onClick={() => { onRepoSelect(""); }}
+                      onClick={() => {
+                        onRepoSelect("");
+                      }}
                     >
                       Deselect
                     </button>
@@ -324,7 +338,9 @@ export default function RepositoriesTab({
                       <button
                         type="button"
                         className={styles.btnOutline}
-                        onClick={() => { setConfirmingRemove(null); }}
+                        onClick={() => {
+                          setConfirmingRemove(null);
+                        }}
                         aria-label="Cancel remove"
                         autoFocus
                       >
@@ -335,7 +351,9 @@ export default function RepositoriesTab({
                     <button
                       type="button"
                       className={styles.btnDanger}
-                      onClick={() => { setConfirmingRemove(repo.id); }}
+                      onClick={() => {
+                        setConfirmingRemove(repo.id);
+                      }}
                       aria-label={`Remove ${repo.fullName}`}
                     >
                       Remove

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import NavBar from "@/components/NavBar";
 import styles from "../../../layout.module.css";
+import NavBar from "@/components/NavBar";
 
 export default async function RepoLayout({
   children,

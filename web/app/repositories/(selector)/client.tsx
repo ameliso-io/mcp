@@ -18,7 +18,7 @@ function RepositoriesInner() {
       const slashIdx = id.indexOf("/");
       const org = id.slice(0, slashIdx);
       const repo = id.slice(slashIdx + 1);
-      router.push(`/repositories/${org}/${repo}/overview` as Route<string>);
+      router.push(`/repositories/${org}/${repo}/overview` as Route);
     },
     [router]
   );
