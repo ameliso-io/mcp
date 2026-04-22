@@ -1651,6 +1651,92 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
+    // delete_case_if_exists / upsert_case / get_coverage_report (pre-DB)
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn delete_case_if_exists_invalid_path_returns_invalid_arg() {
+        let err = delete_case_if_exists(&lazy_pool(), "owner/repo", "../escape")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn delete_case_if_exists_valid_path_passes_validation_and_hits_db() {
+        let err = delete_case_if_exists(&lazy_pool(), "owner/repo", "auth/login")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn upsert_case_invalid_path_returns_invalid_arg() {
+        let err = upsert_case(
+            &lazy_pool(),
+            "owner/repo",
+            "../escape",
+            "title",
+            "",
+            vec![],
+            "medium",
+            "",
+            "2026-01-01",
+            "2026-01-01",
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn upsert_case_invalid_priority_returns_invalid_arg() {
+        let err = upsert_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            "title",
+            "",
+            vec![],
+            "critical",
+            "",
+            "2026-01-01",
+            "2026-01-01",
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("critical"));
+    }
+
+    #[tokio::test]
+    async fn upsert_case_valid_inputs_passes_validation_and_hits_db() {
+        let err = upsert_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            "Login",
+            "",
+            vec![],
+            "high",
+            "",
+            "2026-01-01",
+            "2026-01-01",
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn get_coverage_report_returns_db_error_when_no_connection() {
+        let err = get_coverage_report(&lazy_pool(), "owner/repo")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    // -----------------------------------------------------------------------
     // DB tests — require DATABASE_URL; run with:
     //   DATABASE_URL=postgres://ameliso:ameliso@localhost/ameliso \
     //     cargo test -p ameliso-server -- --include-ignored

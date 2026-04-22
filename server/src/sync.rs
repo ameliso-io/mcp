@@ -244,4 +244,26 @@ mod tests {
         assert_eq!(parsed.case_path, "auth/login");
         assert_eq!(parsed.title, "User Login");
     }
+
+    #[test]
+    fn parse_case_markdown_invalid_yaml_returns_error() {
+        let content = "---\ntitle: [unclosed bracket\n---\n\nbody";
+        let err = parse_case_markdown("cases/auth/login.md", content).unwrap_err();
+        assert!(err.to_string().contains("invalid front matter YAML"));
+    }
+
+    #[test]
+    fn parse_case_from_base64_invalid_base64_returns_error() {
+        let err = parse_case_from_base64("cases/auth/login.md", "not!!valid%%base64")
+            .unwrap_err();
+        assert!(err.to_string().contains("base64 decode failed"));
+    }
+
+    #[test]
+    fn parse_case_from_base64_invalid_utf8_returns_error() {
+        // Valid base64 encoding of invalid UTF-8 bytes.
+        let invalid_utf8 = BASE64.encode([0xFF, 0xFE]);
+        let err = parse_case_from_base64("cases/auth/login.md", &invalid_utf8).unwrap_err();
+        assert!(err.to_string().contains("not valid UTF-8"));
+    }
 }
