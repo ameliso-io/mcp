@@ -1215,6 +1215,33 @@ impl AmelisoMcp {
             Err(e) => format!("error: {e}"),
         }
     }
+
+    #[tool(
+        description = "List all GitHub repositories connected to this Ameliso installation. Returns repo_id (use as `repo_id` in all other tools), name, and URL for each repo."
+    )]
+    async fn list_repositories(&self) -> String {
+        let mut client = self.client();
+        match client
+            .list_repositories(pb::ListRepositoriesRequest {})
+            .await
+        {
+            Ok(r) => {
+                let repos = r.into_inner().repositories;
+                if repos.is_empty() {
+                    "No repositories connected. Use the web UI to connect a GitHub repository via the GitHub App.".to_owned()
+                } else {
+                    let lines: Vec<String> = repos
+                        .iter()
+                        .map(|repo| {
+                            format!("  repo_id: {}  url: {}", repo.full_name, repo.html_url)
+                        })
+                        .collect();
+                    format!("Connected repositories ({}):\n{}", repos.len(), lines.join("\n"))
+                }
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
 }
 
 #[cfg(test)]
