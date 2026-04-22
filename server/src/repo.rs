@@ -1244,6 +1244,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_run_empty_suite_string_skips_validation_and_hits_db() {
+        // suite: Some("") hits the `if !suite_slug.is_empty()` false branch,
+        // skipping validate_slug_path entirely; passes pre-DB checks → DB error.
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            Some("".to_owned()),
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
     async fn delete_run_invalid_run_id_returns_invalid_arg() {
         let err = delete_run(&lazy_pool(), "owner/repo", "bad run!")
             .await
