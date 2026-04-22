@@ -120,6 +120,11 @@ ameliso affected --json          # machine-readable JSON: { reason, cases[] }
 ameliso affected --since HEAD~10
 ameliso status --repo-id owner/repo
 ameliso status --repo-id owner/repo --json  # machine-readable JSON: { cases, coverage, active_runs[] }
+
+# Repositories (no --repo-id needed)
+ameliso repos list               # list all connected repos with repo_id and URL
+ameliso repos list --json        # machine-readable JSON: [{ repo_id, name, url, added_at }]
+ameliso repos sync owner/repo    # force immediate re-sync of all case files from GitHub
 ```
 
 ---

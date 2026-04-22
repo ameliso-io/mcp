@@ -127,6 +127,22 @@ enum Commands {
         #[arg(long, help = "Output as JSON")]
         json: bool,
     },
+    #[command(subcommand, about = "Manage connected GitHub repositories")]
+    Repos(ReposCmd),
+}
+
+#[derive(Subcommand)]
+enum ReposCmd {
+    #[command(about = "List all connected GitHub repositories and their repo IDs")]
+    List {
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
+    },
+    #[command(about = "Force a full re-sync of case files from GitHub")]
+    Sync {
+        #[arg(help = "Repository ID, e.g. owner/repo")]
+        repo_id: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -356,6 +372,7 @@ async fn main() -> Result<()> {
             run_affected(channel, &repo_id, since.as_deref(), json).await
         }
         Commands::Status { repo_id, json } => run_status(channel, &repo_id, json).await,
+        Commands::Repos(cmd) => run_repos(channel, cmd).await,
     }
 }
 
@@ -1328,6 +1345,52 @@ async fn run_status(channel: Channel, repo_id: &str, json: bool) -> Result<()> {
     Ok(())
 }
 
+async fn run_repos(channel: Channel, cmd: ReposCmd) -> Result<()> {
+    match cmd {
+        ReposCmd::List { json } => {
+            let mut c = client(channel);
+            let repos = c
+                .list_repositories(pb::ListRepositoriesRequest {})
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .repositories;
+            if json {
+                let arr: Vec<_> = repos
+                    .iter()
+                    .map(|r| {
+                        serde_json::json!({
+                            "repo_id": r.full_name,
+                            "name": r.name,
+                            "url": r.html_url,
+                            "added_at": r.added_at,
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&arr)?);
+            } else if repos.is_empty() {
+                println!("No repositories connected.");
+            } else {
+                for r in &repos {
+                    println!("{:<40}  {}", r.full_name, r.html_url);
+                }
+            }
+        }
+        ReposCmd::Sync { repo_id } => {
+            let mut c = client(channel);
+            let repo = c
+                .sync_repository(pb::SyncRepositoryRequest { id: repo_id })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .repository
+                .ok_or_else(|| anyhow!("server returned empty repository"))?;
+            println!("synced: {}", repo.full_name);
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1847,5 +1910,34 @@ mod tests {
             "expected code in: {msg}"
         );
         assert!(msg.contains("db unreachable"), "expected message in: {msg}");
+    }
+
+    #[test]
+    fn cli_repos_list_parses() {
+        let cli = Cli::try_parse_from(["ameliso", "repos", "list"])
+            .expect("should parse");
+        assert!(matches!(cli.command, Commands::Repos(ReposCmd::List { .. })));
+    }
+
+    #[test]
+    fn cli_repos_list_json_flag_set() {
+        let cli = Cli::try_parse_from(["ameliso", "repos", "list", "--json"])
+            .expect("should parse");
+        if let Commands::Repos(ReposCmd::List { json }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_repos_sync_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "repos", "sync", "owner/repo"])
+            .expect("should parse");
+        if let Commands::Repos(ReposCmd::Sync { repo_id }) = cli.command {
+            assert_eq!(repo_id, "owner/repo");
+        } else {
+            panic!("wrong variant");
+        }
     }
 }
