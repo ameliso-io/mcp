@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { useCallback, Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -19,12 +19,10 @@ const SLUG_BY_STATUS: Record<number, string> = {
   [RunStatus.ABORTED]: "aborted",
 };
 
-interface Props {
-  repoId: string;
-  basePath: string;
-}
-
-function RunsInner({ repoId, basePath }: Props) {
+function RunsInner() {
+  const { org, repo } = useParams<{ org: string; repo: string }>();
+  const repoId = `${org}/${repo}`;
+  const basePath = `/repositories/${org}/${repo}`;
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialSuite = searchParams.get("suite") ?? undefined;
@@ -64,10 +62,10 @@ function RunsInner({ repoId, basePath }: Props) {
   );
 }
 
-export default function RunsPageClient({ repoId, basePath }: Props) {
+export default function RunsPageClient() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <RunsInner repoId={repoId} basePath={basePath} />
+      <RunsInner />
     </Suspense>
   );
 }

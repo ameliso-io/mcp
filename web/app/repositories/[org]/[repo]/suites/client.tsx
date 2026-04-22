@@ -2,16 +2,14 @@
 
 import type { Route } from "next";
 import { useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import SuitesTab from "@/components/SuitesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-interface Props {
-  repoId: string;
-  basePath: string;
-}
-
-function SuitesInner({ repoId, basePath }: Props) {
+function SuitesInner() {
+  const { org, repo } = useParams<{ org: string; repo: string }>();
+  const repoId = `${org}/${repo}`;
+  const basePath = `/repositories/${org}/${repo}`;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -41,10 +39,10 @@ function SuitesInner({ repoId, basePath }: Props) {
   );
 }
 
-export default function SuitesPageClient({ repoId, basePath }: Props) {
+export default function SuitesPageClient() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <SuitesInner repoId={repoId} basePath={basePath} />
+      <SuitesInner />
     </Suspense>
   );
 }

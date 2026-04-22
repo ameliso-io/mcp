@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import { useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
@@ -19,12 +19,10 @@ const SLUG_BY_PRIORITY: Record<number, string> = {
   [Priority.HIGH]: "high",
 };
 
-interface Props {
-  repoId: string;
-  basePath: string;
-}
-
-function CasesInner({ repoId, basePath }: Props) {
+function CasesInner() {
+  const { org, repo } = useParams<{ org: string; repo: string }>();
+  const repoId = `${org}/${repo}`;
+  const basePath = `/repositories/${org}/${repo}`;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -77,10 +75,10 @@ function CasesInner({ repoId, basePath }: Props) {
   );
 }
 
-export default function CasesPageClient({ repoId, basePath }: Props) {
+export default function CasesPageClient() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <CasesInner repoId={repoId} basePath={basePath} />
+      <CasesInner />
     </Suspense>
   );
 }
