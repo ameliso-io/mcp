@@ -219,6 +219,8 @@ export default function RepositoriesTab({
               setSearch(e.target.value);
             }}
             className={styles.searchInput}
+            autoComplete="off"
+            spellCheck={false}
           />
           <span className={styles.searchIcon} aria-hidden="true">
             ⌕

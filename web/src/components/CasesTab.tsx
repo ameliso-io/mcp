@@ -496,6 +496,8 @@ export default function CasesTab({
             setSearch(e.target.value);
           }}
           className={styles.searchInput}
+          autoComplete="off"
+          spellCheck={false}
         />
         <select
           aria-label="Filter by priority"
