@@ -1170,6 +1170,211 @@ async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use clap::Parser;
+
+    // -----------------------------------------------------------------------
+    // Clap argument parsing
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn cli_cases_list_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "cases", "list", "--repo-id", "owner/repo"])
+            .expect("should parse");
+        assert!(matches!(cli.command, Commands::Cases(CasesCmd::List { .. })));
+    }
+
+    #[test]
+    fn cli_cases_get_parses_path() {
+        let cli =
+            Cli::try_parse_from(["ameliso", "cases", "get", "--repo-id", "owner/repo", "auth/login"])
+                .expect("should parse");
+        if let Commands::Cases(CasesCmd::Get { case_path, .. }) = cli.command {
+            assert_eq!(case_path, "auth/login");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_create_parses_required_fields() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "create",
+            "--repo-id", "owner/repo",
+            "auth/login",
+            "--title", "Login Flow",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::Create { case_path, title, priority, .. }) = cli.command {
+            assert_eq!(case_path, "auth/login");
+            assert_eq!(title, "Login Flow");
+            assert_eq!(priority, "medium");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_create_accepts_priority_flag() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "create",
+            "--repo-id", "owner/repo",
+            "auth/login",
+            "--title", "T",
+            "--priority", "high",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::Create { priority, .. }) = cli.command {
+            assert_eq!(priority, "high");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_delete_parses_path() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "delete", "--repo-id", "owner/repo", "auth/login",
+        ])
+        .expect("should parse");
+        assert!(matches!(cli.command, Commands::Cases(CasesCmd::Delete { .. })));
+    }
+
+    #[test]
+    fn cli_runs_list_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "runs", "list", "--repo-id", "owner/repo"])
+            .expect("should parse");
+        assert!(matches!(cli.command, Commands::Runs(RunsCmd::List { .. })));
+    }
+
+    #[test]
+    fn cli_runs_create_parses_slug() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "create", "--repo-id", "owner/repo", "2026-01-01-smoke",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Create { slug, .. }) = cli.command {
+            assert_eq!(slug, "2026-01-01-smoke");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_record_parses_status() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "record",
+            "--repo-id", "owner/repo",
+            "2026-01-01-smoke", "auth/login", "passed",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Record { status, .. }) = cli.command {
+            assert_eq!(status, "passed");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_finalize_parses_status() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "finalize",
+            "--repo-id", "owner/repo",
+            "2026-01-01-smoke", "completed",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Finalize { status, .. }) = cli.command {
+            assert_eq!(status, "completed");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_bulk_record_parses_entries() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "bulk-record",
+            "--repo-id", "owner/repo",
+            "2026-01-01-smoke",
+            "auth/login:passed",
+            "auth/logout:failed:broken",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::BulkRecord { entries, .. }) = cli.command {
+            assert_eq!(entries.len(), 2);
+            assert_eq!(entries[0], "auth/login:passed");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_suites_list_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "suites", "list", "--repo-id", "owner/repo"])
+            .expect("should parse");
+        assert!(matches!(cli.command, Commands::Suites(SuitesCmd::List { .. })));
+    }
+
+    #[test]
+    fn cli_suites_create_parses_required_fields() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "suites", "create",
+            "--repo-id", "owner/repo",
+            "smoke",
+            "--name", "Smoke Tests",
+            "--cases", "auth/login,auth/logout",
+        ])
+        .expect("should parse");
+        if let Commands::Suites(SuitesCmd::Create { slug, name, cases, .. }) = cli.command {
+            assert_eq!(slug, "smoke");
+            assert_eq!(name, "Smoke Tests");
+            assert_eq!(cases, "auth/login,auth/logout");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_coverage_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "coverage", "--repo-id", "owner/repo"])
+            .expect("should parse");
+        assert!(matches!(cli.command, Commands::Coverage { .. }));
+    }
+
+    #[test]
+    fn cli_affected_parses_with_since() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "affected", "--repo-id", "owner/repo", "--since", "abc123",
+        ])
+        .expect("should parse");
+        if let Commands::Affected { since, .. } = cli.command {
+            assert_eq!(since, Some("abc123".to_owned()));
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_status_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "status", "--repo-id", "owner/repo"])
+            .expect("should parse");
+        assert!(matches!(cli.command, Commands::Status { .. }));
+    }
+
+    #[test]
+    fn cli_missing_required_arg_fails() {
+        let result = Cli::try_parse_from(["ameliso", "cases", "get", "--repo-id", "owner/repo"]);
+        assert!(result.is_err(), "missing positional arg should fail");
+    }
+
+    #[test]
+    fn cli_server_flag_overrides_default() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "--server", "http://localhost:9090",
+            "coverage", "--repo-id", "owner/repo",
+        ])
+        .expect("should parse");
+        assert_eq!(cli.server, "http://localhost:9090");
+    }
 
     #[test]
     fn priority_str_to_i32_known_values() {
