@@ -6,7 +6,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -38,7 +38,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -108,7 +108,7 @@
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #334155;
+  color: var(--color-ink-hover);
 }
 
 .emptyDesc {
@@ -144,6 +144,16 @@
   margin: 0;
   font-size: 32px;
   font-weight: 700;
+  color: var(--color-ink);
+}
+.statValue[data-stat="Passed"] {
+  color: var(--color-success);
+}
+.statValue[data-stat="Failed"] {
+  color: var(--color-danger-hover);
+}
+.statValue[data-stat="Never Run"] {
+  color: var(--color-subtle);
 }
 
 .activeRunsCard {
@@ -172,7 +182,7 @@
   margin-left: 8px;
   font-size: 10px;
   font-weight: 400;
-  color: #93c5fd;
+  color: var(--color-primary-light);
 }
 
 .goToRunsBtn {
@@ -190,13 +200,16 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .runRow {
   padding: 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--color-primary-faint);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -232,6 +245,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .coverageRow {
@@ -248,6 +264,19 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--color-border);
+}
+.statusDot[data-status="PASSED"] {
+  background: var(--color-result-passed);
+}
+.statusDot[data-status="FAILED"] {
+  background: var(--color-result-failed);
+}
+.statusDot[data-status="BLOCKED"] {
+  background: var(--color-result-blocked);
+}
+.statusDot[data-status="SKIPPED"] {
+  background: var(--color-result-skipped);
 }
 
 .coveragePath {
@@ -269,6 +298,16 @@
 .coverageStatus {
   font-size: 12px;
   font-weight: 600;
+  color: var(--color-subtle);
+}
+.coverageStatus[data-status="PASSED"] {
+  color: var(--color-result-passed);
+}
+.coverageStatus[data-status="FAILED"] {
+  color: var(--color-result-failed);
+}
+.coverageStatus[data-status="BLOCKED"] {
+  color: var(--color-result-blocked);
 }
 
 .affectedForm {
@@ -281,6 +320,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .affectedRow {
@@ -297,6 +339,13 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--color-priority-low);
+}
+.priorityDot[data-priority="high"] {
+  background: var(--color-priority-high);
+}
+.priorityDot[data-priority="medium"] {
+  background: var(--color-priority-medium);
 }
 
 .affectedPath {
@@ -326,4 +375,8 @@
   background: var(--color-surface-alt);
   padding: 1px 6px;
   border-radius: 4px;
+}
+
+.sectionLabel {
+  margin-bottom: 12px;
 }

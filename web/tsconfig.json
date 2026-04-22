@@ -23,7 +23,11 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": [
     "next-env.d.ts",

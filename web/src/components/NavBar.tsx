@@ -1,37 +1,30 @@
-"use client";
-
+import type { Route } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import NavLink from "./NavLink";
 import styles from "./NavBar.module.css";
 
-const NAV_ITEMS = [
-  { href: "/repositories", label: "Repositories" },
-  { href: "/overview", label: "Overview" },
-  { href: "/cases", label: "Cases" },
-  { href: "/suites", label: "Suites" },
-  { href: "/runs", label: "Runs" },
-] as const;
+interface Props {
+  basePath: string;
+}
 
-export default function NavBar() {
-  const pathname = usePathname();
+export default function NavBar({ basePath }: Props) {
+  const tabItems: { href: Route<string>; label: string }[] = [
+    { href: `${basePath}/overview` as Route<string>, label: "Overview" },
+    { href: `${basePath}/cases` as Route<string>, label: "Cases" },
+    { href: `${basePath}/suites` as Route<string>, label: "Suites" },
+    { href: `${basePath}/runs` as Route<string>, label: "Runs" },
+  ];
 
   return (
     <header className={styles.header}>
-      <span className={styles.logo}>Ameliso</span>
-      <nav className={styles.nav}>
-        {NAV_ITEMS.map(({ href, label }) => {
-          const active = pathname === href || (pathname === "/" && href === "/overview");
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`${styles.link}${active ? ` ${styles.linkActive}` : ""}`}
-              aria-current={active ? "page" : undefined}
-            >
-              {label}
-            </Link>
-          );
-        })}
+      <Link href="/repositories" className={styles.logo}>
+        Ameliso
+      </Link>
+      <nav className={styles.nav} aria-label="Main navigation">
+        <NavLink href="/repositories" label="Repositories" />
+        {tabItems.map(({ href, label }) => (
+          <NavLink key={href} href={href} label={label} />
+        ))}
       </nav>
     </header>
   );

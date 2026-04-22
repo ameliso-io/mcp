@@ -14,7 +14,7 @@
 .heading {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .message {
@@ -22,15 +22,10 @@
   color: var(--color-muted);
 }
 
-.errorMessage {
-  font-size: 14px;
-  color: #dc2626;
-}
-
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -41,6 +36,13 @@
   background: var(--color-ink-hover);
 }
 
+.digest {
+  font-size: 11px;
+  color: var(--color-muted);
+  font-family: monospace;
+  margin: 0;
+}
+
 .link {
   color: var(--color-primary);
   text-decoration: none;
@@ -49,13 +51,4 @@
 
 .link:hover {
   text-decoration: underline;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
 }

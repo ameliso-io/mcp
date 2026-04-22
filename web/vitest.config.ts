@@ -1,8 +1,14 @@
+import path from "path";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,
@@ -17,12 +23,13 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/__mocks__/**",
         "src/client.ts",
+        "src/test/**",
       ],
       thresholds: {
-        statements: 99,
-        branches: 85,
-        functions: 75,
-        lines: 99,
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
       },
     },
   },

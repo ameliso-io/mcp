@@ -2,21 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RepositoriesTab from "./RepositoriesTab";
-import { client } from "../client";
-import type { Repository } from "../gen/ameliso/v1/types_pb";
+import { client } from "@/client";
+import { makeRepository } from "@/test/factories";
 
-vi.mock("../client");
+vi.mock("@/client");
 
-const makeRepo = (overrides: Partial<Repository> = {}): Repository =>
-  ({
-    id: "owner/repo",
-    name: "repo",
-    fullName: "owner/repo",
-    htmlUrl: "https://github.com/owner/repo",
-    installationId: "inst-1",
-    addedAt: "2026-01-01",
-    ...overrides,
-  }) as unknown as Repository;
+const makeRepo = (overrides = {}) => makeRepository({ installationId: "inst-1", ...overrides });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -88,42 +79,61 @@ describe("RepositoriesTab", () => {
     await waitFor(() => expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
   });
 
-  it("calls removeRepository after confirm", async () => {
+  it("calls removeRepository after inline confirm", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByText("Remove"));
-    await userEvent.click(screen.getByText("Remove"));
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
     await waitFor(() => expect(client.removeRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
   });
 
-  it("does not call removeRepository when confirm cancelled", async () => {
+  it("announces removal via live region", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByText("Remove"));
-    await userEvent.click(screen.getByText("Remove"));
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("owner/repo removed"))
+      ).toBe(true)
+    );
+  });
+
+  it("does not call removeRepository when inline confirm cancelled", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel remove" }));
     expect(client.removeRepository).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Remove owner/repo" })).toBeInTheDocument();
   });
 
   it("shows and dismisses error", async () => {
     vi.mocked(client.listRepositories).mockRejectedValue(new Error("network error"));
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getByText("network error")).toBeInTheDocument());
-    await userEvent.click(screen.getByRole("button", { name: "×" }));
+    await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText("network error")).not.toBeInTheDocument();
   });
 
-  it("calls handleGitHubCallback when installation_id present in URL", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-42&setup_action=install");
+  it("calls handleGitHubCallback when installationId prop present with setup_action=install", async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-42"
+        setupAction="install"
+      />
+    );
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-42" })
     );
-    window.history.replaceState({}, "", "/");
   });
 
   it("shows error when syncRepository fails", async () => {
@@ -138,35 +148,70 @@ describe("RepositoriesTab", () => {
   it("shows error when removeRepository fails", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     vi.mocked(client.removeRepository).mockRejectedValue(new Error("remove failed"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByText("Remove"));
-    await userEvent.click(screen.getByText("Remove"));
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
     await waitFor(() => expect(screen.getByText("remove failed")).toBeInTheDocument());
   });
 
   it("calls handleGitHubCallback for setup_action=update", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-99&setup_action=update");
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-99"
+        setupAction="update"
+      />
+    );
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-99" })
     );
-    window.history.replaceState({}, "", "/");
   });
 
-  it("calls handleGitHubCallback when installation_id present without setup_action", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-no-action");
+  it("does not call handleGitHubCallback when setup_action=request_install", async () => {
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-bad"
+        setupAction="request_install"
+      />
+    );
+    await waitFor(() => screen.getByText("No repositories connected"));
+    expect(client.handleGitHubCallback).not.toHaveBeenCalled();
+  });
+
+  it("calls handleGitHubCallback when installationId present without setupAction", async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-no-action" />
+    );
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-no-action" })
     );
-    window.history.replaceState({}, "", "/");
+  });
+
+  it("calls onInstallationHandled after processing GitHub callback", async () => {
+    const onInstallationHandled = vi.fn();
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-42"
+        setupAction="install"
+        onInstallationHandled={onInstallationHandled}
+      />
+    );
+    await waitFor(() => expect(onInstallationHandled).toHaveBeenCalled());
   });
 
   it("handles syncRepository with no repository in response", async () => {
@@ -187,7 +232,7 @@ describe("RepositoriesTab", () => {
     vi.mocked(client.syncRepository).mockResolvedValue({ repository: updatedRepo } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getAllByText("Sync").length).toBeGreaterThan(0));
-    await userEvent.click(screen.getAllByText("Sync")[0]);
+    await userEvent.click(screen.getAllByText("Sync")[0]!);
     await waitFor(() => expect(client.syncRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
   });
 
@@ -210,21 +255,19 @@ describe("RepositoriesTab", () => {
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => screen.getByText("org/alpha"));
-    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "alpha");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search repositories" }), "alpha");
     expect(screen.getByText("org/alpha")).toBeInTheDocument();
     expect(screen.queryByText("org/beta")).not.toBeInTheDocument();
   });
 
-  it("calls handleGitHubCallback when installation_id present with no setup_action", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-55");
+  it("calls handleGitHubCallback when installationId present with no setupAction (refresh-all path)", async () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-55" />);
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-55" })
     );
-    window.history.replaceState({}, "", "/");
   });
 
   it("does not update repo list when syncRepository returns no repository", async () => {
@@ -241,8 +284,11 @@ describe("RepositoriesTab", () => {
   it("search shows no-results state and clear button resets", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => screen.getByPlaceholderText("Search repositories…"));
-    await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "no-match-xyz");
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search repositories" }));
+    await userEvent.type(
+      screen.getByRole("searchbox", { name: "Search repositories" }),
+      "no-match-xyz"
+    );
     await waitFor(() => expect(screen.getByText(/No results for/)).toBeInTheDocument());
     await userEvent.click(screen.getByText("Clear search"));
     expect(screen.getByText("owner/repo")).toBeInTheDocument();
@@ -261,6 +307,23 @@ describe("RepositoriesTab", () => {
     );
   });
 
+  it("announces refresh completion via live region", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.handleGitHubCallback).mockResolvedValue({
+      repositories: [makeRepo()],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("↻ Refresh All"));
+    await userEvent.click(screen.getByText("↻ Refresh All"));
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole("status")
+          .some((el) => el.textContent?.includes("Repositories refreshed"))
+      ).toBe(true)
+    );
+  });
+
   it("shows error when Refresh All fails", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("refresh failed"));
@@ -275,7 +338,7 @@ describe("RepositoriesTab", () => {
       repositories: [makeRepo({ addedAt: "2026-03-15" })],
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
-    await waitFor(() => expect(screen.getByText("Added 2026-03-15")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("2026-03-15")).toBeInTheDocument());
   });
 
   it("does not show addedAt line when addedAt is empty", async () => {
@@ -336,6 +399,70 @@ describe("RepositoriesTab", () => {
     resolve!({ repositories: [], runs: [] });
   });
 
+  it("announces repo selection via live region when activeRepoId changes", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    const { rerender } = render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("owner/repo"));
+    rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("owner/repo selected"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces deselection via live region when activeRepoId is cleared", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    const { rerender } = render(
+      <RepositoriesTab onRepoSelect={() => {}} activeRepoId="owner/repo" />
+    );
+    await waitFor(() => screen.getByText("owner/repo"));
+    rerender(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole("status")
+          .some((el) => el.textContent?.includes("Repository deselected"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces sync completion via live region", async () => {
+    const synced = makeRepo({ fullName: "owner/repo" });
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    vi.mocked(client.syncRepository).mockResolvedValue({ repository: synced } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("Sync"));
+    await userEvent.click(screen.getByText("Sync"));
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole("status")
+          .some((el) => el.textContent?.includes("Sync completed for owner/repo"))
+      ).toBe(true)
+    );
+  });
+
+  it("announces filtered count via live region when search changes", async () => {
+    const repo2 = makeRepo({
+      id: "owner/other",
+      name: "other",
+      fullName: "owner/other",
+      htmlUrl: "https://github.com/owner/other",
+    });
+    vi.mocked(client.listRepositories).mockResolvedValue({
+      repositories: [makeRepo(), repo2],
+    } as never);
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => screen.getByText("owner/repo"));
+    await userEvent.type(screen.getByRole("searchbox"), "other");
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("1 repository found"))
+      ).toBe(true)
+    );
+  });
+
   it("shows connect hint when configured but no repos", async () => {
     vi.mocked(client.getGitHubInstallUrl).mockResolvedValue({
       url: "https://github.com/apps/ameliso/install",
@@ -347,20 +474,30 @@ describe("RepositoriesTab", () => {
     );
   });
 
-  it("shows error when initial GitHub callback from URL fails", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-err&setup_action=install");
+  it("shows error when initial GitHub callback fails via installationId prop", async () => {
     vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("callback failed"));
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-err"
+        setupAction="install"
+      />
+    );
     await waitFor(() => expect(screen.getByText("callback failed")).toBeInTheDocument());
-    window.history.replaceState({}, "", "/");
   });
 
-  it("does not call handleGitHubCallback when setup_action is an unknown value", async () => {
-    window.history.pushState({}, "", "?installation_id=inst-xyz&setup_action=delete");
-    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+  it("does not call handleGitHubCallback when setupAction is an unknown value", async () => {
+    render(
+      <RepositoriesTab
+        onRepoSelect={() => {}}
+        activeRepoId=""
+        installationId="inst-xyz"
+        setupAction="delete"
+      />
+    );
     await waitFor(() => expect(client.listRepositories).toHaveBeenCalled());
     expect(client.handleGitHubCallback).not.toHaveBeenCalled();
-    window.history.replaceState({}, "", "/");
   });
 
   it("Refresh All deduplicates installationIds — calls handleGitHubCallback once when two repos share same installation", async () => {

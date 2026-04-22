@@ -292,6 +292,19 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let case_clone = case.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for {}/{}: {e}",
+                        repo_id, case_clone.case_path
+                    );
+                }
+            });
+        }
         let file_path = format!("cases/{}.md", req.case_path);
         Ok(Response::new(pb::CreateCaseResponse {
             case: Some(case_to_pb(&case)),
@@ -343,6 +356,19 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let case_clone = case.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for {}/{}: {e}",
+                        repo_id, case_clone.case_path
+                    );
+                }
+            });
+        }
         Ok(Response::new(pb::UpdateCaseResponse {
             case: Some(case_to_pb(&case)),
         }))
@@ -362,6 +388,21 @@ impl AmelisoService for AmelisoServer {
         repo::delete_case(&self.pool, &req.repo_id, &req.case_path)
             .await
             .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let case_path_clone = req.case_path.clone();
+            tokio::spawn(async move {
+                if let Err(e) =
+                    crate::sync::delete_case_file(&pool, &repo_id, &case_path_clone).await
+                {
+                    eprintln!(
+                        "warning: github delete sync failed for {}/{}: {e}",
+                        repo_id, case_path_clone
+                    );
+                }
+            });
+        }
         Ok(Response::new(pb::DeleteCaseResponse {
             file_path: format!("cases/{}.md", req.case_path),
         }))

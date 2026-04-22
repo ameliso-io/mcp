@@ -1,10 +1,7 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import MarkdownBody from "./MarkdownBody";
-
-beforeEach(() => {
-  document.getElementById("ameliso-md-styles")?.remove();
-});
+import styles from "./MarkdownBody.module.css";
 
 describe("MarkdownBody", () => {
   it("renders markdown heading", () => {
@@ -26,33 +23,19 @@ describe("MarkdownBody", () => {
 
   it("renders empty body without error", () => {
     const { container } = render(<MarkdownBody body="" />);
-    expect(container.querySelector(".md-body")).toBeInTheDocument();
+    expect(container.firstChild).toBeInTheDocument();
   });
 
-  it("applies maxHeight style when prop provided", () => {
+  it("sets --md-max-height CSS variable when maxHeight provided", () => {
     const { container } = render(<MarkdownBody body="text" maxHeight="200px" />);
-    const div = container.querySelector(".md-body") as HTMLElement;
-    expect(div.style.maxHeight).toBe("200px");
-    expect(div.style.overflowY).toBe("auto");
+    const el = container.firstChild as HTMLElement;
+    expect(el.style.getPropertyValue("--md-max-height")).toBe("200px");
   });
 
-  it("uses maxHeight none and no overflowY when prop omitted", () => {
+  it("does not set inline style when maxHeight is omitted", () => {
     const { container } = render(<MarkdownBody body="text" />);
-    const div = container.querySelector(".md-body") as HTMLElement;
-    expect(div.style.maxHeight).toBe("none");
-    expect(div.style.overflowY).toBe("");
-  });
-
-  it("injects style tag into document head on mount", () => {
-    render(<MarkdownBody body="text" />);
-    expect(document.getElementById("ameliso-md-styles")).toBeInTheDocument();
-  });
-
-  it("does not inject duplicate style tags on re-render", () => {
-    render(<MarkdownBody body="first" />);
-    render(<MarkdownBody body="second" />);
-    const tags = document.querySelectorAll("#ameliso-md-styles");
-    expect(tags.length).toBe(1);
+    const el = container.firstChild as HTMLElement;
+    expect(el.getAttribute("style")).toBeFalsy();
   });
 
   it("renders inline code", () => {
@@ -69,6 +52,11 @@ describe("MarkdownBody", () => {
     const { container } = render(<MarkdownBody body={"## Section\n### Sub"} />);
     expect(container.querySelector("h2")).toBeInTheDocument();
     expect(container.querySelector("h3")).toBeInTheDocument();
+  });
+
+  it("applies body CSS module class", () => {
+    const { container } = render(<MarkdownBody body="text" />);
+    expect(container.firstChild).toHaveClass(styles.body!);
   });
 
   it("renders ordered list", () => {

@@ -1,38 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { Suite, Case } from "../gen/ameliso/v1/types_pb";
+"use client";
+
+import type { Route } from "next";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
+import { useAnnounce } from "@/hooks/useAnnounce";
+import styles from "./SuitesTab.module.css";
 
 interface Props {
   repoId: string;
-  onRunSuite?: (slug: string) => void;
+  basePath: string;
+  initialExpanded?: string;
+  onExpandedChange?: (slug: string | null) => void;
 }
 
-const card: React.CSSProperties = {
-  background: "white",
-  borderRadius: "8px",
-  padding: "20px",
-  border: "1px solid #e2e8f0",
-  marginBottom: "16px",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: "6px",
-  fontSize: "14px",
-  boxSizing: "border-box",
-};
-
-const label: React.CSSProperties = {
-  fontSize: "13px",
-  color: "#64748b",
-  display: "block",
-  marginBottom: "4px",
-};
-
-export default function SuitesTab({ repoId, onRunSuite }: Props) {
+export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +32,18 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   const [newCases, setNewCases] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+  const expandingRef = useRef<string | null>(null);
+  const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
+  const onExpandedChangeRef = useRef(onExpandedChange);
+  const toggleExpandRef = useRef<(slug: string) => void>(() => {});
+  useEffect(() => {
+    onExpandedChangeRef.current = onExpandedChange;
+    toggleExpandRef.current = toggleExpand;
+  });
+  const [actionAnnouncement, announce] = useAnnounce();
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
   // Edit suite state
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -59,22 +55,27 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
     if (expanded === slug) {
       setExpanded(null);
       setExpandedCases([]);
+      expandingRef.current = null;
+      onExpandedChangeRef.current?.(null);
       return;
     }
     setExpanded(slug);
     setExpandedCases([]);
+    expandingRef.current = slug;
+    onExpandedChangeRef.current?.(slug);
     setExpandedCasesLoading(true);
     try {
       const res = await client.listCases({ repoId, suite: slug });
-      setExpandedCases(res.cases);
+      if (expandingRef.current === slug) setExpandedCases(res.cases);
     } catch {
       // silently fall back — suite.cases paths still visible
     } finally {
-      setExpandedCasesLoading(false);
+      if (expandingRef.current === slug) setExpandedCasesLoading(false);
     }
   }
 
   function startEdit(suite: Suite) {
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingSlug(suite.slug);
     setEditName(suite.name);
     setEditDesc(suite.description);
@@ -96,12 +97,22 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }, [repoId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
+  // Auto-expand suite from URL param after first load
+  useEffect(() => {
+    const slug = initialExpandedRef.current;
+    if (!slug || suites.length === 0) return;
+    if (suites.some((s) => s.slug === slug)) {
+      initialExpandedRef.current = null;
+      toggleExpandRef.current(slug);
+    }
+  }, [suites]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug || !newName) return;
     setCreating(true);
     try {
@@ -118,10 +129,12 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
           : [],
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewSlug("");
       setNewName("");
       setNewDesc("");
       setNewCases("");
+      announce("Suite created");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -131,10 +144,11 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }
 
   async function handleDelete(slug: string) {
-    if (!confirm(`Delete suite "${slug}"?`)) return;
     try {
       await client.deleteSuite({ repoId, slug });
       if (expanded === slug) setExpanded(null);
+      setConfirmingDelete(null);
+      announce("Suite deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -143,6 +157,7 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingSlug is set */
     if (!editingSlug) return;
     setSaving(true);
     try {
@@ -160,6 +175,8 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
         replaceCases: true,
       });
       setEditingSlug(null);
+      lastFocusRef.current?.focus();
+      announce("Suite updated");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -169,98 +186,91 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
   }
 
   if (!repoId) {
-    return (
-      <div style={{ color: "#64748b", padding: "40px", textAlign: "center" }}>
-        Set a repository path in the Overview tab first.
-      </div>
-    );
+    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700" }}>Suites</h2>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Suites</h2>
         <button
-          onClick={() => setShowCreate(!showCreate)}
-          style={{
-            padding: "8px 16px",
-            background: "#1e293b",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
+          type="button"
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
           }}
+          className={styles.btn}
         >
           {showCreate ? "Cancel" : "+ New Suite"}
         </button>
       </div>
 
       {showCreate && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px" }}>Create Suite</h3>
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Create Suite</h3>
           <form
+            aria-label="Create Suite"
             onSubmit={handleCreate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+                lastFocusRef.current?.focus();
+              }
+            }}
+            className={styles.formGrid}
           >
             <div>
-              <label style={label}>Slug</label>
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                required
-                style={inputStyle}
-                placeholder="e.g. smoke"
-              />
+              <label className={styles.label}>
+                Slug
+                <input
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  autoFocus
+                  className={styles.input}
+                  placeholder="e.g. smoke"
+                />
+              </label>
             </div>
             <div>
-              <label style={label}>Name</label>
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                required
-                style={inputStyle}
-                placeholder="e.g. Smoke Tests"
-              />
+              <label className={styles.label}>
+                Name
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                  className={styles.input}
+                  placeholder="e.g. Smoke Tests"
+                />
+              </label>
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={label}>Description</label>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                style={inputStyle}
-              />
+            <div className={styles.fullCol}>
+              <label className={styles.label}>
+                Description
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={styles.input}
+                />
+              </label>
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={label}>Cases (comma-separated paths)</label>
-              <input
-                value={newCases}
-                onChange={(e) => setNewCases(e.target.value)}
-                style={inputStyle}
-                placeholder="auth/login, auth/logout"
-              />
+            <div className={styles.fullCol}>
+              <label className={styles.label}>
+                Cases (comma-separated paths)
+                <input
+                  value={newCases}
+                  onChange={(e) => setNewCases(e.target.value)}
+                  className={styles.input}
+                  placeholder="auth/login, auth/logout"
+                />
+              </label>
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <button
-                type="submit"
-                disabled={creating}
-                style={{
-                  padding: "8px 20px",
-                  background: "#16a34a",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create Suite"}
               </button>
             </div>
@@ -269,30 +279,13 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       )}
 
       {error && (
-        <div
-          style={{
-            ...card,
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#991b1b",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#991b1b",
-              cursor: "pointer",
-              fontSize: "16px",
-              lineHeight: 1,
-              padding: "0 0 0 12px",
-              flexShrink: 0,
-            }}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
           >
             ×
           </button>
@@ -300,79 +293,76 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
       )}
 
       {loading && (
-        <div style={{ textAlign: "center", color: "#64748b", padding: "40px" }}>Loading…</div>
-      )}
-
-      {!loading && suites.length === 0 && !error && (
-        <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "40px" }}>
-          No suites found.
+        <div className={styles.loadingMsg} role="status">
+          Loading…
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {!loading && suites.length === 0 && !error && (
+        <div className={styles.emptyCard}>No suites found.</div>
+      )}
+
+      <ul className={styles.list} aria-busy={loading} role="list">
         {suites.map((suite) => (
-          <div key={suite.slug}>
+          <li key={suite.slug}>
             {editingSlug === suite.slug ? (
-              <div style={card}>
-                <h3 style={{ marginTop: 0, marginBottom: "14px", fontSize: "15px" }}>
-                  Edit: {suite.slug}
-                </h3>
+              <div className={styles.card}>
+                <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
                 <form
+                  aria-label={`Edit suite ${suite.slug}`}
                   onSubmit={handleUpdate}
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setEditingSlug(null);
+                      lastFocusRef.current?.focus();
+                    }
+                  }}
+                  className={styles.formGridSm}
                 >
                   <div>
-                    <label style={label}>Name</label>
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      required
-                      style={inputStyle}
-                    />
+                    <label className={styles.label}>
+                      Name
+                      <input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                        autoFocus
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
-                  <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={label}>Description</label>
-                    <input
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      style={inputStyle}
-                    />
+                  <div className={styles.fullCol}>
+                    <label className={styles.label}>
+                      Description
+                      <input
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
-                  <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={label}>Cases (comma-separated paths)</label>
-                    <input
-                      value={editCases}
-                      onChange={(e) => setEditCases(e.target.value)}
-                      style={inputStyle}
-                    />
+                  <div className={styles.fullCol}>
+                    <label className={styles.label}>
+                      Cases (comma-separated paths)
+                      <input
+                        value={editCases}
+                        onChange={(e) => setEditCases(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px" }}>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      style={{
-                        padding: "6px 16px",
-                        background: "#16a34a",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                      }}
-                    >
+                  <div className={styles.formActions}>
+                    <button type="submit" disabled={saving} className={styles.btnSaveSm}>
                       {saving ? "Saving…" : "Save"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditingSlug(null)}
-                      style={{
-                        padding: "6px 16px",
-                        background: "none",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "13px",
+                      onClick={() => {
+                        setEditingSlug(null);
+                        lastFocusRef.current?.focus();
                       }}
+                      className={styles.btnCancelSm}
                     >
                       Cancel
                     </button>
@@ -382,197 +372,117 @@ export default function SuitesTab({ repoId, onRunSuite }: Props) {
             ) : (
               <>
                 <div
-                  style={{
-                    ...card,
-                    marginBottom: 0,
-                    cursor: "pointer",
-                    border: `1px solid ${expanded === suite.slug ? "#3b82f6" : "#e2e8f0"}`,
-                  }}
-                  onClick={() => toggleExpand(suite.slug)}
+                  className={expanded === suite.slug ? styles.suiteCardExpanded : styles.suiteCard}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontWeight: "600", fontSize: "15px", flex: 1 }}>
-                      {suite.name}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "#94a3b8", fontFamily: "monospace" }}>
-                      {suite.slug}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#64748b",
-                        background: "#f1f5f9",
-                        padding: "3px 8px",
-                        borderRadius: "4px",
-                      }}
-                    >
-                      {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
-                    </span>
-                    {onRunSuite && (
-                      <button
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          onRunSuite(suite.slug);
-                        }}
-                        style={{
-                          background: "#16a34a",
-                          border: "none",
-                          color: "white",
-                          borderRadius: "4px",
-                          padding: "4px 10px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        Run
-                      </button>
-                    )}
+                  <div className={styles.suiteRow}>
                     <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        startEdit(suite);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "1px solid #e2e8f0",
-                        color: "#334155",
-                        borderRadius: "4px",
-                        padding: "4px 10px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                      }}
+                      type="button"
+                      className={styles.suiteExpandBtn}
+                      onClick={() => toggleExpand(suite.slug)}
+                      aria-expanded={expanded === suite.slug}
+                    >
+                      <span className={styles.suiteName}>{suite.name}</span>
+                      <span className={styles.suiteSlug}>{suite.slug}</span>
+                      <span className={styles.caseCount}>
+                        {suite.cases.length} case{suite.cases.length !== 1 ? "s" : ""}
+                      </span>
+                    </button>
+                    <Link
+                      href={
+                        `${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route<string>
+                      }
+                      aria-label={`Run ${suite.slug}`}
+                      className={styles.btnGreenSm}
+                    >
+                      Run
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(suite)}
+                      aria-label={`Edit ${suite.slug}`}
+                      className={styles.btnOutlineSm}
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        handleDelete(suite.slug);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "1px solid #fecaca",
-                        color: "#ef4444",
-                        borderRadius: "4px",
-                        padding: "4px 10px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                      }}
-                    >
-                      Delete
-                    </button>
+                    {confirmingDelete === suite.slug ? (
+                      <>
+                        <span className={styles.confirmText}>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(suite.slug)}
+                          aria-label={`Confirm delete ${suite.slug}`}
+                          className={styles.btnDangerSm}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDelete(null)}
+                          aria-label="Cancel delete"
+                          className={styles.btnOutlineSm}
+                          autoFocus
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(suite.slug)}
+                        aria-label={`Delete ${suite.slug}`}
+                        className={styles.btnDangerSm}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
-                  {suite.description && (
-                    <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#64748b" }}>
-                      {suite.description}
-                    </p>
-                  )}
+                  {suite.description && <p className={styles.suiteDesc}>{suite.description}</p>}
                 </div>
 
                 {expanded === suite.slug && (
-                  <div
-                    style={{
-                      ...card,
-                      marginTop: 0,
-                      borderTop: "none",
-                      borderTopLeftRadius: 0,
-                      borderTopRightRadius: 0,
-                      background: "#f8fafc",
-                    }}
-                  >
+                  <div className={styles.expandedPanel}>
                     {expandedCasesLoading ? (
-                      <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Loading…</p>
+                      <p className={styles.expandedLoading} role="status">
+                        Loading…
+                      </p>
                     ) : expandedCases.length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <ul className={styles.caseList} role="list">
                         {expandedCases.map((c) => (
-                          <div
-                            key={c.path}
-                            style={{
-                              padding: "10px 12px",
-                              background: "white",
-                              borderRadius: "6px",
-                              border: "1px solid #e2e8f0",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                            }}
-                          >
+                          <li key={c.path} className={styles.caseRow}>
                             <span
-                              style={{
-                                width: "6px",
-                                height: "6px",
-                                borderRadius: "50%",
-                                background:
-                                  c.priority === "high"
-                                    ? "#ef4444"
-                                    : c.priority === "medium"
-                                      ? "#f97316"
-                                      : "#22c55e",
-                                flexShrink: 0,
-                              }}
+                              className={styles.caseDot}
+                              data-priority={c.priority}
+                              aria-hidden="true"
                             />
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                fontFamily: "monospace",
-                                color: "#64748b",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {c.path}
-                            </span>
-                            <span style={{ fontSize: "14px", fontWeight: "500", flex: 1 }}>
-                              {c.title}
-                            </span>
+                            <span className="sr-only">{c.priority} priority</span>
+                            <span className={styles.casePath}>{c.path}</span>
+                            <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map((t) => (
-                              <span
-                                key={t}
-                                style={{
-                                  fontSize: "11px",
-                                  background: "#f1f5f9",
-                                  color: "#64748b",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                }}
-                              >
+                              <span key={t} className={styles.tag}>
                                 {t}
                               </span>
                             ))}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : suite.cases.length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <ul className={styles.caseList} role="list">
                         {suite.cases.map((casePath) => (
-                          <div
-                            key={casePath}
-                            style={{
-                              padding: "8px 12px",
-                              background: "white",
-                              borderRadius: "6px",
-                              border: "1px solid #e2e8f0",
-                              fontSize: "14px",
-                              fontFamily: "monospace",
-                              color: "#334155",
-                            }}
-                          >
+                          <li key={casePath} className={styles.casePathOnly}>
                             {casePath}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : (
-                      <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>
-                        No cases in this suite.
-                      </p>
+                      <p className={styles.noCase}>No cases in this suite.</p>
                     )}
                   </div>
                 )}
               </>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

@@ -18,7 +18,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -107,6 +107,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .suiteCard {
@@ -136,6 +139,22 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.suiteExpandBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .suiteName {
@@ -186,11 +205,14 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .caseRow {
   padding: 10px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
   display: flex;
@@ -203,6 +225,13 @@
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--color-priority-low);
+}
+.caseDot[data-priority="high"] {
+  background: var(--color-priority-high);
+}
+.caseDot[data-priority="medium"] {
+  background: var(--color-priority-medium);
 }
 
 .casePath {
@@ -228,12 +257,12 @@
 
 .casePathOnly {
   padding: 8px 12px;
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 6px;
   border: 1px solid var(--color-border);
   font-size: 14px;
   font-family: monospace;
-  color: #334155;
+  color: var(--color-ink-hover);
 }
 
 .noCase {
@@ -251,7 +280,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -265,7 +294,7 @@
 .btnGreen {
   padding: 8px 20px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -279,7 +308,7 @@
 .btnGreenSm {
   background: var(--color-success);
   border: none;
-  color: white;
+  color: var(--color-on-primary);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
@@ -294,7 +323,7 @@
 .btnOutlineSm {
   background: none;
   border: 1px solid var(--color-border);
-  color: #334155;
+  color: var(--color-ink-hover);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
@@ -319,10 +348,17 @@
   background: var(--color-danger-bg);
 }
 
+.confirmText {
+  font-size: 12px;
+  color: var(--color-danger);
+  font-weight: 600;
+  align-self: center;
+}
+
 .btnSaveSm {
   padding: 6px 16px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;

@@ -1,9 +1,13 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { RunMeta, Case, CaseResult } from "../gen/ameliso/v1/types_pb";
-import { RunStatus, ResultStatus } from "../gen/ameliso/v1/types_pb";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import { useAnnounce } from "@/hooks/useAnnounce";
+import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
+import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
+import styles from "./RunsTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
@@ -11,38 +15,8 @@ interface Props {
   repoId: string;
   initialSuite?: string;
   onInitialSuiteConsumed?: () => void;
-}
-
-const card = {
-  background: "white",
-  borderRadius: "8px",
-  padding: "20px",
-  border: "1px solid #e2e8f0",
-  marginBottom: "16px",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: "6px",
-  fontSize: "14px",
-  boxSizing: "border-box",
-};
-
-function statusColor(s: ResultStatus): string {
-  switch (s) {
-    case ResultStatus.PASSED:
-      return "#22c55e";
-    case ResultStatus.FAILED:
-      return "#ef4444";
-    case ResultStatus.BLOCKED:
-      return "#f97316";
-    case ResultStatus.SKIPPED:
-      return "#94a3b8";
-    default:
-      return "#e2e8f0";
-  }
+  initialStatusFilter?: RunStatus;
+  onStatusFilterChange?: (s: RunStatus) => void;
 }
 
 function statusLabel(s: ResultStatus): string {
@@ -73,24 +47,19 @@ function runStatusLabel(s: RunStatus): string {
   }
 }
 
-function runStatusColor(s: RunStatus): string {
-  switch (s) {
-    case RunStatus.IN_PROGRESS:
-      return "#3b82f6";
-    case RunStatus.COMPLETED:
-      return "#22c55e";
-    case RunStatus.ABORTED:
-      return "#ef4444";
-    default:
-      return "#94a3b8";
-  }
-}
-
-export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }: Props) {
+export default function RunsTab({
+  repoId,
+  initialSuite,
+  onInitialSuiteConsumed,
+  initialStatusFilter,
+  onStatusFilterChange,
+}: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<RunStatus>(RunStatus.UNSPECIFIED);
+  const [statusFilter, setStatusFilter] = useState<RunStatus>(
+    initialStatusFilter ?? RunStatus.UNSPECIFIED
+  );
 
   // Create run form
   const [showCreate, setShowCreate] = useState(false);
@@ -118,6 +87,15 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   const [caseBodyLoading, setCaseBodyLoading] = useState(false);
   const [bulkPassing, setBulkPassing] = useState(false);
 
+  const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
+  const [confirmingFinalize, setConfirmingFinalize] = useState<{
+    runId: string;
+    status: RunStatus;
+  } | null>(null);
+  const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
+  const [actionAnnouncement, announce] = useAnnounce();
+
+  const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
@@ -164,12 +142,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }, [repoId, statusFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newSlug) return;
     setCreating(true);
     try {
@@ -181,10 +159,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         suite: newSuite,
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewSlug("");
       setNewTester("");
       setNewEnv("");
       setNewSuite("");
+      announce("Run created");
       await load();
       // Auto-expand the newly created run
       if (created.run) {
@@ -236,6 +216,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
 
   async function handleRecord(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — record form only shown when both are set */
     if (!selectedRunId || !recordingCase) return;
     setRecording(true);
     try {
@@ -247,9 +228,11 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         notes: recordNotes,
       });
       setRecordingCase(null);
+      lastFocusRef.current?.focus();
       setRecordNotes("");
       setRecordStatus(ResultStatus.PASSED);
       setCaseBody(null);
+      announce("Result recorded");
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
       setPendingCases(res.cases);
@@ -267,6 +250,7 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       setCaseBody(null);
       return;
     }
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setRecordingCase(casePath);
     setRecordNotes("");
     setRecordStatus(ResultStatus.PASSED);
@@ -283,12 +267,12 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleFinalize(runId: string, status: RunStatus) {
-    const label = status === RunStatus.COMPLETED ? "complete" : "abort";
-    if (!confirm(`Mark run as ${label}?`)) return;
+    setConfirmingFinalize(null);
     try {
       await client.finalizeRun({ repoId, runId, status });
       setSelectedRunId(null);
       setPendingCases([]);
+      announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -296,13 +280,9 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleBulkPass(runId: string) {
+    /* v8 ignore next 2 — button only renders when pendingCases.length > 0 */
     if (pendingCases.length === 0) return;
-    if (
-      !confirm(
-        `Mark all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""} as Passed?`
-      )
-    )
-      return;
+    setConfirmingBulkPass(null);
     setBulkPassing(true);
     try {
       const resp = await client.bulkRecordResults({
@@ -326,7 +306,6 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   async function handleDeleteRun(runId: string) {
-    if (!confirm(`Delete run "${runId}"?`)) return;
     try {
       await client.deleteRun({ repoId, runId });
       if (selectedRunId === runId) {
@@ -335,6 +314,8 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
         setRecordingCase(null);
         setCaseBody(null);
       }
+      setConfirmingDeleteRun(null);
+      announce("Run deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -342,157 +323,114 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
   }
 
   if (!repoId) {
-    return (
-      <div style={{ color: "#64748b", padding: "40px", textAlign: "center" }}>
-        Set a repository path in the Overview tab first.
-      </div>
-    );
+    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "16px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700" }}>Runs</h2>
-          {(
-            [
-              { label: "All", value: RunStatus.UNSPECIFIED },
-              { label: "In Progress", value: RunStatus.IN_PROGRESS },
-              { label: "Completed", value: RunStatus.COMPLETED },
-              { label: "Aborted", value: RunStatus.ABORTED },
-            ] as { label: string; value: RunStatus }[]
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setStatusFilter(opt.value)}
-              style={{
-                padding: "4px 10px",
-                background: statusFilter === opt.value ? "#1e293b" : "transparent",
-                color: statusFilter === opt.value ? "white" : "#64748b",
-                border: `1px solid ${statusFilter === opt.value ? "#1e293b" : "#e2e8f0"}`,
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: "500",
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.title}>Runs</h2>
+          <div role="group" aria-label="Filter by status">
+            {(
+              [
+                { label: "All", value: RunStatus.UNSPECIFIED },
+                { label: "In Progress", value: RunStatus.IN_PROGRESS },
+                { label: "Completed", value: RunStatus.COMPLETED },
+                { label: "Aborted", value: RunStatus.ABORTED },
+              ] as { label: string; value: RunStatus }[]
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(opt.value);
+                  onStatusFilterChange?.(opt.value);
+                }}
+                aria-pressed={statusFilter === opt.value}
+                className={
+                  statusFilter === opt.value ? styles.filterBtnActive : styles.filterBtnInactive
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
         <button
-          onClick={() => setShowCreate(!showCreate)}
-          style={{
-            padding: "8px 16px",
-            background: "#1e293b",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
+          type="button"
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
           }}
+          className={styles.btn}
         >
           {showCreate ? "Cancel" : "+ New Run"}
         </button>
       </div>
 
       {showCreate && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px" }}>Create Run</h3>
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Create Run</h3>
           <form
+            aria-label="Create Run"
             onSubmit={handleCreate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+                lastFocusRef.current?.focus();
+              }
+            }}
+            className={styles.formGrid}
           >
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Slug
+                <input
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  autoFocus
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                required
-                style={inputStyle}
-              />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Tester
+                <input
+                  value={newTester}
+                  onChange={(e) => setNewTester(e.target.value)}
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newTester}
-                onChange={(e) => setNewTester(e.target.value)}
-                style={inputStyle}
-              />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Environment
+                <input
+                  value={newEnv}
+                  onChange={(e) => setNewEnv(e.target.value)}
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newEnv}
-                onChange={(e) => setNewEnv(e.target.value)}
-                style={inputStyle}
-              />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Suite (optional)
+                <input
+                  value={newSuite}
+                  onChange={(e) => setNewSuite(e.target.value)}
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newSuite}
-                onChange={(e) => setNewSuite(e.target.value)}
-                style={inputStyle}
-              />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <button
-                type="submit"
-                disabled={creating}
-                style={{
-                  padding: "8px 20px",
-                  background: "#16a34a",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create Run"}
               </button>
             </div>
@@ -501,30 +439,13 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       )}
 
       {error && (
-        <div
-          style={{
-            ...card,
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#991b1b",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#991b1b",
-              cursor: "pointer",
-              fontSize: "16px",
-              lineHeight: 1,
-              padding: "0 0 0 12px",
-              flexShrink: 0,
-            }}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
           >
             ×
           </button>
@@ -532,95 +453,78 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
       )}
 
       {loading && (
-        <div style={{ textAlign: "center", color: "#64748b", padding: "40px" }}>Loading…</div>
-      )}
-
-      {!loading && runs.length === 0 && !error && (
-        <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "40px" }}>
-          No runs found.
+        <div className={styles.loadingMsg} role="status">
+          Loading…
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {!loading && runs.length === 0 && !error && (
+        <div className={styles.emptyCard}>No runs found.</div>
+      )}
+
+      <ul className={styles.list} aria-busy={loading} role="list">
         {runs.map((run) => (
-          <div key={run.id}>
-            <div
-              style={{
-                ...card,
-                marginBottom: 0,
-                cursor: "pointer",
-                borderColor: selectedRunId === run.id ? "#3b82f6" : "#e2e8f0",
-              }}
-              onClick={() => selectRun(run.id, run.status)}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "700",
-                    color: runStatusColor(run.status),
-                    background: runStatusColor(run.status) + "18",
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  {runStatusLabel(run.status)}
-                </span>
-                <span style={{ fontWeight: "600", fontSize: "15px", flex: 1 }}>{run.id}</span>
-                {run.suite && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      background: "#eff6ff",
-                      color: "#3b82f6",
-                      padding: "2px 7px",
-                      borderRadius: "4px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {run.suite}
-                  </span>
-                )}
-                {run.tester && (
-                  <span style={{ fontSize: "13px", color: "#64748b" }}>{run.tester}</span>
-                )}
-                {run.environment && (
-                  <span style={{ fontSize: "13px", color: "#94a3b8" }}>{run.environment}</span>
-                )}
-                <span style={{ fontSize: "12px", color: "#94a3b8" }}>{run.date}</span>
+          <li key={run.id}>
+            <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
+              <div className={styles.runRow}>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteRun(run.id);
-                  }}
-                  style={{
-                    background: "none",
-                    border: "1px solid #fecaca",
-                    color: "#ef4444",
-                    borderRadius: "4px",
-                    padding: "4px 10px",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                  }}
+                  type="button"
+                  className={styles.runExpandBtn}
+                  onClick={() => selectRun(run.id, run.status)}
+                  aria-label={`${runStatusLabel(run.status)} run ${run.id}`}
+                  aria-expanded={selectedRunId === run.id}
                 >
-                  Delete
+                  <span className={styles.runStatusBadge} data-status={RunStatus[run.status]}>
+                    {runStatusLabel(run.status)}
+                  </span>
+                  <span className={styles.runId}>{run.id}</span>
+                  {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
+                  {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                  {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
+                  <time className={styles.runDate} dateTime={run.date}>
+                    {run.date}
+                  </time>
                 </button>
+                {confirmingDeleteRun === run.id ? (
+                  <>
+                    <span className={styles.confirmText}>Delete?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRun(run.id)}
+                      aria-label={`Confirm delete ${run.id}`}
+                      className={styles.btnDangerSm}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteRun(null)}
+                      aria-label="Cancel delete"
+                      className={styles.btnOutlineSm}
+                      autoFocus
+                    >
+                      No
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteRun(run.id)}
+                    aria-label={`Delete ${run.id}`}
+                    className={styles.btnDangerSm}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
 
             {selectedRunId === run.id && (
-              <div
-                style={{
-                  ...card,
-                  marginTop: 0,
-                  borderTop: "none",
-                  borderTopLeftRadius: 0,
-                  borderTopRightRadius: 0,
-                  background: "#f8fafc",
-                }}
-              >
+              <div className={styles.expandedPanel}>
                 {loadingPending ? (
-                  <div style={{ color: "#64748b", padding: "12px 0" }}>Loading…</div>
+                  <div className={styles.panelLoading} role="status">
+                    Loading…
+                  </div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
                     {recordedResults.length > 0 &&
@@ -637,40 +541,29 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                         };
                         return (
                           <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              marginBottom: "14px",
-                              flexWrap: "wrap",
-                            }}
+                            className={styles.resultFilters}
+                            role="group"
+                            aria-label="Filter by result status"
                           >
                             {[
                               {
                                 label: "Passed",
                                 count: counts.passed,
-                                color: "#16a34a",
-                                bg: "#f0fdf4",
                                 status: ResultStatus.PASSED,
                               },
                               {
                                 label: "Failed",
                                 count: counts.failed,
-                                color: "#dc2626",
-                                bg: "#fef2f2",
                                 status: ResultStatus.FAILED,
                               },
                               {
                                 label: "Blocked",
                                 count: counts.blocked,
-                                color: "#ea580c",
-                                bg: "#fff7ed",
                                 status: ResultStatus.BLOCKED,
                               },
                               {
                                 label: "Skipped",
                                 count: counts.skipped,
-                                color: "#64748b",
-                                bg: "#f8fafc",
                                 status: ResultStatus.SKIPPED,
                               },
                             ]
@@ -678,38 +571,24 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                               .map((s) => (
                                 <button
                                   key={s.label}
+                                  type="button"
                                   onClick={() =>
                                     setResultStatusFilter((rsf) =>
                                       rsf === s.status ? null : s.status
                                     )
                                   }
-                                  style={{
-                                    fontSize: "13px",
-                                    fontWeight: "600",
-                                    color: s.color,
-                                    background:
-                                      resultStatusFilter === s.status ? s.color + "30" : s.bg,
-                                    border: `1px solid ${resultStatusFilter === s.status ? s.color : s.color + "30"}`,
-                                    padding: "4px 10px",
-                                    borderRadius: "6px",
-                                    cursor: "pointer",
-                                  }}
+                                  aria-pressed={resultStatusFilter === s.status}
+                                  className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
+                                  data-status={ResultStatus[s.status]}
                                 >
                                   {s.count} {s.label}
                                 </button>
                               ))}
                             {resultStatusFilter !== null && (
                               <button
+                                type="button"
                                 onClick={() => setResultStatusFilter(null)}
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#64748b",
-                                  background: "none",
-                                  border: "1px solid #e2e8f0",
-                                  padding: "4px 8px",
-                                  borderRadius: "6px",
-                                  cursor: "pointer",
-                                }}
+                                className={styles.showAllBtn}
                               >
                                 Show all
                               </button>
@@ -718,78 +597,37 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                         );
                       })()}
                     {recordedResults.length === 0 ? (
-                      <p style={{ color: "#64748b", fontSize: "14px" }}>No results recorded.</p>
+                      <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <ul className={styles.resultList} role="list">
                         {(resultStatusFilter !== null
                           ? recordedResults.filter((r) => r.status === resultStatusFilter)
                           : recordedResults
                         ).map((r) => (
-                          <div
-                            key={r.casePath}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              padding: "10px 12px",
-                              background: "white",
-                              borderRadius: "6px",
-                              border: "1px solid #e2e8f0",
-                            }}
-                          >
+                          <li key={r.casePath} className={styles.resultRow}>
                             <span
-                              style={{
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                color: statusColor(r.status),
-                                background: statusColor(r.status) + "18",
-                                padding: "2px 7px",
-                                borderRadius: "4px",
-                                flexShrink: 0,
-                              }}
+                              className={styles.resultStatusBadge}
+                              data-status={ResultStatus[r.status]}
                             >
                               {statusLabel(r.status)}
                             </span>
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                fontFamily: "monospace",
-                                color: "#64748b",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {r.casePath}
-                            </span>
+                            <span className={styles.resultPath}>{r.casePath}</span>
                             {caseTitleMap.get(r.casePath)?.title && (
-                              <span style={{ flex: 1, fontSize: "14px", fontWeight: "500" }}>
+                              <span className={styles.resultTitle}>
                                 {caseTitleMap.get(r.casePath)!.title}
                               </span>
                             )}
-                            {r.notes && (
-                              <span
-                                style={{ fontSize: "13px", color: "#64748b", fontStyle: "italic" }}
-                              >
-                                {r.notes}
-                              </span>
-                            )}
-                          </div>
+                            {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                 ) : (
                   <>
                     {totalInScope > 0 && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "13px",
-                            color: "#64748b",
-                            marginBottom: "6px",
-                          }}
-                        >
+                      <div className={styles.progressWrap}>
+                        <div className={styles.progressMeta}>
                           <span>
                             {totalInScope - pendingCases.length} / {totalInScope} done
                           </span>
@@ -801,133 +639,146 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                           </span>
                         </div>
                         <div
-                          style={{
-                            height: "6px",
-                            background: "#e2e8f0",
-                            borderRadius: "3px",
-                            overflow: "hidden",
-                          }}
+                          className={styles.progressTrack}
+                          role="progressbar"
+                          aria-label="Run completion progress"
+                          aria-valuemin={0}
+                          aria-valuemax={totalInScope}
+                          aria-valuenow={totalInScope - pendingCases.length}
+                          aria-valuetext={`${totalInScope - pendingCases.length} of ${totalInScope} case${totalInScope !== 1 ? "s" : ""} complete`}
                         >
                           <div
+                            className={styles.progressBar}
                             style={{
-                              height: "100%",
                               width: `${((totalInScope - pendingCases.length) / totalInScope) * 100}%`,
-                              background: "#16a34a",
-                              borderRadius: "3px",
-                              transition: "width 0.3s ease",
                             }}
                           />
                         </div>
                       </div>
                     )}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>
+                    <div className={styles.pendingHeader}>
+                      <h3 className={styles.pendingLabel}>
                         {pendingCases.length} pending
-                        <span
-                          style={{
-                            marginLeft: "8px",
-                            fontSize: "10px",
-                            fontWeight: "400",
-                            color: "#94a3b8",
-                          }}
-                        >
-                          auto-refresh 30s
-                        </span>
-                      </p>
+                        <span className={styles.refreshHint}>auto-refresh 30s</span>
+                      </h3>
                       {run.status === RunStatus.IN_PROGRESS && (
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          {pendingCases.length > 0 && (
-                            <button
-                              onClick={() => handleBulkPass(run.id)}
-                              disabled={bulkPassing}
-                              style={{
-                                padding: "6px 14px",
-                                background: "#0ea5e9",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "13px",
-                              }}
-                            >
-                              {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
-                            </button>
+                        <div className={styles.pendingActions}>
+                          {pendingCases.length > 0 &&
+                            (confirmingBulkPass === run.id ? (
+                              <>
+                                <span className={styles.confirmText}>Pass all?</span>
+                                <button
+                                  type="button"
+                                  aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
+                                  onClick={() => handleBulkPass(run.id)}
+                                  disabled={bulkPassing}
+                                  className={styles.btnBlueSm}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label="Cancel bulk pass"
+                                  onClick={() => setConfirmingBulkPass(null)}
+                                  className={styles.btnOutlineSm}
+                                  autoFocus
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmingBulkPass(run.id)}
+                                disabled={bulkPassing}
+                                className={styles.btnBlueSm}
+                              >
+                                {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
+                              </button>
+                            ))}
+                          {confirmingFinalize?.runId === run.id ? (
+                            <>
+                              <span className={styles.confirmText}>
+                                {confirmingFinalize.status === RunStatus.COMPLETED
+                                  ? "Complete?"
+                                  : "Abort?"}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
+                                onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
+                                className={
+                                  confirmingFinalize.status === RunStatus.COMPLETED
+                                    ? styles.btnGreenSm
+                                    : styles.btnRedSm
+                                }
+                              >
+                                Yes
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Cancel"
+                                onClick={() => setConfirmingFinalize(null)}
+                                className={styles.btnOutlineSm}
+                                autoFocus
+                              >
+                                No
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                aria-label={`Complete run ${run.id}`}
+                                onClick={() =>
+                                  setConfirmingFinalize({
+                                    runId: run.id,
+                                    status: RunStatus.COMPLETED,
+                                  })
+                                }
+                                className={styles.btnGreenSm}
+                              >
+                                Complete Run
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Abort run ${run.id}`}
+                                onClick={() =>
+                                  setConfirmingFinalize({
+                                    runId: run.id,
+                                    status: RunStatus.ABORTED,
+                                  })
+                                }
+                                className={styles.btnRedSm}
+                              >
+                                Abort Run
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={() => handleFinalize(run.id, RunStatus.COMPLETED)}
-                            style={{
-                              padding: "6px 14px",
-                              background: "#16a34a",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Complete Run
-                          </button>
-                          <button
-                            onClick={() => handleFinalize(run.id, RunStatus.ABORTED)}
-                            style={{
-                              padding: "6px 14px",
-                              background: "#ef4444",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "13px",
-                            }}
-                          >
-                            Abort Run
-                          </button>
                         </div>
                       )}
                     </div>
 
                     {pendingCases.length === 0 && (
-                      <p style={{ color: "#64748b", fontSize: "14px" }}>
-                        All cases have results recorded.
-                      </p>
+                      <p className={styles.allDone}>All cases have results recorded.</p>
                     )}
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <ul className={styles.pendingList} role="list">
                       {pendingCases.map((c) => (
-                        <div key={c.path}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              padding: "10px 12px",
-                              background: "white",
-                              borderRadius: "6px",
-                              border: "1px solid #e2e8f0",
-                            }}
-                          >
-                            <span style={{ flex: 1, fontSize: "14px", fontFamily: "monospace" }}>
-                              {c.path}
-                            </span>
-                            <span style={{ fontSize: "13px", color: "#64748b" }}>{c.title}</span>
+                        <li key={c.path}>
+                          <div className={styles.pendingRow}>
+                            <span className={styles.pendingPath}>{c.path}</span>
+                            <span className={styles.pendingTitle}>{c.title}</span>
                             {run.status === RunStatus.IN_PROGRESS && (
                               <button
+                                type="button"
                                 onClick={() => openRecord(c.path)}
-                                style={{
-                                  padding: "5px 12px",
-                                  background: "#3b82f6",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  cursor: "pointer",
-                                  fontSize: "13px",
-                                }}
+                                aria-label={
+                                  recordingCase === c.path
+                                    ? `Cancel recording ${c.path}`
+                                    : `Record result for ${c.path}`
+                                }
+                                className={styles.btnRecordSm}
                               >
                                 {recordingCase === c.path ? "Cancel" : "Record"}
                               </button>
@@ -935,25 +786,11 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                           </div>
 
                           {recordingCase === c.path && (
-                            <div
-                              style={{
-                                background: "white",
-                                border: "1px solid #e2e8f0",
-                                borderTop: "none",
-                                borderBottomLeftRadius: "6px",
-                                borderBottomRightRadius: "6px",
-                              }}
-                            >
+                            <div className={styles.recordPanel}>
                               {(caseBodyLoading || caseBody) && (
-                                <div
-                                  style={{
-                                    padding: "12px 16px",
-                                    borderBottom: "1px solid #f1f5f9",
-                                    background: "#f8fafc",
-                                  }}
-                                >
+                                <div className={styles.recordSteps}>
                                   {caseBodyLoading ? (
-                                    <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                                    <p className={styles.stepsLoading} role="status">
                                       Loading steps…
                                     </p>
                                   ) : (
@@ -962,111 +799,97 @@ export default function RunsTab({ repoId, initialSuite, onInitialSuiteConsumed }
                                 </div>
                               )}
                               <form
+                                aria-label={`Record result for ${recordingCase}`}
                                 onSubmit={handleRecord}
-                                style={{
-                                  padding: "12px",
-                                  display: "flex",
-                                  gap: "10px",
-                                  alignItems: "flex-end",
-                                  flexWrap: "wrap",
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    setRecordingCase(null);
+                                    setCaseBody(null);
+                                    lastFocusRef.current?.focus();
+                                  }
                                 }}
+                                className={styles.recordForm}
                               >
                                 <div>
-                                  <label
-                                    style={{
-                                      fontSize: "12px",
-                                      color: "#64748b",
-                                      display: "block",
-                                      marginBottom: "4px",
-                                    }}
-                                  >
+                                  <label className={styles.labelSm}>
                                     Status
+                                    <select
+                                      value={recordStatus}
+                                      onChange={(e) =>
+                                        setRecordStatus(Number(e.target.value) as ResultStatus)
+                                      }
+                                      autoFocus
+                                      className={styles.inputAuto}
+                                    >
+                                      <option value={ResultStatus.PASSED}>Passed</option>
+                                      <option value={ResultStatus.FAILED}>Failed</option>
+                                      <option value={ResultStatus.BLOCKED}>Blocked</option>
+                                      <option value={ResultStatus.SKIPPED}>Skipped</option>
+                                    </select>
                                   </label>
-                                  <select
-                                    value={recordStatus}
-                                    onChange={(e) =>
-                                      setRecordStatus(Number(e.target.value) as ResultStatus)
-                                    }
-                                    style={{ ...inputStyle, width: "auto" }}
-                                  >
-                                    <option value={ResultStatus.PASSED}>Passed</option>
-                                    <option value={ResultStatus.FAILED}>Failed</option>
-                                    <option value={ResultStatus.BLOCKED}>Blocked</option>
-                                    <option value={ResultStatus.SKIPPED}>Skipped</option>
-                                  </select>
                                 </div>
-                                <div style={{ flex: 1, minWidth: "160px" }}>
+                                <div className={styles.notesWrap}>
                                   <label
-                                    style={{
-                                      fontSize: "12px",
-                                      color:
-                                        recordStatus === ResultStatus.FAILED ||
-                                        recordStatus === ResultStatus.BLOCKED
-                                          ? "#dc2626"
-                                          : "#64748b",
-                                      display: "block",
-                                      marginBottom: "4px",
-                                    }}
+                                    className={
+                                      recordStatus === ResultStatus.FAILED ||
+                                      recordStatus === ResultStatus.BLOCKED
+                                        ? styles.labelSmErr
+                                        : styles.labelSm
+                                    }
                                   >
                                     Notes
                                     {recordStatus === ResultStatus.FAILED ||
                                     recordStatus === ResultStatus.BLOCKED
                                       ? " *"
                                       : ""}
-                                  </label>
-                                  <input
-                                    value={recordNotes}
-                                    onChange={(e) => setRecordNotes(e.target.value)}
-                                    required={
-                                      recordStatus === ResultStatus.FAILED ||
-                                      recordStatus === ResultStatus.BLOCKED
-                                    }
-                                    placeholder={
-                                      recordStatus === ResultStatus.FAILED
-                                        ? "Describe what failed…"
-                                        : recordStatus === ResultStatus.BLOCKED
-                                          ? "Describe what is blocking…"
-                                          : "Optional notes…"
-                                    }
-                                    style={{
-                                      ...inputStyle,
-                                      borderColor:
+                                    <input
+                                      value={recordNotes}
+                                      onChange={(e) => setRecordNotes(e.target.value)}
+                                      placeholder={
+                                        recordStatus === ResultStatus.FAILED
+                                          ? "Describe what failed…"
+                                          : recordStatus === ResultStatus.BLOCKED
+                                            ? "Describe what is blocking…"
+                                            : "Optional notes…"
+                                      }
+                                      required={
                                         recordStatus === ResultStatus.FAILED ||
                                         recordStatus === ResultStatus.BLOCKED
-                                          ? "#fca5a5"
-                                          : "#e2e8f0",
-                                    }}
-                                  />
+                                      }
+                                      aria-required={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                      }
+                                      className={
+                                        recordStatus === ResultStatus.FAILED ||
+                                        recordStatus === ResultStatus.BLOCKED
+                                          ? styles.inputErr
+                                          : styles.input
+                                      }
+                                    />
+                                  </label>
                                 </div>
                                 <button
                                   type="submit"
                                   disabled={recording}
-                                  style={{
-                                    padding: "8px 16px",
-                                    background: "#16a34a",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "6px",
-                                    cursor: "pointer",
-                                    fontSize: "14px",
-                                    whiteSpace: "nowrap",
-                                  }}
+                                  className={styles.btnSaveResult}
                                 >
                                   {recording ? "Saving…" : "Save Result"}
                                 </button>
                               </form>
                             </div>
                           )}
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </>
                 )}
               </div>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

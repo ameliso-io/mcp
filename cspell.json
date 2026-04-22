@@ -61,7 +61,18 @@
     "postgres",
     "worktree",
     "worktrees",
-    "turbopack"
+    "turbopack",
+    "nosniff",
+    "SAMEORIGIN",
+    "hmac",
+    "roundtrips",
+    "dgst",
+    "invalidsig",
+    "axum",
+    "serde_yaml",
+    "upsert",
+    "upserts",
+    "notvalidhex"
   ],
   "flagWords": []
 }

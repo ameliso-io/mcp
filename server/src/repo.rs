@@ -129,6 +129,26 @@ fn validate_priority(priority: &str) -> RResult<()> {
     Ok(())
 }
 
+fn validate_result_status(status: &str) -> RResult<()> {
+    if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
+        return Err(RepoError::InvalidArg(format!(
+            "invalid result status '{}'; must be one of: passed, failed, blocked, skipped",
+            status
+        )));
+    }
+    Ok(())
+}
+
+fn validate_finalize_status(status: &str) -> RResult<()> {
+    if !matches!(status, "completed" | "aborted") {
+        return Err(RepoError::InvalidArg(format!(
+            "invalid finalize status '{}'; must be one of: completed, aborted",
+            status
+        )));
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Cases
 // ---------------------------------------------------------------------------
@@ -286,6 +306,53 @@ pub async fn delete_case(pool: &PgPool, repo_id: &str, case_path: &str) -> RResu
             case_path
         )));
     }
+    Ok(())
+}
+
+pub async fn delete_case_if_exists(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<()> {
+    validate_slug_path(case_path, "case")?;
+    sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
+        .bind(repo_id)
+        .bind(case_path)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    Ok(()) // no error if not found
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn upsert_case(
+    pool: &PgPool,
+    repo_id: &str,
+    case_path: &str,
+    title: &str,
+    description: &str,
+    tags: Vec<String>,
+    priority: &str,
+    body: &str,
+    created_at: &str,
+    updated_at: &str,
+) -> RResult<()> {
+    validate_slug_path(case_path, "case")?;
+    validate_priority(priority)?;
+    sqlx::query(
+        "INSERT INTO cases (repo_id, case_path, title, description, tags, priority, body, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (repo_id, case_path) DO UPDATE SET
+             title=$3, description=$4, tags=$5, priority=$6, body=$7, updated_at=$9",
+    )
+    .bind(repo_id)
+    .bind(case_path)
+    .bind(title)
+    .bind(description)
+    .bind(&tags)
+    .bind(priority)
+    .bind(body)
+    .bind(created_at)
+    .bind(updated_at)
+    .execute(pool)
+    .await
+    .map_err(map_db)?;
     Ok(())
 }
 
@@ -548,12 +615,7 @@ pub async fn record_result(
     status: &str,
     notes: &str,
 ) -> RResult<(LoadedResult, Option<String>)> {
-    if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
-        return Err(RepoError::InvalidArg(format!(
-            "invalid result status '{}'; must be one of: passed, failed, blocked, skipped",
-            status
-        )));
-    }
+    validate_result_status(status)?;
     validate_slug_path(run_id, "run")?;
     validate_slug_path(case_path, "case")?;
 
@@ -633,12 +695,7 @@ pub async fn finalize_run(
     run_id: &str,
     status: &str,
 ) -> RResult<RunRow> {
-    if !matches!(status, "completed" | "aborted") {
-        return Err(RepoError::InvalidArg(format!(
-            "invalid finalize status '{}'; must be one of: completed, aborted",
-            status
-        )));
-    }
+    validate_finalize_status(status)?;
     validate_slug_path(run_id, "run")?;
 
     let current: Option<String> =
@@ -990,7 +1047,6 @@ mod tests {
         assert!(err.to_string().contains("something broke"));
     }
 
-    // -----------------------------------------------------------------------
     // finalize_run status validation (pre-DB)
     // -----------------------------------------------------------------------
 
@@ -1015,6 +1071,16 @@ mod tests {
         let err = finalize_run(&lazy_pool(), "owner/repo", "../escape", "completed")
             .await
             .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    // -----------------------------------------------------------------------
+    // delete_case_if_exists unit tests (validation only — no DB)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn delete_case_if_exists_with_invalid_path_returns_error() {
+        let err = validate_slug_path("../etc", "case").unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
 
@@ -1488,5 +1554,220 @@ mod tests {
     async fn list_runs_returns_db_error_when_no_connection() {
         let err = list_runs(&lazy_pool(), "owner/repo").await.unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    // -----------------------------------------------------------------------
+    // upsert_case unit tests (validation only — no DB)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn upsert_case_with_invalid_priority_returns_error() {
+        let err = validate_priority("critical").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("critical"));
+    }
+
+    #[test]
+    fn upsert_case_with_invalid_path_returns_error() {
+        let err = validate_slug_path("", "case").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("case path is empty"));
+    }
+
+    // -----------------------------------------------------------------------
+    // validate_result_status
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn result_status_passed_is_valid() {
+        assert!(validate_result_status("passed").is_ok());
+    }
+
+    #[test]
+    fn result_status_failed_is_valid() {
+        assert!(validate_result_status("failed").is_ok());
+    }
+
+    #[test]
+    fn result_status_blocked_is_valid() {
+        assert!(validate_result_status("blocked").is_ok());
+    }
+
+    #[test]
+    fn result_status_skipped_is_valid() {
+        assert!(validate_result_status("skipped").is_ok());
+    }
+
+    #[test]
+    fn result_status_invalid_returns_invalid_arg() {
+        let err = validate_result_status("pending").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("pending"));
+    }
+
+    #[test]
+    fn result_status_empty_returns_invalid_arg() {
+        assert!(matches!(
+            validate_result_status("").unwrap_err(),
+            RepoError::InvalidArg(_)
+        ));
+    }
+
+    #[test]
+    fn result_status_uppercase_returns_invalid_arg() {
+        assert!(matches!(
+            validate_result_status("Passed").unwrap_err(),
+            RepoError::InvalidArg(_)
+        ));
+    }
+
+    // -----------------------------------------------------------------------
+    // validate_finalize_status
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn finalize_status_completed_is_valid() {
+        assert!(validate_finalize_status("completed").is_ok());
+    }
+
+    #[test]
+    fn finalize_status_aborted_is_valid() {
+        assert!(validate_finalize_status("aborted").is_ok());
+    }
+
+    #[test]
+    fn finalize_status_in_progress_returns_invalid_arg() {
+        let err = validate_finalize_status("in-progress").unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("in-progress"));
+    }
+
+    #[test]
+    fn finalize_status_empty_returns_invalid_arg() {
+        assert!(matches!(
+            validate_finalize_status("").unwrap_err(),
+            RepoError::InvalidArg(_)
+        ));
+    }
+
+    // -----------------------------------------------------------------------
+    // DB tests — require DATABASE_URL; run with:
+    //   DATABASE_URL=postgres://ameliso:ameliso@localhost/ameliso \
+    //     cargo test -p ameliso-server -- --include-ignored
+    // -----------------------------------------------------------------------
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn create_and_get_case(pool: PgPool) {
+        let repo = "test-repo";
+        let case = create_case(&pool, repo, "auth/login", "Login", "", vec![], "high", None)
+            .await
+            .unwrap();
+        assert_eq!(case.case_path, "auth/login");
+        assert_eq!(case.priority, "high");
+        assert!(!case.body.is_empty());
+
+        let fetched = get_case(&pool, repo, "auth/login").await.unwrap();
+        assert_eq!(fetched.title, "Login");
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn create_case_duplicate_returns_already_exists(pool: PgPool) {
+        let repo = "test-repo";
+        create_case(&pool, repo, "auth/login", "A", "", vec![], "low", None)
+            .await
+            .unwrap();
+        let err = create_case(&pool, repo, "auth/login", "B", "", vec![], "low", None)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::AlreadyExists(_)));
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn get_case_not_found_returns_not_found(pool: PgPool) {
+        let err = get_case(&pool, "repo", "missing/case").await.unwrap_err();
+        assert!(matches!(err, RepoError::NotFound(_)));
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn delete_case_removes_it(pool: PgPool) {
+        let repo = "test-repo";
+        create_case(&pool, repo, "x/y", "T", "", vec![], "medium", None)
+            .await
+            .unwrap();
+        delete_case(&pool, repo, "x/y").await.unwrap();
+        let err = get_case(&pool, repo, "x/y").await.unwrap_err();
+        assert!(matches!(err, RepoError::NotFound(_)));
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn list_cases_returns_all_for_repo(pool: PgPool) {
+        let repo = "test-repo";
+        create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
+            .await
+            .unwrap();
+        create_case(&pool, repo, "c/d", "C", "", vec![], "high", None)
+            .await
+            .unwrap();
+        let cases = list_cases(&pool, repo).await.unwrap();
+        assert_eq!(cases.len(), 2);
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn create_and_finalize_run(pool: PgPool) {
+        let repo = "test-repo";
+        let run = create_run(&pool, repo, "sprint-1", "alice", None, None)
+            .await
+            .unwrap();
+        assert_eq!(run.status, "in-progress");
+
+        let finalized = finalize_run(&pool, repo, &run.run_id, "completed")
+            .await
+            .unwrap();
+        assert_eq!(finalized.status, "completed");
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn record_result_on_closed_run_returns_closed_run(pool: PgPool) {
+        let repo = "test-repo";
+        create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
+            .await
+            .unwrap();
+        let run = create_run(&pool, repo, "sprint-2", "", None, None)
+            .await
+            .unwrap();
+        finalize_run(&pool, repo, &run.run_id, "aborted")
+            .await
+            .unwrap();
+
+        let err = record_result(&pool, repo, &run.run_id, "a/b", "passed", "")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::ClosedRun(_)));
+    }
+
+    #[sqlx::test]
+    #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
+    async fn suite_create_list_delete(pool: PgPool) {
+        let repo = "test-repo";
+        create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
+            .await
+            .unwrap();
+        create_suite(&pool, repo, "smoke", "Smoke", None, vec!["a/b".to_owned()])
+            .await
+            .unwrap();
+
+        let suites = list_suites(&pool, repo).await.unwrap();
+        assert_eq!(suites.len(), 1);
+        assert_eq!(suites[0].slug, "smoke");
+
+        delete_suite(&pool, repo, "smoke").await.unwrap();
+        assert!(list_suites(&pool, repo).await.unwrap().is_empty());
     }
 }

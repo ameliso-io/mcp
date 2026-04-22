@@ -18,7 +18,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -93,10 +93,19 @@
   width: auto;
 }
 
+.searchInput {
+  composes: input;
+  flex: 1;
+  min-width: 200px;
+}
+
 .caseCount {
   font-size: 13px;
   color: var(--color-subtle);
   white-space: nowrap;
+}
+.caseCountStale {
+  opacity: 0.5;
 }
 
 .errorCard {
@@ -137,6 +146,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.listStale {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .caseCard {
@@ -161,7 +177,22 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+}
+
+.caseExpandBtn {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .priorityDot {
@@ -170,6 +201,16 @@
   border-radius: 50%;
   margin-top: 6px;
   flex-shrink: 0;
+  background: var(--color-subtle);
+}
+.priorityDot[data-priority="high"] {
+  background: var(--color-priority-high);
+}
+.priorityDot[data-priority="medium"] {
+  background: var(--color-priority-medium);
+}
+.priorityDot[data-priority="low"] {
+  background: var(--color-priority-low);
 }
 
 .caseInfo {
@@ -248,7 +289,7 @@
 .btn {
   padding: 8px 16px;
   background: var(--color-ink);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -262,7 +303,7 @@
 .btnGreen {
   padding: 8px 20px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -276,7 +317,7 @@
 .btnSaveSm {
   padding: 6px 16px;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -303,7 +344,7 @@
 .btnOutlineSm {
   background: none;
   border: 1px solid var(--color-border);
-  color: #334155;
+  color: var(--color-ink-hover);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
@@ -330,7 +371,24 @@
   background: var(--color-danger-bg);
 }
 
+.confirmText {
+  font-size: 12px;
+  color: var(--color-danger);
+  font-weight: 600;
+  align-self: center;
+}
+
 .priorityBadge {
   font-size: 12px;
   font-weight: 600;
+  color: var(--color-subtle);
+}
+.priorityBadge[data-priority="high"] {
+  color: var(--color-priority-high);
+}
+.priorityBadge[data-priority="medium"] {
+  color: var(--color-priority-medium);
+}
+.priorityBadge[data-priority="low"] {
+  color: var(--color-priority-low);
 }

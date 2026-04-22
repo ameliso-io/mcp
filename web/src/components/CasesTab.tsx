@@ -1,32 +1,31 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef, useTransition, useDeferredValue } from "react";
-import { client } from "../client";
-import { errorMessage } from "../errorMessage";
-import type { Case } from "../gen/ameliso/v1/types_pb";
-import { Priority } from "../gen/ameliso/v1/types_pb";
+import { client } from "@/client";
+import { errorMessage } from "@/errorMessage";
+import type { Case } from "@/gen/ameliso/v1/types_pb";
+import { Priority } from "@/gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
+import { useAnnounce } from "@/hooks/useAnnounce";
+import styles from "./CasesTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
-interface Props {
-  repoId: string;
+interface FilterState {
+  search: string;
+  priority: Priority;
+  tag: string;
+  sort: "path" | "priority";
 }
 
-const card = {
-  background: "white",
-  borderRadius: "8px",
-  padding: "20px",
-  border: "1px solid #e2e8f0",
-  marginBottom: "16px",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: "6px",
-  fontSize: "14px",
-  boxSizing: "border-box",
-};
+interface Props {
+  repoId: string;
+  initialSearch?: string;
+  initialPriorityFilter?: Priority;
+  initialTagFilter?: string;
+  initialSortBy?: "path" | "priority";
+  onFiltersChange?: (filters: FilterState) => void;
+}
 
 function stringToPriority(p: string): Priority {
   switch (p) {
@@ -38,19 +37,6 @@ function stringToPriority(p: string): Priority {
       return Priority.LOW;
     default:
       return Priority.MEDIUM;
-  }
-}
-
-function priorityColor(p: string): string {
-  switch (p) {
-    case "high":
-      return "#ef4444";
-    case "medium":
-      return "#f97316";
-    case "low":
-      return "#22c55e";
-    default:
-      return "#94a3b8";
   }
 }
 
@@ -67,18 +53,38 @@ function priorityLabel(p: string): string {
   }
 }
 
-export default function CasesTab({ repoId }: Props) {
+export default function CasesTab({
+  repoId,
+  initialSearch,
+  initialPriorityFilter,
+  initialTagFilter,
+  initialSortBy,
+  onFiltersChange,
+}: Props) {
   const [cases, setCases] = useState<Case[]>([]);
   const deferredCases = useDeferredValue(cases);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<Priority>(Priority.UNSPECIFIED);
-  const [tagFilter, setTagFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"path" | "priority">("priority");
+  const [search, setSearch] = useState(initialSearch ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? "");
+  const [priorityFilter, setPriorityFilter] = useState<Priority>(
+    initialPriorityFilter ?? Priority.UNSPECIFIED
+  );
+  const [tagFilter, setTagFilter] = useState(initialTagFilter ?? "");
+  const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+  const expandingRef = useRef<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [filterAnnouncement, announceFilter] = useAnnounce();
+  const [actionAnnouncement, announceAction] = useAnnounce();
+  const prevCountRef = useRef<number | null>(null);
+  const onFiltersChangeRef = useRef(onFiltersChange);
+  const filtersInitializedRef = useRef(false);
+  useEffect(() => {
+    onFiltersChangeRef.current = onFiltersChange;
+  });
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
@@ -113,22 +119,28 @@ export default function CasesTab({ repoId }: Props) {
     if (expandedPath === casePath) {
       setExpandedPath(null);
       setExpandedBody("");
+      expandingRef.current = null;
       return;
     }
     setExpandedPath(casePath);
     setExpandedBody("");
+    expandingRef.current = casePath;
     setBodyLoading(true);
     try {
-      setExpandedBody(await fetchBody(casePath));
+      const body = await fetchBody(casePath);
+      if (expandingRef.current === casePath) setExpandedBody(body);
     } catch (e) {
-      setError(errorMessage(e));
-      setExpandedPath(null);
+      if (expandingRef.current === casePath) {
+        setError(errorMessage(e));
+        setExpandedPath(null);
+      }
     } finally {
-      setBodyLoading(false);
+      if (expandingRef.current === casePath) setBodyLoading(false);
     }
   }
 
   async function startEdit(c: Case) {
+    lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingPath(c.path);
     setEditTitle(c.title);
     setEditDesc(c.description);
@@ -150,6 +162,19 @@ export default function CasesTab({ repoId }: Props) {
     };
   }, [search]);
 
+  useEffect(() => {
+    if (!filtersInitializedRef.current) {
+      filtersInitializedRef.current = true;
+      return;
+    }
+    onFiltersChangeRef.current?.({
+      search: debouncedSearch,
+      priority: priorityFilter,
+      tag: tagFilter,
+      sort: sortBy,
+    });
+  }, [debouncedSearch, priorityFilter, tagFilter, sortBy]);
+
   const load = useCallback(async () => {
     if (!repoId) return;
     setLoading(true);
@@ -170,12 +195,21 @@ export default function CasesTab({ repoId }: Props) {
   }, [repoId, debouncedSearch, priorityFilter, tagFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading) return;
+    const count = deferredCases.length;
+    if (prevCountRef.current !== null && prevCountRef.current !== count) {
+      announceFilter(`${count} case${count !== 1 ? "s" : ""} found`);
+    }
+    prevCountRef.current = count;
+  }, [deferredCases.length, loading, announceFilter]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
     if (!repoId || !newPath || !newTitle) return;
     setCreating(true);
     try {
@@ -194,12 +228,14 @@ export default function CasesTab({ repoId }: Props) {
         body: newBody,
       });
       setShowCreate(false);
+      lastFocusRef.current?.focus();
       setNewPath("");
       setNewTitle("");
       setNewDesc("");
       setNewTags("");
       setNewBody("");
       setNewPriority(Priority.MEDIUM);
+      announceAction("Case created");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -209,10 +245,11 @@ export default function CasesTab({ repoId }: Props) {
   }
 
   async function handleDelete(casePath: string) {
-    if (!confirm(`Delete case "${casePath}"?`)) return;
     try {
       await client.deleteCase({ repoId, casePath });
       if (expandedPath === casePath) setExpandedPath(null);
+      setConfirmingDelete(null);
+      announceAction("Case deleted");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -221,6 +258,7 @@ export default function CasesTab({ repoId }: Props) {
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingPath is set */
     if (!editingPath) return;
     setSaving(true);
     try {
@@ -239,6 +277,8 @@ export default function CasesTab({ repoId }: Props) {
         body: editBody,
       });
       setEditingPath(null);
+      lastFocusRef.current?.focus();
+      announceAction("Case updated");
       load();
     } catch (e) {
       setError(errorMessage(e));
@@ -248,11 +288,7 @@ export default function CasesTab({ repoId }: Props) {
   }
 
   if (!repoId) {
-    return (
-      <div style={{ color: "#64748b", padding: "40px", textAlign: "center" }}>
-        Set a repository path in the Overview tab first.
-      </div>
-    );
+    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   const allTags = Array.from(new Set(deferredCases.flatMap((c) => c.tags)));
@@ -260,167 +296,112 @@ export default function CasesTab({ repoId }: Props) {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700" }}>Cases</h2>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {actionAnnouncement}
+      </div>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Cases</h2>
         <button
-          onClick={() => setShowCreate(!showCreate)}
-          style={{
-            padding: "8px 16px",
-            background: "#1e293b",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
+          type="button"
+          onClick={() => {
+            if (!showCreate) lastFocusRef.current = document.activeElement as HTMLElement;
+            setShowCreate(!showCreate);
           }}
+          className={styles.btn}
         >
           {showCreate ? "Cancel" : "+ New Case"}
         </button>
       </div>
 
       {showCreate && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px" }}>Create Case</h3>
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Create Case</h3>
           <form
+            aria-label="Create Case"
             onSubmit={handleCreate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setShowCreate(false);
+                lastFocusRef.current?.focus();
+              }
+            }}
+            className={styles.formGrid}
           >
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Path (e.g. auth/login)
+                <input
+                  value={newPath}
+                  onChange={(e) => setNewPath(e.target.value)}
+                  required
+                  autoFocus
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newPath}
-                onChange={(e) => setNewPath(e.target.value)}
-                required
-                style={inputStyle}
-              />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Title
+                <input
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  required
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                required
-                style={inputStyle}
-              />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <label className={styles.label}>
                 Description
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                style={inputStyle}
-              />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Priority
+                <select
+                  value={newPriority}
+                  onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
+                  className={styles.input}
+                >
+                  <option value={Priority.LOW}>Low</option>
+                  <option value={Priority.MEDIUM}>Medium</option>
+                  <option value={Priority.HIGH}>High</option>
+                </select>
               </label>
-              <select
-                value={newPriority}
-                onChange={(e) => setNewPriority(Number(e.target.value) as Priority)}
-                style={inputStyle}
-              >
-                <option value={Priority.LOW}>Low</option>
-                <option value={Priority.MEDIUM}>Medium</option>
-                <option value={Priority.HIGH}>High</option>
-              </select>
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+              <label className={styles.label}>
                 Tags (comma-separated)
+                <input
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  className={styles.input}
+                />
               </label>
-              <input
-                value={newTags}
-                onChange={(e) => setNewTags(e.target.value)}
-                style={inputStyle}
-              />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
-                style={{
-                  fontSize: "13px",
-                  color: "#64748b",
-                  display: "block",
-                  marginBottom: "4px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <label className={styles.label}>
                 Steps / Body (Markdown)
+                <textarea
+                  value={newBody}
+                  onChange={(e) => setNewBody(e.target.value)}
+                  placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
+                  rows={6}
+                  className={styles.textarea}
+                />
               </label>
-              <textarea
-                value={newBody}
-                onChange={(e) => setNewBody(e.target.value)}
-                placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
-                rows={6}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  fontFamily: "monospace",
-                  fontSize: "13px",
-                }}
-              />
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <button
-                type="submit"
-                disabled={creating}
-                style={{
-                  padding: "8px 20px",
-                  background: "#16a34a",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
+            <div className={styles.fullCol}>
+              <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create"}
               </button>
             </div>
@@ -428,20 +409,20 @@ export default function CasesTab({ repoId }: Props) {
         </div>
       )}
 
-      <div
-        style={{ ...card, display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}
-      >
+      <div className={styles.filterBar}>
         <input
-          type="text"
+          type="search"
+          aria-label="Search cases"
           placeholder="Search cases…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ ...inputStyle, flex: 1, minWidth: "200px" }}
+          className={styles.searchInput}
         />
         <select
+          aria-label="Filter by priority"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(Number(e.target.value) as Priority)}
-          style={{ ...inputStyle, width: "auto" }}
+          className={styles.filterSelect}
         >
           <option value={Priority.UNSPECIFIED}>All priorities</option>
           <option value={Priority.LOW}>Low</option>
@@ -450,9 +431,10 @@ export default function CasesTab({ repoId }: Props) {
         </select>
         {allTags.length > 0 && (
           <select
+            aria-label="Filter by tag"
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
-            style={{ ...inputStyle, width: "auto" }}
+            className={styles.filterSelect}
           >
             <option value="">All tags</option>
             {allTags.map((t) => (
@@ -463,23 +445,19 @@ export default function CasesTab({ repoId }: Props) {
           </select>
         )}
         <select
+          aria-label="Sort cases"
           value={sortBy}
           onChange={(e) =>
             startSortTransition(() => setSortBy(e.target.value as "path" | "priority"))
           }
-          style={{ ...inputStyle, width: "auto" }}
+          className={styles.filterSelect}
         >
           <option value="priority">Sort: Priority</option>
           <option value="path">Sort: Path</option>
         </select>
         {!loading && deferredCases.length > 0 && (
           <span
-            style={{
-              fontSize: "13px",
-              color: "#94a3b8",
-              whiteSpace: "nowrap",
-              ...(isStale ? { opacity: 0.5 } : {}),
-            }}
+            className={isStale ? `${styles.caseCount} ${styles.caseCountStale}` : styles.caseCount}
           >
             {deferredCases.length} case{deferredCases.length !== 1 ? "s" : ""}
           </span>
@@ -487,30 +465,13 @@ export default function CasesTab({ repoId }: Props) {
       </div>
 
       {error && (
-        <div
-          style={{
-            ...card,
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#991b1b",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
+        <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <button
+            type="button"
             onClick={() => setError(null)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#991b1b",
-              cursor: "pointer",
-              fontSize: "16px",
-              lineHeight: 1,
-              padding: "0 0 0 12px",
-              flexShrink: 0,
-            }}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
           >
             ×
           </button>
@@ -518,22 +479,19 @@ export default function CasesTab({ repoId }: Props) {
       )}
 
       {loading && (
-        <div style={{ textAlign: "center", color: "#64748b", padding: "40px" }}>Loading…</div>
-      )}
-
-      {!loading && deferredCases.length === 0 && !error && (
-        <div style={{ ...card, color: "#64748b", textAlign: "center", padding: "40px" }}>
-          No cases found.
+        <div className={styles.loadingMsg} role="status">
+          Loading…
         </div>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          ...(isStale ? { opacity: 0.6, pointerEvents: "none" as const } : {}),
-        }}
+      {!loading && deferredCases.length === 0 && !error && (
+        <div className={styles.emptyCard}>No cases found.</div>
+      )}
+
+      <ul
+        className={isStale ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading || isStale}
+        role="list"
       >
         {[...deferredCases]
           .sort((a, b) => {
@@ -545,294 +503,191 @@ export default function CasesTab({ repoId }: Props) {
             return a.path.localeCompare(b.path);
           })
           .map((c) => (
-            <div key={c.path}>
+            <li key={c.path}>
               <div
-                style={{
-                  ...card,
-                  marginBottom: 0,
-                  borderBottomLeftRadius:
-                    expandedPath === c.path || editingPath === c.path ? 0 : "8px",
-                  borderBottomRightRadius:
-                    expandedPath === c.path || editingPath === c.path ? 0 : "8px",
-                }}
+                className={
+                  expandedPath === c.path || editingPath === c.path
+                    ? styles.caseCardOpen
+                    : styles.caseCard
+                }
               >
                 {editingPath === c.path ? (
                   <form
+                    aria-label={`Edit case ${c.path}`}
                     onSubmit={handleUpdate}
-                    style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditingPath(null);
+                        lastFocusRef.current?.focus();
+                      }
+                    }}
+                    className={styles.formGridSm}
                   >
                     <div>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
+                      <label className={styles.labelSm}>
                         Title
+                        <input
+                          autoFocus
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          required
+                          className={styles.input}
+                        />
                       </label>
-                      <input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        required
-                        style={inputStyle}
-                      />
                     </div>
                     <div>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
+                      <label className={styles.labelSm}>
                         Priority
+                        <select
+                          value={editPriority}
+                          onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
+                          className={styles.input}
+                        >
+                          <option value={Priority.LOW}>Low</option>
+                          <option value={Priority.MEDIUM}>Medium</option>
+                          <option value={Priority.HIGH}>High</option>
+                        </select>
                       </label>
-                      <select
-                        value={editPriority}
-                        onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
-                        style={inputStyle}
-                      >
-                        <option value={Priority.LOW}>Low</option>
-                        <option value={Priority.MEDIUM}>Medium</option>
-                        <option value={Priority.HIGH}>High</option>
-                      </select>
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>
                         Description
+                        <input
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          className={styles.input}
+                        />
                       </label>
-                      <input
-                        value={editDesc}
-                        onChange={(e) => setEditDesc(e.target.value)}
-                        style={inputStyle}
-                      />
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>
                         Tags (comma-separated)
+                        <input
+                          value={editTags}
+                          onChange={(e) => setEditTags(e.target.value)}
+                          className={styles.input}
+                        />
                       </label>
-                      <input
-                        value={editTags}
-                        onChange={(e) => setEditTags(e.target.value)}
-                        style={inputStyle}
-                      />
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label
-                        style={{
-                          fontSize: "12px",
-                          color: "#64748b",
-                          display: "block",
-                          marginBottom: "3px",
-                        }}
-                      >
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>
                         Steps / Body (Markdown)
+                        <textarea
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          rows={8}
+                          className={styles.textarea}
+                        />
                       </label>
-                      <textarea
-                        value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
-                        rows={8}
-                        style={{
-                          ...inputStyle,
-                          resize: "vertical",
-                          fontFamily: "monospace",
-                          fontSize: "13px",
-                        }}
-                      />
                     </div>
-                    <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px" }}>
-                      <button
-                        type="submit"
-                        disabled={saving}
-                        style={{
-                          padding: "6px 16px",
-                          background: "#16a34a",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                        }}
-                      >
+                    <div className={styles.formActions}>
+                      <button type="submit" disabled={saving} className={styles.btnSaveSm}>
                         {saving ? "Saving…" : "Save"}
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingPath(null)}
-                        style={{
-                          padding: "6px 16px",
-                          background: "none",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "13px",
+                        onClick={() => {
+                          setEditingPath(null);
+                          lastFocusRef.current?.focus();
                         }}
+                        className={styles.btnCancelSm}
                       >
                         Cancel
                       </button>
                     </div>
                   </form>
                 ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "12px",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => toggleExpand(c.path)}
-                  >
-                    <div
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: priorityColor(c.priority),
-                        marginTop: "6px",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span
-                          style={{ fontSize: "13px", color: "#94a3b8", fontFamily: "monospace" }}
-                        >
-                          {c.path}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: priorityColor(c.priority),
-                            fontWeight: "600",
-                          }}
-                        >
-                          {priorityLabel(c.priority)}
-                        </span>
-                        {c.tags.map((t) => (
-                          <span
-                            key={t}
-                            style={{
-                              fontSize: "11px",
-                              background: "#f1f5f9",
-                              color: "#64748b",
-                              padding: "2px 6px",
-                              borderRadius: "4px",
-                            }}
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                      <p style={{ margin: "4px 0 0", fontWeight: "600", fontSize: "15px" }}>
-                        {c.title}
-                      </p>
-                      {c.description && (
-                        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
-                          {c.description}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#94a3b8",
-                        flexShrink: 0,
-                        marginTop: "2px",
-                      }}
-                    >
-                      {expandedPath === c.path ? "▲" : "▼"}
-                    </span>
+                  <div className={styles.caseRow}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEdit(c);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "1px solid #e2e8f0",
-                        color: "#334155",
-                        borderRadius: "4px",
-                        padding: "4px 10px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        flexShrink: 0,
-                      }}
+                      type="button"
+                      className={styles.caseExpandBtn}
+                      onClick={() => toggleExpand(c.path)}
+                      aria-expanded={expandedPath === c.path}
+                    >
+                      <span
+                        className={styles.priorityDot}
+                        data-priority={c.priority}
+                        aria-hidden="true"
+                      />
+                      <div className={styles.caseInfo}>
+                        <div className={styles.caseMeta}>
+                          <span className={styles.casePath}>{c.path}</span>
+                          <span className={styles.priorityBadge} data-priority={c.priority}>
+                            {priorityLabel(c.priority)}
+                          </span>
+                          {c.tags.map((t) => (
+                            <span key={t} className={styles.tag}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <p className={styles.caseTitle}>{c.title}</p>
+                        {c.description && <p className={styles.caseDesc}>{c.description}</p>}
+                      </div>
+                      <span className={styles.chevron} aria-hidden="true">
+                        {expandedPath === c.path ? "▲" : "▼"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(c)}
+                      aria-label={`Edit ${c.path}`}
+                      className={styles.btnOutlineSm}
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(c.path);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "1px solid #fecaca",
-                        color: "#ef4444",
-                        borderRadius: "4px",
-                        padding: "4px 10px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      Delete
-                    </button>
+                    {confirmingDelete === c.path ? (
+                      <>
+                        <span className={styles.confirmText}>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c.path)}
+                          aria-label={`Confirm delete ${c.path}`}
+                          className={styles.btnDangerSm}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDelete(null)}
+                          aria-label="Cancel delete"
+                          className={styles.btnOutlineSm}
+                          autoFocus
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(c.path)}
+                        aria-label={`Delete ${c.path}`}
+                        className={styles.btnDangerSm}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
               {expandedPath === c.path && editingPath !== c.path && (
-                <div
-                  style={{
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderTop: "none",
-                    borderBottomLeftRadius: "8px",
-                    borderBottomRightRadius: "8px",
-                    padding: "16px 20px",
-                  }}
-                >
+                <div className={styles.expandedPanel}>
                   {bodyLoading ? (
-                    <p style={{ color: "#64748b", fontSize: "14px", margin: 0 }}>Loading…</p>
+                    <p className={styles.expandedLoading} role="status">
+                      Loading…
+                    </p>
                   ) : expandedBody ? (
                     <MarkdownBody body={expandedBody} />
                   ) : (
-                    <p
-                      style={{ color: "#94a3b8", fontSize: "14px", margin: 0, fontStyle: "italic" }}
-                    >
-                      No body.
-                    </p>
+                    <p className={styles.noBody}>No body.</p>
                   )}
                 </div>
               )}
-            </div>
+            </li>
           ))}
-      </div>
+      </ul>
     </div>
   );
 }
