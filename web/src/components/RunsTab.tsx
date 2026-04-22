@@ -208,11 +208,17 @@ export default function RunsTab({
       setCaseBody(null);
       try {
         if (status === RunStatus.IN_PROGRESS) {
-          const res = await client.getPendingCases({ repoId, runId });
+          const [pendingRes, runRes, casesRes] = await Promise.all([
+            client.getPendingCases({ repoId, runId }),
+            client.getRun({ repoId, runId }),
+            client.listCases({ repoId }),
+          ]);
           /* v8 ignore next 1 — race guard, covered by stale selectRun test */
           if (selectingRef.current !== runId) return;
-          setPendingCases(res.cases);
-          setTotalInScope(res.totalInScope);
+          setPendingCases(pendingRes.cases);
+          setTotalInScope(pendingRes.totalInScope);
+          setRecordedResults(runRes.run?.results ?? /* v8 ignore next */ []);
+          setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
         } else {
           const [runRes, casesRes] = await Promise.all([
             client.getRun({ repoId, runId }),
@@ -248,6 +254,12 @@ export default function RunsTab({
           tester: newTester,
           environment: newEnv,
           suite: newSuite,
+          cases: newCases
+            ? newCases
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [],
         });
         setShowCreate(false);
         lastFocusRef.current?.focus();
@@ -255,6 +267,7 @@ export default function RunsTab({
         setNewTester("");
         setNewEnv("");
         setNewSuite("");
+        setNewCases("");
         announce("Run created");
         if (created.run) {
           const newRun = created.run;
@@ -273,7 +286,7 @@ export default function RunsTab({
         setCreating(false);
       }
     },
-    [repoId, newSlug, newTester, newEnv, newSuite, statusFilter, announce, selectRun]
+    [repoId, newSlug, newTester, newEnv, newSuite, newCases, statusFilter, announce, selectRun]
   );
 
   const handleRecord = useCallback(
@@ -296,10 +309,13 @@ export default function RunsTab({
         setRecordStatus(ResultStatus.PASSED);
         setCaseBody(null);
         announce("Result recorded");
-        // Refresh pending
-        const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-        setPendingCases(res.cases);
-        setTotalInScope(res.totalInScope);
+        const [pendingRes, runRes] = await Promise.all([
+          client.getPendingCases({ repoId, runId: selectedRunId }),
+          client.getRun({ repoId, runId: selectedRunId }),
+        ]);
+        setPendingCases(pendingRes.cases);
+        setTotalInScope(pendingRes.totalInScope);
+        setRecordedResults(runRes.run?.results ?? []);
       } catch (e) {
         setError(errorMessage(e));
       } finally {

@@ -709,6 +709,20 @@ export default function CasesTab({
                   </div>
                   <div className={styles.fullCol}>
                     <label className={styles.labelSm}>
+                      Rename path (optional)
+                      <input
+                        aria-label="Rename path (optional)"
+                        value={editNewPath}
+                        onChange={(e) => {
+                          setEditNewPath(e.target.value);
+                        }}
+                        placeholder={editingPath ?? ""}
+                        className={styles.input}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.labelSm}>
                       Steps / Body (Markdown)
                       <textarea
                         value={editBody}

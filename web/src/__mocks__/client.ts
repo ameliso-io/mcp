@@ -25,6 +25,7 @@ export const client = {
   updateRun: vi.fn().mockResolvedValue({ run: undefined, newDirPath: "" }),
   getPendingCases: vi.fn().mockResolvedValue({ cases: [], totalInScope: 0 }),
   getCoverageReport: vi.fn().mockResolvedValue({ entries: [], runCount: 0 }),
+  getRepoStatus: vi.fn().mockResolvedValue({ activeRuns: [] }),
   getAffectedCases: vi.fn().mockResolvedValue({ cases: [], reason: "" }),
   getGitHubInstallUrl: vi.fn().mockResolvedValue({ url: "", configured: false }),
   handleGitHubCallback: vi.fn().mockResolvedValue({ repositories: [] }),

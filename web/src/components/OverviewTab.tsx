@@ -12,7 +12,7 @@ import { useAnnounce } from "@/hooks/useAnnounce";
 
 interface Props {
   repoId: string;
-  basePath: string;
+  basePath?: string;
 }
 
 function statusSortOrder(s: ResultStatus): number {
@@ -49,7 +49,7 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoId, basePath }: Props) {
+export default function OverviewTab({ repoId, basePath = `/repositories/${repoId}` }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -244,16 +244,16 @@ export default function OverviewTab({ repoId, basePath }: Props) {
         <>
           <dl className={styles.statsGrid}>
             {[
-              { label: "Total Cases", value: statCases },
-              { label: "Passed", value: statPassed },
-              { label: "Failed", value: statFailed },
-              { label: "Blocked", value: statBlocked },
-              { label: "Skipped", value: statSkipped },
-              { label: "Never Run", value: statNever },
+              { key: "Total Cases", label: "Total Cases", value: statCases },
+              { key: "Passed", label: "Passed", value: statPassed },
+              { key: "Failed", label: "Failed", value: statFailed },
+              { key: "Blocked", label: "Blocked cases", value: statBlocked },
+              { key: "Skipped", label: "Skipped cases", value: statSkipped },
+              { key: "Never Run", label: "Never Run", value: statNever },
             ].map((stat) => (
-              <div key={stat.label} className={styles.statCard}>
+              <div key={stat.key} className={styles.statCard}>
                 <dt className={styles.label}>{stat.label}</dt>
-                <dd className={styles.statValue} data-stat={stat.label}>
+                <dd className={styles.statValue} data-stat={stat.key}>
                   {stat.value}
                 </dd>
               </div>
@@ -328,11 +328,11 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                 className={styles.filterSelect}
               >
                 <option value={ResultStatus.UNSPECIFIED}>All statuses</option>
-                <option value={ResultStatus.PASSED}>Passed</option>
-                <option value={ResultStatus.FAILED}>Failed</option>
-                <option value={ResultStatus.BLOCKED}>Blocked</option>
-                <option value={ResultStatus.SKIPPED}>Skipped</option>
-                <option value={ResultStatus.NEVER}>Never run</option>
+                <option value={ResultStatus.PASSED}>Passed only</option>
+                <option value={ResultStatus.FAILED}>Failed only</option>
+                <option value={ResultStatus.BLOCKED}>Blocked only</option>
+                <option value={ResultStatus.SKIPPED}>Skipped only</option>
+                <option value={ResultStatus.NEVER}>Never run only</option>
               </select>
             </div>
             <ul className={styles.coverageList} role="list">
