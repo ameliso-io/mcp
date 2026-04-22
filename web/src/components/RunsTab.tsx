@@ -82,12 +82,14 @@ export default function RunsTab({
   const [caseTitleMap, setCaseTitleMap] = useState<Map<string, Case>>(new Map());
 
   // Record result form
-  const [recordingCase, setRecordingCase] = useState<string | null>(null);
-  const [recordStatus, setRecordStatus] = useState<ResultStatus>(ResultStatus.PASSED);
-  const [recordNotes, setRecordNotes] = useState("");
+  const [recordState, setRecordState] = useState<{
+    casePath: string;
+    status: ResultStatus;
+    notes: string;
+    body: string | null;
+    bodyLoading: boolean;
+  } | null>(null);
   const [recording, setRecording] = useState(false);
-  const [caseBody, setCaseBody] = useState<string | null>(null);
-  const [caseBodyLoading, setCaseBodyLoading] = useState(false);
   const [bulkPassing, setBulkPassing] = useState(false);
 
   const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
@@ -96,8 +98,7 @@ export default function RunsTab({
     status: RunStatus;
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
-  const [renamingRunId, setRenamingRunId] = useState<string | null>(null);
-  const [renameNewSlug, setRenameNewSlug] = useState("");
+  const [renameState, setRenameState] = useState<{ runId: string; slug: string } | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [actionAnnouncement, announce] = useAnnounce();
 
@@ -203,8 +204,7 @@ export default function RunsTab({
       setPendingCases([]);
       setRecordedResults([]);
       setResultStatusFilter(null);
-      setRecordingCase(null);
-      setCaseBody(null);
+      setRecordState(null);
       return;
     }
     setSelectedRunId(runId);
@@ -212,8 +212,7 @@ export default function RunsTab({
     setPendingCases([]);
     setRecordedResults([]);
     setResultStatusFilter(null);
-    setRecordingCase(null);
-    setCaseBody(null);
+    setRecordState(null);
     try {
       if (status === RunStatus.IN_PROGRESS) {
         const res = await client.getPendingCases({ repoId, runId });
@@ -237,21 +236,18 @@ export default function RunsTab({
   async function handleRecord(e: React.FormEvent) {
     e.preventDefault();
     /* v8 ignore next 2 — record form only shown when both are set */
-    if (!selectedRunId || !recordingCase) return;
+    if (!selectedRunId || !recordState) return;
     setRecording(true);
     try {
       await client.recordResult({
         repoId,
         runId: selectedRunId,
-        casePath: recordingCase,
-        status: recordStatus,
-        notes: recordNotes,
+        casePath: recordState.casePath,
+        status: recordState.status,
+        notes: recordState.notes,
       });
-      setRecordingCase(null);
+      setRecordState(null);
       lastFocusRef.current?.focus();
-      setRecordNotes("");
-      setRecordStatus(ResultStatus.PASSED);
-      setCaseBody(null);
       announce("Result recorded");
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
@@ -265,24 +261,25 @@ export default function RunsTab({
   }
 
   async function openRecord(casePath: string) {
-    if (recordingCase === casePath) {
-      setRecordingCase(null);
-      setCaseBody(null);
+    if (recordState?.casePath === casePath) {
+      setRecordState(null);
       return;
     }
     lastFocusRef.current = document.activeElement as HTMLElement;
-    setRecordingCase(casePath);
-    setRecordNotes("");
-    setRecordStatus(ResultStatus.PASSED);
-    setCaseBody(null);
-    setCaseBodyLoading(true);
+    setRecordState({
+      casePath,
+      notes: "",
+      status: ResultStatus.PASSED,
+      body: null,
+      bodyLoading: true,
+    });
     try {
       const res = await client.getCase({ repoId, casePath });
-      setCaseBody(res.body || null);
+      setRecordState((s) => s && { ...s, body: res.body || null });
     } catch {
       // body unavailable; proceed without it
     } finally {
-      setCaseBodyLoading(false);
+      setRecordState((s) => s && { ...s, bodyLoading: false });
     }
   }
 
@@ -316,8 +313,7 @@ export default function RunsTab({
       });
       setPendingCases([]);
       setTotalInScope(resp.totalInScope);
-      setRecordingCase(null);
-      setCaseBody(null);
+      setRecordState(null);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -331,8 +327,7 @@ export default function RunsTab({
       if (selectedRunId === runId) {
         setSelectedRunId(null);
         setPendingCases([]);
-        setRecordingCase(null);
-        setCaseBody(null);
+        setRecordState(null);
       }
       setConfirmingDeleteRun(null);
       announce("Run deleted");
@@ -344,13 +339,12 @@ export default function RunsTab({
 
   async function handleRenameRun(e: React.FormEvent) {
     e.preventDefault();
-    /* v8 ignore next 2 — form only renders when renamingRunId is set */
-    if (!renamingRunId || !renameNewSlug) return;
+    /* v8 ignore next 2 — form only renders when renameState is set */
+    if (!renameState?.slug) return;
     setRenaming(true);
     try {
-      await client.updateRun({ repoId, runId: renamingRunId, newSlug: renameNewSlug });
-      setRenamingRunId(null);
-      setRenameNewSlug("");
+      await client.updateRun({ repoId, runId: renameState.runId, newSlug: renameState.slug });
+      setRenameState(null);
       lastFocusRef.current?.focus();
       announce("Run renamed");
       load();
@@ -569,13 +563,12 @@ export default function RunsTab({
                     {run.date}
                   </time>
                 </button>
-                {renamingRunId !== run.id && (
+                {renameState?.runId !== run.id && (
                   <button
                     type="button"
                     onClick={() => {
                       lastFocusRef.current = document.activeElement as HTMLElement;
-                      setRenamingRunId(run.id);
-                      setRenameNewSlug("");
+                      setRenameState({ runId: run.id, slug: "" });
                     }}
                     aria-label={`Rename ${run.id}`}
                     className={styles.btnOutlineSm}
@@ -619,14 +612,14 @@ export default function RunsTab({
                   </button>
                 )}
               </div>
-              {renamingRunId === run.id && (
+              {renameState?.runId === run.id && (
                 <form
                   aria-label={`Rename run ${run.id}`}
                   onSubmit={handleRenameRun}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
                       e.preventDefault();
-                      setRenamingRunId(null);
+                      setRenameState(null);
                       lastFocusRef.current?.focus();
                     }
                   }}
@@ -634,9 +627,9 @@ export default function RunsTab({
                 >
                   <span className={styles.renamePrefix}>{run.id.slice(0, 10)}-</span>
                   <input
-                    value={renameNewSlug}
+                    value={renameState.slug}
                     onChange={(e) => {
-                      setRenameNewSlug(e.target.value);
+                      setRenameState((s) => s && { ...s, slug: e.target.value });
                     }}
                     required
                     autoFocus
@@ -650,7 +643,7 @@ export default function RunsTab({
                   <button
                     type="button"
                     onClick={() => {
-                      setRenamingRunId(null);
+                      setRenameState(null);
                       lastFocusRef.current?.focus();
                     }}
                     className={styles.btnCancelSm}
@@ -908,38 +901,39 @@ export default function RunsTab({
                                 type="button"
                                 onClick={() => openRecord(c.path)}
                                 aria-label={
-                                  recordingCase === c.path
+                                  recordState?.casePath === c.path
                                     ? `Cancel recording ${c.path}`
                                     : `Record result for ${c.path}`
                                 }
                                 className={styles.btnRecordSm}
                               >
-                                {recordingCase === c.path ? "Cancel" : "Record"}
+                                {recordState?.casePath === c.path ? "Cancel" : "Record"}
                               </button>
                             )}
                           </div>
 
-                          {recordingCase === c.path && (
+                          {recordState?.casePath === c.path && (
                             <div className={styles.recordPanel}>
-                              {(caseBodyLoading || caseBody) && (
+                              {(recordState.bodyLoading || recordState.body) && (
                                 <div className={styles.recordSteps}>
-                                  {caseBodyLoading ? (
+                                  {recordState.bodyLoading ? (
                                     <p className={styles.stepsLoading} role="status">
                                       Loading steps…
                                     </p>
                                   ) : (
-                                    caseBody && <MarkdownBody body={caseBody} maxHeight="200px" />
+                                    recordState.body && (
+                                      <MarkdownBody body={recordState.body} maxHeight="200px" />
+                                    )
                                   )}
                                 </div>
                               )}
                               <form
-                                aria-label={`Record result for ${recordingCase}`}
+                                aria-label={`Record result for ${recordState.casePath}`}
                                 onSubmit={handleRecord}
                                 onKeyDown={(e) => {
                                   if (e.key === "Escape") {
                                     e.preventDefault();
-                                    setRecordingCase(null);
-                                    setCaseBody(null);
+                                    setRecordState(null);
                                     lastFocusRef.current?.focus();
                                   }
                                 }}
@@ -949,9 +943,11 @@ export default function RunsTab({
                                   <label className={styles.labelSm}>
                                     Status
                                     <select
-                                      value={recordStatus}
+                                      value={recordState.status}
                                       onChange={(e) => {
-                                        setRecordStatus(Number(e.target.value));
+                                        setRecordState(
+                                          (s) => s && { ...s, status: Number(e.target.value) }
+                                        );
                                       }}
                                       autoFocus
                                       className={styles.inputAuto}
@@ -966,40 +962,40 @@ export default function RunsTab({
                                 <div className={styles.notesWrap}>
                                   <label
                                     className={
-                                      recordStatus === ResultStatus.FAILED ||
-                                      recordStatus === ResultStatus.BLOCKED
+                                      recordState.status === ResultStatus.FAILED ||
+                                      recordState.status === ResultStatus.BLOCKED
                                         ? styles.labelSmErr
                                         : styles.labelSm
                                     }
                                   >
                                     Notes
-                                    {recordStatus === ResultStatus.FAILED ||
-                                    recordStatus === ResultStatus.BLOCKED
+                                    {recordState.status === ResultStatus.FAILED ||
+                                    recordState.status === ResultStatus.BLOCKED
                                       ? " *"
                                       : ""}
                                     <input
-                                      value={recordNotes}
+                                      value={recordState.notes}
                                       onChange={(e) => {
-                                        setRecordNotes(e.target.value);
+                                        setRecordState((s) => s && { ...s, notes: e.target.value });
                                       }}
                                       placeholder={
-                                        recordStatus === ResultStatus.FAILED
+                                        recordState.status === ResultStatus.FAILED
                                           ? "Describe what failed…"
-                                          : recordStatus === ResultStatus.BLOCKED
+                                          : recordState.status === ResultStatus.BLOCKED
                                             ? "Describe what is blocking…"
                                             : "Optional notes…"
                                       }
                                       required={
-                                        recordStatus === ResultStatus.FAILED ||
-                                        recordStatus === ResultStatus.BLOCKED
+                                        recordState.status === ResultStatus.FAILED ||
+                                        recordState.status === ResultStatus.BLOCKED
                                       }
                                       aria-required={
-                                        recordStatus === ResultStatus.FAILED ||
-                                        recordStatus === ResultStatus.BLOCKED
+                                        recordState.status === ResultStatus.FAILED ||
+                                        recordState.status === ResultStatus.BLOCKED
                                       }
                                       className={
-                                        recordStatus === ResultStatus.FAILED ||
-                                        recordStatus === ResultStatus.BLOCKED
+                                        recordState.status === ResultStatus.FAILED ||
+                                        recordState.status === ResultStatus.BLOCKED
                                           ? styles.inputErr
                                           : styles.input
                                       }
