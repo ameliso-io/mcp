@@ -125,6 +125,7 @@ ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/chec
 ameliso suites create smoke --name "Smoke Suite" --cases auth/login --json  # machine-readable: { file_path, slug, name, case_count }
 ameliso suites update smoke --cases auth/login,billing/checkout,payments/refund  # patch: change only cases
 ameliso suites update smoke --cases auth/login --json  # machine-readable: { file_path, slug, name, case_count }
+ameliso suites delete smoke --json                     # machine-readable: { file_path }
 
 # Reports
 ameliso coverage
@@ -211,11 +212,17 @@ Use `get_pending_cases` (MCP) or `ameliso runs pending <run_id>` (CLI) to see
 which cases in the run's scope still need results recorded. Scope = suite cases
 if the run was created with `--suite`; otherwise all cases in the repo.
 
-Typical agent workflow:
-1. `repo_status` → see all active runs with pending counts (or `list_runs --status in-progress` to get just IDs)
+**Continuing an existing run:**
+1. `repo_status` → see active runs with pending counts (or `list_runs --status in-progress`)
 2. `get_pending_cases` → which cases still need results (sorted high→medium→low priority)
 3. `bulk_record_results` for all ready results in one call (or `record_result` one at a time)
 4. When all done: `finalize_run` (warns if any cases still pending)
+
+**Starting a fresh run:**
+1. `list_repositories` → get `repo_id` if unknown
+2. `create_run repo_id=X slug=my-run` → returns `run_id` and full scope (sorted by priority)
+3. For each case in scope: execute manually, then `record_result` or collect all and call `bulk_record_results`
+4. `finalize_run run_id=X status=completed`
 
 ### Updating cases and suites
 Both `update_case` and `update_suite` are **patch-style**: omit any field to preserve its current value.
