@@ -126,7 +126,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       if (!repoId || !newSlug || !newName) return;
       setCreating(true);
       try {
-        await client.createSuite({
+        const res = await client.createSuite({
           repoId,
           slug: newSlug,
           name: newName,
@@ -138,6 +138,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                 .filter(Boolean)
             : [],
         });
+        if (res.suite) {
+          const created = res.suite;
+          setSuites((prev) =>
+            prev.some((s) => s.slug === created.slug)
+              ? prev.map((s) => (s.slug === created.slug ? created : s))
+              : [...prev, created]
+          );
+        }
         setShowCreate(false);
         lastFocusRef.current?.focus();
         setNewSlug("");
@@ -145,23 +153,22 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         setNewDesc("");
         setNewCases("");
         announce("Suite created");
-        load();
       } catch (e) {
         setError(errorMessage(e));
       } finally {
         setCreating(false);
       }
     },
-    [repoId, newSlug, newName, newDesc, newCases, announce, load]
+    [repoId, newSlug, newName, newDesc, newCases, announce]
   );
 
   async function handleDelete(slug: string) {
     try {
       await client.deleteSuite({ repoId, slug });
+      setSuites((prev) => prev.filter((s) => s.slug !== slug));
       if (expanded === slug) setExpanded(null);
       setConfirmingDelete(null);
       announce("Suite deleted");
-      await load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -174,7 +181,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       if (!editingSlug) return;
       setSaving(true);
       try {
-        await client.updateSuite({
+        const res = await client.updateSuite({
           repoId,
           slug: editingSlug,
           name: editName,
@@ -188,17 +195,17 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
           replaceCases: true,
           newSlug: editNewSlug,
         });
+        if (res.suite) setSuites((prev) => prev.map((s) => (s.slug === editingSlug ? res.suite! : s)));
         setEditingSlug(null);
         lastFocusRef.current?.focus();
         announce("Suite updated");
-        load();
       } catch (e) {
         setError(errorMessage(e));
       } finally {
         setSaving(false);
       }
     },
-    [editingSlug, repoId, editName, editDesc, editCases, editNewSlug, announce, load]
+    [editingSlug, repoId, editName, editDesc, editCases, editNewSlug, announce]
   );
 
   if (!repoId) {
