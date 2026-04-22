@@ -72,9 +72,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(
-    async (path: string, silent = false) => {
-      /* v8 ignore next 2 — useEffect guards !path before calling load */
-      if (!path) return;
+    async (silent = false) => {
+      if (!repoId) return;
       loadAbortRef.current?.abort();
       const ctrl = new AbortController();
       loadAbortRef.current = ctrl;
@@ -83,9 +82,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       setError(null);
       try {
         const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
-          client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }, { signal }),
-          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }, { signal }),
-          client.getRepoStatus({ repoId: path }, { signal }),
+          client.getCoverageReport({ repoId, statusFilter: coverageFilter }, { signal }),
+          client.listRuns({ repoId, status: RunStatus.IN_PROGRESS }, { signal }),
+          client.getRepoStatus({ repoId }, { signal }),
         ]);
         if (signal.aborted) return;
         setEntries(coverageRes.entries);
@@ -110,7 +109,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
         if (!signal.aborted) setLoading(false);
       }
     },
-    [announce, coverageFilter]
+    [repoId, announce, coverageFilter]
   );
 
   useEffect(() => () => loadAbortRef.current?.abort(), []);
@@ -120,13 +119,11 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   }, [repoId]);
 
   useEffect(() => {
-    if (repoId) {
-      load(repoId);
-    }
-  }, [repoId, load]);
+    load();
+  }, [load]);
 
   // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
-  useInterval(() => load(repoId, true), repoId && activeRuns.length > 0 ? 30_000 : null);
+  useInterval(() => load(true), repoId && activeRuns.length > 0 ? 30_000 : null);
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
