@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
-import { useCallback, Suspense } from "react";
+import { useCallback, Suspense, useTransition } from "react";
 import RunsTab from "@/components/RunsTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { RunStatus } from "@/gen/ameliso/v1/types_pb";
@@ -25,6 +25,7 @@ function RunsInner() {
   const basePath = `/repositories/${org}/${repo}`;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
   const initialSuite = searchParams.get("suite") ?? undefined;
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
@@ -33,7 +34,9 @@ function RunsInner() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
     const qs = params.toString();
-    router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+    startTransition(() => {
+      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+    });
   }, [router, searchParams, basePath]);
 
   const handleStatusFilterChange = useCallback(
@@ -46,7 +49,9 @@ function RunsInner() {
         params.delete("status");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+      });
     },
     [router, searchParams, basePath]
   );

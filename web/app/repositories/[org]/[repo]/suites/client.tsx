@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useCallback, Suspense } from "react";
+import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import SuitesTab from "@/components/SuitesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -12,6 +12,7 @@ function SuitesInner() {
   const basePath = `/repositories/${org}/${repo}`;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   const initialExpanded = searchParams.get("expanded") ?? undefined;
 
@@ -24,7 +25,9 @@ function SuitesInner() {
         params.delete("expanded");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route);
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route);
+      });
     },
     [router, searchParams, basePath]
   );

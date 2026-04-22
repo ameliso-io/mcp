@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useCallback, Suspense } from "react";
+import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -25,6 +25,7 @@ function CasesInner() {
   const basePath = `/repositories/${org}/${repo}`;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   const initialSearch = searchParams.get("q") ?? "";
   const initialPriorityFilter =
@@ -58,7 +59,9 @@ function CasesInner() {
         params.delete("sort");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route);
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route);
+      });
     },
     [router, searchParams, basePath]
   );
