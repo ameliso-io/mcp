@@ -353,6 +353,7 @@
 .resultListStale {
   opacity: 0.6;
   pointer-events: none;
+  transition: opacity 0.15s;
 }
 
 .resultRow {
