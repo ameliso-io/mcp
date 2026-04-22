@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import styles from "./RepositoriesTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
-import styles from "./RepositoriesTab.module.css";
 
 interface Props {
   onRepoSelect: (id: string) => void;
@@ -92,8 +92,8 @@ export default function RepositoriesTab({
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       })
-      .catch((e) => setError(errorMessage(e)))
-      .finally(() => setLoading(false));
+      .catch((e: unknown) => { setError(errorMessage(e)); })
+      .finally(() => { setLoading(false); });
   }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {
@@ -117,8 +117,9 @@ export default function RepositoriesTab({
     try {
       const res = await client.syncRepository({ id });
       if (res.repository) {
-        setRepos((prev) => prev.map((r) => (r.id === id ? res.repository! : r)));
-        announce(`Sync completed for ${res.repository.fullName}`);
+        const synced = res.repository;
+        setRepos((prev) => prev.map((r) => (r.id === id ? synced : r)));
+        announce(`Sync completed for ${synced.fullName}`);
       }
     } catch (e) {
       setError(errorMessage(e));
@@ -204,7 +205,7 @@ export default function RepositoriesTab({
             aria-label="Search repositories"
             placeholder="Search repositories…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); }}
             className={styles.searchInput}
           />
           <span className={styles.searchIcon} aria-hidden="true">
@@ -218,7 +219,7 @@ export default function RepositoriesTab({
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => { setError(null); }}
             className={styles.errorDismiss}
             aria-label="Dismiss"
           >
@@ -253,7 +254,7 @@ export default function RepositoriesTab({
           <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
             type="button"
-            onClick={() => setSearch("")}
+            onClick={() => { setSearch(""); }}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >
             Clear search
@@ -288,7 +289,7 @@ export default function RepositoriesTab({
                     <button
                       type="button"
                       className={styles.btnPrimary}
-                      onClick={() => onRepoSelect(repo.id)}
+                      onClick={() => { onRepoSelect(repo.id); }}
                     >
                       Use
                     </button>
@@ -296,7 +297,7 @@ export default function RepositoriesTab({
                     <button
                       type="button"
                       className={styles.btnOutline}
-                      onClick={() => onRepoSelect("")}
+                      onClick={() => { onRepoSelect(""); }}
                     >
                       Deselect
                     </button>
@@ -323,7 +324,7 @@ export default function RepositoriesTab({
                       <button
                         type="button"
                         className={styles.btnOutline}
-                        onClick={() => setConfirmingRemove(null)}
+                        onClick={() => { setConfirmingRemove(null); }}
                         aria-label="Cancel remove"
                         autoFocus
                       >
@@ -334,7 +335,7 @@ export default function RepositoriesTab({
                     <button
                       type="button"
                       className={styles.btnDanger}
-                      onClick={() => setConfirmingRemove(repo.id)}
+                      onClick={() => { setConfirmingRemove(repo.id); }}
                       aria-label={`Remove ${repo.fullName}`}
                     >
                       Remove

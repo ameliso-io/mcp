@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
+import styles from "./RunsTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
-import dynamic from "next/dynamic";
-import styles from "./RunsTab.module.css";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
@@ -111,10 +111,11 @@ export default function RunsTab({
   useEffect(() => {
     if (pendingPollRef.current) clearInterval(pendingPollRef.current);
     const selectedRun = runs.find((r) => r.id === selectedRunId);
-    if (selectedRun && selectedRun.status === RunStatus.IN_PROGRESS) {
+    if (selectedRun?.status === RunStatus.IN_PROGRESS && selectedRunId) {
+      const runId = selectedRunId;
       pendingPollRef.current = setInterval(async () => {
         try {
-          const res = await client.getPendingCases({ repoId, runId: selectedRunId! });
+          const res = await client.getPendingCases({ repoId, runId });
           setPendingCases(res.cases);
           setTotalInScope(res.totalInScope);
         } catch {
@@ -392,7 +393,7 @@ export default function RunsTab({
                 Slug
                 <input
                   value={newSlug}
-                  onChange={(e) => setNewSlug(e.target.value)}
+                  onChange={(e) => { setNewSlug(e.target.value); }}
                   required
                   autoFocus
                   className={styles.input}
@@ -404,7 +405,7 @@ export default function RunsTab({
                 Tester
                 <input
                   value={newTester}
-                  onChange={(e) => setNewTester(e.target.value)}
+                  onChange={(e) => { setNewTester(e.target.value); }}
                   className={styles.input}
                 />
               </label>
@@ -414,7 +415,7 @@ export default function RunsTab({
                 Environment
                 <input
                   value={newEnv}
-                  onChange={(e) => setNewEnv(e.target.value)}
+                  onChange={(e) => { setNewEnv(e.target.value); }}
                   className={styles.input}
                 />
               </label>
@@ -424,7 +425,7 @@ export default function RunsTab({
                 Suite (optional)
                 <input
                   value={newSuite}
-                  onChange={(e) => setNewSuite(e.target.value)}
+                  onChange={(e) => { setNewSuite(e.target.value); }}
                   className={styles.input}
                 />
               </label>
@@ -443,7 +444,7 @@ export default function RunsTab({
           <span>{error}</span>
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => { setError(null); }}
             className={styles.errorDismiss}
             aria-label="Dismiss"
           >
@@ -498,7 +499,7 @@ export default function RunsTab({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setConfirmingDeleteRun(null)}
+                      onClick={() => { setConfirmingDeleteRun(null); }}
                       aria-label="Cancel delete"
                       className={styles.btnOutlineSm}
                       autoFocus
@@ -509,7 +510,7 @@ export default function RunsTab({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setConfirmingDeleteRun(run.id)}
+                    onClick={() => { setConfirmingDeleteRun(run.id); }}
                     aria-label={`Delete ${run.id}`}
                     className={styles.btnDangerSm}
                   >
@@ -573,9 +574,9 @@ export default function RunsTab({
                                   key={s.label}
                                   type="button"
                                   onClick={() =>
-                                    setResultStatusFilter((rsf) =>
+                                    { setResultStatusFilter((rsf) =>
                                       rsf === s.status ? null : s.status
-                                    )
+                                    ); }
                                   }
                                   aria-pressed={resultStatusFilter === s.status}
                                   className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
@@ -587,7 +588,7 @@ export default function RunsTab({
                             {resultStatusFilter !== null && (
                               <button
                                 type="button"
-                                onClick={() => setResultStatusFilter(null)}
+                                onClick={() => { setResultStatusFilter(null); }}
                                 className={styles.showAllBtn}
                               >
                                 Show all
@@ -614,7 +615,7 @@ export default function RunsTab({
                             <span className={styles.resultPath}>{r.casePath}</span>
                             {caseTitleMap.get(r.casePath)?.title && (
                               <span className={styles.resultTitle}>
-                                {caseTitleMap.get(r.casePath)!.title}
+                                {caseTitleMap.get(r.casePath)?.title}
                               </span>
                             )}
                             {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
@@ -679,7 +680,7 @@ export default function RunsTab({
                                 <button
                                   type="button"
                                   aria-label="Cancel bulk pass"
-                                  onClick={() => setConfirmingBulkPass(null)}
+                                  onClick={() => { setConfirmingBulkPass(null); }}
                                   className={styles.btnOutlineSm}
                                   autoFocus
                                 >
@@ -689,7 +690,7 @@ export default function RunsTab({
                             ) : (
                               <button
                                 type="button"
-                                onClick={() => setConfirmingBulkPass(run.id)}
+                                onClick={() => { setConfirmingBulkPass(run.id); }}
                                 disabled={bulkPassing}
                                 className={styles.btnBlueSm}
                               >
@@ -718,7 +719,7 @@ export default function RunsTab({
                               <button
                                 type="button"
                                 aria-label="Cancel"
-                                onClick={() => setConfirmingFinalize(null)}
+                                onClick={() => { setConfirmingFinalize(null); }}
                                 className={styles.btnOutlineSm}
                                 autoFocus
                               >
@@ -731,10 +732,10 @@ export default function RunsTab({
                                 type="button"
                                 aria-label={`Complete run ${run.id}`}
                                 onClick={() =>
-                                  setConfirmingFinalize({
+                                  { setConfirmingFinalize({
                                     runId: run.id,
                                     status: RunStatus.COMPLETED,
-                                  })
+                                  }); }
                                 }
                                 className={styles.btnGreenSm}
                               >
@@ -744,10 +745,10 @@ export default function RunsTab({
                                 type="button"
                                 aria-label={`Abort run ${run.id}`}
                                 onClick={() =>
-                                  setConfirmingFinalize({
+                                  { setConfirmingFinalize({
                                     runId: run.id,
                                     status: RunStatus.ABORTED,
-                                  })
+                                  }); }
                                 }
                                 className={styles.btnRedSm}
                               >
@@ -817,7 +818,7 @@ export default function RunsTab({
                                     <select
                                       value={recordStatus}
                                       onChange={(e) =>
-                                        setRecordStatus(Number(e.target.value) as ResultStatus)
+                                        { setRecordStatus(Number(e.target.value)); }
                                       }
                                       autoFocus
                                       className={styles.inputAuto}
@@ -845,7 +846,7 @@ export default function RunsTab({
                                       : ""}
                                     <input
                                       value={recordNotes}
-                                      onChange={(e) => setRecordNotes(e.target.value)}
+                                      onChange={(e) => { setRecordNotes(e.target.value); }}
                                       placeholder={
                                         recordStatus === ResultStatus.FAILED
                                           ? "Describe what failed…"
