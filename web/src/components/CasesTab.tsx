@@ -342,7 +342,7 @@ export default function CasesTab({
             className={styles.formGrid}
           >
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Path (e.g. auth/login)
                 <input
                   value={newPath}
@@ -359,7 +359,7 @@ export default function CasesTab({
               </label>
             </div>
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Title
                 <input
                   value={newTitle}
@@ -572,7 +572,7 @@ export default function CasesTab({
                     className={styles.formGridSm}
                   >
                     <div>
-                      <label className={styles.labelSm}>
+                      <label className={`${styles.labelSm} ${styles.requiredLabel}`}>
                         Title
                         <input
                           autoFocus

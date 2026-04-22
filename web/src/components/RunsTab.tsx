@@ -427,7 +427,7 @@ export default function RunsTab({
             className={styles.formGrid}
           >
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Slug
                 <input
                   value={newSlug}

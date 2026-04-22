@@ -229,7 +229,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
             className={styles.formGrid}
           >
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Slug
                 <input
                   value={newSlug}
@@ -247,7 +247,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
               </label>
             </div>
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Name
                 <input
                   value={newName}
@@ -341,7 +341,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                   className={styles.formGridSm}
                 >
                   <div>
-                    <label className={styles.label}>
+                    <label className={`${styles.label} ${styles.requiredLabel}`}>
                       Name
                       <input
                         value={editName}
