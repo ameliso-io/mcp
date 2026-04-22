@@ -166,7 +166,12 @@ export default function OverviewTab({ repoId }: Props) {
       else if (e.latestStatus === ResultStatus.FAILED) failed++;
       else if (e.latestStatus === ResultStatus.NEVER) never++;
     }
-    return { statCases: deferredEntries.length, statPassed: passed, statFailed: failed, statNever: never };
+    return {
+      statCases: deferredEntries.length,
+      statPassed: passed,
+      statFailed: failed,
+      statNever: never,
+    };
   }, [deferredEntries]);
 
   return (
@@ -210,7 +215,7 @@ export default function OverviewTab({ repoId }: Props) {
         </div>
       )}
 
-      {!loading && entries.length > 0 && (
+      {!loading && deferredEntries.length > 0 && (
         <>
           <dl className={styles.statsGrid}>
             {[
@@ -286,7 +291,7 @@ export default function OverviewTab({ repoId }: Props) {
         </>
       )}
 
-      {!loading && !error && repoId && entries.length === 0 && (
+      {!loading && !error && repoId && deferredEntries.length === 0 && (
         <div className={styles.emptyCard}>No cases found in this repository.</div>
       )}
 
