@@ -2920,6 +2920,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_run_rejects_invalid_inline_case_path() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                cases: vec!["../traversal".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn create_run_with_inline_cases_passes_validation() {
         // Non-empty cases list + no suite → passes validation → DB error (not InvalidArgument).
         let s = server();

@@ -684,6 +684,9 @@ pub async fn create_run(
     inline_cases: Vec<String>,
 ) -> RResult<RunRow> {
     validate_slug_path(slug, "run slug")?;
+    for case_path in &inline_cases {
+        validate_slug_path(case_path, "case")?;
+    }
     if !inline_cases.is_empty() && suite.as_deref().is_some_and(|s| !s.is_empty()) {
         return Err(RepoError::InvalidArg(
             "cannot specify both suite and cases — use one or the other".to_owned(),
@@ -1767,6 +1770,23 @@ mod tests {
         .await
         .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_run_invalid_inline_case_path_returns_invalid_arg() {
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            None,
+            vec!["../traversal".to_owned()],
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("case path"));
     }
 
     #[tokio::test]
