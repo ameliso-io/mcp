@@ -56,6 +56,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const [activeRuns, setActiveRuns] = useState<RunMeta[]>([]);
+  const [activeRunsStatus, setActiveRunsStatus] = useState<
+    Map<string, { pendingCases: number; totalInScope: number }>
+  >(new Map());
 
   const [sinceRef, setSinceRef] = useState("");
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
@@ -70,13 +73,22 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const [coverageRes, activeRunsRes] = await Promise.all([
+        const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
           client.getCoverageReport({ repoId: path }),
           client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
+          client.getRepoStatus({ repoId: path }),
         ]);
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
         setActiveRuns(activeRunsRes.runs);
+        setActiveRunsStatus(
+          new Map(
+            statusRes.activeRuns.map((r) => [
+              r.runId,
+              { pendingCases: r.pendingCases, totalInScope: r.totalInScope },
+            ])
+          )
+        );
         if (!silent) {
           const n = coverageRes.entries.length;
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
@@ -204,16 +216,24 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                 </Link>
               </div>
               <ul className={styles.runList} role="list">
-                {activeRuns.map((run) => (
-                  <li key={run.id} className={styles.runRow}>
-                    <span className={styles.runId}>{run.id}</span>
-                    {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
-                    {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                    <time className={styles.runDate} dateTime={run.date}>
-                      {run.date}
-                    </time>
-                  </li>
-                ))}
+                {activeRuns.map((run) => {
+                  const status = activeRunsStatus.get(run.id);
+                  return (
+                    <li key={run.id} className={styles.runRow}>
+                      <span className={styles.runId}>{run.id}</span>
+                      {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
+                      {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                      <time className={styles.runDate} dateTime={run.date}>
+                        {run.date}
+                      </time>
+                      {status && (
+                        <span className={styles.runPending}>
+                          {status.pendingCases}/{status.totalInScope} pending
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

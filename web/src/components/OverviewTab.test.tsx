@@ -97,6 +97,37 @@ describe("OverviewTab", () => {
     expect(screen.getByText("run-abc")).toBeInTheDocument();
   });
 
+  it("shows pending count for active runs when getRepoStatus has matching data", async () => {
+    const activeRun = makeRunMeta({ id: "2026-01-01-sprint", tester: "bob", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 5,
+      highCases: 2,
+      mediumCases: 2,
+      lowCases: 1,
+      passed: 3,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 2,
+      suiteCount: 1,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "2026-01-01-sprint",
+          tester: "bob",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 2,
+          totalInScope: 5,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    expect(screen.getByText("2/5 pending")).toBeInTheDocument();
+  });
+
   it("calls getAffectedCases when Check Diff submitted", async () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
