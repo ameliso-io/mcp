@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useTransition } from "react";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
@@ -94,6 +94,7 @@ export default function RunsTab({
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
   const [actionAnnouncement, announce] = useAnnounce();
+  const [filterPending, startFilterTransition] = useTransition();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
@@ -351,7 +352,9 @@ export default function RunsTab({
 
   if (!repoId) {
     return (
-      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+      <div className={styles.noRepo}>
+        Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
+      </div>
     );
   }
 
@@ -363,7 +366,7 @@ export default function RunsTab({
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2 className={styles.title}>Runs</h2>
-          <div role="group" aria-label="Filter by status">
+          <div role="group" aria-label="Filter by status" aria-busy={filterPending}>
             {(
               [
                 { label: "All", value: RunStatus.UNSPECIFIED },
@@ -376,8 +379,10 @@ export default function RunsTab({
                 key={opt.value}
                 type="button"
                 onClick={() => {
-                  setStatusFilter(opt.value);
-                  onStatusFilterChange?.(opt.value);
+                  startFilterTransition(() => {
+                    setStatusFilter(opt.value);
+                    onStatusFilterChange?.(opt.value);
+                  });
                 }}
                 aria-pressed={statusFilter === opt.value}
                 className={
