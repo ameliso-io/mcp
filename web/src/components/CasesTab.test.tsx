@@ -415,20 +415,18 @@ describe("CasesTab", () => {
     await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
 
-  it("fires debounced search after 300ms", async () => {
-    vi.useFakeTimers();
+  it("fires debounced search after 300ms and calls listCases", async () => {
     render(<CasesTab repoId="owner/repo" />);
-    await act(async () => {
-      vi.runAllTimers();
-    });
     await waitFor(() => screen.getByText("User Login"));
+    const callsBefore = vi.mocked(client.listCases).mock.calls.length;
     const searchInput = screen.getByRole("searchbox", { name: "Search cases" });
     fireEvent.change(searchInput, { target: { value: "login" } });
-    await act(async () => {
-      vi.advanceTimersByTime(300);
-    });
-    vi.useRealTimers();
-    await waitFor(() => expect(client.listCases).toHaveBeenCalled());
+    await waitFor(
+      () => {
+        expect(vi.mocked(client.listCases).mock.calls.length).toBeGreaterThan(callsBefore);
+      },
+      { timeout: 1000 },
+    );
   });
 
   it("shows medium priority label and opens edit for medium priority case", async () => {
