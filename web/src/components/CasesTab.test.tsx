@@ -707,7 +707,7 @@ describe("CasesTab", () => {
     );
     render(<CasesTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve(makeListCasesResponse());
+    await act(async () => resolve(makeListCasesResponse()));
   });
 
   it('shows "No cases found." when case list is empty', async () => {
@@ -769,8 +769,7 @@ describe("CasesTab", () => {
     resolveSecond(makeListCasesResponse({ cases: [secondCase] }));
     await waitFor(() => screen.getByText("Logout"));
     // Now resolve first (stale) — must not overwrite second result
-    resolveFirst(makeListCasesResponse({ cases: [mockCase] }));
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () => resolveFirst(makeListCasesResponse({ cases: [mockCase] })));
     expect(screen.queryByText("User Login")).not.toBeInTheDocument();
     expect(screen.getByText("Logout")).toBeInTheDocument();
   });
@@ -797,8 +796,7 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
 
     // resolve stale first fetch — should not overwrite second body
-    resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }));
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () => resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" })));
     expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
   });
@@ -836,8 +834,9 @@ describe("CasesTab", () => {
       expect(textarea.value).toBe("second body");
     });
 
-    resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }));
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () =>
+      resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }))
+    );
     const textarea = screen.getByRole("textbox", {
       name: "Steps / Body (Markdown)",
     }) as HTMLTextAreaElement;
