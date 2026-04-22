@@ -7,8 +7,6 @@ Test cases, runs, and results live as plain Markdown and YAML files in any git r
 ## Architecture
 
 ```
-Coding Agent  →  MCP Server  →  Repo logic  →  controlled git repo
-Human Tester  →  CLI         →  Repo logic  →  controlled git repo
 Browser       →  Web Client  →  gRPC Server →  controlled git repo
 ```
 
@@ -32,63 +30,7 @@ cargo build --release
 
 Binaries land in `target/release/`:
 
-- `ameliso` — CLI for human testers
-- `ameliso-mcp` — MCP server for coding agents (stdio transport)
 - `ameliso-server` — standalone gRPC server
-
-### CLI usage
-
-```sh
-export AMELISO_SERVER_URL=http://localhost:50052  # default: http://[::1]:50052
-export AMELISO_REPO_ID=owner/repo                # use `ameliso repos list` if unknown
-
-# Cases
-ameliso cases list
-ameliso cases list --tags auth --query login
-ameliso cases list --priority high
-ameliso cases list --suite smoke
-ameliso cases get auth/login
-ameliso cases create auth/login --title "User Login" --priority high
-ameliso cases create auth/login --title "User Login" --description "Verify login" --body "## Steps\n\n1. ..."
-ameliso cases update auth/login --title "User Login Flow"    # patch: change only title
-ameliso cases update auth/login --priority high               # patch: change only priority
-ameliso cases delete auth/login
-
-# Runs
-ameliso runs list
-ameliso runs list --status in-progress
-ameliso runs create smoke --tester alice --environment staging
-ameliso runs get 2026-04-21-smoke
-ameliso runs pending 2026-04-21-smoke
-ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
-ameliso runs finalize 2026-04-21-smoke completed
-ameliso runs delete 2026-04-21-smoke
-
-# Suites
-ameliso suites list
-ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/checkout
-
-# Reports
-ameliso coverage
-ameliso affected
-ameliso affected --since HEAD~10
-```
-
-### MCP server (coding agents)
-
-Add to your Claude Code / MCP host configuration (`.mcp.json` is pre-configured in this repo):
-
-```json
-{
-  "mcpServers": {
-    "ameliso": {
-      "command": "ameliso-mcp"
-    }
-  }
-}
-```
-
-Available tools (21): `repo_status`, `list_cases`, `get_case`, `create_case`, `update_case`, `delete_case`, `coverage_report`, `list_runs`, `get_run`, `create_run`, `record_result`, `bulk_record_results`, `finalize_run`, `delete_run`, `get_pending_cases`, `list_suites`, `get_suite`, `create_suite`, `update_suite`, `delete_suite`, `get_affected_cases`.
 
 ### gRPC server
 

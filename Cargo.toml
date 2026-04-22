@@ -1,4 +1,3 @@
 [workspace]
 members = ["server"]
-# cli and mcp temporarily excluded — need rewrite as gRPC clients
 resolver = "2"
