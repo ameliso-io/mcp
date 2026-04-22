@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import styles from "../../layout.module.css";
-import navStyles from "@/components/NavBar.module.css";
+import NavBar from "@/components/NavBar";
 
 export default function RepositoriesLayout({ children }: { children: ReactNode }) {
   return (
@@ -9,11 +8,7 @@ export default function RepositoriesLayout({ children }: { children: ReactNode }
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <header className={navStyles.header}>
-        <Link href="/repositories" className={navStyles.logo}>
-          Ameliso
-        </Link>
-      </header>
+      <NavBar />
       <main id="main-content" tabIndex={-1} className={styles.content}>
         {children}
       </main>
