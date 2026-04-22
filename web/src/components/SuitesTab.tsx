@@ -110,7 +110,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   // Auto-expand suite from URL param after first load
@@ -145,7 +145,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       lastFocusRef.current?.focus();
       setCreateForm({ slug: "", name: "", desc: "", cases: "" });
       announce("Suite created");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -159,7 +159,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       if (expanded === slug) setExpanded(null);
       setConfirmingDelete(null);
       announce("Suite deleted");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -188,7 +188,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       setEditState(null);
       lastFocusRef.current?.focus();
       announce("Suite updated");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {

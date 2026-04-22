@@ -120,7 +120,7 @@ export default function RepositoriesTab({
   }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   useEffect(() => {

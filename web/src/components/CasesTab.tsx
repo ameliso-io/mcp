@@ -220,7 +220,7 @@ export default function CasesTab({
   useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   useEffect(() => {
@@ -263,7 +263,7 @@ export default function CasesTab({
         body: "",
       });
       announceAction("Case created");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -277,7 +277,7 @@ export default function CasesTab({
       if (expandedPath === casePath) setExpandedPath(null);
       setConfirmingDelete(null);
       announceAction("Case deleted");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -307,7 +307,7 @@ export default function CasesTab({
       setEditState(null);
       lastFocusRef.current?.focus();
       announceAction("Case updated");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {

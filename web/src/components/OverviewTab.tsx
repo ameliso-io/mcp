@@ -119,7 +119,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   }, [repoId]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam

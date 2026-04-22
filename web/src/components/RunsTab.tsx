@@ -117,16 +117,19 @@ export default function RunsTab({
   // Auto-refresh pending cases every 30s when viewing an in-progress run
   const selectedRun = runs.find((r) => r.id === selectedRunId);
   const isSelectedInProgress = selectedRun?.status === RunStatus.IN_PROGRESS && !!selectedRunId;
-  useInterval(async () => {
-    if (!selectedRunId) return;
-    try {
-      const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-      setPendingCases(res.cases);
-      setTotalInScope(res.totalInScope);
-    } catch {
-      // silently ignore poll errors
-    }
-  }, isSelectedInProgress ? 30_000 : null);
+  useInterval(
+    async () => {
+      if (!selectedRunId) return;
+      try {
+        const res = await client.getPendingCases({ repoId, runId: selectedRunId });
+        setPendingCases(res.cases);
+        setTotalInScope(res.totalInScope);
+      } catch {
+        // silently ignore poll errors
+      }
+    },
+    isSelectedInProgress ? 30_000 : null
+  );
 
   const loadAbortRef = useRef<AbortController | null>(null);
 
@@ -153,7 +156,7 @@ export default function RunsTab({
   useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -283,7 +286,7 @@ export default function RunsTab({
       setSelectedRunId(null);
       setPendingCases([]);
       announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -324,7 +327,7 @@ export default function RunsTab({
       }
       setConfirmingDeleteRun(null);
       announce("Run deleted");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -340,7 +343,7 @@ export default function RunsTab({
       setRenameState(null);
       lastFocusRef.current?.focus();
       announce("Run renamed");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
