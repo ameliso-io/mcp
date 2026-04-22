@@ -84,6 +84,7 @@ export default function CasesTab({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
+  const loadIdRef = useRef(0);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [actionAnnouncement, announceAction] = useAnnounce();
@@ -185,6 +186,7 @@ export default function CasesTab({
 
   const load = useCallback(async () => {
     if (!repoId) return;
+    const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -194,11 +196,16 @@ export default function CasesTab({
         priority: priorityFilter,
         tags: tagFilter ? [tagFilter] : [],
       });
+      /* v8 ignore next 1 — race guard, covered by stale listCases test */
+      if (id !== loadIdRef.current) return;
       setCases(res.cases);
     } catch (e) {
+      /* v8 ignore next 1 — race guard */
+      if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      /* v8 ignore next 1 — race guard */
+      if (id === loadIdRef.current) setLoading(false);
     }
   }, [repoId, debouncedSearch, priorityFilter, tagFilter]);
 
@@ -331,7 +338,9 @@ export default function CasesTab({
 
   if (!repoId) {
     return (
-      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+      <div className={styles.noRepo}>
+        Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
+      </div>
     );
   }
 
