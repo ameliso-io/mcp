@@ -1250,6 +1250,31 @@ impl AmelisoMcp {
     }
 
     #[tool(
+        description = "Trigger a full re-sync of all case files from GitHub for a connected repository. Use this after pushing case file changes to git when you want the server to pick them up immediately rather than waiting for the webhook. Returns the updated repository info."
+    )]
+    async fn sync_repository(&self, Parameters(req): Parameters<RepoIdRequest>) -> String {
+        let mut client = self.client();
+        match client
+            .sync_repository(pb::SyncRepositoryRequest {
+                id: req.repo_id.clone(),
+            })
+            .await
+        {
+            Ok(r) => {
+                let repo = match r.into_inner().repository {
+                    Some(repo) => repo,
+                    None => return "error: server returned empty repository".to_owned(),
+                };
+                format!(
+                    "synced: {}\nurl: {}",
+                    repo.full_name, repo.html_url
+                )
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
         description = "List all GitHub repositories connected to this Ameliso installation. Returns repo_id (use as `repo_id` in all other tools), name, and URL for each repo."
     )]
     async fn list_repositories(&self) -> String {

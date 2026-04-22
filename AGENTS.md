@@ -27,7 +27,7 @@ runs/{YYYY-MM-DD}-{slug}/
 ```
 server/          # gRPC server (Rust + tonic); exposes AmelisoService (26 RPCs)
 server/proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
-mcp/             # MCP server (Rust + rmcp); stdio transport; 22 tools
+mcp/             # MCP server (Rust + rmcp); stdio transport; 23 tools
 cli/             # CLI (Rust + clap); calls repo logic directly
 web/             # React browser client (Next.js + TypeScript); talks gRPC-Web to server
 ```
@@ -63,6 +63,7 @@ Available tools:
 | `get_affected_cases` | Cases that may need re-running based on git changes; shows title/priority/tags |
 | `get_pending_cases` | Cases in a run's scope with no result yet; sorted high→medium→low priority |
 | `list_repositories` | List all connected GitHub repos and their `repo_id` values — use this first if `repo_id` is unknown |
+| `sync_repository` | Force a full re-sync of all case files from GitHub — use after pushing case changes when you can't wait for the webhook |
 
 All tools accept `repo_id` — the repository identifier (e.g. `owner/repo`). If unknown, call `list_repositories` first.
 
