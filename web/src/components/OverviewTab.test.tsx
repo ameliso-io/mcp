@@ -656,6 +656,40 @@ describe("OverviewTab", () => {
     expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
   });
 
+  it("progress bar renders 0% width when totalInScope is zero", async () => {
+    const activeRun = makeRunMeta({ id: "run-zero", tester: "eve", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "run-zero",
+          tester: "eve",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 0,
+          totalInScope: 0,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    expect(screen.getByText("0/0 done")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuemax", "0");
+    expect((bar.firstChild as HTMLElement).style.width).toBe("0%");
+  });
+
   it("UNSPECIFIED status sorts after PASSED in coverage list (default branch)", async () => {
     // statusSortOrder returns 5 for UNSPECIFIED (default case), PASSED returns 4.
     // So PASSED entries must appear before UNSPECIFIED in the rendered list.
