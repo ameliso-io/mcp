@@ -53,7 +53,7 @@ beforeEach(() => {
 describe("RunsTab", () => {
   it("renders empty state when no repo path", () => {
     render(<RunsTab repoId="" />);
-    expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument();
+    expect(screen.getByText(/Repositories tab/i)).toBeInTheDocument();
   });
 
   it("shows empty runs list", async () => {

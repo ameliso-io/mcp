@@ -60,7 +60,7 @@ beforeEach(() => {
 describe("SuitesTab", () => {
   it("renders empty state when no repo path", () => {
     render(<SuitesTab repoId="" />);
-    expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument();
+    expect(screen.getByText(/Repositories tab/i)).toBeInTheDocument();
   });
 
   it("shows suites after load", async () => {
@@ -160,7 +160,9 @@ describe("SuitesTab", () => {
 
   it('shows "No cases in this suite" for suite with no cases', async () => {
     const emptySuite = makeSuite({ description: "Critical path checks", cases: [] });
-    vi.mocked(client.listSuites).mockResolvedValue(makeListSuitesResponse({ suites: [emptySuite] }));
+    vi.mocked(client.listSuites).mockResolvedValue(
+      makeListSuitesResponse({ suites: [emptySuite] })
+    );
     vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse());
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Smoke Tests"));
