@@ -137,6 +137,10 @@ ameliso affected --since HEAD~10
 ameliso status --repo-id owner/repo
 ameliso status --repo-id owner/repo --json  # machine-readable JSON: { cases, coverage, active_runs[] }
 
+# Health check (no --repo-id needed)
+ameliso health                   # exits 0 if gRPC server is reachable, 1 if not
+ameliso health --json            # machine-readable: { status: "ok" } or { status: "error", message: "..." }
+
 # Repositories (no --repo-id needed)
 ameliso repos list               # list all connected repos with repo_id and URL
 ameliso repos list --json        # machine-readable JSON: [{ repo_id, name, url, added_at }]

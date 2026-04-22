@@ -17,6 +17,7 @@ fn priority_str_to_i32(s: &str) -> i32 {
     }
 }
 
+
 fn run_status_str_to_i32(s: &str) -> i32 {
     match s.to_lowercase().replace('_', "-").as_str() {
         "in-progress" => pb::RunStatus::InProgress as i32,
@@ -129,6 +130,11 @@ enum Commands {
     },
     #[command(subcommand, about = "Manage connected GitHub repositories")]
     Repos(ReposCmd),
+    #[command(about = "Check connectivity to the Ameliso gRPC server")]
+    Health {
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -400,6 +406,27 @@ async fn main() -> Result<()> {
         }
         Commands::Status { repo_id, json } => run_status(channel, &repo_id, json).await,
         Commands::Repos(cmd) => run_repos(channel, cmd).await,
+        Commands::Health { json } => {
+            let mut c = client(channel);
+            match c.list_repositories(pb::ListRepositoriesRequest {}).await {
+                Ok(_) => {
+                    if json {
+                        println!("{}", serde_json::json!({"status": "ok"}));
+                    } else {
+                        println!("ok");
+                    }
+                }
+                Err(e) => {
+                    if json {
+                        println!("{}", serde_json::json!({"status": "error", "message": e.message()}));
+                    } else {
+                        eprintln!("error: {}", e.message());
+                    }
+                    std::process::exit(1);
+                }
+            }
+            Ok(())
+        }
     }
 }
 
@@ -2119,6 +2146,22 @@ mod tests {
             .expect("should parse");
         if let Commands::Repos(ReposCmd::Remove { repo_id }) = cli.command {
             assert_eq!(repo_id, "owner/repo");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_health_parses() {
+        let cli = Cli::try_parse_from(["ameliso", "health"]).expect("should parse");
+        assert!(matches!(cli.command, Commands::Health { .. }));
+    }
+
+    #[test]
+    fn cli_health_json_flag_set() {
+        let cli = Cli::try_parse_from(["ameliso", "health", "--json"]).expect("should parse");
+        if let Commands::Health { json } = cli.command {
+            assert!(json);
         } else {
             panic!("wrong variant");
         }
