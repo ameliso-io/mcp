@@ -132,19 +132,29 @@ export default function RunsTab({
     };
   }, [repoId, selectedRunId, runs]);
 
+  const loadAbortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
     if (!repoId) return;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listRuns({ repoId, status: statusFilter });
+      const res = await client.listRuns({ repoId, status: statusFilter }, { signal });
+      if (signal.aborted) return;
       setRuns(res.runs);
     } catch (e) {
+      if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [repoId, statusFilter]);
+
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     load();

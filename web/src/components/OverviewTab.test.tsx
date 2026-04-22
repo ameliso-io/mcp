@@ -330,7 +330,8 @@ describe("OverviewTab", () => {
     });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenCalledWith(
-        expect.objectContaining({ repoId: "owner/new-repo" })
+        expect.objectContaining({ repoId: "owner/new-repo" }),
+        expect.anything()
       )
     );
   });
@@ -732,7 +733,8 @@ describe("OverviewTab", () => {
     fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenLastCalledWith(
-        expect.objectContaining({ statusFilter: ResultStatus.FAILED })
+        expect.objectContaining({ statusFilter: ResultStatus.FAILED }),
+        expect.anything()
       )
     );
   });
@@ -749,14 +751,15 @@ describe("OverviewTab", () => {
     // Switch to a different repo
     rerender(<OverviewTab repoId="other/repo" basePath="/repositories/other/repo" />);
     await waitFor(() =>
-      expect(
-        screen.getByRole("combobox", { name: "Filter coverage by status" })
-      ).toHaveValue(String(ResultStatus.UNSPECIFIED))
+      expect(screen.getByRole("combobox", { name: "Filter coverage by status" })).toHaveValue(
+        String(ResultStatus.UNSPECIFIED)
+      )
     );
     // Reload should use UNSPECIFIED filter for the new repo
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenLastCalledWith(
-        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED })
+        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED }),
+        expect.anything()
       )
     );
   });

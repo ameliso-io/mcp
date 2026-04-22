@@ -68,18 +68,25 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [affectedError, setAffectedError] = useState<string | null>(null);
   const [announcement, announce] = useAnnounce();
 
+  const loadAbortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(
     async (path: string, silent = false) => {
       /* v8 ignore next 2 — useEffect guards !path before calling load */
       if (!path) return;
+      loadAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      loadAbortRef.current = ctrl;
+      const { signal } = ctrl;
       setLoading(true);
       setError(null);
       try {
         const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
-          client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }),
-          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
-          client.getRepoStatus({ repoId: path }),
+          client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }, { signal }),
+          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }, { signal }),
+          client.getRepoStatus({ repoId: path }, { signal }),
         ]);
+        if (signal.aborted) return;
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
         setActiveRuns(activeRunsRes.runs);
@@ -96,13 +103,16 @@ export default function OverviewTab({ repoId, basePath }: Props) {
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
         }
       } catch (e) {
+        if (signal.aborted) return;
         setError(errorMessage(e));
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
     [announce, coverageFilter]
   );
+
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

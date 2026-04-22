@@ -36,21 +36,29 @@ export default function RepositoriesTab({
   const prevActiveRef = useRef(activeRepoId);
   const prevFilterCountRef = useRef<number | null>(null);
 
+  const loadAbortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     try {
       const [reposRes, urlRes] = await Promise.all([
-        client.listRepositories({}),
-        client.getGitHubInstallUrl({}),
+        client.listRepositories({}, { signal }),
+        client.getGitHubInstallUrl({}, { signal }),
       ]);
+      if (signal.aborted) return;
       setRepos(reposRes.repositories);
       setInstallUrl(urlRes.url);
       setConfigured(urlRes.configured);
     } catch (e) {
+      if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, []);
 
@@ -74,6 +82,8 @@ export default function RepositoriesTab({
     }
   }, [repos, announce]);
 
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
+
   // Handle GitHub OAuth callback params passed from the page client
   useEffect(() => {
     if (
@@ -82,22 +92,28 @@ export default function RepositoriesTab({
     )
       return;
     onInstallationHandled?.();
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     client
-      .handleGitHubCallback({ installationId })
+      .handleGitHubCallback({ installationId }, { signal })
       .then((res) => {
+        if (signal.aborted) return;
         setRepos((prev) => {
           const ids = new Set(res.repositories.map((r) => r.id));
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       })
       .catch((e: unknown) => {
-        setError(errorMessage(e));
+        if (!signal.aborted) setError(errorMessage(e));
       })
       .finally(() => {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       });
+    return () => {
+      ctrl.abort();
+    };
   }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {

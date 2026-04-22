@@ -84,19 +84,29 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     setEditNewSlug("");
   }
 
+  const loadAbortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
     if (!repoId) return;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listSuites({ repoId });
+      const res = await client.listSuites({ repoId }, { signal });
+      if (signal.aborted) return;
       setSuites(res.suites);
     } catch (e) {
+      if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [repoId]);
+
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     load();

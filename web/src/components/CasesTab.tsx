@@ -180,25 +180,38 @@ export default function CasesTab({
     });
   }, [debouncedSearch, priorityFilter, tagFilter, sortBy]);
 
+  const loadAbortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
     if (!repoId) return;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listCases({
-        repoId,
-        query: debouncedSearch,
-        priority: priorityFilter,
-        tags: tagFilter ? [tagFilter] : [],
-        suite: suiteFilter,
-      });
+      const res = await client.listCases(
+        {
+          repoId,
+          query: debouncedSearch,
+          priority: priorityFilter,
+          tags: tagFilter ? [tagFilter] : [],
+          suite: suiteFilter,
+        },
+        { signal }
+      );
+      if (signal.aborted) return;
       setCases(res.cases);
     } catch (e) {
+      if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter]);
+
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     load();
