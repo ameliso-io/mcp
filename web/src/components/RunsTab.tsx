@@ -1005,14 +1005,17 @@ export default function RunsTab({
                         </h4>
                         <ul className={styles.resultList} role="list">
                           {recordedResults.map((r) => (
-                            <li key={r.casePath} className={styles.resultRow}>
+                            <li
+                              key={r.casePath}
+                              className={styles.resultRow}
+                              aria-label={`${statusLabel(r.status)}: ${r.casePath}`}
+                            >
                               <span
                                 className={styles.resultStatusBadge}
                                 data-status={ResultStatus[r.status]}
                               >
                                 {statusLabel(r.status)}
                               </span>
-                              <span className={styles.resultPath}>{r.casePath}</span>
                               {caseTitleMap.get(r.casePath)?.title && (
                                 <span className={styles.resultTitle}>
                                   {caseTitleMap.get(r.casePath)?.title}
