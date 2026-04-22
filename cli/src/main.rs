@@ -1166,3 +1166,173 @@ async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn priority_str_to_i32_known_values() {
+        assert_eq!(priority_str_to_i32("low"), pb::Priority::Low as i32);
+        assert_eq!(priority_str_to_i32("medium"), pb::Priority::Medium as i32);
+        assert_eq!(priority_str_to_i32("high"), pb::Priority::High as i32);
+    }
+
+    #[test]
+    fn priority_str_to_i32_case_insensitive() {
+        assert_eq!(priority_str_to_i32("LOW"), pb::Priority::Low as i32);
+        assert_eq!(priority_str_to_i32("HIGH"), pb::Priority::High as i32);
+    }
+
+    #[test]
+    fn priority_str_to_i32_unknown_returns_unspecified() {
+        assert_eq!(
+            priority_str_to_i32("extreme"),
+            pb::Priority::Unspecified as i32
+        );
+    }
+
+    #[test]
+    fn run_status_str_to_i32_known_values() {
+        assert_eq!(
+            run_status_str_to_i32("in-progress"),
+            pb::RunStatus::InProgress as i32
+        );
+        assert_eq!(
+            run_status_str_to_i32("completed"),
+            pb::RunStatus::Completed as i32
+        );
+        assert_eq!(
+            run_status_str_to_i32("aborted"),
+            pb::RunStatus::Aborted as i32
+        );
+    }
+
+    #[test]
+    fn run_status_str_to_i32_underscore_alias() {
+        // in_progress → replaces '_' with '-' → "in-progress"
+        assert_eq!(
+            run_status_str_to_i32("in_progress"),
+            pb::RunStatus::InProgress as i32
+        );
+    }
+
+    #[test]
+    fn run_status_str_to_i32_unknown_returns_unspecified() {
+        assert_eq!(
+            run_status_str_to_i32("running"),
+            pb::RunStatus::Unspecified as i32
+        );
+    }
+
+    #[test]
+    fn result_status_str_to_i32_known_values() {
+        assert_eq!(
+            result_status_str_to_i32("passed"),
+            pb::ResultStatus::Passed as i32
+        );
+        assert_eq!(
+            result_status_str_to_i32("failed"),
+            pb::ResultStatus::Failed as i32
+        );
+        assert_eq!(
+            result_status_str_to_i32("blocked"),
+            pb::ResultStatus::Blocked as i32
+        );
+        assert_eq!(
+            result_status_str_to_i32("skipped"),
+            pb::ResultStatus::Skipped as i32
+        );
+    }
+
+    #[test]
+    fn result_status_str_to_i32_unknown_returns_unspecified() {
+        assert_eq!(
+            result_status_str_to_i32("pending"),
+            pb::ResultStatus::Unspecified as i32
+        );
+    }
+
+    #[test]
+    fn result_status_i32_to_str_known_values() {
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Passed as i32),
+            "passed"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Failed as i32),
+            "failed"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Blocked as i32),
+            "blocked"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Skipped as i32),
+            "skipped"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Never as i32),
+            "never"
+        );
+    }
+
+    #[test]
+    fn result_status_i32_to_str_unknown_returns_unspecified() {
+        assert_eq!(result_status_i32_to_str(999), "unspecified");
+    }
+
+    #[test]
+    fn run_status_i32_to_str_known_values() {
+        assert_eq!(
+            run_status_i32_to_str(pb::RunStatus::InProgress as i32),
+            "in-progress"
+        );
+        assert_eq!(
+            run_status_i32_to_str(pb::RunStatus::Completed as i32),
+            "completed"
+        );
+        assert_eq!(
+            run_status_i32_to_str(pb::RunStatus::Aborted as i32),
+            "aborted"
+        );
+    }
+
+    #[test]
+    fn run_status_i32_to_str_unknown_returns_unspecified() {
+        assert_eq!(run_status_i32_to_str(999), "unspecified");
+    }
+
+    #[test]
+    fn parse_tags_comma_separated() {
+        assert_eq!(
+            parse_tags("auth,smoke,regression"),
+            vec!["auth", "smoke", "regression"]
+        );
+    }
+
+    #[test]
+    fn parse_tags_trims_whitespace() {
+        assert_eq!(
+            parse_tags("auth , smoke , regression"),
+            vec!["auth", "smoke", "regression"]
+        );
+    }
+
+    #[test]
+    fn parse_tags_filters_empty_segments() {
+        // Trailing comma or double comma creates empty segment — filtered out.
+        assert_eq!(parse_tags("auth,,smoke,"), vec!["auth", "smoke"]);
+    }
+
+    #[test]
+    fn parse_tags_empty_string_returns_empty() {
+        let result: Vec<String> = parse_tags("");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn parse_tags_single_tag() {
+        assert_eq!(parse_tags("smoke"), vec!["smoke"]);
+    }
+}

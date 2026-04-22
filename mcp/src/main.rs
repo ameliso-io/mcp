@@ -1281,6 +1281,224 @@ impl AmelisoMcp {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn priority_str_to_i32_known_values() {
+        assert_eq!(priority_str_to_i32("low"), pb::Priority::Low as i32);
+        assert_eq!(priority_str_to_i32("medium"), pb::Priority::Medium as i32);
+        assert_eq!(priority_str_to_i32("high"), pb::Priority::High as i32);
+    }
+
+    #[test]
+    fn priority_str_to_i32_case_insensitive() {
+        assert_eq!(priority_str_to_i32("HIGH"), pb::Priority::High as i32);
+        assert_eq!(priority_str_to_i32("Low"), pb::Priority::Low as i32);
+    }
+
+    #[test]
+    fn priority_str_to_i32_unknown_returns_unspecified() {
+        assert_eq!(
+            priority_str_to_i32("critical"),
+            pb::Priority::Unspecified as i32
+        );
+    }
+
+    #[test]
+    fn run_status_str_to_i32_known_values() {
+        assert_eq!(
+            run_status_str_to_i32("in-progress"),
+            pb::RunStatus::InProgress as i32
+        );
+        assert_eq!(
+            run_status_str_to_i32("completed"),
+            pb::RunStatus::Completed as i32
+        );
+        assert_eq!(
+            run_status_str_to_i32("aborted"),
+            pb::RunStatus::Aborted as i32
+        );
+    }
+
+    #[test]
+    fn run_status_str_to_i32_underscore_alias() {
+        assert_eq!(
+            run_status_str_to_i32("in_progress"),
+            pb::RunStatus::InProgress as i32
+        );
+    }
+
+    #[test]
+    fn run_status_str_to_i32_unknown_returns_unspecified() {
+        assert_eq!(
+            run_status_str_to_i32("paused"),
+            pb::RunStatus::Unspecified as i32
+        );
+    }
+
+    #[test]
+    fn result_status_str_to_i32_known_values() {
+        assert_eq!(
+            result_status_str_to_i32("passed"),
+            pb::ResultStatus::Passed as i32
+        );
+        assert_eq!(
+            result_status_str_to_i32("failed"),
+            pb::ResultStatus::Failed as i32
+        );
+        assert_eq!(
+            result_status_str_to_i32("blocked"),
+            pb::ResultStatus::Blocked as i32
+        );
+        assert_eq!(
+            result_status_str_to_i32("skipped"),
+            pb::ResultStatus::Skipped as i32
+        );
+    }
+
+    #[test]
+    fn result_status_str_to_i32_unknown_returns_unspecified() {
+        assert_eq!(
+            result_status_str_to_i32("pending"),
+            pb::ResultStatus::Unspecified as i32
+        );
+    }
+
+    #[test]
+    fn result_status_i32_to_str_known_values() {
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Passed as i32),
+            "passed"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Failed as i32),
+            "failed"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Blocked as i32),
+            "blocked"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Skipped as i32),
+            "skipped"
+        );
+        assert_eq!(
+            result_status_i32_to_str(pb::ResultStatus::Never as i32),
+            "never"
+        );
+    }
+
+    #[test]
+    fn result_status_i32_to_str_unknown_returns_unspecified() {
+        assert_eq!(result_status_i32_to_str(999), "unspecified");
+    }
+
+    #[test]
+    fn run_status_i32_to_str_known_values() {
+        assert_eq!(
+            run_status_i32_to_str(pb::RunStatus::InProgress as i32),
+            "in-progress"
+        );
+        assert_eq!(
+            run_status_i32_to_str(pb::RunStatus::Completed as i32),
+            "completed"
+        );
+        assert_eq!(
+            run_status_i32_to_str(pb::RunStatus::Aborted as i32),
+            "aborted"
+        );
+    }
+
+    #[test]
+    fn run_status_i32_to_str_unknown_returns_unspecified() {
+        assert_eq!(run_status_i32_to_str(999), "unspecified");
+    }
+
+    #[test]
+    fn priority_rank_ordering() {
+        // high < medium < low < unknown — lower rank = higher priority
+        assert!(priority_rank("high") < priority_rank("medium"));
+        assert!(priority_rank("medium") < priority_rank("low"));
+        assert!(priority_rank("low") < priority_rank("other"));
+    }
+
+    #[test]
+    fn status_rank_ordering() {
+        // failed < blocked < never < skipped < passed < unknown
+        assert!(status_rank("failed") < status_rank("blocked"));
+        assert!(status_rank("blocked") < status_rank("never"));
+        assert!(status_rank("never") < status_rank("skipped"));
+        assert!(status_rank("skipped") < status_rank("passed"));
+        assert!(status_rank("passed") < status_rank("other"));
+    }
+
+    #[test]
+    fn fmt_case_no_tags() {
+        let c = pb::Case {
+            path: "auth/login".to_owned(),
+            title: "Login Flow".to_owned(),
+            description: "Tests login".to_owned(),
+            priority: "high".to_owned(),
+            tags: vec![],
+            ..Default::default()
+        };
+        let s = fmt_case(&c);
+        assert!(s.contains("auth/login"));
+        assert!(s.contains("Login Flow"));
+        assert!(s.contains("high"));
+        assert!(!s.contains("tags:"));
+    }
+
+    #[test]
+    fn fmt_case_with_tags() {
+        let c = pb::Case {
+            path: "auth/login".to_owned(),
+            title: "Login".to_owned(),
+            description: "".to_owned(),
+            priority: "medium".to_owned(),
+            tags: vec!["smoke".to_owned(), "auth".to_owned()],
+            ..Default::default()
+        };
+        let s = fmt_case(&c);
+        assert!(s.contains("tags: smoke, auth"));
+    }
+
+    #[test]
+    fn fmt_run_meta_no_suite_no_env() {
+        let r = pb::RunMeta {
+            id: "2026-04-21-smoke".to_owned(),
+            date: "2026-04-21".to_owned(),
+            tester: "alice".to_owned(),
+            status: pb::RunStatus::InProgress as i32,
+            suite: "".to_owned(),
+            environment: "".to_owned(),
+        };
+        let s = fmt_run_meta(&r);
+        assert!(s.contains("2026-04-21-smoke"));
+        assert!(s.contains("alice"));
+        assert!(s.contains("in-progress"));
+        assert!(!s.contains("suite:"));
+        assert!(!s.contains("env:"));
+    }
+
+    #[test]
+    fn fmt_run_meta_with_suite_and_env() {
+        let r = pb::RunMeta {
+            id: "2026-04-21-smoke".to_owned(),
+            date: "2026-04-21".to_owned(),
+            tester: "bob".to_owned(),
+            status: pb::RunStatus::Completed as i32,
+            suite: "regression".to_owned(),
+            environment: "staging".to_owned(),
+        };
+        let s = fmt_run_meta(&r);
+        assert!(s.contains("suite: regression"));
+        assert!(s.contains("env: staging"));
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let url = std::env::var("AMELISO_SERVER_URL")
