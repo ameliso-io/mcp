@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
@@ -16,6 +16,8 @@ interface Props {
 
 export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
+  const deferredSuites = useDeferredValue(suites);
+  const isSuitesStale = suites !== deferredSuites;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -342,12 +344,16 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
         </div>
       )}
 
-      {!loading && suites.length === 0 && !error && (
+      {!loading && deferredSuites.length === 0 && !error && (
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
-      <ul className={styles.list} aria-busy={loading} role="list">
-        {suites.map((suite) => (
+      <ul
+        className={isSuitesStale ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading || isSuitesStale || undefined}
+        role="list"
+      >
+        {deferredSuites.map((suite) => (
           <li key={suite.slug}>
             {editingSlug === suite.slug ? (
               <div className={styles.card}>
