@@ -312,7 +312,7 @@ export default function RepositoriesTab({
                   <button
                     type="button"
                     className={styles.btnSecondary}
-                    disabled={syncing === repo.id}
+                    disabled={syncing !== null}
                     onClick={() => handleSync(repo.id)}
                   >
                     {syncing === repo.id ? "Syncing…" : "Sync"}
