@@ -1485,6 +1485,24 @@ describe("RunsTab", () => {
     expect(screen.queryByRole("textbox", { name: "New slug" })).not.toBeInTheDocument();
   });
 
+  it("reloads run list after successful rename", async () => {
+    const renamedRun = { ...mockRun, id: "2026-01-01-smoke-v2" };
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.updateRun).mockResolvedValue({
+      run: renamedRun,
+      newDirPath: "runs/2026-01-01-smoke-v2",
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [renamedRun] } as never);
+    await userEvent.click(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "New slug" }), "smoke-v2");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Rename 2026-01-01-smoke-v2" })).toBeInTheDocument()
+    );
+  });
+
   it("shows error when updateRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.updateRun).mockRejectedValue(new Error("rename failed"));
