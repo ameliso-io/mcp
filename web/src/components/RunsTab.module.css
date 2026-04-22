@@ -414,6 +414,13 @@
   color: var(--color-subtle);
 }
 
+.staleWarning {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--color-warn, #b45309);
+}
+
 .pendingActions {
   display: flex;
   gap: 8px;

@@ -828,6 +828,32 @@ describe("RunsTab", () => {
     spy.mockRestore();
   });
 
+  it("shows stale warning after two consecutive poll failures", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases)
+      .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
+      .mockRejectedValue(new Error("poll error"));
+    let capturedCallback: (() => Promise<void>) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => Promise<void>;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled());
+    expect(screen.getByText("auto-refresh 30s")).toBeInTheDocument();
+    if (capturedCallback) {
+      await act(async () => { await capturedCallback!(); });
+      await act(async () => { await capturedCallback!(); });
+    }
+    expect(screen.getByText("data may be stale")).toBeInTheDocument();
+    expect(screen.queryByText("auto-refresh 30s")).not.toBeInTheDocument();
+    spy.mockRestore();
+  });
+
   it("dismisses error when X button clicked", async () => {
     vi.mocked(client.listRuns).mockRejectedValue(new Error("load error"));
     render(<RunsTab repoId="owner/repo" />);

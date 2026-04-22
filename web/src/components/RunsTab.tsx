@@ -109,9 +109,12 @@ export default function RunsTab({
     onInitialSuiteConsumed?.();
   }, [initialSuite, onInitialSuiteConsumed]);
 
+  const [pollFailCount, setPollFailCount] = useState(0);
+
   // Auto-refresh pending cases every 30s when viewing an in-progress run
   const pendingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
+    setPollFailCount(0);
     if (pendingPollRef.current) clearInterval(pendingPollRef.current);
     const selectedRun = runs.find((r) => r.id === selectedRunId);
     if (selectedRun?.status === RunStatus.IN_PROGRESS && selectedRunId) {
@@ -122,9 +125,10 @@ export default function RunsTab({
           .then((res) => {
             setPendingCases(res.cases);
             setTotalInScope(res.totalInScope);
+            setPollFailCount(0);
           })
           .catch(() => {
-            // silently ignore poll errors
+            setPollFailCount((n) => n + 1);
           });
       }, 30_000);
     }
@@ -776,7 +780,13 @@ export default function RunsTab({
                     <div className={styles.pendingHeader}>
                       <h3 className={styles.pendingLabel}>
                         {pendingCases.length} pending
-                        <span className={styles.refreshHint}>auto-refresh 30s</span>
+                        {pollFailCount >= 2 ? (
+                          <span className={styles.staleWarning} role="status" aria-live="polite">
+                            data may be stale
+                          </span>
+                        ) : (
+                          <span className={styles.refreshHint}>auto-refresh 30s</span>
+                        )}
                       </h3>
                       <div className={styles.pendingActions}>
                         {pendingCases.length > 0 &&
