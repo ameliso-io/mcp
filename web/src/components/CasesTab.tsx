@@ -16,6 +16,7 @@ import { errorMessage } from "@/errorMessage";
 import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
@@ -74,7 +75,7 @@ export default function CasesTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch ?? "");
-  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? "");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [priorityFilter, setPriorityFilter] = useState<Priority>(
     initialPriorityFilter ?? Priority.UNSPECIFIED
   );
@@ -82,7 +83,6 @@ export default function CasesTab({
   const [suiteFilter, setSuiteFilter] = useState("");
   const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -172,16 +172,6 @@ export default function CasesTab({
       // body stays empty; server will preserve existing body on update
     }
   }
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [search]);
 
   useEffect(() => {
     if (!filtersInitializedRef.current) {
