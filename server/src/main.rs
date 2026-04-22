@@ -103,7 +103,7 @@ async fn main() -> Result<()> {
         .and_then(|p| p.parse::<u16>().ok())
         .unwrap_or(50052);
     let addr: SocketAddr = format!("0.0.0.0:{port}").parse()?;
-    println!("ameliso-server listening on {}", addr);
+    println!("ameliso-server listening on {addr}");
 
     let webhook_port = std::env::var("AMELISO_WEBHOOK_PORT")
         .ok()
@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
         .route("/webhook/github", post(github_push))
         .with_state(webhook_state);
     let webhook_listener = tokio::net::TcpListener::bind(webhook_addr).await?;
-    println!("webhook server listening on {}", webhook_addr);
+    println!("webhook server listening on {webhook_addr}");
 
     tokio::try_join!(
         async {

@@ -49,6 +49,7 @@ struct Repo {
     full_name: String,
 }
 
+#[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn is_case_file(path: &str) -> bool {
     path.starts_with("cases/") && path.ends_with(".md")
 }

@@ -463,8 +463,7 @@ impl AmelisoService for AmelisoServer {
                     crate::sync::delete_case_file(&pool, &repo_id, &case_path_clone).await
                 {
                     eprintln!(
-                        "warning: github delete sync failed for {}/{}: {e}",
-                        repo_id, case_path_clone
+                        "warning: github delete sync failed for {repo_id}/{case_path_clone}: {e}"
                     );
                 }
             });
@@ -951,7 +950,7 @@ impl AmelisoService for AmelisoServer {
             for file in &req.changed_files {
                 for path in &known_paths {
                     if text_references_case(file, path) {
-                        reasons.push(format!("file {} references {}", file, path));
+                        reasons.push(format!("file {file} references {path}"));
                         affected_set.insert(path.clone());
                     }
                 }
@@ -1046,7 +1045,7 @@ impl AmelisoService for AmelisoServer {
         let all_text = compare.commit_messages.join("\n");
         for path in &known_paths {
             if text_references_case(&all_text, path) {
-                reasons.push(format!("commit messages reference: {}", path));
+                reasons.push(format!("commit messages reference: {path}"));
                 if affected_set.insert(path.clone()) {
                     affected.push(path.clone());
                 }
@@ -1056,7 +1055,7 @@ impl AmelisoService for AmelisoServer {
         for file in &compare.changed_files {
             for path in &known_paths {
                 if text_references_case(file, path) {
-                    reasons.push(format!("file {} references {}", file, path));
+                    reasons.push(format!("file {file} references {path}"));
                     if affected_set.insert(path.clone()) {
                         affected.push(path.clone());
                     }
@@ -1161,7 +1160,10 @@ impl AmelisoService for AmelisoServer {
         for run_meta in &active_runs_meta {
             let (pending, total_in_scope) =
                 match repo::get_pending_cases(pool, &repo_id, &run_meta.run_id).await {
-                    Ok((cases, total)) => (i32::try_from(cases.len()).unwrap_or(i32::MAX), i32::try_from(total).unwrap_or(i32::MAX)),
+                    Ok((cases, total)) => (
+                        i32::try_from(cases.len()).unwrap_or(i32::MAX),
+                        i32::try_from(total).unwrap_or(i32::MAX),
+                    ),
                     Err(_) => (0, 0),
                 };
             active_runs.push(pb::ActiveRunStatus {
