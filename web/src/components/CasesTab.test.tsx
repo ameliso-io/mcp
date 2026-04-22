@@ -765,6 +765,37 @@ describe("CasesTab", () => {
     expect(screen.getAllByText("smoke").length).toBeGreaterThan(0);
   });
 
+  it("discards stale getCase body when Edit switches to a different case before first body resolves", async () => {
+    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
+    vi.mocked(client.listCases).mockResolvedValue(
+      makeListCasesResponse({ cases: [mockCase, secondCase] })
+    );
+
+    let resolveFirst!: (v: ReturnType<typeof makeGetCaseResponse>) => void;
+    const firstPromise = new Promise<ReturnType<typeof makeGetCaseResponse>>((res) => {
+      resolveFirst = res as typeof resolveFirst;
+    });
+    vi.mocked(client.getCase)
+      .mockImplementationOnce(() => firstPromise as ReturnType<typeof client.getCase>)
+      .mockResolvedValue(makeGetCaseResponse({ case: secondCase, body: "second body" }));
+
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+
+    await userEvent.click(screen.getByRole("button", { name: /Edit auth\/login/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Edit auth\/logout/ }));
+    await waitFor(() => {
+      const textarea = screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }) as HTMLTextAreaElement;
+      expect(textarea.value).toBe("second body");
+    });
+
+    resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }));
+    await new Promise((r) => setTimeout(r, 50));
+    const textarea = screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }) as HTMLTextAreaElement;
+    expect(textarea.value).not.toBe("first body");
+    expect(textarea.value).toBe("second body");
+  });
+
   it("sets aria-busy on expanded panel while body loads", async () => {
     let resolve!: (v: ReturnType<typeof makeGetCaseResponse>) => void;
     vi.mocked(client.getCase).mockImplementationOnce(
