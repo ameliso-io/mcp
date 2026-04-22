@@ -1,9 +1,5 @@
-import OverviewTab from "@/components/OverviewTab";
+import OverviewPageClient from "./client";
 import { pageMetadata } from "@/lib/metadata";
-
-interface Props {
-  params: Promise<{ org: string; repo: string }>;
-}
 
 export function generateMetadata() {
   return pageMetadata(
@@ -12,9 +8,6 @@ export function generateMetadata() {
   );
 }
 
-export default async function OverviewPage({ params }: Props) {
-  const { org, repo } = await params;
-  const repoId = `${org}/${repo}`;
-  const basePath = `/repositories/${org}/${repo}`;
-  return <OverviewTab repoId={repoId} basePath={basePath} />;
+export default function OverviewPage() {
+  return <OverviewPageClient />;
 }
