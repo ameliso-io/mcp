@@ -4,7 +4,6 @@ import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
-import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { RunStatus } from "@/gen/ameliso/v1/types_pb";
 
@@ -20,10 +19,14 @@ const SLUG_BY_STATUS: Record<number, string> = {
   [RunStatus.ABORTED]: "aborted",
 };
 
-function RunsInner() {
+interface Props {
+  repoId: string;
+  basePath: string;
+}
+
+function RunsInner({ repoId, basePath }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { repoId, basePath } = useRepoParams();
   const initialSuite = searchParams.get("suite") ?? undefined;
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
@@ -61,10 +64,10 @@ function RunsInner() {
   );
 }
 
-export default function RunsPageClient() {
+export default function RunsPageClient({ repoId, basePath }: Props) {
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <RunsInner />
+      <RunsInner repoId={repoId} basePath={basePath} />
     </Suspense>
   );
 }

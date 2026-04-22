@@ -1,7 +1,9 @@
 import SuitesPageClient from "./client";
 import { pageMetadata } from "@/lib/metadata";
 
-interface Props { params: Promise<{ org: string; repo: string }> };
+interface Props {
+  params: Promise<{ org: string; repo: string }>;
+}
 
 export async function generateMetadata({ params }: Props) {
   const { org, repo } = await params;
@@ -11,6 +13,9 @@ export async function generateMetadata({ params }: Props) {
   );
 }
 
-export default function SuitesPage() {
-  return <SuitesPageClient />;
+export default async function SuitesPage({ params }: Props) {
+  const { org, repo } = await params;
+  const repoId = `${org}/${repo}`;
+  const basePath = `/repositories/${org}/${repo}`;
+  return <SuitesPageClient repoId={repoId} basePath={basePath} />;
 }
