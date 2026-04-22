@@ -59,6 +59,24 @@ describe("OverviewTab", () => {
     expect(screen.getAllByText("1").length).toBeGreaterThan(0);
   });
 
+  it("shows Blocked and Skipped stat counts", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("a/b", "A", "high", ResultStatus.BLOCKED),
+        makeCovEntry("c/d", "C", "low", ResultStatus.SKIPPED),
+        makeCovEntry("e/f", "E", "medium", ResultStatus.PASSED),
+      ],
+      runCount: 1,
+    } as never);
+    const { container } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
+    await waitFor(() => container.querySelector('[data-stat="Blocked"]'));
+    expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("1");
+    expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("1");
+    expect(container.querySelector('[data-stat="Passed"]')).toHaveTextContent("1");
+  });
+
   it("shows coverage entries with failed first", async () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("auth/login"));
@@ -223,8 +241,8 @@ describe("OverviewTab", () => {
       runCount: 3,
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
-    expect(screen.getByText("Skipped")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
     expect(screen.getByText("Never run")).toBeInTheDocument();
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
@@ -310,8 +328,8 @@ describe("OverviewTab", () => {
       runCount: 1,
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
-    expect(screen.getByText("Skipped")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
     expect(screen.getByText("Never run")).toBeInTheDocument();
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
@@ -621,15 +639,19 @@ describe("OverviewTab", () => {
     expect(body.indexOf("Login")).toBeLessThan(body.indexOf("Reset"));
   });
 
-  it("shows all four stat card labels and Never Run count is 0 when no never-run cases", async () => {
-    // default entries: 1 PASSED + 1 FAILED — no NEVER entries
-    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+  it("shows all six stat card labels and zero counts for absent statuses", async () => {
+    // default entries: 1 PASSED + 1 FAILED — no NEVER/BLOCKED/SKIPPED entries
+    const { container } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await waitFor(() => expect(screen.getByText("Total Cases")).toBeInTheDocument());
     // stat card labels appear (may also appear in coverage list — use getAllByText)
     expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
     expect(screen.getByText("Never Run")).toBeInTheDocument();
-    // statNever = 0 since no NEVER entries in default coverage data
-    expect(screen.getByText("0")).toBeInTheDocument();
+    // statNever = statBlocked = statSkipped = 0 since no such entries in default data
+    expect(container.querySelector('[data-stat="Never Run"]')).toHaveTextContent("0");
+    expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("0");
+    expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("0");
   });
 });

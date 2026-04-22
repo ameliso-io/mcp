@@ -130,6 +130,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const statCases = entries.length;
   const statPassed = entries.filter((e) => e.latestStatus === ResultStatus.PASSED).length;
   const statFailed = entries.filter((e) => e.latestStatus === ResultStatus.FAILED).length;
+  const statBlocked = entries.filter((e) => e.latestStatus === ResultStatus.BLOCKED).length;
+  const statSkipped = entries.filter((e) => e.latestStatus === ResultStatus.SKIPPED).length;
   const statNever = entries.filter((e) => e.latestStatus === ResultStatus.NEVER).length;
 
   return (
@@ -177,6 +179,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               { label: "Total Cases", value: statCases },
               { label: "Passed", value: statPassed },
               { label: "Failed", value: statFailed },
+              { label: "Blocked", value: statBlocked },
+              { label: "Skipped", value: statSkipped },
               { label: "Never Run", value: statNever },
             ].map((stat) => (
               <div key={stat.label} className={styles.statCard}>
