@@ -163,6 +163,11 @@ Notes go here (optional).
 
 ## Decision rules
 
+### Finding your repo_id
+If `repo_id` is not provided in the task context, call `list_repositories` first:
+- MCP: `list_repositories` (no parameters) → returns all connected repos with `repo_id` and URL
+- CLI: `ameliso cases list --repo-id <id>` requires knowing the id first — use MCP if unsure
+
 ### When to create a test case
 - A feature or user-facing behaviour has no corresponding case in `cases/`.
 - Use `list_cases` (MCP) or `ameliso cases list` (CLI) to check coverage first.
@@ -200,6 +205,10 @@ Both `update_case` and `update_suite` are **patch-style**: omit any field to pre
 ### After code changes
 Use `get_affected_cases` (MCP) or `ameliso affected` (CLI) to identify cases
 that need re-running. The tool compares git history since the last run commit.
+
+### After pushing case file changes to git
+The webhook auto-syncs case files on push. If you need immediate sync (not waiting for the webhook):
+- MCP: `sync_repository` with `repo_id` — triggers a full re-sync from GitHub
 
 ---
 
