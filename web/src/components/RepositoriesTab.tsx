@@ -155,6 +155,7 @@ export default function RepositoriesTab({
       await client.removeRepository({ id });
       setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
+      if (activeRepoId === id) onRepoSelect("");
       announce(`${repo?.fullName ?? /* v8 ignore next */ id} removed`);
     } catch (e) {
       setError(errorMessage(e));

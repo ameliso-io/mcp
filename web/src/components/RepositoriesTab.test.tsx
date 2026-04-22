@@ -616,4 +616,15 @@ describe("RepositoriesTab", () => {
     // Active badge is only shown when activeRepoId matches repo id
     expect(screen.queryByText("Active")).not.toBeInTheDocument();
   });
+
+  it("calls onRepoSelect with empty string when active repo is removed", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    const onRepoSelect = vi.fn();
+    render(<RepositoriesTab onRepoSelect={onRepoSelect} activeRepoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove owner/repo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm remove owner/repo" }));
+    await waitFor(() => expect(client.removeRepository).toHaveBeenCalledWith({ id: "owner/repo" }));
+    expect(onRepoSelect).toHaveBeenCalledWith("");
+  });
 });
