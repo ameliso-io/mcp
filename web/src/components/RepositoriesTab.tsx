@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import styles from "./RepositoriesTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
@@ -149,11 +149,15 @@ export default function RepositoriesTab({
   }
 
   const q = search.trim().toLowerCase();
-  const filteredRepos = q
-    ? repos.filter(
-        (r) => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q)
-      )
-    : repos;
+  const filteredRepos = useMemo(
+    () =>
+      q
+        ? repos.filter(
+            (r) => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q)
+          )
+        : repos,
+    [repos, q]
+  );
 
   useEffect(() => {
     if (loading || !q) return;
