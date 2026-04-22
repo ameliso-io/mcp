@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useCallback, Suspense } from "react";
+import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RepositoriesTab from "@/components/RepositoriesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -9,6 +9,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 function RepositoriesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   const installationId = searchParams.get("installation_id") ?? undefined;
   const setupAction = searchParams.get("setup_action") ?? undefined;
@@ -28,8 +29,10 @@ function RepositoriesInner() {
     params.delete("installation_id");
     params.delete("setup_action");
     const qs = params.toString();
-    router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
-  }, [router, searchParams]);
+    startTransition(() => {
+      router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
+    });
+  }, [router, searchParams, startTransition]);
 
   return (
     <RepositoriesTab

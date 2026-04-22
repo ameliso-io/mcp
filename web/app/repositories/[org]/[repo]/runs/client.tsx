@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, Suspense } from "react";
+import { useCallback, Suspense, useTransition } from "react";
 import RunsTab from "@/components/RunsTab";
 import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -24,6 +24,7 @@ function RunsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { repoId, basePath } = useRepoParams();
+  const [, startTransition] = useTransition();
   const initialSuite = searchParams.get("suite") ?? undefined;
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
@@ -32,8 +33,10 @@ function RunsInner() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
     const qs = params.toString();
-    router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, { scroll: false });
-  }, [router, searchParams, basePath]);
+    startTransition(() => {
+      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, { scroll: false });
+    });
+  }, [router, searchParams, basePath, startTransition]);
 
   const handleStatusFilterChange = useCallback(
     (s: RunStatus) => {
@@ -45,9 +48,11 @@ function RunsInner() {
         params.delete("status");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, { scroll: false });
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, { scroll: false });
+      });
     },
-    [router, searchParams, basePath]
+    [router, searchParams, basePath, startTransition]
   );
 
   return (
