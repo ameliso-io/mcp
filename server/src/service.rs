@@ -3205,4 +3205,11 @@ mod tests {
         // ends_cleanly '/' branch via the starts_with path (path at start of text, / suffix)
         assert!(text_references_case("auth/login/nested", "auth/login"));
     }
+
+    #[test]
+    fn text_references_case_close_paren_suffix_via_starts_with() {
+        // ends_cleanly ')' branch via the starts_with path (path at start of text, ) suffix)
+        // Distinct from paren_suffix which hits ')' via the '(' prefix loop path.
+        assert!(text_references_case("auth/login) and more", "auth/login"));
+    }
 }
