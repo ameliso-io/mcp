@@ -270,6 +270,28 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
   });
 
+  it("discards stale getCase response when Record is cancelled before body resolves", async () => {
+    let resolve!: (v: ReturnType<typeof makeGetCaseResponse>) => void;
+    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
+    vi.mocked(client.getCase).mockImplementationOnce(
+      () =>
+        new Promise((res) => {
+          resolve = res as typeof resolve;
+        }) as ReturnType<typeof client.getCase>
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText(mockRun.id));
+    await userEvent.click(screen.getByText(mockRun.id));
+    await waitFor(() => screen.getByText("Record"));
+    await userEvent.click(screen.getByText("Record"));
+    // Cancel the record form before body resolves
+    await userEvent.click(screen.getByText("Cancel"));
+    // Now resolve stale body — must not show it
+    resolve(makeGetCaseResponse({ case: mockCase, body: "## Stale Steps" }));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(/Stale Steps/)).not.toBeInTheDocument();
+  });
+
   it("calls recordResult when Save Result submitted", async () => {
     vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
     render(<RunsTab repoId="owner/repo" />);
