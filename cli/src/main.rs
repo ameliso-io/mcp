@@ -1335,4 +1335,25 @@ mod tests {
     fn parse_tags_single_tag() {
         assert_eq!(parse_tags("smoke"), vec!["smoke"]);
     }
+
+    #[test]
+    fn grpc_err_formats_code_and_message() {
+        let status = tonic::Status::not_found("resource not found");
+        let err = grpc_err(status);
+        let msg = err.to_string();
+        assert!(msg.contains("not found"), "expected code in: {msg}");
+        assert!(msg.contains("resource not found"), "expected message in: {msg}");
+    }
+
+    #[test]
+    fn grpc_err_internal_status() {
+        let status = tonic::Status::internal("db unreachable");
+        let err = grpc_err(status);
+        let msg = err.to_string();
+        assert!(
+            msg.to_lowercase().contains("internal"),
+            "expected code in: {msg}"
+        );
+        assert!(msg.contains("db unreachable"), "expected message in: {msg}");
+    }
 }
