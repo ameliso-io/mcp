@@ -9,7 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "en",
     dir: "ltr",
     scope: "/",
-    start_url: "/overview",
+    start_url: "/repositories",
     display: "standalone",
     display_override: ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
     orientation: "any",
@@ -23,10 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
     ],
     shortcuts: [
-      { name: "Overview", url: "/overview", description: "Test coverage summary" },
-      { name: "Cases", url: "/cases", description: "Manage test cases" },
-      { name: "Runs", url: "/runs", description: "View and manage test runs" },
-      { name: "Suites", url: "/suites", description: "Manage test suites" },
+      { name: "Repositories", url: "/repositories", description: "Manage connected repositories" },
     ],
     launch_handler: { client_mode: "navigate-existing" },
   };
