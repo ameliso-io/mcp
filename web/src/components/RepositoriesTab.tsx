@@ -35,22 +35,29 @@ export default function RepositoriesTab({
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const prevActiveRef = useRef(activeRepoId);
   const prevFilterCountRef = useRef<number | null>(null);
+  const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     try {
       const [reposRes, urlRes] = await Promise.all([
-        client.listRepositories({}),
-        client.getGitHubInstallUrl({}),
+        client.listRepositories({}, { signal }),
+        client.getGitHubInstallUrl({}, { signal }),
       ]);
+      if (signal.aborted) return;
       setRepos(reposRes.repositories);
       setInstallUrl(urlRes.url);
       setConfigured(urlRes.configured);
     } catch (e) {
+      if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, []);
 
@@ -101,6 +108,10 @@ export default function RepositoriesTab({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return () => loadAbortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (activeRepoId === prevActiveRef.current) return;
@@ -276,7 +287,11 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      <ul aria-busy={loading || refreshing || isSearchStale} role="list" className={isSearchStale ? `${styles.repoList} ${styles.repoListStale}` : styles.repoList}>
+      <ul
+        aria-busy={loading || refreshing || isSearchStale}
+        role="list"
+        className={isSearchStale ? `${styles.repoList} ${styles.repoListStale}` : styles.repoList}
+      >
         {filteredRepos.map((repo) => {
           const isActive = activeRepoId === repo.id;
           return (
