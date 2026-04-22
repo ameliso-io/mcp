@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import styles from "./OverviewTab.module.css";
 import { client } from "@/client";
@@ -155,12 +155,36 @@ export default function OverviewTab({ repoId, basePath }: Props) {
     }
   }
 
-  const statCases = entries.length;
-  const statPassed = entries.filter((e) => e.latestStatus === ResultStatus.PASSED).length;
-  const statFailed = entries.filter((e) => e.latestStatus === ResultStatus.FAILED).length;
-  const statBlocked = entries.filter((e) => e.latestStatus === ResultStatus.BLOCKED).length;
-  const statSkipped = entries.filter((e) => e.latestStatus === ResultStatus.SKIPPED).length;
-  const statNever = entries.filter((e) => e.latestStatus === ResultStatus.NEVER).length;
+  const { statCases, statPassed, statFailed, statBlocked, statSkipped, statNever } = useMemo(() => {
+    let passed = 0,
+      failed = 0,
+      blocked = 0,
+      skipped = 0,
+      never = 0;
+    for (const e of entries) {
+      if (e.latestStatus === ResultStatus.PASSED) passed++;
+      else if (e.latestStatus === ResultStatus.FAILED) failed++;
+      else if (e.latestStatus === ResultStatus.BLOCKED) blocked++;
+      else if (e.latestStatus === ResultStatus.SKIPPED) skipped++;
+      else if (e.latestStatus === ResultStatus.NEVER) never++;
+    }
+    return {
+      statCases: entries.length,
+      statPassed: passed,
+      statFailed: failed,
+      statBlocked: blocked,
+      statSkipped: skipped,
+      statNever: never,
+    };
+  }, [entries]);
+
+  const sortedEntries = useMemo(
+    () =>
+      [...entries].sort(
+        (a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)
+      ),
+    [entries]
+  );
 
   return (
     <div>
@@ -296,30 +320,28 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               </select>
             </div>
             <ul className={styles.coverageList} role="list">
-              {[...entries]
-                .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))
-                .map((entry) => (
-                  <li key={entry.case?.path} className={styles.coverageRow}>
-                    <span
-                      className={styles.statusDot}
-                      aria-hidden="true"
-                      data-status={ResultStatus[entry.latestStatus]}
-                    />
-                    <span className={styles.coveragePath}>{entry.case?.path}</span>
-                    <span className={styles.coverageTitle}>{entry.case?.title}</span>
-                    {entry.lastRunDate && (
-                      <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
-                        {entry.lastRunDate}
-                      </time>
-                    )}
-                    <span
-                      className={styles.coverageStatus}
-                      data-status={ResultStatus[entry.latestStatus]}
-                    >
-                      {statusLabel(entry.latestStatus)}
-                    </span>
-                  </li>
-                ))}
+              {sortedEntries.map((entry) => (
+                <li key={entry.case?.path} className={styles.coverageRow}>
+                  <span
+                    className={styles.statusDot}
+                    aria-hidden="true"
+                    data-status={ResultStatus[entry.latestStatus]}
+                  />
+                  <span className={styles.coveragePath}>{entry.case?.path}</span>
+                  <span className={styles.coverageTitle}>{entry.case?.title}</span>
+                  {entry.lastRunDate && (
+                    <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
+                      {entry.lastRunDate}
+                    </time>
+                  )}
+                  <span
+                    className={styles.coverageStatus}
+                    data-status={ResultStatus[entry.latestStatus]}
+                  >
+                    {statusLabel(entry.latestStatus)}
+                  </span>
+                </li>
+              ))}
             </ul>
           </div>
         </>

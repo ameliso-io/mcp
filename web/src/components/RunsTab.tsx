@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
 import { client } from "@/client";
@@ -363,6 +363,28 @@ export default function RunsTab({
     }
   }
 
+  const resultCounts = useMemo(() => {
+    let passed = 0,
+      failed = 0,
+      blocked = 0,
+      skipped = 0;
+    for (const r of recordedResults) {
+      if (r.status === ResultStatus.PASSED) passed++;
+      else if (r.status === ResultStatus.FAILED) failed++;
+      else if (r.status === ResultStatus.BLOCKED) blocked++;
+      else if (r.status === ResultStatus.SKIPPED) skipped++;
+    }
+    return { passed, failed, blocked, skipped };
+  }, [recordedResults]);
+
+  const filteredResults = useMemo(
+    () =>
+      resultStatusFilter !== null
+        ? recordedResults.filter((r) => r.status === resultStatusFilter)
+        : recordedResults,
+    [recordedResults, resultStatusFilter]
+  );
+
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
@@ -649,85 +671,69 @@ export default function RunsTab({
                   </div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
-                    {recordedResults.length > 0 &&
-                      (() => {
-                        const counts = {
-                          passed: recordedResults.filter((r) => r.status === ResultStatus.PASSED)
-                            .length,
-                          failed: recordedResults.filter((r) => r.status === ResultStatus.FAILED)
-                            .length,
-                          blocked: recordedResults.filter((r) => r.status === ResultStatus.BLOCKED)
-                            .length,
-                          skipped: recordedResults.filter((r) => r.status === ResultStatus.SKIPPED)
-                            .length,
-                        };
-                        return (
-                          <div
-                            className={styles.resultFilters}
-                            role="group"
-                            aria-label="Filter by result status"
+                    {recordedResults.length > 0 && (
+                      <div
+                        className={styles.resultFilters}
+                        role="group"
+                        aria-label="Filter by result status"
+                      >
+                        {[
+                          {
+                            label: "Passed",
+                            count: resultCounts.passed,
+                            status: ResultStatus.PASSED,
+                          },
+                          {
+                            label: "Failed",
+                            count: resultCounts.failed,
+                            status: ResultStatus.FAILED,
+                          },
+                          {
+                            label: "Blocked",
+                            count: resultCounts.blocked,
+                            status: ResultStatus.BLOCKED,
+                          },
+                          {
+                            label: "Skipped",
+                            count: resultCounts.skipped,
+                            status: ResultStatus.SKIPPED,
+                          },
+                        ]
+                          .filter((s) => s.count > 0)
+                          .map((s) => (
+                            <button
+                              key={s.label}
+                              type="button"
+                              onClick={() => {
+                                setResultStatusFilter((rsf) =>
+                                  rsf === s.status ? null : s.status
+                                );
+                              }}
+                              aria-pressed={resultStatusFilter === s.status}
+                              className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
+                              data-status={ResultStatus[s.status]}
+                            >
+                              {s.count} {s.label}
+                            </button>
+                          ))}
+                        {resultStatusFilter !== null && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResultStatusFilter(null);
+                            }}
+                            className={styles.showAllBtn}
                           >
-                            {[
-                              {
-                                label: "Passed",
-                                count: counts.passed,
-                                status: ResultStatus.PASSED,
-                              },
-                              {
-                                label: "Failed",
-                                count: counts.failed,
-                                status: ResultStatus.FAILED,
-                              },
-                              {
-                                label: "Blocked",
-                                count: counts.blocked,
-                                status: ResultStatus.BLOCKED,
-                              },
-                              {
-                                label: "Skipped",
-                                count: counts.skipped,
-                                status: ResultStatus.SKIPPED,
-                              },
-                            ]
-                              .filter((s) => s.count > 0)
-                              .map((s) => (
-                                <button
-                                  key={s.label}
-                                  type="button"
-                                  onClick={() => {
-                                    setResultStatusFilter((rsf) =>
-                                      rsf === s.status ? null : s.status
-                                    );
-                                  }}
-                                  aria-pressed={resultStatusFilter === s.status}
-                                  className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
-                                  data-status={ResultStatus[s.status]}
-                                >
-                                  {s.count} {s.label}
-                                </button>
-                              ))}
-                            {resultStatusFilter !== null && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setResultStatusFilter(null);
-                                }}
-                                className={styles.showAllBtn}
-                              >
-                                Show all
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
+                            Show all
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
                       <ul className={styles.resultList} role="list">
-                        {(resultStatusFilter !== null
-                          ? recordedResults.filter((r) => r.status === resultStatusFilter)
-                          : recordedResults
-                        ).map((r) => (
+                        {filteredResults.map((r) => (
                           <li key={r.casePath} className={styles.resultRow}>
                             <span
                               className={styles.resultStatusBadge}
