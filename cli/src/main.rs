@@ -118,6 +118,12 @@ enum Commands {
         repo_id: String,
         #[arg(long, help = "Git ref to compare from (e.g. HEAD~5). If omitted, all cases are flagged.")]
         since: Option<String>,
+        #[arg(
+            long,
+            value_delimiter = ',',
+            help = "Comma-separated file paths (from git diff --name-only). Skips GitHub comparison."
+        )]
+        files: Vec<String>,
         #[arg(long, help = "Output as JSON")]
         json: bool,
     },
@@ -401,8 +407,8 @@ async fn main() -> Result<()> {
         Commands::Coverage { repo_id, status, json } => {
             run_coverage(channel, &repo_id, status.as_deref(), json).await
         }
-        Commands::Affected { repo_id, since, json } => {
-            run_affected(channel, &repo_id, since.as_deref(), json).await
+        Commands::Affected { repo_id, since, files, json } => {
+            run_affected(channel, &repo_id, since.as_deref(), files, json).await
         }
         Commands::Status { repo_id, json } => run_status(channel, &repo_id, json).await,
         Commands::Repos(cmd) => run_repos(channel, cmd).await,
@@ -1373,6 +1379,7 @@ async fn run_affected(
     channel: Channel,
     repo_id: &str,
     since: Option<&str>,
+    files: Vec<String>,
     json: bool,
 ) -> Result<()> {
     let mut c = client(channel);
@@ -1380,6 +1387,7 @@ async fn run_affected(
         .get_affected_cases(pb::GetAffectedCasesRequest {
             repo_id: repo_id.to_owned(),
             since_ref: since.unwrap_or("").to_owned(),
+            changed_files: files,
         })
         .await
         .map_err(grpc_err)?
@@ -1892,6 +1900,20 @@ mod tests {
         .expect("should parse");
         if let Commands::Affected { json, .. } = cli.command {
             assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_affected_files_flag_parses() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "affected", "--repo-id", "owner/repo",
+            "--files", "src/auth.ts,src/login.tsx",
+        ])
+        .expect("should parse");
+        if let Commands::Affected { files, .. } = cli.command {
+            assert_eq!(files, vec!["src/auth.ts", "src/login.tsx"]);
         } else {
             panic!("wrong variant");
         }

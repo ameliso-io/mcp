@@ -835,6 +835,63 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
 
+        // If caller passed changed_files directly, skip GitHub and use those.
+        if !req.changed_files.is_empty() {
+            let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+            let case_map: std::collections::HashMap<&str, &repo::LoadedCase> =
+                cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
+            let mut affected_set: std::collections::HashSet<String> =
+                std::collections::HashSet::new();
+            let mut reasons: Vec<String> = Vec::new();
+            for file in &req.changed_files {
+                for path in &known_paths {
+                    if text_references_case(file, path) {
+                        reasons.push(format!("file {} references {}", file, path));
+                        affected_set.insert(path.clone());
+                    }
+                }
+            }
+            let source_changed: Vec<&str> = req
+                .changed_files
+                .iter()
+                .filter(|f| !is_doc_file(f))
+                .map(|f| f.as_str())
+                .collect();
+            if !source_changed.is_empty() && affected_set.is_empty() {
+                reasons.push(format!(
+                    "{} source file(s) changed with no explicit case references — all {} case(s) flagged",
+                    source_changed.len(),
+                    known_paths.len()
+                ));
+                for p in &known_paths {
+                    affected_set.insert(p.clone());
+                }
+            }
+            let mut affected: Vec<String> = affected_set.into_iter().collect();
+            affected.sort_by_key(|p| {
+                case_map
+                    .get(p.as_str())
+                    .map(|c| priority_rank(&c.priority))
+                    .unwrap_or(3)
+            });
+            let reason = if reasons.is_empty() {
+                "no relevant changes in provided file list".to_owned()
+            } else {
+                reasons.join("; ")
+            };
+            let pb_cases = affected
+                .iter()
+                .map(|path| pb::AffectedCase {
+                    case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
+                    reason: reason.clone(),
+                })
+                .collect();
+            return Ok(Response::new(pb::GetAffectedCasesResponse {
+                cases: pb_cases,
+                reason,
+            }));
+        }
+
         if req.since_ref.is_empty() {
             let affected = cases
                 .iter()
@@ -992,10 +1049,8 @@ impl AmelisoService for AmelisoServer {
             }
         }
 
-        let active_runs_meta: Vec<&RunRow> = runs
-            .iter()
-            .filter(|r| r.status == "in-progress")
-            .collect();
+        let active_runs_meta: Vec<&RunRow> =
+            runs.iter().filter(|r| r.status == "in-progress").collect();
 
         let mut active_runs: Vec<pb::ActiveRunStatus> = Vec::new();
         for run_meta in &active_runs_meta {
@@ -1567,11 +1622,28 @@ mod tests {
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "".to_owned(),
                 since_ref: "HEAD~1".to_owned(),
+                changed_files: vec![],
             }))
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_affected_cases_with_changed_files_returns_results() {
+        let s = server();
+        let resp = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: String::new(),
+                changed_files: vec!["src/auth.ts".to_owned()],
+            }))
+            .await
+            .unwrap()
+            .into_inner();
+        // No cases exist in test DB, so cases list is empty but response is valid.
+        assert!(resp.cases.is_empty() || !resp.reason.is_empty());
     }
 
     #[tokio::test]

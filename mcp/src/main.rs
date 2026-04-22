@@ -282,8 +282,10 @@ struct UpdateSuiteRequest {
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct AffectedRequest {
     repo_id: String,
-    #[schemars(description = "Git ref to compare from (e.g. HEAD~5, a commit SHA). Required — if omitted, ALL cases are flagged as needing re-run.")]
+    #[schemars(description = "Git ref to compare from (e.g. HEAD~5, a commit SHA). Required unless changed_files is provided — if both omitted, ALL cases are flagged.")]
     since_ref: Option<String>,
+    #[schemars(description = "Comma-separated file paths from `git diff --name-only`. When set, skips GitHub comparison and matches these files against known case paths. Useful for local workflows without GitHub integration.")]
+    changed_files: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -1224,6 +1226,11 @@ impl AmelisoMcp {
             .get_affected_cases(pb::GetAffectedCasesRequest {
                 repo_id: req.repo_id,
                 since_ref: req.since_ref.unwrap_or_default(),
+                changed_files: req
+                    .changed_files
+                    .as_deref()
+                    .map(|s| s.split(',').map(|f| f.trim().to_owned()).filter(|f| !f.is_empty()).collect())
+                    .unwrap_or_default(),
             })
             .await
         {

@@ -272,6 +272,9 @@ message GetCoverageReportResponse {
 message GetAffectedCasesRequest {
   string repo_id = 1;
   string since_ref = 2;
+  // If set, skip GitHub comparison and match cases against these file paths directly.
+  // Pass output of `git diff --name-only <ref>` for local workflows without GitHub.
+  repeated string changed_files = 3;
 }
 
 message GetAffectedCasesResponse {

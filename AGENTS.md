@@ -238,8 +238,15 @@ Both `update_case` and `update_suite` are **patch-style**: omit any field to pre
 
 ### After code changes
 Use `get_affected_cases` (MCP) or `ameliso affected` (CLI) to identify cases
-that need re-running. Always pass `since_ref` — if omitted, ALL cases are
-returned as needing re-run. Example: `ameliso affected --since HEAD~5`.
+that need re-running. Two modes:
+- **With GitHub integration**: pass `since_ref` (e.g. `HEAD~5`) — the server
+  compares against GitHub's API.
+- **Local/no GitHub**: pass `--files` (CLI) or `changed_files` (MCP) with the
+  output of `git diff --name-only <ref>`. Example:
+  ```sh
+  ameliso affected --files "$(git diff --name-only HEAD~5 | tr '\n' ',')"
+  ```
+  If neither is provided, ALL cases are flagged.
 
 ### After pushing case file changes to git
 The webhook auto-syncs case files on push. If you need immediate sync (not waiting for the webhook):
