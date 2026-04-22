@@ -1717,6 +1717,39 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_run_with_inline_cases_passes_validation_and_hits_db() {
+        // Providing inline_cases without a suite should pass validation → DB error.
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            None,
+            vec!["auth/login".to_owned()],
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_run_suite_and_inline_cases_returns_invalid_arg() {
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            Some("regression".to_owned()),
+            vec!["auth/login".to_owned()],
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
     async fn record_result_valid_inputs_passes_validation_and_hits_db() {
         // All three validations pass (valid status, run_id, case_path) → DB error.
         let err = record_result(
