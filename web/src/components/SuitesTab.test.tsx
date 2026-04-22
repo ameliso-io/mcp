@@ -516,6 +516,48 @@ describe("SuitesTab", () => {
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
   });
 
+  it("adds new suite to list from createSuite response without re-fetching", async () => {
+    const newSuite = makeSuite({ slug: "regression", name: "Regression Tests", cases: [] });
+    vi.mocked(client.createSuite).mockResolvedValue(
+      makeCreateSuiteResponse({ suite: newSuite, filePath: "suites/regression.yaml" })
+    );
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("+ New Suite"));
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "regression");
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Regression Tests");
+    await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
+    await waitFor(() => expect(screen.getByText("Regression Tests")).toBeInTheDocument());
+    expect(screen.getByText("Smoke Tests")).toBeInTheDocument();
+    expect(client.listSuites).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes deleted suite from list without re-fetching", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
+    await waitFor(() =>
+      expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument()
+    );
+    expect(client.listSuites).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates suite in list from updateSuite response without re-fetching", async () => {
+    const updatedSuite = makeSuite({ slug: "smoke", name: "Updated Smoke", cases: [] });
+    vi.mocked(client.updateSuite).mockResolvedValue(makeUpdateSuiteResponse({ suite: updatedSuite }));
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    const nameInput = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Updated Smoke");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.getByText("Updated Smoke")).toBeInTheDocument());
+    expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument();
+    expect(client.listSuites).toHaveBeenCalledTimes(1);
+  });
+
   it("discards stale listSuites response when repoId changes before first load resolves", async () => {
     let resolveFirst!: (v: ReturnType<typeof makeListSuitesResponse>) => void;
     let resolveSecond!: (v: ReturnType<typeof makeListSuitesResponse>) => void;
