@@ -317,11 +317,18 @@ export default function RunsTab({
   async function handleFinalize(runId: string, status: RunStatus) {
     setConfirmingFinalize(null);
     try {
-      await client.finalizeRun({ repoId, runId, status });
+      const res = await client.finalizeRun({ repoId, runId, status });
+      const finalized = res.run;
+      setRuns((prev) => {
+        if (!finalized) return prev.filter((r) => r.id !== runId);
+        if (statusFilter !== RunStatus.UNSPECIFIED && finalized.status !== statusFilter) {
+          return prev.filter((r) => r.id !== runId);
+        }
+        return prev.map((r) => (r.id === runId ? finalized : r));
+      });
       setSelectedRunId(null);
       setPendingCases([]);
       announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
-      load();
     } catch (e) {
       setError(errorMessage(e));
     }
