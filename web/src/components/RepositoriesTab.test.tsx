@@ -300,6 +300,7 @@ describe("RepositoriesTab", () => {
     await userEvent.click(screen.getByText("Sync"));
     expect(screen.getByText("Syncing…")).toBeInTheDocument();
     resolve!({ repository: makeRepo() });
+    await waitFor(() => expect(screen.queryByText("Syncing…")).not.toBeInTheDocument());
   });
 
   it('shows "Refreshing…" on Refresh All button while refreshing', async () => {
@@ -315,6 +316,7 @@ describe("RepositoriesTab", () => {
     await userEvent.click(screen.getByText("↻ Refresh All"));
     expect(screen.getByText("Refreshing…")).toBeInTheDocument();
     resolve!({ repositories: [makeRepo()] });
+    await waitFor(() => expect(screen.queryByText("Refreshing…")).not.toBeInTheDocument());
   });
 
   it("shows loading state while fetching repos", async () => {
