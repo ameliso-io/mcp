@@ -273,7 +273,10 @@ describe("OverviewTab", () => {
       ResultStatus.UNSPECIFIED
     );
     vi.mocked(client.getCoverageReport).mockResolvedValue(
-      makeGetCoverageReportResponse({ entries: [blockedEntry, skippedEntry, neverEntry, unknownEntry], runCount: 3 })
+      makeGetCoverageReportResponse({
+        entries: [blockedEntry, skippedEntry, neverEntry, unknownEntry],
+        runCount: 3,
+      })
     );
     render(<OverviewTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
@@ -484,7 +487,9 @@ describe("OverviewTab", () => {
   it("announces singular '1 case affected' when exactly one affected case returned", async () => {
     vi.mocked(client.getAffectedCases).mockResolvedValue(
       makeGetAffectedCasesResponse({
-        cases: [makeAffectedCase({ case: { path: "auth/login", title: "Login", priority: "high" } })],
+        cases: [
+          makeAffectedCase({ case: { path: "auth/login", title: "Login", priority: "high" } }),
+        ],
       })
     );
     render(<OverviewTab repoId="owner/repo" />);
@@ -750,5 +755,40 @@ describe("OverviewTab", () => {
         expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED })
       )
     );
+  });
+
+  it("discards stale getCoverageReport response when repoId changes before first load resolves", async () => {
+    let resolveFirst!: (v: ReturnType<typeof makeGetCoverageReportResponse>) => void;
+    let resolveSecond!: (v: ReturnType<typeof makeGetCoverageReportResponse>) => void;
+    const newEntry = makeCovEntry("new/feature", "New Feature", "medium", ResultStatus.NEVER);
+
+    vi.mocked(client.getCoverageReport)
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res as typeof resolveFirst;
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveSecond = res as typeof resolveSecond;
+          })
+      );
+    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse());
+
+    const { rerender } = render(<OverviewTab repoId="owner/repo" />);
+    await act(async () => {
+      rerender(<OverviewTab repoId="owner/repo2" />);
+    });
+
+    resolveSecond(makeGetCoverageReportResponse({ entries: [newEntry], runCount: 1 }));
+    await waitFor(() => screen.getByText("new/feature"));
+
+    resolveFirst(makeGetCoverageReportResponse({ entries: coverageEntries, runCount: 5 }));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.queryByText("auth/login")).not.toBeInTheDocument();
+    expect(screen.getByText("new/feature")).toBeInTheDocument();
   });
 });

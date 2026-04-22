@@ -68,10 +68,14 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [affectedError, setAffectedError] = useState<string | null>(null);
   const [announcement, announce] = useAnnounce();
 
+  const loadIdRef = useRef(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const load = useCallback(
     async (path: string, silent = false) => {
       /* v8 ignore next 2 — useEffect guards !path before calling load */
       if (!path) return;
+      const id = ++loadIdRef.current;
       setLoading(true);
       setError(null);
       try {
@@ -80,6 +84,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
           client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
           client.getRepoStatus({ repoId: path }),
         ]);
+        /* v8 ignore next 1 — race guard, covered by stale load test */
+        if (id !== loadIdRef.current) return;
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
         setActiveRuns(activeRunsRes.runs);
@@ -96,15 +102,16 @@ export default function OverviewTab({ repoId, basePath }: Props) {
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
         }
       } catch (e) {
+        /* v8 ignore next 1 — race guard */
+        if (id !== loadIdRef.current) return;
         setError(errorMessage(e));
       } finally {
-        setLoading(false);
+        /* v8 ignore next 1 — race guard */
+        if (id === loadIdRef.current) setLoading(false);
       }
     },
     [announce, coverageFilter]
   );
-
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setCoverageFilter(ResultStatus.UNSPECIFIED);
