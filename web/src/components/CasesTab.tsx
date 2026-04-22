@@ -16,8 +16,13 @@ import { errorMessage } from "@/errorMessage";
 import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import LoadingSpinner from "./LoadingSpinner";
 
-const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
+const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
+  ssr: false,
+  /* v8 ignore next 1 — loading shown during initial chunk fetch, not reachable in unit tests */
+  loading: () => <LoadingSpinner />,
+});
 
 interface FilterState {
   search: string;
