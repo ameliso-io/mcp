@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
@@ -129,25 +129,26 @@ export default function RepositoriesTab({
     }
   }
 
-  const q = search.trim().toLowerCase();
+  const deferredSearch = useDeferredValue(search);
+  const dq = deferredSearch.trim().toLowerCase();
   const filteredRepos = useMemo(
     () =>
-      q
+      dq
         ? repos.filter(
-            (r) => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q)
+            (r) => r.fullName.toLowerCase().includes(dq) || r.htmlUrl.toLowerCase().includes(dq)
           )
         : repos,
-    [repos, q]
+    [repos, dq]
   );
 
   useEffect(() => {
-    if (loading || !q) return;
+    if (loading || !dq) return;
     const count = filteredRepos.length;
     if (prevFilterCountRef.current !== null && prevFilterCountRef.current !== count) {
       announceFilter(count === 1 ? "1 repository found" : `${count} repositories found`);
     }
     prevFilterCountRef.current = count;
-  }, [filteredRepos.length, loading, q, announceFilter]);
+  }, [filteredRepos.length, loading, dq, announceFilter]);
 
   async function handleRemove(id: string) {
     setError(null);
