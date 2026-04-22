@@ -372,6 +372,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               }}
               placeholder="Since ref (default: last run commit)"
               className={styles.repoInput}
+              autoComplete="off"
+              spellCheck={false}
             />
             <button type="submit" disabled={affectedLoading} className={styles.btn}>
               {affectedLoading ? "Checking…" : "Check Diff"}

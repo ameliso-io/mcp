@@ -496,6 +496,8 @@ export default function RunsTab({
                   required
                   autoFocus
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
@@ -520,6 +522,8 @@ export default function RunsTab({
                     setNewEnv(e.target.value);
                   }}
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
@@ -532,6 +536,8 @@ export default function RunsTab({
                     setNewSuite(e.target.value);
                   }}
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
