@@ -332,6 +332,20 @@ describe("CasesTab", () => {
     );
   });
 
+  it("filters by suite when suite slug input is typed", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const suiteInput = screen.getByRole("searchbox", {
+      name: "Filter by suite slug",
+    }) as HTMLInputElement;
+    await userEvent.type(suiteInput, "smoke");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ suite: "smoke" })
+      )
+    );
+  });
+
   it("calls onFiltersChange when priority filter changes", async () => {
     const onFiltersChange = vi.fn();
     render(<CasesTab repoId="owner/repo" onFiltersChange={onFiltersChange} />);
