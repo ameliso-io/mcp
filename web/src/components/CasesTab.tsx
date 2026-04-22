@@ -352,6 +352,7 @@ export default function CasesTab({
                   required
                   pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
                   title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
+                  maxLength={200}
                   autoFocus
                   className={styles.input}
                 />
@@ -366,6 +367,7 @@ export default function CasesTab({
                     setNewTitle(e.target.value);
                   }}
                   required
+                  maxLength={255}
                   className={styles.input}
                 />
               </label>
@@ -373,12 +375,14 @@ export default function CasesTab({
             <div className={styles.fullCol}>
               <label className={styles.label}>
                 Description
-                <input
+                <textarea
                   value={newDesc}
                   onChange={(e) => {
                     setNewDesc(e.target.value);
                   }}
-                  className={styles.input}
+                  rows={3}
+                  maxLength={1000}
+                  className={styles.textarea}
                 />
               </label>
             </div>
@@ -577,6 +581,7 @@ export default function CasesTab({
                             setEditTitle(e.target.value);
                           }}
                           required
+                          maxLength={255}
                           className={styles.input}
                         />
                       </label>
@@ -600,12 +605,14 @@ export default function CasesTab({
                     <div className={styles.fullCol}>
                       <label className={styles.labelSm}>
                         Description
-                        <input
+                        <textarea
                           value={editDesc}
                           onChange={(e) => {
                             setEditDesc(e.target.value);
                           }}
-                          className={styles.input}
+                          rows={3}
+                          maxLength={1000}
+                          className={styles.textarea}
                         />
                       </label>
                     </div>
@@ -644,6 +651,7 @@ export default function CasesTab({
                           }}
                           pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
                           title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
+                          maxLength={200}
                           className={styles.input}
                           placeholder="leave blank to keep current path"
                         />

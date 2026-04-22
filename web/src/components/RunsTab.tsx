@@ -437,6 +437,7 @@ export default function RunsTab({
                   required
                   pattern="[a-z0-9_-]+"
                   title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
+                  maxLength={100}
                   autoFocus
                   className={styles.input}
                 />
@@ -450,6 +451,7 @@ export default function RunsTab({
                   onChange={(e) => {
                     setNewTester(e.target.value);
                   }}
+                  maxLength={255}
                   className={styles.input}
                 />
               </label>
@@ -462,6 +464,7 @@ export default function RunsTab({
                   onChange={(e) => {
                     setNewEnv(e.target.value);
                   }}
+                  maxLength={255}
                   className={styles.input}
                 />
               </label>
@@ -474,6 +477,7 @@ export default function RunsTab({
                   onChange={(e) => {
                     setNewSuite(e.target.value);
                   }}
+                  maxLength={100}
                   className={styles.input}
                 />
               </label>
@@ -621,6 +625,7 @@ export default function RunsTab({
                     required
                     pattern="[a-z0-9_-]+"
                     title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
+                    maxLength={100}
                     autoFocus
                     className={styles.renameInput}
                     placeholder="new-slug"
@@ -996,6 +1001,7 @@ export default function RunsTab({
                                         recordStatus === ResultStatus.FAILED ||
                                         recordStatus === ResultStatus.BLOCKED
                                       }
+                                      maxLength={2000}
                                       className={
                                         recordStatus === ResultStatus.FAILED ||
                                         recordStatus === ResultStatus.BLOCKED

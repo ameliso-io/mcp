@@ -69,6 +69,11 @@
   box-sizing: border-box;
 }
 
+.textarea {
+  composes: input;
+  resize: vertical;
+}
+
 .errorCard {
   composes: card;
   background: var(--color-danger-bg);

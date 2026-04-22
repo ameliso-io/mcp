@@ -239,6 +239,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                   required
                   pattern="[a-z0-9_-]+"
                   title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
+                  maxLength={100}
                   autoFocus
                   className={styles.input}
                   placeholder="e.g. smoke"
@@ -254,6 +255,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     setNewName(e.target.value);
                   }}
                   required
+                  maxLength={255}
                   className={styles.input}
                   placeholder="e.g. Smoke Tests"
                 />
@@ -262,12 +264,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
             <div className={styles.fullCol}>
               <label className={styles.label}>
                 Description
-                <input
+                <textarea
                   value={newDesc}
                   onChange={(e) => {
                     setNewDesc(e.target.value);
                   }}
-                  className={styles.input}
+                  rows={3}
+                  maxLength={1000}
+                  className={styles.textarea}
                 />
               </label>
             </div>
@@ -345,6 +349,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                           setEditName(e.target.value);
                         }}
                         required
+                        maxLength={255}
                         autoFocus
                         className={styles.input}
                       />
@@ -353,12 +358,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                   <div className={styles.fullCol}>
                     <label className={styles.label}>
                       Description
-                      <input
+                      <textarea
                         value={editDesc}
                         onChange={(e) => {
                           setEditDesc(e.target.value);
                         }}
-                        className={styles.input}
+                        rows={3}
+                        maxLength={1000}
+                        className={styles.textarea}
                       />
                     </label>
                   </div>
@@ -384,6 +391,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                         }}
                         pattern="[a-z0-9_-]+"
                         title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
+                        maxLength={100}
                         className={styles.input}
                         placeholder="leave blank to keep current slug"
                       />
