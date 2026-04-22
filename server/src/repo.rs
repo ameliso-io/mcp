@@ -260,45 +260,44 @@ pub async fn update_case(
                     "case already exists: {np}"
                 )));
             }
-            // Rename: update case_path, fix suites referencing old path, fix results, fix run_cases.
+            // Rename atomically: update case_path and all referencing tables.
+            let mut tx = pool.begin().await.map_err(map_db)?;
             let rows =
                 sqlx::query("UPDATE cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
                     .bind(repo_id)
                     .bind(case_path)
                     .bind(np)
-                    .execute(pool)
+                    .execute(&mut *tx)
                     .await
                     .map_err(map_db)?
                     .rows_affected();
             if rows == 0 {
                 return Err(RepoError::NotFound(format!("case not found: {case_path}")));
             }
-            // Update suite case lists: replace old path in arrays.
             sqlx::query(
                 "UPDATE suites SET cases = array_replace(cases, $2, $3) WHERE repo_id=$1 AND $2 = ANY(cases)",
             )
             .bind(repo_id)
             .bind(case_path)
             .bind(np)
-            .execute(pool)
+            .execute(&mut *tx)
             .await
             .map_err(map_db)?;
-            // Update results recorded against this case.
             sqlx::query("UPDATE results SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
                 .bind(repo_id)
                 .bind(case_path)
                 .bind(np)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?;
-            // Update inline run_cases scope entries.
             sqlx::query("UPDATE run_cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
                 .bind(repo_id)
                 .bind(case_path)
                 .bind(np)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?;
+            tx.commit().await.map_err(map_db)?;
             np
         }
     } else {
@@ -521,12 +520,13 @@ pub async fn update_suite(
                     "suite already exists: {ns}"
                 )));
             }
-            // Rename: update slug and also update any runs that reference the old slug.
+            // Rename atomically: update slug and cascade to runs referencing it.
+            let mut tx = pool.begin().await.map_err(map_db)?;
             let rows = sqlx::query("UPDATE suites SET slug=$3 WHERE repo_id=$1 AND slug=$2")
                 .bind(repo_id)
                 .bind(slug)
                 .bind(ns)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?
                 .rows_affected();
@@ -537,9 +537,10 @@ pub async fn update_suite(
                 .bind(repo_id)
                 .bind(slug)
                 .bind(ns)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?;
+            tx.commit().await.map_err(map_db)?;
             ns
         }
     } else {
