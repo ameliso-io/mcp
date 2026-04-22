@@ -767,7 +767,7 @@ pub async fn record_result(
         None => {
             return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
         }
-        Some("completed") | Some("aborted") => {
+        Some("completed" | "aborted") => {
             return Err(RepoError::ClosedRun(format!(
                 "run {} is closed; cannot record results",
                 run_id
@@ -844,7 +844,7 @@ pub async fn finalize_run(
 
     match current.as_deref() {
         None => return Err(RepoError::NotFound(format!("run not found: {}", run_id))),
-        Some("completed") | Some("aborted") => {
+        Some("completed" | "aborted") => {
             return Err(RepoError::ClosedRun(format!(
                 "run {} is already closed",
                 run_id

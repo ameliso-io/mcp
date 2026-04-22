@@ -436,9 +436,9 @@ describe("CasesTab", () => {
     await waitFor(
       () =>
         expect(client.listCases).toHaveBeenCalledWith(
-          expect.objectContaining({ query: "xyz-unique-search" }),
+          expect.objectContaining({ query: "xyz-unique-search" })
         ),
-      { timeout: 1000 },
+      { timeout: 1000 }
     );
   });
 
