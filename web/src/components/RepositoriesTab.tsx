@@ -269,7 +269,7 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      <ul aria-busy={loading} role="list" className={styles.repoList}>
+      <ul aria-busy={loading || refreshing} role="list" className={styles.repoList}>
         {filteredRepos.map((repo) => {
           const isActive = activeRepoId === repo.id;
           return (
