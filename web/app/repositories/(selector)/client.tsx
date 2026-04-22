@@ -28,7 +28,7 @@ function RepositoriesInner() {
     params.delete("installation_id");
     params.delete("setup_action");
     const qs = params.toString();
-    router.replace(qs ? `/repositories?${qs}` : "/repositories");
+    router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
   }, [router, searchParams]);
 
   return (

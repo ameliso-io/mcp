@@ -23,7 +23,7 @@ function SuitesInner() {
         params.delete("expanded");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route);
+      router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route, { scroll: false });
     },
     [router, searchParams, basePath]
   );

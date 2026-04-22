@@ -57,7 +57,7 @@ function CasesInner() {
         params.delete("sort");
       }
       const qs = params.toString();
-      router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route);
+      router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route, { scroll: false });
     },
     [router, searchParams, basePath]
   );
