@@ -5,10 +5,9 @@ interface Props {
   params: Promise<{ org: string; repo: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
-  const { org, repo } = await params;
+export function generateMetadata() {
   return pageMetadata(
-    `${org}/${repo} · Overview`,
+    "Overview",
     "Test coverage summary, active runs, and affected cases for your repository"
   );
 }

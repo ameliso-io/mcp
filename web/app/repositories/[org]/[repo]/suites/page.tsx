@@ -5,12 +5,8 @@ interface Props {
   params: Promise<{ org: string; repo: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
-  const { org, repo } = await params;
-  return pageMetadata(
-    `${org}/${repo} · Suites`,
-    "Organize test cases into suites and run them as a group"
-  );
+export function generateMetadata() {
+  return pageMetadata("Suites", "Organize test cases into suites and run them as a group");
 }
 
 export default async function SuitesPage({ params }: Props) {
