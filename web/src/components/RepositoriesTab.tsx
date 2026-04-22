@@ -135,6 +135,7 @@ export default function RepositoriesTab({
   }
 
   const deferredSearch = useDeferredValue(search);
+  const isSearchStale = search !== deferredSearch;
   const dq = deferredSearch.trim().toLowerCase();
   const filteredRepos = useMemo(
     () =>
@@ -284,7 +285,7 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      <ul aria-busy={loading || refreshing} role="list" className={styles.repoList}>
+      <ul aria-busy={loading || refreshing || isSearchStale} role="list" className={isSearchStale ? `${styles.repoList} ${styles.repoListStale}` : styles.repoList}>
         {filteredRepos.map((repo) => {
           const isActive = activeRepoId === repo.id;
           return (
