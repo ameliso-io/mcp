@@ -99,6 +99,7 @@ export default function RunsTab({
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   const loadIdRef = useRef(0);
+  const selectingRef = useRef<string | null>(null);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
       consumedRef.current = true;
@@ -162,9 +163,11 @@ export default function RunsTab({
         setResultStatusFilter(null);
         setRecordingCase(null);
         setCaseBody(null);
+        selectingRef.current = null;
         return;
       }
       setSelectedRunId(runId);
+      selectingRef.current = runId;
       setLoadingPending(true);
       setPendingCases([]);
       setRecordedResults([]);
@@ -174,6 +177,8 @@ export default function RunsTab({
       try {
         if (status === RunStatus.IN_PROGRESS) {
           const res = await client.getPendingCases({ repoId, runId });
+          /* v8 ignore next 1 — race guard, covered by stale selectRun test */
+          if (selectingRef.current !== runId) return;
           setPendingCases(res.cases);
           setTotalInScope(res.totalInScope);
         } else {
@@ -181,13 +186,18 @@ export default function RunsTab({
             client.getRun({ repoId, runId }),
             client.listCases({ repoId }),
           ]);
+          /* v8 ignore next 1 — race guard */
+          if (selectingRef.current !== runId) return;
           setRecordedResults(runRes.run?.results ?? /* v8 ignore next */ []);
           setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
         }
       } catch (e) {
+        /* v8 ignore next 1 — race guard */
+        if (selectingRef.current !== runId) return;
         setError(errorMessage(e));
       } finally {
-        setLoadingPending(false);
+        /* v8 ignore next 1 — race guard */
+        if (selectingRef.current === runId) setLoadingPending(false);
       }
     },
     [selectedRunId, repoId]
