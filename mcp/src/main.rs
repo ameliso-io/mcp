@@ -282,7 +282,7 @@ struct UpdateSuiteRequest {
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct AffectedRequest {
     repo_id: String,
-    #[schemars(description = "Git ref to compare from (default: last completed run)")]
+    #[schemars(description = "Git ref to compare from (e.g. HEAD~5, a commit SHA). Required — if omitted, ALL cases are flagged as needing re-run.")]
     since_ref: Option<String>,
 }
 
@@ -1216,7 +1216,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Show test cases that may need re-running given recent git changes. Compares against the last completed run commit by default; override with since_ref. Returns cases with title, priority, and tags."
+        description = "Show test cases that may need re-running given recent git changes. Requires since_ref (e.g. HEAD~5 or a commit SHA) — if omitted, ALL cases are returned as needing re-run. Returns cases with title, priority, and tags."
     )]
     async fn get_affected_cases(&self, Parameters(req): Parameters<AffectedRequest>) -> String {
         let mut client = self.client();

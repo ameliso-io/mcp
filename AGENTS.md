@@ -236,7 +236,8 @@ Both `update_case` and `update_suite` are **patch-style**: omit any field to pre
 
 ### After code changes
 Use `get_affected_cases` (MCP) or `ameliso affected` (CLI) to identify cases
-that need re-running. The tool compares git history since the last run commit.
+that need re-running. Always pass `since_ref` — if omitted, ALL cases are
+returned as needing re-run. Example: `ameliso affected --since HEAD~5`.
 
 ### After pushing case file changes to git
 The webhook auto-syncs case files on push. If you need immediate sync (not waiting for the webhook):

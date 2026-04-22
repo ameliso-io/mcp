@@ -116,7 +116,7 @@ enum Commands {
     Affected {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
-        #[arg(long, help = "Git ref to compare from (default: last completed run)")]
+        #[arg(long, help = "Git ref to compare from (e.g. HEAD~5). If omitted, all cases are flagged.")]
         since: Option<String>,
         #[arg(long, help = "Output as JSON")]
         json: bool,
