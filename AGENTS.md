@@ -79,6 +79,8 @@ cargo build --release
 # Environment variables (set once)
 export AMELISO_SERVER_URL=http://localhost:50052  # default: http://[::1]:50052
 export AMELISO_REPO_ID=owner/repo                # use `ameliso repos list` if unknown
+export AMELISO_TESTER=ci-agent                   # used by `runs create --tester` (optional)
+export AMELISO_ENVIRONMENT=staging               # used by `runs create --environment` (optional)
 
 # Cases
 ameliso cases list

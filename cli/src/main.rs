@@ -261,9 +261,9 @@ enum RunsCmd {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         slug: String,
-        #[arg(long)]
+        #[arg(long, env = "AMELISO_TESTER")]
         tester: Option<String>,
-        #[arg(long)]
+        #[arg(long, env = "AMELISO_ENVIRONMENT")]
         environment: Option<String>,
         #[arg(long)]
         suite: Option<String>,
