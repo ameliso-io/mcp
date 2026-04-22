@@ -348,27 +348,63 @@ pub async fn update_case(
 
 pub async fn delete_case(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<()> {
     validate_slug_path(case_path, "case")?;
+    let mut tx = pool.begin().await.map_err(map_db)?;
     let rows = sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
         .bind(repo_id)
         .bind(case_path)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
         return Err(RepoError::NotFound(format!("case not found: {case_path}")));
     }
+    // Remove case from suite case lists and inline run scopes.
+    sqlx::query(
+        "UPDATE suites SET cases = array_remove(cases, $2) WHERE repo_id=$1 AND $2 = ANY(cases)",
+    )
+    .bind(repo_id)
+    .bind(case_path)
+    .execute(&mut *tx)
+    .await
+    .map_err(map_db)?;
+    sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND case_path=$2")
+        .bind(repo_id)
+        .bind(case_path)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?;
+    tx.commit().await.map_err(map_db)?;
     Ok(())
 }
 
 pub async fn delete_case_if_exists(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<()> {
     validate_slug_path(case_path, "case")?;
-    sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
+    let mut tx = pool.begin().await.map_err(map_db)?;
+    let rows = sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
         .bind(repo_id)
         .bind(case_path)
-        .execute(pool)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?
+        .rows_affected();
+    if rows > 0 {
+        sqlx::query(
+            "UPDATE suites SET cases = array_remove(cases, $2) WHERE repo_id=$1 AND $2 = ANY(cases)",
+        )
+        .bind(repo_id)
+        .bind(case_path)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
+        sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND case_path=$2")
+            .bind(repo_id)
+            .bind(case_path)
+            .execute(&mut *tx)
+            .await
+            .map_err(map_db)?;
+    }
+    tx.commit().await.map_err(map_db)?;
     Ok(()) // no error if not found
 }
 
