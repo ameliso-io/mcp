@@ -188,6 +188,16 @@ async fn process_upsert(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::body::Bytes;
+    use axum::extract::State;
+    use axum::response::IntoResponse;
+    use std::sync::Arc;
+
+    fn lazy_pool() -> sqlx::PgPool {
+        sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
+            .unwrap()
+    }
 
     #[test]
     fn verify_signature_valid() {
@@ -249,11 +259,7 @@ mod tests {
         assert!(!is_case_file("README.md"));
     }
 
-    fn commit(
-        added: &[&str],
-        modified: &[&str],
-        removed: &[&str],
-    ) -> Commit {
+    fn commit(added: &[&str], modified: &[&str], removed: &[&str]) -> Commit {
         Commit {
             added: added.iter().map(|s| s.to_string()).collect(),
             modified: modified.iter().map(|s| s.to_string()).collect(),
@@ -309,5 +315,63 @@ mod tests {
         let (upsert, remove) = collect_case_changes(&[]);
         assert!(upsert.is_empty());
         assert!(remove.is_empty());
+    }
+
+    #[tokio::test]
+    async fn github_push_no_case_files_changed_returns_ok() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(r#"{"commits":[],"repository":{"full_name":"owner/repo"}}"#);
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn github_push_invalid_json_returns_bad_request() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from_static(b"not json at all");
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn github_push_missing_signature_returns_unauthorized() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: Some("test-secret".to_owned()),
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(r#"{"commits":[],"repository":{"full_name":"owner/repo"}}"#);
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn github_push_case_file_added_no_db_returns_internal_error() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(
+            r#"{"commits":[{"added":["cases/auth/login.md"],"modified":[],"removed":[]}],"repository":{"full_name":"owner/repo"}}"#,
+        );
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }
