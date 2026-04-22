@@ -1117,6 +1117,24 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_case_valid_fields_passes_validation_and_hits_db() {
+        // Valid path + valid priority + body: None — all validation passes, DB fails.
+        let err = create_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            "Login Flow",
+            "desc",
+            vec![],
+            "medium",
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
     async fn update_case_invalid_path_returns_invalid_arg() {
         let err = update_case(
             &lazy_pool(),
@@ -1149,6 +1167,25 @@ mod tests {
         .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
         assert!(err.to_string().contains("invalid priority"));
+    }
+
+    #[tokio::test]
+    async fn update_case_no_priority_skips_validation_and_hits_db() {
+        // priority: None takes the false branch of `if let Some(p) = priority`,
+        // skipping validate_priority; passes pre-DB checks → DB error.
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
     #[tokio::test]
@@ -1279,6 +1316,70 @@ mod tests {
     // -----------------------------------------------------------------------
     // validate_suite_cases: invalid case path fires before DB
     // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn create_run_no_suite_passes_validation_and_hits_db() {
+        // suite: None — outer `if let Some(ref suite_slug) = suite` is false, skipping
+        // all suite validation; passes pre-DB checks → DB error.
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_run_valid_suite_slug_passes_validation_and_hits_db() {
+        // Valid run slug + valid suite slug — passes validate_slug_path for both,
+        // then fails at the DB EXISTS check for the suite.
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            Some("regression".to_owned()),
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn record_result_valid_inputs_passes_validation_and_hits_db() {
+        // All three validations pass (valid status, run_id, case_path) → DB error.
+        let err = record_result(
+            &lazy_pool(),
+            "owner/repo",
+            "2026-04-21-smoke",
+            "auth/login",
+            "passed",
+            "",
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn finalize_run_valid_inputs_passes_validation_and_hits_db() {
+        // Both validations pass (valid status, run_id) → DB error.
+        let err = finalize_run(
+            &lazy_pool(),
+            "owner/repo",
+            "2026-04-21-smoke",
+            "completed",
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
 
     #[tokio::test]
     async fn create_suite_invalid_case_path_in_cases_returns_invalid_arg() {
