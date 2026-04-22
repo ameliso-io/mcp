@@ -127,7 +127,9 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => void load(repoId, true), 30_000);
+      pollRef.current = setInterval(() => {
+        void load(repoId, true);
+      }, 30_000);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

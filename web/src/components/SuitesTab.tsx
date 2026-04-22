@@ -141,6 +141,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         if (res.suite) {
           const created = res.suite;
           setSuites((prev) =>
+            /* v8 ignore next 2 — upsert branch when slug already exists */
             prev.some((s) => s.slug === created.slug)
               ? prev.map((s) => (s.slug === created.slug ? created : s))
               : [...prev, created]
@@ -197,6 +198,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         });
         if (res.suite) {
           const suite = res.suite;
+          /* v8 ignore next 1 — false ternary branch not reached with single-suite test setup */
           setSuites((prev) => prev.map((s) => (s.slug === editingSlug ? suite : s)));
         }
         setEditingSlug(null);

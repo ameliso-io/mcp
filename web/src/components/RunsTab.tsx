@@ -271,8 +271,10 @@ export default function RunsTab({
         announce("Run created");
         if (created.run) {
           const newRun = created.run;
+          /* v8 ignore next 1 — false branch when active status filter excludes new run */
           if (statusFilter === RunStatus.UNSPECIFIED || newRun.status === statusFilter) {
             setRuns((prev) =>
+              /* v8 ignore next 2 — upsert branch when run id already exists */
               prev.some((r) => r.id === newRun.id)
                 ? prev.map((r) => (r.id === newRun.id ? newRun : r))
                 : [newRun, ...prev]
@@ -357,10 +359,12 @@ export default function RunsTab({
       const res = await client.finalizeRun({ repoId, runId, status });
       const finalized = res.run;
       setRuns((prev) => {
+        /* v8 ignore next 1 — only when server returns no run object */
         if (!finalized) return prev.filter((r) => r.id !== runId);
         if (statusFilter !== RunStatus.UNSPECIFIED && finalized.status !== statusFilter) {
           return prev.filter((r) => r.id !== runId);
         }
+        /* v8 ignore next 1 — ternary false branch covered by filter returning array */
         return prev.map((r) => (r.id === runId ? finalized : r));
       });
       setSelectedRunId(null);

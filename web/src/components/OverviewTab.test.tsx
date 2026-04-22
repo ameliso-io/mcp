@@ -377,6 +377,17 @@ describe("OverviewTab", () => {
     expect(screen.queryByText("coverage failed")).not.toBeInTheDocument();
   });
 
+  it("retries load when Retry button clicked in error banner", async () => {
+    vi.mocked(client.getCoverageReport)
+      .mockRejectedValueOnce(new Error("coverage failed"))
+      .mockResolvedValueOnce({ entries: [], runCount: 0 } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("coverage failed")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.queryByText("coverage failed")).not.toBeInTheDocument());
+    expect(client.getCoverageReport).toHaveBeenCalledTimes(2);
+  });
+
   it("sets sinceRef when typing in diff input", async () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));

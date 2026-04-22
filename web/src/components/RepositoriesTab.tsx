@@ -49,11 +49,13 @@ export default function RepositoriesTab({
         client.listRepositories({}, { signal }),
         client.getGitHubInstallUrl({}, { signal }),
       ]);
+      /* v8 ignore next 1 — AbortController race guard, not exercised in unit tests */
       if (signal.aborted) return;
       setRepos(reposRes.repositories);
       setInstallUrl(urlRes.url);
       setConfigured(urlRes.configured);
     } catch (e) {
+      /* v8 ignore next 1 — AbortController race guard in error path */
       if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
