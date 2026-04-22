@@ -847,7 +847,7 @@ export default function RunsTab({
                           {recordingCase === c.path && (
                             <div className={styles.recordPanel}>
                               {(caseBodyLoading || caseBody) && (
-                                <div className={styles.recordSteps}>
+                                <div className={styles.recordSteps} aria-busy={caseBodyLoading}>
                                   {caseBodyLoading ? (
                                     <p className={styles.stepsLoading} role="status">
                                       Loading steps…
