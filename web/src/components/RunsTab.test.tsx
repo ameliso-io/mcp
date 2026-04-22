@@ -120,6 +120,19 @@ describe("RunsTab", () => {
     );
   });
 
+  it("adds new run to list from createRun response without re-fetching", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [] }));
+    const newRun = makeRunMeta({ id: "2026-01-02-smoke", suite: "smoke", status: RunStatus.IN_PROGRESS });
+    vi.mocked(client.createRun).mockResolvedValue(makeCreateRunResponse({ run: newRun }));
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("No runs found."));
+    await userEvent.click(screen.getByText("+ New Run"));
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "smoke");
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    await waitFor(() => expect(screen.getByText(newRun.id)).toBeInTheDocument());
+    expect(client.listRuns).toHaveBeenCalledTimes(1);
+  });
+
   it("shows status filter buttons", async () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("No runs found."));
