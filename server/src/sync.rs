@@ -5,6 +5,12 @@ use sqlx::PgPool;
 
 use crate::repo::LoadedCase;
 
+fn yaml_quote(s: &str) -> String {
+    // Always double-quote to handle YAML special chars ({, [, :, #, etc.) in user input.
+    let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
+}
+
 pub fn case_to_markdown(case: &LoadedCase) -> String {
     let tags_yaml = if case.tags.is_empty() {
         "tags: []".to_owned()
@@ -19,7 +25,12 @@ pub fn case_to_markdown(case: &LoadedCase) -> String {
     };
     format!(
         "---\ntitle: {}\ndescription: {}\n{tags_yaml}\npriority: {}\ncreated_at: {}\nupdated_at: {}\n---\n\n{}",
-        case.title, case.description, case.priority, case.created_at, case.updated_at, case.body,
+        yaml_quote(&case.title),
+        yaml_quote(&case.description),
+        case.priority,
+        case.created_at,
+        case.updated_at,
+        case.body,
     )
 }
 
@@ -179,11 +190,31 @@ mod tests {
     fn case_to_markdown_formats_correctly() {
         let md = case_to_markdown(&sample_case());
         assert!(md.starts_with("---\n"));
-        assert!(md.contains("title: User Login"));
+        assert!(md.contains("title: \"User Login\""));
+        assert!(md.contains("description: \"Verify login\""));
         assert!(md.contains("priority: high"));
         assert!(md.contains("  - auth"));
         assert!(md.contains("  - smoke"));
         assert!(md.contains("## Steps"));
+    }
+
+    #[test]
+    fn case_to_markdown_quotes_special_yaml_chars() {
+        let mut c = sample_case();
+        c.title = "Login: {flow} [test]".to_owned();
+        c.description = "Verifies: the #tag flow".to_owned();
+        let md = case_to_markdown(&c);
+        // Must roundtrip correctly despite special characters.
+        let parsed = parse_case_markdown("cases/auth/login.md", &md).unwrap();
+        assert_eq!(parsed.title, "Login: {flow} [test]");
+        assert_eq!(parsed.description, "Verifies: the #tag flow");
+    }
+
+    #[test]
+    fn yaml_quote_escapes_backslash_and_double_quote() {
+        assert_eq!(yaml_quote("a\\b"), "\"a\\\\b\"");
+        assert_eq!(yaml_quote("say \"hello\""), "\"say \\\"hello\\\"\"");
+        assert_eq!(yaml_quote("plain text"), "\"plain text\"");
     }
 
     #[test]
