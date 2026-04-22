@@ -3212,4 +3212,11 @@ mod tests {
         // Distinct from paren_suffix which hits ')' via the '(' prefix loop path.
         assert!(text_references_case("auth/login) and more", "auth/login"));
     }
+
+    #[test]
+    fn text_references_case_dot_suffix_via_starts_with() {
+        // ends_cleanly '.' branch via the starts_with path (path at start of text, . suffix)
+        // Distinct from dot_suffix which hits '.' via the ' ' and '/' prefix loop paths.
+        assert!(text_references_case("auth/login.md", "auth/login"));
+    }
 }
