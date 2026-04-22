@@ -561,10 +561,26 @@ export default function RunsTab({
                         aria-label="Filter by result status"
                       >
                         {[
-                          { label: "Passed", count: resultCounts.passed, status: ResultStatus.PASSED },
-                          { label: "Failed", count: resultCounts.failed, status: ResultStatus.FAILED },
-                          { label: "Blocked", count: resultCounts.blocked, status: ResultStatus.BLOCKED },
-                          { label: "Skipped", count: resultCounts.skipped, status: ResultStatus.SKIPPED },
+                          {
+                            label: "Passed",
+                            count: resultCounts.passed,
+                            status: ResultStatus.PASSED,
+                          },
+                          {
+                            label: "Failed",
+                            count: resultCounts.failed,
+                            status: ResultStatus.FAILED,
+                          },
+                          {
+                            label: "Blocked",
+                            count: resultCounts.blocked,
+                            status: ResultStatus.BLOCKED,
+                          },
+                          {
+                            label: "Skipped",
+                            count: resultCounts.skipped,
+                            status: ResultStatus.SKIPPED,
+                          },
                         ]
                           .filter((s) => s.count > 0)
                           .map((s) => (
@@ -596,23 +612,24 @@ export default function RunsTab({
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
                       <ul className={styles.resultList} role="list">
-                        {filteredResults.map((r) => (
-                          <li key={r.casePath} className={styles.resultRow}>
-                            <span
-                              className={styles.resultStatusBadge}
-                              data-status={ResultStatus[r.status]}
-                            >
-                              {statusLabel(r.status)}
-                            </span>
-                            <span className={styles.resultPath}>{r.casePath}</span>
-                            {caseTitleMap.get(r.casePath)?.title && (
-                              <span className={styles.resultTitle}>
-                                {caseTitleMap.get(r.casePath)!.title}
+                        {filteredResults.map((r) => {
+                          const caseEntry = caseTitleMap.get(r.casePath);
+                          return (
+                            <li key={r.casePath} className={styles.resultRow}>
+                              <span
+                                className={styles.resultStatusBadge}
+                                data-status={ResultStatus[r.status]}
+                              >
+                                {statusLabel(r.status)}
                               </span>
-                            )}
-                            {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
-                          </li>
-                        ))}
+                              <span className={styles.resultPath}>{r.casePath}</span>
+                              {caseEntry?.title && (
+                                <span className={styles.resultTitle}>{caseEntry.title}</span>
+                              )}
+                              {r.notes && <span className={styles.resultNotes}>{r.notes}</span>}
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
