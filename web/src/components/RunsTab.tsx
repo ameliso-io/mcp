@@ -99,12 +99,14 @@ export default function RunsTab({
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
   const [actionAnnouncement, announce] = useAnnounce();
+  const [filterAnnouncement, announceFilter] = useAnnounce();
   const [filterPending, startFilterTransition] = useTransition();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   const loadIdRef = useRef(0);
   const selectingRef = useRef<string | null>(null);
+  const prevRunCountRef = useRef<number | null>(null);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
       consumedRef.current = true;
@@ -158,6 +160,15 @@ export default function RunsTab({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading) return;
+    const count = runs.length;
+    if (prevRunCountRef.current !== null && prevRunCountRef.current !== count) {
+      announceFilter(`${count} run${count !== 1 ? "s" : ""} found`);
+    }
+    prevRunCountRef.current = count;
+  }, [runs.length, loading, announceFilter]);
 
   const selectRun = useCallback(
     async (runId: string, status: RunStatus) => {
@@ -384,6 +395,9 @@ export default function RunsTab({
     <div>
       <div role="status" aria-live="polite" className="sr-only">
         {actionAnnouncement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
       </div>
       <div className={styles.header}>
         <div className={styles.headerLeft}>

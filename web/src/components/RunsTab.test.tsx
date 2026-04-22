@@ -135,7 +135,11 @@ describe("RunsTab", () => {
   it("discards stale listRuns response when status filter changes before first load resolves", async () => {
     let resolveFirst!: (v: ReturnType<typeof makeListRunsResponse>) => void;
     let resolveSecond!: (v: ReturnType<typeof makeListRunsResponse>) => void;
-    const inProgressRun = makeRunMeta({ id: "run-ip", suite: "smoke", status: RunStatus.IN_PROGRESS });
+    const inProgressRun = makeRunMeta({
+      id: "run-ip",
+      suite: "smoke",
+      status: RunStatus.IN_PROGRESS,
+    });
     vi.mocked(client.listRuns)
       .mockImplementationOnce(
         () =>
@@ -1051,5 +1055,19 @@ describe("RunsTab", () => {
       const select = screen.getByRole("combobox") as HTMLSelectElement;
       expect(select.value).toBe(String(ResultStatus.PASSED));
     });
+  });
+
+  it("announces run count via live region when status filter changes run count", async () => {
+    vi.mocked(client.listRuns)
+      .mockResolvedValueOnce(makeListRunsResponse({ runs: [mockRun] }))
+      .mockResolvedValueOnce(makeListRunsResponse({ runs: [] }));
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText(mockRun.id));
+    await userEvent.click(screen.getByRole("button", { name: "Completed" }));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("0 runs found"))
+      ).toBe(true)
+    );
   });
 });
