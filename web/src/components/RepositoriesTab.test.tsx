@@ -132,7 +132,10 @@ describe("RepositoriesTab", () => {
       />
     );
     await waitFor(() =>
-      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-42" }, expect.anything())
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith(
+        { installationId: "inst-42" },
+        expect.anything()
+      )
     );
   });
 
@@ -168,7 +171,10 @@ describe("RepositoriesTab", () => {
       />
     );
     await waitFor(() =>
-      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-99" }, expect.anything())
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith(
+        { installationId: "inst-99" },
+        expect.anything()
+      )
     );
   });
 
@@ -193,7 +199,10 @@ describe("RepositoriesTab", () => {
       <RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-no-action" />
     );
     await waitFor(() =>
-      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-no-action" }, expect.anything())
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith(
+        { installationId: "inst-no-action" },
+        expect.anything()
+      )
     );
   });
 
@@ -266,7 +275,10 @@ describe("RepositoriesTab", () => {
     } as never);
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" installationId="inst-55" />);
     await waitFor(() =>
-      expect(client.handleGitHubCallback).toHaveBeenCalledWith({ installationId: "inst-55" }, expect.anything())
+      expect(client.handleGitHubCallback).toHaveBeenCalledWith(
+        { installationId: "inst-55" },
+        expect.anything()
+      )
     );
   });
 
