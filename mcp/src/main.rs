@@ -221,9 +221,13 @@ struct CreateRunRequest {
     #[schemars(description = "Environment being tested, e.g. staging or production (optional)")]
     environment: Option<String>,
     #[schemars(
-        description = "Suite slug to scope this run to a subset of cases (optional; must exist)"
+        description = "Suite slug to scope this run to a subset of cases (optional; must exist). Mutually exclusive with `cases`."
     )]
     suite: Option<String>,
+    #[schemars(
+        description = "Inline case path list to scope the run without a named suite — e.g. use with get_affected_cases output. Comma-separated string. Mutually exclusive with `suite`."
+    )]
+    cases: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -752,6 +756,16 @@ impl AmelisoMcp {
             .tester
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| std::env::var("USER").unwrap_or_else(|_| "unknown".to_owned()));
+        let inline_cases: Vec<String> = req
+            .cases
+            .as_deref()
+            .map(|s| {
+                s.split(',')
+                    .map(|c| c.trim().to_owned())
+                    .filter(|c| !c.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default();
         let created = match client
             .create_run(pb::CreateRunRequest {
                 repo_id: req.repo_id.clone(),
@@ -759,6 +773,7 @@ impl AmelisoMcp {
                 tester,
                 environment: req.environment.unwrap_or_default(),
                 suite: req.suite.unwrap_or_default(),
+                cases: inline_cases,
             })
             .await
         {

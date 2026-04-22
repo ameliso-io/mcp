@@ -290,6 +290,12 @@ enum RunsCmd {
         environment: Option<String>,
         #[arg(long)]
         suite: Option<String>,
+        #[arg(
+            long,
+            value_delimiter = ',',
+            help = "Comma-separated case paths to scope the run (alternative to --suite; cannot be used with --suite)"
+        )]
+        cases: Vec<String>,
         #[arg(long, help = "Output as JSON")]
         json: bool,
     },
@@ -866,6 +872,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
             tester,
             environment,
             suite,
+            cases,
             json,
         } => {
             let tester = tester
@@ -878,6 +885,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                     tester,
                     environment: environment.unwrap_or_default(),
                     suite: suite.unwrap_or_default(),
+                    cases,
                 })
                 .await
                 .map_err(grpc_err)?
@@ -1775,6 +1783,23 @@ mod tests {
         .expect("should parse");
         if let Commands::Runs(RunsCmd::Create { slug, .. }) = cli.command {
             assert_eq!(slug, "2026-01-01-smoke");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_create_with_cases_parses() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "create",
+            "--repo-id", "owner/repo",
+            "--cases", "auth/login,billing/checkout",
+            "2026-01-01-affected",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Create { cases, slug, .. }) = cli.command {
+            assert_eq!(slug, "2026-01-01-affected");
+            assert_eq!(cases, vec!["auth/login", "billing/checkout"]);
         } else {
             panic!("wrong variant");
         }

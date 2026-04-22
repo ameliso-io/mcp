@@ -673,6 +673,14 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
    * @generated from field: string suite = 5;
    */
   suite: string;
+
+  /**
+   * Optional inline case list — when set, the run is scoped to these cases without
+   * requiring a pre-existing suite. Mutually exclusive with `suite`.
+   *
+   * @generated from field: repeated string cases = 6;
+   */
+  cases: string[];
 };
 
 /**

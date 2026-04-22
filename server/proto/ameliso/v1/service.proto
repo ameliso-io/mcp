@@ -210,6 +210,9 @@ message CreateRunRequest {
   string tester = 3;
   string environment = 4;
   string suite = 5;
+  // Optional inline case list — when set, the run is scoped to these cases without
+  // requiring a pre-existing suite. Mutually exclusive with `suite`.
+  repeated string cases = 6;
 }
 
 message CreateRunResponse {

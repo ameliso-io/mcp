@@ -367,7 +367,9 @@ impl AmelisoService for AmelisoServer {
             }
             created.push(case_to_pb(&case));
         }
-        Ok(Response::new(pb::BulkCreateCasesResponse { cases: created }))
+        Ok(Response::new(pb::BulkCreateCasesResponse {
+            cases: created,
+        }))
     }
 
     async fn update_case(
@@ -666,9 +668,11 @@ impl AmelisoService for AmelisoServer {
         } else {
             req.tester
         };
-        let meta = repo::create_run(&self.pool, &req.repo_id, &req.slug, &tester, env, suite)
-            .await
-            .map_err(repo_err)?;
+        let inline_cases = req.cases;
+        let meta =
+            repo::create_run(&self.pool, &req.repo_id, &req.slug, &tester, env, suite, inline_cases)
+                .await
+                .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
@@ -2847,6 +2851,41 @@ mod tests {
                 tester: "alice".to_owned(),
                 environment: "staging".to_owned(),
                 suite: "smoke".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_both_suite_and_cases() {
+        // Passing both suite and non-empty cases list is invalid.
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                suite: "regression".to_owned(),
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("suite") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_inline_cases_passes_validation() {
+        // Non-empty cases list + no suite → passes validation → DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+                ..Default::default()
             }))
             .await
             .unwrap_err();

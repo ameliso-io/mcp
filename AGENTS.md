@@ -109,6 +109,8 @@ ameliso runs get 2026-04-21-smoke --json  # machine-readable JSON: run + results
 ameliso runs get 2026-04-21-smoke
 ameliso runs create smoke --tester alice --environment staging
 ameliso runs create smoke --json     # machine-readable: { run_id, dir_path, total_in_scope, scope[] }
+ameliso runs create affected-cases --cases auth/login,billing/checkout  # inline case scope (no suite needed)
+ameliso runs create affected-cases --cases "$(ameliso affected --json --files '...' | jq -r '[.cases[].path] | join(",")')"
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
 ameliso runs record 2026-04-21-smoke auth/login passed --json  # machine-readable: { case_path, status, done, total, remaining }
 ameliso runs finalize 2026-04-21-smoke completed
@@ -202,6 +204,8 @@ If `repo_id` is not provided in the task context, call `list_repositories` first
 ### When to create a test case
 - A feature or user-facing behaviour has no corresponding case in `cases/`.
 - Use `list_cases` (MCP) or `ameliso cases list` (CLI) to check coverage first.
+- When adding **multiple cases at once** (e.g. setting up a new project), use `bulk_create_cases`
+  (MCP) or `ameliso cases bulk-create` (CLI) — one call instead of N serial `create_case` calls.
 
 ### When to create a test run
 - After executing one or more cases manually or in a controlled environment.
@@ -250,6 +254,13 @@ that need re-running. Two modes:
   ameliso affected --files "$(git diff --name-only HEAD~5 | tr '\n' ',')"
   ```
   If neither is provided, ALL cases are flagged.
+
+To run only the affected cases without creating a throwaway suite, pass the case
+paths directly to `create_run` via `--cases` (CLI) or `cases` (MCP):
+```sh
+ameliso runs create affected-$(date +%F) \
+  --cases "$(ameliso affected --json --files "$(git diff --name-only HEAD~1 | tr '\n' ',')" | jq -r '[.cases[].path] | join(",")')"
+```
 
 ### After pushing case file changes to git
 The webhook auto-syncs case files on push. If you need immediate sync (not waiting for the webhook):

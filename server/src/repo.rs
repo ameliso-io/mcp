@@ -549,8 +549,14 @@ pub async fn create_run(
     tester: &str,
     environment: Option<String>,
     suite: Option<String>,
+    inline_cases: Vec<String>,
 ) -> RResult<RunRow> {
     validate_slug_path(slug, "run slug")?;
+    if !inline_cases.is_empty() && suite.as_deref().is_some_and(|s| !s.is_empty()) {
+        return Err(RepoError::InvalidArg(
+            "cannot specify both suite and cases — use one or the other".to_owned(),
+        ));
+    }
     if let Some(ref suite_slug) = suite {
         if !suite_slug.is_empty() {
             validate_slug_path(suite_slug, "suite")?;
@@ -595,6 +601,20 @@ pub async fn create_run(
             "run already exists: {}",
             run_id
         )));
+    }
+
+    if !inline_cases.is_empty() {
+        for case_path in &inline_cases {
+            sqlx::query(
+                "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+            )
+            .bind(repo_id)
+            .bind(&run_id)
+            .bind(case_path)
+            .execute(pool)
+            .await
+            .map_err(map_db)?;
+        }
     }
 
     Ok(RunRow {
@@ -766,7 +786,26 @@ pub async fn get_pending_cases(
     validate_slug_path(run_id, "run")?;
     let run = get_run(pool, repo_id, run_id).await?;
 
-    let (scope, total) = if let Some(ref suite_slug) = run.meta.suite {
+    // Check for inline run_cases first.
+    let inline: Vec<String> = sqlx::query_scalar(
+        "SELECT case_path FROM run_cases WHERE repo_id=$1 AND run_id=$2 ORDER BY case_path",
+    )
+    .bind(repo_id)
+    .bind(run_id)
+    .fetch_all(pool)
+    .await
+    .map_err(map_db)?;
+
+    let (scope, total) = if !inline.is_empty() {
+        let inline_set: std::collections::HashSet<String> = inline.into_iter().collect();
+        let all = list_cases(pool, repo_id).await?;
+        let filtered: Vec<_> = all
+            .into_iter()
+            .filter(|c| inline_set.contains(&c.case_path))
+            .collect();
+        let total = filtered.len();
+        (filtered, total)
+    } else if let Some(ref suite_slug) = run.meta.suite {
         if suite_slug.is_empty() {
             let all = list_cases(pool, repo_id).await?;
             let total = all.len();
@@ -1333,6 +1372,7 @@ mod tests {
             "tester",
             None,
             None,
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1349,6 +1389,7 @@ mod tests {
             "tester",
             None,
             Some("bad suite!".to_owned()),
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1366,6 +1407,7 @@ mod tests {
             "tester",
             None,
             Some("".to_owned()),
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1396,7 +1438,7 @@ mod tests {
     async fn create_run_no_suite_passes_validation_and_hits_db() {
         // suite: None — outer `if let Some(ref suite_slug) = suite` is false, skipping
         // all suite validation; passes pre-DB checks → DB error.
-        let err = create_run(&lazy_pool(), "owner/repo", "smoke", "tester", None, None)
+        let err = create_run(&lazy_pool(), "owner/repo", "smoke", "tester", None, None, vec![])
             .await
             .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
@@ -1413,6 +1455,7 @@ mod tests {
             "tester",
             None,
             Some("regression".to_owned()),
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1807,7 +1850,7 @@ mod tests {
     #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
     async fn create_and_finalize_run(pool: PgPool) {
         let repo = "test-repo";
-        let run = create_run(&pool, repo, "sprint-1", "alice", None, None)
+        let run = create_run(&pool, repo, "sprint-1", "alice", None, None, vec![])
             .await
             .unwrap();
         assert_eq!(run.status, "in-progress");
@@ -1825,7 +1868,7 @@ mod tests {
         create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
             .await
             .unwrap();
-        let run = create_run(&pool, repo, "sprint-2", "", None, None)
+        let run = create_run(&pool, repo, "sprint-2", "", None, None, vec![])
             .await
             .unwrap();
         finalize_run(&pool, repo, &run.run_id, "aborted")
