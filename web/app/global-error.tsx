@@ -1,6 +1,7 @@
 "use client";
 
 import { Inter } from "next/font/google";
+import "./globals.css";
 import styles from "./app.module.css";
 
 const inter = Inter({
