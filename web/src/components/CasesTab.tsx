@@ -237,6 +237,8 @@ export default function CasesTab({
     prevCountRef.current = count;
   }, [deferredCases.length, loading, announceFilter]);
 
+  const noFiltersActive = !debouncedSearch && priorityFilter === Priority.UNSPECIFIED && !tagFilter;
+
   const handleCreate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -244,7 +246,7 @@ export default function CasesTab({
       if (!repoId || !newPath || !newTitle) return;
       setCreating(true);
       try {
-        await client.createCase({
+        const res = await client.createCase({
           repoId,
           casePath: newPath,
           title: newTitle,
@@ -258,6 +260,11 @@ export default function CasesTab({
             : [],
           body: newBody,
         });
+        if (res.case && noFiltersActive) {
+          setCases((prev) => [...prev, res.case!]);
+        } else {
+          load();
+        }
         setShowCreate(false);
         lastFocusRef.current?.focus();
         setNewPath("");
@@ -267,14 +274,13 @@ export default function CasesTab({
         setNewBody("");
         setNewPriority(Priority.MEDIUM);
         announceAction("Case created");
-        load();
       } catch (e) {
         setError(errorMessage(e));
       } finally {
         setCreating(false);
       }
     },
-    [repoId, newPath, newTitle, newDesc, newPriority, newTags, newBody, announceAction, load]
+    [repoId, newPath, newTitle, newDesc, newPriority, newTags, newBody, noFiltersActive, announceAction, load]
   );
 
   async function handleDelete(casePath: string) {
@@ -296,7 +302,7 @@ export default function CasesTab({
       if (!editingPath) return;
       setSaving(true);
       try {
-        await client.updateCase({
+        const res = await client.updateCase({
           repoId,
           casePath: editingPath,
           title: editTitle,
@@ -311,10 +317,15 @@ export default function CasesTab({
           body: editBody,
           newPath: editNewPath,
         });
+        if (res.case && noFiltersActive) {
+          const updated = res.case;
+          setCases((prev) => prev.map((c) => (c.path === editingPath ? updated : c)));
+        } else {
+          load();
+        }
         setEditingPath(null);
         lastFocusRef.current?.focus();
         announceAction("Case updated");
-        load();
       } catch (e) {
         setError(errorMessage(e));
       } finally {
@@ -330,6 +341,7 @@ export default function CasesTab({
       editTags,
       editBody,
       editNewPath,
+      noFiltersActive,
       announceAction,
       load,
     ]

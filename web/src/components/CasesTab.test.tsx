@@ -102,6 +102,39 @@ describe("CasesTab", () => {
     );
   });
 
+  it("adds new case to list from createCase response without re-fetching when no filters active", async () => {
+    const newCase = makeCase({ path: "auth/signup", title: "User Signup", priority: "low" });
+    vi.mocked(client.createCase).mockResolvedValue(
+      makeCreateCaseResponse({ case: newCase, filePath: "cases/auth/signup.md" })
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("+ New Case"));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Path (e.g. auth/login)" }),
+      "auth/signup"
+    );
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "User Signup");
+    await userEvent.click(screen.getByText("Create"));
+    await waitFor(() => expect(screen.getByText("User Signup")).toBeInTheDocument());
+    expect(client.listCases).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates case in list from updateCase response without re-fetching when no filters active", async () => {
+    const updatedCase = makeCase({ path: "auth/login", title: "Updated Login" });
+    vi.mocked(client.updateCase).mockResolvedValue(makeUpdateCaseResponse({ case: updatedCase }));
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    const titleInput = screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement;
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, "Updated Login");
+    await userEvent.click(screen.getByText("Save"));
+    await waitFor(() => expect(screen.getByText("Updated Login")).toBeInTheDocument());
+    expect(screen.queryByText("User Login")).not.toBeInTheDocument();
+    expect(client.listCases).toHaveBeenCalledTimes(1);
+  });
+
   it("calls deleteCase when delete confirmed", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue(
       makeDeleteCaseResponse({ filePath: "cases/auth/login.md" })
