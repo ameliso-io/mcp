@@ -117,10 +117,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   useEffect(() => {
     const slug = initialExpandedRef.current;
     if (!slug || suites.length === 0) return;
-    if (suites.some((s) => s.slug === slug)) {
-      initialExpandedRef.current = null;
-      void toggleExpand(slug);
-    }
+    if (!suites.some((s) => s.slug === slug)) return;
+    initialExpandedRef.current = null;
+    void toggleExpand(slug);
   }, [suites, toggleExpand]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -226,11 +225,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
             aria-label="Create Suite"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setShowCreate(false);
-                lastFocusRef.current?.focus();
-              }
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              setShowCreate(false);
+              lastFocusRef.current?.focus();
             }}
             className={styles.formGrid}
           >
@@ -333,11 +331,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                   aria-label={`Edit suite ${suite.slug}`}
                   onSubmit={handleUpdate}
                   onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      setEditState(null);
-                      lastFocusRef.current?.focus();
-                    }
+                    if (e.key !== "Escape") return;
+                    e.preventDefault();
+                    setEditState(null);
+                    lastFocusRef.current?.focus();
                   }}
                   className={styles.formGridSm}
                 >
