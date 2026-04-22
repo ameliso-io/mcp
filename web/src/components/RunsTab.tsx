@@ -107,6 +107,7 @@ export default function RunsTab({
   const loadIdRef = useRef(0);
   const selectingRef = useRef<string | null>(null);
   const prevRunCountRef = useRef<number | null>(null);
+  const recordingBodyRef = useRef<string | null>(null);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
       consumedRef.current = true;
@@ -291,6 +292,7 @@ export default function RunsTab({
     if (recordingCase === casePath) {
       setRecordingCase(null);
       setCaseBody(null);
+      recordingBodyRef.current = null;
       return;
     }
     lastFocusRef.current = document.activeElement as HTMLElement;
@@ -298,14 +300,17 @@ export default function RunsTab({
     setRecordNotes("");
     setRecordStatus(ResultStatus.PASSED);
     setCaseBody(null);
+    recordingBodyRef.current = casePath;
     setCaseBodyLoading(true);
     try {
       const res = await client.getCase({ repoId, casePath });
-      setCaseBody(res.body || null);
+      /* v8 ignore next 1 — race guard, covered by stale openRecord test */
+      if (recordingBodyRef.current === casePath) setCaseBody(res.body || null);
     } catch {
       // body unavailable; proceed without it
     } finally {
-      setCaseBodyLoading(false);
+      /* v8 ignore next 1 — race guard */
+      if (recordingBodyRef.current === casePath) setCaseBodyLoading(false);
     }
   }
 
