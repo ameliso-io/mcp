@@ -246,6 +246,13 @@ mod tests {
     }
 
     #[test]
+    fn parse_case_markdown_missing_priority_defaults_to_medium() {
+        let content = "---\ntitle: No Priority Case\n---\n\nbody";
+        let parsed = parse_case_markdown("cases/auth/login.md", content).unwrap();
+        assert_eq!(parsed.priority, "medium");
+    }
+
+    #[test]
     fn parse_case_markdown_invalid_yaml_returns_error() {
         let content = "---\ntitle: [unclosed bracket\n---\n\nbody";
         let err = parse_case_markdown("cases/auth/login.md", content).unwrap_err();
@@ -254,8 +261,7 @@ mod tests {
 
     #[test]
     fn parse_case_from_base64_invalid_base64_returns_error() {
-        let err = parse_case_from_base64("cases/auth/login.md", "not!!valid%%base64")
-            .unwrap_err();
+        let err = parse_case_from_base64("cases/auth/login.md", "not!!valid%%base64").unwrap_err();
         assert!(err.to_string().contains("base64 decode failed"));
     }
 
