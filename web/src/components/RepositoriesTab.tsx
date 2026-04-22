@@ -10,9 +10,9 @@ import { useAnnounce } from "@/hooks/useAnnounce";
 interface Props {
   onRepoSelect: (id: string) => void;
   activeRepoId: string;
-  installationId?: string;
-  setupAction?: string;
-  onInstallationHandled?: () => void;
+  installationId?: string | undefined;
+  setupAction?: string | undefined;
+  onInstallationHandled?: (() => void) | undefined;
 }
 
 export default function RepositoriesTab({
