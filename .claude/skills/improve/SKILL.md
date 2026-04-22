@@ -70,10 +70,7 @@ Hard rules:
 
 After each logical unit of work (not just at the end):
 
-1. `cargo build --manifest-path server/Cargo.toml` — must succeed
-2. `cargo test --manifest-path server/Cargo.toml` — all tests pass
-3. `npm run test:typecheck` inside `web/` — no TypeScript errors
-4. Commit all changed files with a conventional commit message
-5. **`git push` immediately after every commit** — do not batch commits; push each one as it lands
-6. If push fails (pre-push hook), fix the failure, amend or create a new commit, push again
-7. Report: what changed, why it matters, what to do next
+1. Commit all changed files with a conventional commit message
+2. **`git push` immediately after every commit** — do not batch commits; push each one as it lands
+3. If push fails (pre-push hook), fix the failure, amend or create a new commit, push again
+4. Report: what changed, why it matters, what to do next

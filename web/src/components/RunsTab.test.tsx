@@ -1526,7 +1526,11 @@ describe("RunsTab", () => {
   });
 
   it("updates recorded results section after recording a result", async () => {
-    const result = makeCaseResult({ casePath: "auth/login", status: ResultStatus.FAILED, notes: "error" });
+    const result = makeCaseResult({
+      casePath: "auth/login",
+      status: ResultStatus.FAILED,
+      notes: "error",
+    });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getRun)
       .mockResolvedValueOnce({ run: { meta: mockRun, results: [] } } as never)
@@ -1562,9 +1566,7 @@ describe("RunsTab", () => {
         name: `Confirm pass all 1 pending case`,
       })
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: `Confirm pass all 1 pending case` })
-    );
+    await userEvent.click(screen.getByRole("button", { name: `Confirm pass all 1 pending case` }));
     await waitFor(() => expect(screen.getByText("Recorded (1)")).toBeInTheDocument());
   });
 });
