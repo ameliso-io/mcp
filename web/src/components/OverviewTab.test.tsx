@@ -739,6 +739,35 @@ describe("OverviewTab", () => {
     );
   });
 
+  it("initializes coverage filter select from initialCoverageFilter prop", async () => {
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialCoverageFilter={ResultStatus.FAILED}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    expect(screen.getByRole("combobox", { name: "Filter coverage by status" })).toHaveValue(
+      String(ResultStatus.FAILED)
+    );
+  });
+
+  it("calls onCoverageFilterChange when filter select changes", async () => {
+    const onCoverageFilterChange = vi.fn();
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onCoverageFilterChange={onCoverageFilterChange}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    fireEvent.change(select, { target: { value: String(ResultStatus.PASSED) } });
+    expect(onCoverageFilterChange).toHaveBeenCalledWith(ResultStatus.PASSED);
+  });
+
   it("resets coverage filter to All statuses when repoId changes", async () => {
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />

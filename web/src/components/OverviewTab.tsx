@@ -14,6 +14,8 @@ import { useInterval } from "@/hooks/useInterval";
 interface Props {
   repoId: string;
   basePath: string;
+  initialCoverageFilter?: ResultStatus | undefined;
+  onCoverageFilterChange?: ((s: ResultStatus) => void) | undefined;
 }
 
 const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -52,7 +54,12 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoId, basePath }: Props) {
+export default function OverviewTab({
+  repoId,
+  basePath,
+  initialCoverageFilter,
+  onCoverageFilterChange,
+}: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -63,7 +70,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
     Map<string, { pendingCases: number; totalInScope: number }>
   >(new Map());
 
-  const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
+  const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(
+    initialCoverageFilter ?? ResultStatus.UNSPECIFIED
+  );
 
   const [sinceRef, setSinceRef] = useState("");
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
@@ -72,6 +81,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [announcement, announce] = useAnnounce();
 
   const loadAbortRef = useRef<AbortController | null>(null);
+  const filterMountedRef = useRef(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -118,6 +128,10 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
+    if (!filterMountedRef.current) {
+      filterMountedRef.current = true;
+      return;
+    }
     setCoverageFilter(ResultStatus.UNSPECIFIED);
   }, [repoId]);
 
@@ -298,7 +312,9 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                 aria-label="Filter coverage by status"
                 value={coverageFilter}
                 onChange={(e) => {
-                  setCoverageFilter(Number(e.target.value));
+                  const next = Number(e.target.value);
+                  setCoverageFilter(next);
+                  onCoverageFilterChange?.(next);
                 }}
                 className={styles.filterSelect}
               >
