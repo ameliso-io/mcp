@@ -310,6 +310,8 @@ Status must be one of: passed, failed, blocked, skipped. Notes are required for 
             help = "Results in format case_path:status or case_path:status:notes"
         )]
         entries: Vec<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
 }
 
@@ -977,6 +979,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
             repo_id,
             run_id,
             entries,
+            json,
         } => {
             let mut grpc_entries: Vec<pb::BulkResultEntry> = Vec::new();
             for raw in &entries {
@@ -1005,18 +1008,43 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            for r in &resp.results {
-                println!("recorded: {}", r.case_path);
-            }
             let pending = resp.pending_count as usize;
             let total = resp.total_in_scope as usize;
-            if pending == 0 {
-                println!("progress: {total}/{total} done — all cases recorded; ready to finalize");
-            } else {
+            if json {
+                let results_json: Vec<serde_json::Value> = resp
+                    .results
+                    .iter()
+                    .map(|r| {
+                        serde_json::json!({
+                            "case_path": r.case_path,
+                            "status": result_status_i32_to_str(r.status),
+                        })
+                    })
+                    .collect();
                 println!(
-                    "progress: {}/{total} done, {pending} remaining",
-                    total - pending
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "results": results_json,
+                        "pending_count": pending,
+                        "total_in_scope": total,
+                        "done": total.saturating_sub(pending),
+                    }))
+                    .unwrap_or_default()
                 );
+            } else {
+                for r in &resp.results {
+                    println!("recorded: {}", r.case_path);
+                }
+                if pending == 0 {
+                    println!(
+                        "progress: {total}/{total} done — all cases recorded; ready to finalize"
+                    );
+                } else {
+                    println!(
+                        "progress: {}/{total} done, {pending} remaining",
+                        total - pending
+                    );
+                }
             }
         }
     }
@@ -1641,6 +1669,23 @@ mod tests {
         if let Commands::Runs(RunsCmd::BulkRecord { entries, .. }) = cli.command {
             assert_eq!(entries.len(), 2);
             assert_eq!(entries[0], "auth/login:passed");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_bulk_record_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "bulk-record",
+            "--repo-id", "owner/repo",
+            "--json",
+            "2026-01-01-smoke",
+            "auth/login:passed",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::BulkRecord { json, .. }) = cli.command {
+            assert!(json);
         } else {
             panic!("wrong variant");
         }

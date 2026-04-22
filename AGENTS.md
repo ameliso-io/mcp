@@ -108,6 +108,10 @@ ameliso runs delete 2026-04-21-smoke
 ameliso runs pending 2026-04-21-smoke
 ameliso runs pending 2026-04-21-smoke --json  # machine-readable: { pending_count, total_in_scope, done, cases[] }
 
+# Bulk record
+ameliso runs bulk-record 2026-04-21-smoke auth/login:passed auth/logout:failed:"login broke"
+ameliso runs bulk-record 2026-04-21-smoke auth/login:passed --json  # machine-readable: { results[], pending_count, total_in_scope, done }
+
 # Suites
 ameliso suites list
 ameliso suites list --json           # machine-readable JSON array of suite objects
