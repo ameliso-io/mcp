@@ -90,19 +90,27 @@ export default function RepositoriesTab({
       (setupAction != null && setupAction !== "install" && setupAction !== "update")
     )
       return;
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
     onInstallationHandled?.();
     setLoading(true);
     setError(null);
     client
-      .handleGitHubCallback({ installationId })
+      .handleGitHubCallback({ installationId }, { signal })
       .then((res) => {
+        if (signal.aborted) return;
         setRepos((prev) => {
           const ids = new Set(res.repositories.map((r) => r.id));
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
       })
-      .catch((e) => setError(errorMessage(e)))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (!signal.aborted) setError(errorMessage(e));
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {
