@@ -117,4 +117,12 @@ describe("NavBar", () => {
     expect(logoLink).toBeInTheDocument();
     expect(logoLink).toHaveAttribute("href", "/repositories");
   });
+
+  it("renders only logo when basePath is omitted", () => {
+    render(<NavBar />);
+    expect(screen.getByText("Ameliso")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Overview" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Cases" })).not.toBeInTheDocument();
+  });
 });
