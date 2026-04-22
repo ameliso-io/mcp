@@ -18,7 +18,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body>
         <div className={`${styles.centered} ${styles.fullPage}`} role="alert">
           <h2 className={styles.heading}>Something went wrong</h2>
