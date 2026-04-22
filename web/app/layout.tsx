@@ -5,7 +5,6 @@ import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
   variable: "--font-sans",
   display: "swap",
 });
@@ -13,7 +12,7 @@ const inter = Inter({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  colorScheme: "light",
+  colorScheme: "light dark",
   themeColor: "#1e293b",
 };
 
