@@ -97,12 +97,14 @@ export default function CasesTab({
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
-  const [newPath, setNewPath] = useState("");
-  const [newTitle, setNewTitle] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newPriority, setNewPriority] = useState<Priority>(Priority.MEDIUM);
-  const [newTags, setNewTags] = useState("");
-  const [newBody, setNewBody] = useState("");
+  const [createForm, setCreateForm] = useState({
+    path: "",
+    title: "",
+    desc: "",
+    priority: Priority.MEDIUM,
+    tags: "",
+    body: "",
+  });
   const [creating, setCreating] = useState(false);
 
   // Expanded case body view
@@ -237,31 +239,26 @@ export default function CasesTab({
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newPath || !newTitle) return;
+    if (!repoId || !createForm.path || !createForm.title) return;
     setCreating(true);
     try {
       await client.createCase({
         repoId,
-        casePath: newPath,
-        title: newTitle,
-        description: newDesc,
-        priority: newPriority,
-        tags: newTags
-          ? newTags
+        casePath: createForm.path,
+        title: createForm.title,
+        description: createForm.desc,
+        priority: createForm.priority,
+        tags: createForm.tags
+          ? createForm.tags
               .split(",")
               .map((t) => t.trim())
               .filter(Boolean)
           : [],
-        body: newBody,
+        body: createForm.body,
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
-      setNewPath("");
-      setNewTitle("");
-      setNewDesc("");
-      setNewTags("");
-      setNewBody("");
-      setNewPriority(Priority.MEDIUM);
+      setCreateForm({ path: "", title: "", desc: "", priority: Priority.MEDIUM, tags: "", body: "" });
       announceAction("Case created");
       load();
     } catch (e) {
@@ -378,9 +375,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Path (e.g. auth/login)
                 <input
-                  value={newPath}
+                  value={createForm.path}
                   onChange={(e) => {
-                    setNewPath(e.target.value);
+                    setCreateForm((f) => ({ ...f, path: e.target.value }));
                   }}
                   required
                   autoFocus
@@ -392,9 +389,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Title
                 <input
-                  value={newTitle}
+                  value={createForm.title}
                   onChange={(e) => {
-                    setNewTitle(e.target.value);
+                    setCreateForm((f) => ({ ...f, title: e.target.value }));
                   }}
                   required
                   className={styles.input}
@@ -405,9 +402,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Description
                 <input
-                  value={newDesc}
+                  value={createForm.desc}
                   onChange={(e) => {
-                    setNewDesc(e.target.value);
+                    setCreateForm((f) => ({ ...f, desc: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -417,9 +414,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Priority
                 <select
-                  value={newPriority}
+                  value={createForm.priority}
                   onChange={(e) => {
-                    setNewPriority(Number(e.target.value));
+                    setCreateForm((f) => ({ ...f, priority: Number(e.target.value) }));
                   }}
                   className={styles.input}
                 >
@@ -433,9 +430,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Tags (comma-separated)
                 <input
-                  value={newTags}
+                  value={createForm.tags}
                   onChange={(e) => {
-                    setNewTags(e.target.value);
+                    setCreateForm((f) => ({ ...f, tags: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -445,9 +442,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Steps / Body (Markdown)
                 <textarea
-                  value={newBody}
+                  value={createForm.body}
                   onChange={(e) => {
-                    setNewBody(e.target.value);
+                    setCreateForm((f) => ({ ...f, body: e.target.value }));
                   }}
                   placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
                   rows={6}
