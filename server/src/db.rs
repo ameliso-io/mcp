@@ -86,3 +86,21 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::postgres::PgPoolOptions;
+
+    fn lazy_pool() -> sqlx::PgPool {
+        PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
+            .expect("lazy pool")
+    }
+
+    #[tokio::test]
+    async fn run_migrations_returns_db_error_when_no_connection() {
+        let err = run_migrations(&lazy_pool()).await.unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+}
