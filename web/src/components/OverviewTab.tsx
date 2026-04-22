@@ -112,7 +112,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
 
   useEffect(() => {
     if (repoId) {
-      load(repoId);
+      void load(repoId);
     }
   }, [repoId, load]);
 
@@ -120,7 +120,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => load(repoId, true), 30_000);
+      pollRef.current = setInterval(() => void load(repoId, true), 30_000);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

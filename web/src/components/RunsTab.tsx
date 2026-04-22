@@ -117,14 +117,16 @@ export default function RunsTab({
     const selectedRun = runs.find((r) => r.id === selectedRunId);
     if (selectedRun?.status === RunStatus.IN_PROGRESS && selectedRunId) {
       const runId = selectedRunId;
-      pendingPollRef.current = setInterval(async () => {
-        try {
-          const res = await client.getPendingCases({ repoId, runId });
-          setPendingCases(res.cases);
-          setTotalInScope(res.totalInScope);
-        } catch {
-          // silently ignore poll errors
-        }
+      pendingPollRef.current = setInterval(() => {
+        void client
+          .getPendingCases({ repoId, runId })
+          .then((res) => {
+            setPendingCases(res.cases);
+            setTotalInScope(res.totalInScope);
+          })
+          .catch(() => {
+            // silently ignore poll errors
+          });
       }, 30_000);
     }
     return () => {
@@ -147,7 +149,7 @@ export default function RunsTab({
   }, [repoId, statusFilter]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -295,7 +297,7 @@ export default function RunsTab({
       setSelectedRunId(null);
       setPendingCases([]);
       announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -340,7 +342,7 @@ export default function RunsTab({
       }
       setConfirmingDeleteRun(null);
       announce("Run deleted");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     }

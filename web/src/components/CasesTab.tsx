@@ -201,7 +201,7 @@ export default function CasesTab({
   }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   useEffect(() => {
@@ -242,7 +242,7 @@ export default function CasesTab({
       setNewBody("");
       setNewPriority(Priority.MEDIUM);
       announceAction("Case created");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -256,7 +256,7 @@ export default function CasesTab({
       if (expandedPath === casePath) setExpandedPath(null);
       setConfirmingDelete(null);
       announceAction("Case deleted");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -286,7 +286,7 @@ export default function CasesTab({
       setEditingPath(null);
       lastFocusRef.current?.focus();
       announceAction("Case updated");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {

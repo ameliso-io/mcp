@@ -39,7 +39,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   const toggleExpandRef = useRef<(slug: string) => void>((_slug: string) => undefined);
   useEffect(() => {
     onExpandedChangeRef.current = onExpandedChange;
-    toggleExpandRef.current = toggleExpand;
+    toggleExpandRef.current = (slug: string) => void toggleExpand(slug);
   });
   const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   }, [repoId]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   // Auto-expand suite from URL param after first load
@@ -137,7 +137,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       setNewDesc("");
       setNewCases("");
       announce("Suite created");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -151,7 +151,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       if (expanded === slug) setExpanded(null);
       setConfirmingDelete(null);
       announce("Suite deleted");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -180,7 +180,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       setEditingSlug(null);
       lastFocusRef.current?.focus();
       announce("Suite updated");
-      load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
