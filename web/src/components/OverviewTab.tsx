@@ -62,19 +62,24 @@ export default function OverviewTab({ repoId }: Props) {
   const [announcement, announce] = useAnnounce();
 
   const loadIdRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(
     async (path: string, silent = false) => {
       /* v8 ignore next 2 — useEffect guards !path before calling load */
       if (!path) return;
+      loadAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      loadAbortRef.current = ctrl;
+      const { signal } = ctrl;
       const id = ++loadIdRef.current;
       setLoading(true);
       setError(null);
       try {
         const [coverageRes, activeRunsRes] = await Promise.all([
-          client.getCoverageReport({ repoId: path }),
-          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
+          client.getCoverageReport({ repoId: path }, { signal }),
+          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }, { signal }),
         ]);
         /* v8 ignore next 1 — race guard, covered by stale load test */
         if (id !== loadIdRef.current) return;
@@ -86,12 +91,13 @@ export default function OverviewTab({ repoId }: Props) {
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
         }
       } catch (e) {
+        if (signal.aborted) return;
         /* v8 ignore next 1 — race guard */
         if (id !== loadIdRef.current) return;
         setError(errorMessage(e));
       } finally {
         /* v8 ignore next 1 — race guard */
-        if (id === loadIdRef.current) setLoading(false);
+        if (!signal.aborted && id === loadIdRef.current) setLoading(false);
       }
     },
     [announce]
@@ -102,6 +108,12 @@ export default function OverviewTab({ repoId }: Props) {
       load(repoId);
     }
   }, [repoId, load]);
+
+  useEffect(() => {
+    return () => {
+      loadAbortRef.current?.abort();
+    };
+  }, []);
 
   // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
   useEffect(() => {

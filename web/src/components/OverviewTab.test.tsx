@@ -259,7 +259,8 @@ describe("OverviewTab", () => {
     });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenCalledWith(
-        expect.objectContaining({ repoId: "owner/new-repo" })
+        expect.objectContaining({ repoId: "owner/new-repo" }),
+        expect.anything()
       )
     );
   });
