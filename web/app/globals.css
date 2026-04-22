@@ -14,6 +14,14 @@
     --color-ink: #1e293b;
     --color-ink-hover: #334155;
     --color-ink-active: #293548;
+    /* Navigation stays dark in both light and dark mode */
+    --color-nav-bg: #1e293b;
+    --color-nav-border: #334155;
+    --color-nav-logo: #e2e8f0;
+    --color-nav-link: #94a3b8;
+    --color-nav-link-hover-bg: #293548;
+    --color-nav-active-bg: #334155;
+    --color-nav-active-text: #ffffff;
     --color-success: #16a34a;
     --color-success-bg: #dcfce7;
     --color-success-text: #166534;
@@ -60,10 +68,14 @@
       --color-surface: #1e293b;
       --color-surface-alt: #0f172a;
       --color-card-bg: #1e293b;
-      --color-on-primary: #ffffff;
+      /* Buttons become light-gray in dark mode; use dark text for contrast */
+      --color-on-primary: #0f172a;
       --color-ink: #e2e8f0;
       --color-ink-hover: #f1f5f9;
       --color-ink-active: #f8fafc;
+      /* Nav stays dark, only bg slightly deeper */
+      --color-nav-bg: #0f172a;
+      --color-nav-border: #1e293b;
       --color-success: #4ade80;
       --color-success-bg: #14532d;
       --color-success-text: #86efac;
