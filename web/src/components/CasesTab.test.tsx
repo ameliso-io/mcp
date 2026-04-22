@@ -425,7 +425,7 @@ describe("CasesTab", () => {
       () => {
         expect(vi.mocked(client.listCases).mock.calls.length).toBeGreaterThan(callsBefore);
       },
-      { timeout: 1000 },
+      { timeout: 1000 }
     );
   });
 
