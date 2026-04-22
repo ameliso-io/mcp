@@ -66,6 +66,17 @@ fn invalid(msg: impl Into<String>) -> Status {
     Status::invalid_argument(msg.into())
 }
 
+#[allow(clippy::result_large_err)]
+fn check_max_len(field: &str, value: &str, max: usize) -> Result<(), Status> {
+    if value.len() > max {
+        return Err(invalid(format!(
+            "{field} must not exceed {max} characters (got {})",
+            value.len()
+        )));
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Conversions
 // ---------------------------------------------------------------------------
@@ -274,6 +285,10 @@ impl AmelisoService for AmelisoServer {
         if req.title.is_empty() {
             return Err(invalid("title is required"));
         }
+        check_max_len("case_path", &req.case_path, 200)?;
+        check_max_len("title", &req.title, 255)?;
+        check_max_len("description", &req.description, 1000)?;
+        check_max_len("body", &req.body, 100_000)?;
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
         let body = if req.body.is_empty() {
             None
@@ -334,6 +349,10 @@ impl AmelisoService for AmelisoServer {
                     entry.case_path
                 )));
             }
+            check_max_len("case_path", &entry.case_path, 200)?;
+            check_max_len("title", &entry.title, 255)?;
+            check_max_len("description", &entry.description, 1000)?;
+            check_max_len("body", &entry.body, 100_000)?;
             let priority = priority_from_i32(entry.priority).unwrap_or("medium");
             let body = if entry.body.is_empty() {
                 None
@@ -383,6 +402,11 @@ impl AmelisoService for AmelisoServer {
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
+        check_max_len("case_path", &req.case_path, 200)?;
+        check_max_len("new_path", &req.new_path, 200)?;
+        check_max_len("title", &req.title, 255)?;
+        check_max_len("description", &req.description, 1000)?;
+        check_max_len("body", &req.body, 100_000)?;
         let priority = priority_from_i32(req.priority);
         let title = if req.title.is_empty() {
             None
@@ -522,6 +546,9 @@ impl AmelisoService for AmelisoServer {
         if req.name.is_empty() {
             return Err(invalid("name is required"));
         }
+        check_max_len("slug", &req.slug, 100)?;
+        check_max_len("name", &req.name, 255)?;
+        check_max_len("description", &req.description, 1000)?;
         let desc = if req.description.is_empty() {
             None
         } else {
@@ -554,6 +581,10 @@ impl AmelisoService for AmelisoServer {
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
+        check_max_len("slug", &req.slug, 100)?;
+        check_max_len("new_slug", &req.new_slug, 100)?;
+        check_max_len("name", &req.name, 255)?;
+        check_max_len("description", &req.description, 1000)?;
         let name = if req.name.is_empty() {
             None
         } else {
@@ -664,6 +695,10 @@ impl AmelisoService for AmelisoServer {
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
+        check_max_len("slug", &req.slug, 100)?;
+        check_max_len("tester", &req.tester, 255)?;
+        check_max_len("environment", &req.environment, 255)?;
+        check_max_len("suite", &req.suite, 100)?;
         let env = if req.environment.is_empty() {
             None
         } else {
@@ -723,6 +758,7 @@ impl AmelisoService for AmelisoServer {
                 "notes are required when status is failed or blocked",
             ));
         }
+        check_max_len("notes", &req.notes, 2000)?;
         let (result, _) = repo::record_result(
             &self.pool,
             &req.repo_id,
@@ -2123,6 +2159,103 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("case_path is required"));
+    }
+
+    #[tokio::test]
+    async fn create_case_rejects_title_too_long() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "x".repeat(256),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn create_case_rejects_case_path_too_long() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "a".repeat(201),
+                title: "Login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path must not exceed 200"));
+    }
+
+    #[tokio::test]
+    async fn update_case_rejects_title_too_long() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "x".repeat(256),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn create_suite_rejects_slug_too_long() {
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "x".repeat(101),
+                name: "Smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug must not exceed 100"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_tester_too_long() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                tester: "x".repeat(256),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("tester must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn record_result_rejects_notes_too_long() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Failed as i32,
+                notes: "x".repeat(2001),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes must not exceed 2000"));
     }
 
     #[tokio::test]
