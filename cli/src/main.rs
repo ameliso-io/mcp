@@ -188,6 +188,8 @@ enum CasesCmd {
         priority: String,
         #[arg(long, help = "Full markdown body (steps, expected results)")]
         body: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Update an existing test case")]
     Update {
@@ -207,12 +209,16 @@ enum CasesCmd {
         priority: Option<String>,
         #[arg(long, help = "Replace the full markdown body (omit to keep existing)")]
         body: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Delete a test case")]
     Delete {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         case_path: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
 }
 
@@ -250,6 +256,8 @@ enum RunsCmd {
         environment: Option<String>,
         #[arg(long)]
         suite: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Record a test result")]
     Record {
@@ -261,6 +269,8 @@ enum RunsCmd {
         status: String,
         #[arg(long, help = "Notes (required when status is failed or blocked)")]
         notes: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Finalize a test run")]
     Finalize {
@@ -269,6 +279,8 @@ enum RunsCmd {
         run_id: String,
         #[arg(help = "completed | aborted")]
         status: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Show cases in a run's scope that have no result yet")]
     Pending {
@@ -327,6 +339,8 @@ enum SuitesCmd {
         description: Option<String>,
         #[arg(long, help = "Comma-separated case paths")]
         cases: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Update an existing suite")]
     Update {
@@ -342,12 +356,16 @@ enum SuitesCmd {
             help = "Comma-separated case paths — replaces full list (omit to keep existing)"
         )]
         cases: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Delete a suite")]
     Delete {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
         slug: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
 }
 
@@ -473,6 +491,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
             tags,
             priority,
             body,
+            json,
         } => {
             let resp = c
                 .create_case(pb::CreateCaseRequest {
@@ -488,18 +507,25 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner();
             let case = resp.case.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no case"))?;
-            println!("Created: {}", resp.file_path);
-            println!("title:       {}", case.title);
-            println!("description: {}", case.description);
-            println!("priority:    {}", case.priority);
-            println!(
-                "tags:        {}",
-                if case.tags.is_empty() {
-                    "(none)".to_owned()
-                } else {
-                    case.tags.join(", ")
-                }
-            );
+            if json {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "file_path": resp.file_path,
+                    "path": case.path,
+                    "title": case.title,
+                    "description": case.description,
+                    "priority": case.priority,
+                    "tags": case.tags,
+                }))?);
+            } else {
+                println!("Created: {}", resp.file_path);
+                println!("title:       {}", case.title);
+                println!("description: {}", case.description);
+                println!("priority:    {}", case.priority);
+                println!(
+                    "tags:        {}",
+                    if case.tags.is_empty() { "(none)".to_owned() } else { case.tags.join(", ") }
+                );
+            }
         }
         CasesCmd::Update {
             repo_id,
@@ -509,6 +535,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
             tags,
             priority,
             body,
+            json,
         } => {
             let tag_vec = parse_tags(tags.as_deref().unwrap_or(""));
             let pri = priority
@@ -529,26 +556,39 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner();
             let case = resp.case.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no case"))?;
-            println!("Updated: cases/{}.md", case.path);
-            println!("title:       {}", case.title);
-            println!("description: {}", case.description);
-            println!("priority:    {}", case.priority);
-            println!(
-                "tags:        {}",
-                if case.tags.is_empty() {
-                    "(none)".to_owned()
-                } else {
-                    case.tags.join(", ")
-                }
-            );
+            if json {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "file_path": format!("cases/{}.md", case.path),
+                    "path": case.path,
+                    "title": case.title,
+                    "description": case.description,
+                    "priority": case.priority,
+                    "tags": case.tags,
+                }))?);
+            } else {
+                println!("Updated: cases/{}.md", case.path);
+                println!("title:       {}", case.title);
+                println!("description: {}", case.description);
+                println!("priority:    {}", case.priority);
+                println!(
+                    "tags:        {}",
+                    if case.tags.is_empty() { "(none)".to_owned() } else { case.tags.join(", ") }
+                );
+            }
         }
-        CasesCmd::Delete { repo_id, case_path } => {
+        CasesCmd::Delete { repo_id, case_path, json } => {
             let resp = c
                 .delete_case(pb::DeleteCaseRequest { repo_id, case_path })
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            println!("Deleted: {}", resp.file_path);
+            if json {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "file_path": resp.file_path,
+                }))?);
+            } else {
+                println!("Deleted: {}", resp.file_path);
+            }
         }
     }
     Ok(())
@@ -710,6 +750,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
             tester,
             environment,
             suite,
+            json,
         } => {
             let tester = tester
                 .filter(|s| !s.is_empty())
@@ -726,27 +767,54 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner();
             let meta = resp.run.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
-            println!("Created run: {}", meta.id);
-            println!("Directory:   {}", resp.dir_path);
-            if let Ok(pending_resp) = c
+            let pending_resp = c
                 .get_pending_cases(pb::GetPendingCasesRequest {
                     repo_id,
                     run_id: meta.id.clone(),
                 })
                 .await
-            {
-                let p = pending_resp.into_inner();
-                println!("Scope:       {} case(s) to test:", p.total_in_scope);
-                for case in &p.cases {
-                    let tags = if case.tags.is_empty() {
-                        String::new()
-                    } else {
-                        format!(", tags: {}", case.tags.join(", "))
-                    };
-                    println!(
-                        "  {} — {} (priority: {}{})",
-                        case.path, case.title, case.priority, tags
-                    );
+                .ok()
+                .map(|r| r.into_inner());
+            if json {
+                let scope: Vec<_> = pending_resp
+                    .as_ref()
+                    .map(|p| {
+                        p.cases
+                            .iter()
+                            .map(|c| serde_json::json!({
+                                "path": c.path,
+                                "title": c.title,
+                                "priority": c.priority,
+                                "tags": c.tags,
+                            }))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                let total_in_scope = pending_resp.as_ref().map(|p| p.total_in_scope).unwrap_or(0);
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "run_id": meta.id,
+                    "dir_path": resp.dir_path,
+                    "tester": meta.tester,
+                    "status": run_status_i32_to_str(meta.status),
+                    "total_in_scope": total_in_scope,
+                    "scope": scope,
+                }))?);
+            } else {
+                println!("Created run: {}", meta.id);
+                println!("Directory:   {}", resp.dir_path);
+                if let Some(p) = &pending_resp {
+                    println!("Scope:       {} case(s) to test:", p.total_in_scope);
+                    for case in &p.cases {
+                        let tags = if case.tags.is_empty() {
+                            String::new()
+                        } else {
+                            format!(", tags: {}", case.tags.join(", "))
+                        };
+                        println!(
+                            "  {} — {} (priority: {}{})",
+                            case.path, case.title, case.priority, tags
+                        );
+                    }
                 }
             }
         }
@@ -756,6 +824,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
             case_path,
             status,
             notes,
+            json,
         } => {
             let status_i32 = result_status_str_to_i32(&status);
             c.record_result(pb::RecordResultRequest {
@@ -767,25 +836,32 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
             })
             .await
             .map_err(grpc_err)?;
-            println!("Recorded: {case_path} = {status} in run {run_id}");
-            if let Ok(resp) = c
-                .get_pending_cases(pb::GetPendingCasesRequest {
-                    repo_id,
-                    run_id,
-                })
+            let pending_resp = c
+                .get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id: run_id.clone() })
                 .await
-            {
-                let resp = resp.into_inner();
-                let total = resp.total_in_scope as usize;
-                let pending = resp.cases.len();
-                if pending == 0 {
-                    println!("Progress: {total}/{total} done — all cases recorded");
-                } else {
-                    println!(
-                        "Progress: {}/{total} done, {} remaining",
-                        total - pending,
-                        pending
-                    );
+                .ok()
+                .map(|r| r.into_inner());
+            if json {
+                let total = pending_resp.as_ref().map(|p| p.total_in_scope as usize).unwrap_or(0);
+                let pending = pending_resp.as_ref().map(|p| p.cases.len()).unwrap_or(0);
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "case_path": case_path,
+                    "status": status,
+                    "run_id": run_id,
+                    "done": total.saturating_sub(pending),
+                    "total": total,
+                    "remaining": pending,
+                }))?);
+            } else {
+                println!("Recorded: {case_path} = {status} in run {run_id}");
+                if let Some(resp) = pending_resp {
+                    let total = resp.total_in_scope as usize;
+                    let pending = resp.cases.len();
+                    if pending == 0 {
+                        println!("Progress: {total}/{total} done — all cases recorded");
+                    } else {
+                        println!("Progress: {}/{total} done, {} remaining", total - pending, pending);
+                    }
                 }
             }
         }
@@ -793,6 +869,7 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
             repo_id,
             run_id,
             status,
+            json,
         } => {
             let status_i32 = run_status_str_to_i32(&status);
             let meta = c
@@ -806,47 +883,32 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .into_inner()
                 .run
                 .ok_or_else(|| anyhow::anyhow!("server returned no run"))?;
-            println!(
-                "Finalized run {} as {}",
-                meta.id,
-                run_status_i32_to_str(meta.status)
-            );
-            if let Ok(run_resp) = c
-                .get_run(pb::GetRunRequest {
-                    repo_id,
-                    run_id: meta.id.clone(),
-                })
+            let run = c
+                .get_run(pb::GetRunRequest { repo_id, run_id: meta.id.clone() })
                 .await
-            {
-                if let Some(run) = run_resp.into_inner().run {
-                let passed = run
-                    .results
-                    .iter()
-                    .filter(|r| r.status == pb::ResultStatus::Passed as i32)
-                    .count();
-                let failed = run
-                    .results
-                    .iter()
-                    .filter(|r| r.status == pb::ResultStatus::Failed as i32)
-                    .count();
-                let blocked = run
-                    .results
-                    .iter()
-                    .filter(|r| r.status == pb::ResultStatus::Blocked as i32)
-                    .count();
-                let skipped = run
-                    .results
-                    .iter()
-                    .filter(|r| r.status == pb::ResultStatus::Skipped as i32)
-                    .count();
-                println!(
-                    "Summary: {} passed, {} failed, {} blocked, {} skipped ({} total)",
-                    passed,
-                    failed,
-                    blocked,
-                    skipped,
-                    run.results.len()
-                );
+                .ok()
+                .and_then(|r| r.into_inner().run);
+            let (passed, failed, blocked, skipped, total) = run.as_ref().map(|r| {
+                let p = r.results.iter().filter(|x| x.status == pb::ResultStatus::Passed as i32).count();
+                let f = r.results.iter().filter(|x| x.status == pb::ResultStatus::Failed as i32).count();
+                let b = r.results.iter().filter(|x| x.status == pb::ResultStatus::Blocked as i32).count();
+                let s = r.results.iter().filter(|x| x.status == pb::ResultStatus::Skipped as i32).count();
+                (p, f, b, s, r.results.len())
+            }).unwrap_or((0, 0, 0, 0, 0));
+            if json {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "run_id": meta.id,
+                    "status": run_status_i32_to_str(meta.status),
+                    "passed": passed,
+                    "failed": failed,
+                    "blocked": blocked,
+                    "skipped": skipped,
+                    "total": total,
+                }))?);
+            } else {
+                println!("Finalized run {} as {}", meta.id, run_status_i32_to_str(meta.status));
+                if total > 0 {
+                    println!("Summary: {passed} passed, {failed} failed, {blocked} blocked, {skipped} skipped ({total} total)");
                 }
             }
         }
@@ -1016,6 +1078,7 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
             name,
             description,
             cases,
+            json,
         } => {
             let case_list: Vec<String> = cases
                 .split(',')
@@ -1033,7 +1096,17 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            println!("Created: {}", resp.file_path);
+            let suite = resp.suite.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no suite"))?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "file_path": resp.file_path,
+                    "slug": suite.slug,
+                    "name": suite.name,
+                    "case_count": suite.cases.len(),
+                }))?);
+            } else {
+                println!("Created: {}", resp.file_path);
+            }
         }
         SuitesCmd::Update {
             repo_id,
@@ -1041,10 +1114,11 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
             name,
             description,
             cases,
+            json,
         } => {
             let replace_cases = cases.is_some();
             let case_list: Vec<String> = parse_tags(cases.as_deref().unwrap_or(""));
-            c.update_suite(pb::UpdateSuiteRequest {
+            let resp = c.update_suite(pb::UpdateSuiteRequest {
                 repo_id,
                 slug: slug.clone(),
                 name: name.unwrap_or_default(),
@@ -1053,10 +1127,21 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 replace_cases,
             })
             .await
-            .map_err(grpc_err)?;
-            println!("Updated: suites/{slug}.yaml");
+            .map_err(grpc_err)?
+            .into_inner();
+            if json {
+                let suite = resp.suite.as_ref().ok_or_else(|| anyhow::anyhow!("server returned no suite"))?;
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "file_path": format!("suites/{slug}.yaml"),
+                    "slug": suite.slug,
+                    "name": suite.name,
+                    "case_count": suite.cases.len(),
+                }))?);
+            } else {
+                println!("Updated: suites/{slug}.yaml");
+            }
         }
-        SuitesCmd::Delete { repo_id, slug } => {
+        SuitesCmd::Delete { repo_id, slug, json } => {
             let resp = c
                 .delete_suite(pb::DeleteSuiteRequest {
                     repo_id,
@@ -1065,7 +1150,13 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
                 .await
                 .map_err(grpc_err)?
                 .into_inner();
-            println!("Deleted: {}", resp.file_path);
+            if json {
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({
+                    "file_path": resp.file_path,
+                }))?);
+            } else {
+                println!("Deleted: {}", resp.file_path);
+            }
         }
     }
     Ok(())
@@ -1936,6 +2027,73 @@ mod tests {
             .expect("should parse");
         if let Commands::Repos(ReposCmd::Sync { repo_id }) = cli.command {
             assert_eq!(repo_id, "owner/repo");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_create_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "create",
+            "--repo-id", "owner/repo",
+            "--title", "Login test",
+            "--json",
+            "auth/login",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::Create { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_create_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "create",
+            "--repo-id", "owner/repo",
+            "--json",
+            "smoke",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Create { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_finalize_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "finalize",
+            "--repo-id", "owner/repo",
+            "--json",
+            "2026-01-01-smoke", "completed",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::Finalize { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_suites_create_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "suites", "create",
+            "--repo-id", "owner/repo",
+            "--name", "Smoke",
+            "--cases", "auth/login",
+            "--json",
+            "smoke",
+        ])
+        .expect("should parse");
+        if let Commands::Suites(SuitesCmd::Create { json, .. }) = cli.command {
+            assert!(json);
         } else {
             panic!("wrong variant");
         }

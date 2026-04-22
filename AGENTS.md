@@ -87,9 +87,10 @@ ameliso cases get auth/login
 ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
 ameliso cases create auth/login --title "User Login" --description "..." \
     --body "## Steps\n\n1. Navigate to /login\n"
+ameliso cases create auth/login --title "User Login" --json  # machine-readable: { file_path, path, title, priority, tags }
 ameliso cases update auth/login --priority high              # patch: change only priority
-ameliso cases update auth/login --title "User Login Flow"   # patch: change only title
-ameliso cases delete auth/login
+ameliso cases update auth/login --title "User Login Flow" --json  # machine-readable: { file_path, path, title, ... }
+ameliso cases delete auth/login --json                       # machine-readable: { file_path }
 
 # Runs
 ameliso runs list
@@ -98,8 +99,11 @@ ameliso runs list --json             # machine-readable JSON array of run object
 ameliso runs get 2026-04-21-smoke --json  # machine-readable JSON: run + results[]
 ameliso runs get 2026-04-21-smoke
 ameliso runs create smoke --tester alice --environment staging
+ameliso runs create smoke --json     # machine-readable: { run_id, dir_path, total_in_scope, scope[] }
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
+ameliso runs record 2026-04-21-smoke auth/login passed --json  # machine-readable: { case_path, status, done, total, remaining }
 ameliso runs finalize 2026-04-21-smoke completed
+ameliso runs finalize 2026-04-21-smoke completed --json  # machine-readable: { run_id, status, passed, failed, ... }
 ameliso runs delete 2026-04-21-smoke
 ameliso runs pending 2026-04-21-smoke
 
@@ -109,7 +113,9 @@ ameliso suites list --json           # machine-readable JSON array of suite obje
 ameliso suites get smoke --json      # machine-readable JSON: suite object with cases[]
 ameliso suites get smoke
 ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/checkout
+ameliso suites create smoke --name "Smoke Suite" --cases auth/login --json  # machine-readable: { file_path, slug, name, case_count }
 ameliso suites update smoke --cases auth/login,billing/checkout,payments/refund  # patch: change only cases
+ameliso suites update smoke --cases auth/login --json  # machine-readable: { file_path, slug, name, case_count }
 
 # Reports
 ameliso coverage
