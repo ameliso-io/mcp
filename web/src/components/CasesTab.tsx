@@ -765,7 +765,7 @@ export default function CasesTab({
             </div>
 
             {expandedPath === c.path && editingPath !== c.path && (
-              <div className={styles.expandedPanel}>
+              <div className={styles.expandedPanel} aria-busy={bodyLoading}>
                 {bodyLoading ? (
                   <p className={styles.expandedLoading} role="status">
                     Loading…
