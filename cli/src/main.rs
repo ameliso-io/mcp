@@ -108,6 +108,8 @@ enum Commands {
             help = "Filter by status: never | passed | failed | blocked | skipped"
         )]
         status: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Show which cases need re-running after recent code changes")]
     Affected {
@@ -115,11 +117,15 @@ enum Commands {
         repo_id: String,
         #[arg(long, help = "Git ref to compare from (default: last completed run)")]
         since: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Show a combined repo status snapshot: case counts, coverage, active runs")]
     Status {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
 }
 
@@ -140,6 +146,8 @@ enum CasesCmd {
         priority: Option<String>,
         #[arg(long, help = "Filter to cases in this suite slug")]
         suite: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Show a single test case")]
     Get {
@@ -331,13 +339,13 @@ async fn main() -> Result<()> {
         Commands::Cases(cmd) => run_cases(channel, cmd).await,
         Commands::Runs(cmd) => run_runs(channel, cmd).await,
         Commands::Suites(cmd) => run_suites(channel, cmd).await,
-        Commands::Coverage { repo_id, status } => {
-            run_coverage(channel, &repo_id, status.as_deref()).await
+        Commands::Coverage { repo_id, status, json } => {
+            run_coverage(channel, &repo_id, status.as_deref(), json).await
         }
-        Commands::Affected { repo_id, since } => {
-            run_affected(channel, &repo_id, since.as_deref()).await
+        Commands::Affected { repo_id, since, json } => {
+            run_affected(channel, &repo_id, since.as_deref(), json).await
         }
-        Commands::Status { repo_id } => run_status(channel, &repo_id).await,
+        Commands::Status { repo_id, json } => run_status(channel, &repo_id, json).await,
     }
 }
 
@@ -354,6 +362,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
             query,
             priority,
             suite,
+            json,
         } => {
             let tag_vec = parse_tags(tags.as_deref().unwrap_or(""));
             let pri = priority
@@ -372,7 +381,23 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner()
                 .cases;
-            if cases.is_empty() {
+            if json {
+                let arr: Vec<_> = cases
+                    .iter()
+                    .map(|c| {
+                        serde_json::json!({
+                            "path": c.path,
+                            "title": c.title,
+                            "description": c.description,
+                            "tags": c.tags,
+                            "priority": c.priority,
+                            "created_at": c.created_at,
+                            "updated_at": c.updated_at,
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&arr)?);
+            } else if cases.is_empty() {
                 println!("No cases found.");
             } else {
                 for case in &cases {
@@ -941,7 +966,12 @@ async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
 // Coverage report
 // ---------------------------------------------------------------------------
 
-async fn run_coverage(channel: Channel, repo_id: &str, status_filter: Option<&str>) -> Result<()> {
+async fn run_coverage(
+    channel: Channel,
+    repo_id: &str,
+    status_filter: Option<&str>,
+    json: bool,
+) -> Result<()> {
     let mut c = client(channel);
     let status_i32 = status_filter
         .map(result_status_str_to_i32)
@@ -954,6 +984,31 @@ async fn run_coverage(channel: Channel, repo_id: &str, status_filter: Option<&st
         .await
         .map_err(grpc_err)?
         .into_inner();
+
+    if json {
+        let entries: Vec<_> = resp
+            .entries
+            .iter()
+            .map(|e| {
+                serde_json::json!({
+                    "path": e.case.as_ref().map(|c| c.path.as_str()).unwrap_or(""),
+                    "title": e.case.as_ref().map(|c| c.title.as_str()).unwrap_or(""),
+                    "priority": e.case.as_ref().map(|c| c.priority.as_str()).unwrap_or(""),
+                    "status": result_status_i32_to_str(e.latest_status),
+                    "last_run_id": e.last_run_id,
+                    "last_run_date": e.last_run_date,
+                })
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "run_count": resp.run_count,
+                "entries": entries,
+            }))?
+        );
+        return Ok(());
+    }
 
     let total = resp.entries.len();
     let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
@@ -1030,7 +1085,12 @@ async fn run_coverage(channel: Channel, repo_id: &str, status_filter: Option<&st
 // Affected cases
 // ---------------------------------------------------------------------------
 
-async fn run_affected(channel: Channel, repo_id: &str, since: Option<&str>) -> Result<()> {
+async fn run_affected(
+    channel: Channel,
+    repo_id: &str,
+    since: Option<&str>,
+    json: bool,
+) -> Result<()> {
     let mut c = client(channel);
     let resp = c
         .get_affected_cases(pb::GetAffectedCasesRequest {
@@ -1040,6 +1100,32 @@ async fn run_affected(channel: Channel, repo_id: &str, since: Option<&str>) -> R
         .await
         .map_err(grpc_err)?
         .into_inner();
+
+    if json {
+        let cases: Vec<_> = resp
+            .cases
+            .iter()
+            .filter_map(|ac| {
+                ac.case.as_ref().map(|case| {
+                    serde_json::json!({
+                        "path": case.path,
+                        "title": case.title,
+                        "priority": case.priority,
+                        "tags": case.tags,
+                        "reason": ac.reason,
+                    })
+                })
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "reason": resp.reason,
+                "cases": cases,
+            }))?
+        );
+        return Ok(());
+    }
 
     println!("Reason: {}", resp.reason);
     if resp.cases.is_empty() {
@@ -1067,7 +1153,7 @@ async fn run_affected(channel: Channel, repo_id: &str, since: Option<&str>) -> R
 // Status
 // ---------------------------------------------------------------------------
 
-async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
+async fn run_status(channel: Channel, repo_id: &str, json: bool) -> Result<()> {
     let mut c1 = client(channel.clone());
     let mut c2 = client(channel.clone());
     let mut c3 = client(channel.clone());
@@ -1107,6 +1193,71 @@ async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
             .or_insert(0) += 1;
     }
 
+    let active: Vec<&pb::RunMeta> = runs
+        .iter()
+        .filter(|r| r.status == pb::RunStatus::InProgress as i32)
+        .collect();
+
+    let pending_futures: Vec<_> = active
+        .iter()
+        .map(|r| {
+            let mut c = client(channel.clone());
+            let repo_id = repo_id.to_owned();
+            let run_id = r.id.clone();
+            async move {
+                c.get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
+                    .await
+            }
+        })
+        .collect();
+    let pending_results = futures::future::join_all(pending_futures).await;
+
+    if json {
+        let active_json: Vec<_> = active
+            .iter()
+            .zip(pending_results.iter())
+            .map(|(r, pend_res)| {
+                let (pending, total_in_scope) = match pend_res {
+                    Ok(resp) => {
+                        let inner = resp.get_ref();
+                        (inner.cases.len(), inner.total_in_scope as usize)
+                    }
+                    Err(_) => (0, 0),
+                };
+                serde_json::json!({
+                    "id": r.id,
+                    "tester": r.tester,
+                    "suite": r.suite,
+                    "date": r.date,
+                    "pending": pending,
+                    "total_in_scope": total_in_scope,
+                })
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "cases": {
+                    "total": total,
+                    "high": high,
+                    "medium": medium,
+                    "low": low,
+                },
+                "coverage": {
+                    "passed": counts.get("passed").copied().unwrap_or(0),
+                    "failed": counts.get("failed").copied().unwrap_or(0),
+                    "blocked": counts.get("blocked").copied().unwrap_or(0),
+                    "skipped": counts.get("skipped").copied().unwrap_or(0),
+                    "never": counts.get("never").copied().unwrap_or(0),
+                },
+                "suite_count": suites.len(),
+                "run_count": runs.len(),
+                "active_runs": active_json,
+            }))?
+        );
+        return Ok(());
+    }
+
     println!(
         "Cases:    {} total  ({high} high, {medium} medium, {low} low)",
         total
@@ -1122,27 +1273,10 @@ async fn run_status(channel: Channel, repo_id: &str) -> Result<()> {
     println!("Suites:   {}", suites.len());
     println!("Runs:     {} total", runs.len());
 
-    let active: Vec<&pb::RunMeta> = runs
-        .iter()
-        .filter(|r| r.status == pb::RunStatus::InProgress as i32)
-        .collect();
     if active.is_empty() {
         println!("Active:   none");
     } else {
         println!("Active runs ({}):", active.len());
-        let pending_futures: Vec<_> = active
-            .iter()
-            .map(|r| {
-                let mut c = client(channel.clone());
-                let repo_id = repo_id.to_owned();
-                let run_id = r.id.clone();
-                async move {
-                    c.get_pending_cases(pb::GetPendingCasesRequest { repo_id, run_id })
-                        .await
-                }
-            })
-            .collect();
-        let pending_results = futures::future::join_all(pending_futures).await;
         for (r, pend_res) in active.iter().zip(pending_results) {
             let suite_part = if r.suite.is_empty() {
                 String::new()
@@ -1359,6 +1493,67 @@ mod tests {
         let cli = Cli::try_parse_from(["ameliso", "status", "--repo-id", "owner/repo"])
             .expect("should parse");
         assert!(matches!(cli.command, Commands::Status { .. }));
+    }
+
+    #[test]
+    fn cli_cases_list_json_flag_defaults_false() {
+        let cli = Cli::try_parse_from(["ameliso", "cases", "list", "--repo-id", "owner/repo"])
+            .expect("should parse");
+        if let Commands::Cases(CasesCmd::List { json, .. }) = cli.command {
+            assert!(!json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_list_json_flag_set() {
+        let cli =
+            Cli::try_parse_from(["ameliso", "cases", "list", "--repo-id", "owner/repo", "--json"])
+                .expect("should parse");
+        if let Commands::Cases(CasesCmd::List { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_coverage_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "coverage", "--repo-id", "owner/repo", "--json",
+        ])
+        .expect("should parse");
+        if let Commands::Coverage { json, .. } = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_affected_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "affected", "--repo-id", "owner/repo", "--json",
+        ])
+        .expect("should parse");
+        if let Commands::Affected { json, .. } = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_status_json_flag_set() {
+        let cli =
+            Cli::try_parse_from(["ameliso", "status", "--repo-id", "owner/repo", "--json"])
+                .expect("should parse");
+        if let Commands::Status { json, .. } = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
     }
 
     #[test]

@@ -79,6 +79,7 @@ ameliso cases list
 ameliso cases list --tags auth --query login
 ameliso cases list --priority high
 ameliso cases list --suite smoke
+ameliso cases list --json        # machine-readable JSON array of case objects
 ameliso cases get auth/login
 ameliso cases create auth/login --title "User Login" --description "Verify login" --priority high
 ameliso cases create auth/login --title "User Login" --description "..." \
@@ -106,8 +107,12 @@ ameliso suites update smoke --cases auth/login,billing/checkout,payments/refund 
 # Reports
 ameliso coverage
 ameliso coverage --status never
+ameliso coverage --json          # machine-readable JSON: { run_count, entries[] }
 ameliso affected
+ameliso affected --json          # machine-readable JSON: { reason, cases[] }
 ameliso affected --since HEAD~10
+ameliso status --repo-id owner/repo
+ameliso status --repo-id owner/repo --json  # machine-readable JSON: { cases, coverage, active_runs[] }
 ```
 
 ---

@@ -16,3 +16,4 @@ anyhow = "1"
 tokio = { version = "1", features = ["full"] }
 tonic = { version = "0.12", default-features = false, features = ["channel"] }
 futures = "0.3"
+serde_json = "1"
