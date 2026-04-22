@@ -248,6 +248,8 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                   autoFocus
                   className={styles.input}
                   placeholder="e.g. smoke"
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
@@ -281,6 +283,8 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                   onChange={(e) => setNewCases(e.target.value)}
                   className={styles.input}
                   placeholder="auth/login, auth/logout"
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
@@ -364,6 +368,8 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                         value={editCases}
                         onChange={(e) => setEditCases(e.target.value)}
                         className={styles.input}
+                        autoComplete="off"
+                        spellCheck={false}
                       />
                     </label>
                   </div>

@@ -397,6 +397,8 @@ export default function CasesTab({
                   required
                   autoFocus
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
