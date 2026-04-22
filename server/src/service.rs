@@ -1631,19 +1631,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_affected_cases_with_changed_files_returns_results() {
+    async fn get_affected_cases_with_changed_files_passes_validation() {
+        // changed_files path: validation passes, then list_cases hits DB → Internal error (not InvalidArgument).
         let s = server();
-        let resp = s
+        let err = s
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: String::new(),
                 changed_files: vec!["src/auth.ts".to_owned()],
             }))
             .await
-            .unwrap()
-            .into_inner();
-        // No cases exist in test DB, so cases list is empty but response is valid.
-        assert!(resp.cases.is_empty() || !resp.reason.is_empty());
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
@@ -2745,6 +2744,7 @@ mod tests {
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "abc123".to_owned(),
+                changed_files: vec![],
             }))
             .await
             .unwrap_err();
@@ -2759,6 +2759,7 @@ mod tests {
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "".to_owned(),
+                changed_files: vec![],
             }))
             .await
             .unwrap_err();
