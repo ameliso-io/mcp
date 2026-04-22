@@ -107,6 +107,10 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    setCoverageFilter(ResultStatus.UNSPECIFIED);
+  }, [repoId]);
+
+  useEffect(() => {
     if (repoId) {
       load(repoId);
     }
