@@ -89,6 +89,23 @@ describe("RunsTab", () => {
     await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled());
   });
 
+  it("creates run with inline cases when cases field is filled", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "inline");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Inline cases (optional, comma-separated paths)" }),
+      "auth/login, billing/checkout"
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith(
+        expect.objectContaining({ cases: ["auth/login", "billing/checkout"] })
+      )
+    );
+  });
+
   it("shows status filter buttons", async () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("No runs found."));
@@ -1415,5 +1432,68 @@ describe("RunsTab", () => {
     // fireEvent bypasses HTML5 required validation — triggers guard: !newSlug
     fireEvent.submit(screen.getByRole("button", { name: "Create Run" }).closest("form")!);
     expect(client.createRun).not.toHaveBeenCalled();
+  });
+
+  it("shows Rename button for each run", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    expect(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" })).toBeInTheDocument();
+  });
+
+  it("shows rename form when Rename clicked and calls updateRun on submit", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.updateRun).mockResolvedValue({
+      run: { ...mockRun, id: "2026-01-01-smoke-v2" },
+      newDirPath: "runs/2026-01-01-smoke-v2",
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    const slugInput = screen.getByRole("textbox", { name: "New slug" }) as HTMLInputElement;
+    await userEvent.type(slugInput, "smoke-v2");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(client.updateRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          repoId: "owner/repo",
+          runId: "2026-01-01-smoke",
+          newSlug: "smoke-v2",
+        })
+      )
+    );
+  });
+
+  it("cancels rename form without calling updateRun when Cancel clicked", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByRole("textbox", { name: "New slug" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(client.updateRun).not.toHaveBeenCalled();
+    expect(screen.queryByRole("textbox", { name: "New slug" })).not.toBeInTheDocument();
+  });
+
+  it("cancels rename form on Escape key", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await waitFor(() => screen.getByRole("textbox", { name: "New slug" }));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("textbox", { name: "New slug" })).not.toBeInTheDocument();
+  });
+
+  it("shows error when updateRun fails", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.updateRun).mockRejectedValue(new Error("rename failed"));
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    const slugInput = screen.getByRole("textbox", { name: "New slug" });
+    await userEvent.type(slugInput, "bad");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.getByText("rename failed")).toBeInTheDocument());
   });
 });

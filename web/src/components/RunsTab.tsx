@@ -67,6 +67,7 @@ export default function RunsTab({
   const [newTester, setNewTester] = useState("");
   const [newEnv, setNewEnv] = useState("");
   const [newSuite, setNewSuite] = useState("");
+  const [newCases, setNewCases] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
@@ -93,6 +94,9 @@ export default function RunsTab({
     status: RunStatus;
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
+  const [renamingRunId, setRenamingRunId] = useState<string | null>(null);
+  const [renameNewSlug, setRenameNewSlug] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const [actionAnnouncement, announce] = useAnnounce();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -159,6 +163,12 @@ export default function RunsTab({
         tester: newTester,
         environment: newEnv,
         suite: newSuite,
+        cases: newCases
+          ? newCases
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : [],
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
@@ -166,6 +176,7 @@ export default function RunsTab({
       setNewTester("");
       setNewEnv("");
       setNewSuite("");
+      setNewCases("");
       announce("Run created");
       await load();
       // Auto-expand the newly created run
@@ -324,6 +335,25 @@ export default function RunsTab({
     }
   }
 
+  async function handleRenameRun(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — form only renders when renamingRunId is set */
+    if (!renamingRunId || !renameNewSlug) return;
+    setRenaming(true);
+    try {
+      await client.updateRun({ repoId, runId: renamingRunId, newSlug: renameNewSlug });
+      setRenamingRunId(null);
+      setRenameNewSlug("");
+      lastFocusRef.current?.focus();
+      announce("Run renamed");
+      await load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setRenaming(false);
+    }
+  }
+
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
@@ -439,6 +469,19 @@ export default function RunsTab({
               </label>
             </div>
             <div className={styles.fullCol}>
+              <label className={styles.label}>
+                Inline cases (optional, comma-separated paths)
+                <input
+                  value={newCases}
+                  onChange={(e) => {
+                    setNewCases(e.target.value);
+                  }}
+                  className={styles.input}
+                  placeholder="auth/login, billing/checkout"
+                />
+              </label>
+            </div>
+            <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create Run"}
               </button>
@@ -496,6 +539,20 @@ export default function RunsTab({
                     {run.date}
                   </time>
                 </button>
+                {renamingRunId !== run.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      lastFocusRef.current = document.activeElement as HTMLElement;
+                      setRenamingRunId(run.id);
+                      setRenameNewSlug("");
+                    }}
+                    aria-label={`Rename ${run.id}`}
+                    className={styles.btnOutlineSm}
+                  >
+                    Rename
+                  </button>
+                )}
                 {confirmingDeleteRun === run.id ? (
                   <>
                     <span className={styles.confirmText}>Delete?</span>
@@ -532,6 +589,45 @@ export default function RunsTab({
                   </button>
                 )}
               </div>
+              {renamingRunId === run.id && (
+                <form
+                  aria-label={`Rename run ${run.id}`}
+                  onSubmit={handleRenameRun}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Escape") return;
+                    e.preventDefault();
+                    setRenamingRunId(null);
+                    lastFocusRef.current?.focus();
+                  }}
+                  className={styles.renameForm}
+                >
+                  <span className={styles.renamePrefix}>{run.id.slice(0, 10)}-</span>
+                  <input
+                    value={renameNewSlug}
+                    onChange={(e) => {
+                      setRenameNewSlug(e.target.value);
+                    }}
+                    required
+                    autoFocus
+                    className={styles.renameInput}
+                    placeholder="new-slug"
+                    aria-label="New slug"
+                  />
+                  <button type="submit" disabled={renaming} className={styles.btnSaveSm}>
+                    {renaming ? "Renaming…" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenamingRunId(null);
+                      lastFocusRef.current?.focus();
+                    }}
+                    className={styles.btnCancelSm}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              )}
             </div>
 
             {selectedRunId === run.id && (
@@ -679,67 +775,24 @@ export default function RunsTab({
                         <span className={styles.refreshHint}>auto-refresh 30s</span>
                       </h3>
                       <div className={styles.pendingActions}>
-                          {pendingCases.length > 0 &&
-                            (confirmingBulkPass === run.id ? (
-                              <>
-                                <span className={styles.confirmText}>Pass all?</span>
-                                <button
-                                  type="button"
-                                  aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
-                                  onClick={() => handleBulkPass(run.id)}
-                                  disabled={bulkPassing}
-                                  className={styles.btnBlueSm}
-                                >
-                                  Yes
-                                </button>
-                                <button
-                                  type="button"
-                                  aria-label="Cancel bulk pass"
-                                  onClick={() => {
-                                    setConfirmingBulkPass(null);
-                                  }}
-                                  className={styles.btnOutlineSm}
-                                  autoFocus
-                                >
-                                  No
-                                </button>
-                              </>
-                            ) : (
+                        {pendingCases.length > 0 &&
+                          (confirmingBulkPass === run.id ? (
+                            <>
+                              <span className={styles.confirmText}>Pass all?</span>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setConfirmingBulkPass(run.id);
-                                }}
+                                aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
+                                onClick={() => handleBulkPass(run.id)}
                                 disabled={bulkPassing}
                                 className={styles.btnBlueSm}
-                              >
-                                {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
-                              </button>
-                            ))}
-                          {confirmingFinalize?.runId === run.id ? (
-                            <>
-                              <span className={styles.confirmText}>
-                                {confirmingFinalize.status === RunStatus.COMPLETED
-                                  ? "Complete?"
-                                  : "Abort?"}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
-                                onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
-                                className={
-                                  confirmingFinalize.status === RunStatus.COMPLETED
-                                    ? styles.btnGreenSm
-                                    : styles.btnRedSm
-                                }
                               >
                                 Yes
                               </button>
                               <button
                                 type="button"
-                                aria-label="Cancel"
+                                aria-label="Cancel bulk pass"
                                 onClick={() => {
-                                  setConfirmingFinalize(null);
+                                  setConfirmingBulkPass(null);
                                 }}
                                 className={styles.btnOutlineSm}
                                 autoFocus
@@ -748,36 +801,79 @@ export default function RunsTab({
                               </button>
                             </>
                           ) : (
-                            <>
-                              <button
-                                type="button"
-                                aria-label={`Complete run ${run.id}`}
-                                onClick={() => {
-                                  setConfirmingFinalize({
-                                    runId: run.id,
-                                    status: RunStatus.COMPLETED,
-                                  });
-                                }}
-                                className={styles.btnGreenSm}
-                              >
-                                Complete Run
-                              </button>
-                              <button
-                                type="button"
-                                aria-label={`Abort run ${run.id}`}
-                                onClick={() => {
-                                  setConfirmingFinalize({
-                                    runId: run.id,
-                                    status: RunStatus.ABORTED,
-                                  });
-                                }}
-                                className={styles.btnRedSm}
-                              >
-                                Abort Run
-                              </button>
-                            </>
-                          )}
-                        </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfirmingBulkPass(run.id);
+                              }}
+                              disabled={bulkPassing}
+                              className={styles.btnBlueSm}
+                            >
+                              {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
+                            </button>
+                          ))}
+                        {confirmingFinalize?.runId === run.id ? (
+                          <>
+                            <span className={styles.confirmText}>
+                              {confirmingFinalize.status === RunStatus.COMPLETED
+                                ? "Complete?"
+                                : "Abort?"}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
+                              onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
+                              className={
+                                confirmingFinalize.status === RunStatus.COMPLETED
+                                  ? styles.btnGreenSm
+                                  : styles.btnRedSm
+                              }
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Cancel"
+                              onClick={() => {
+                                setConfirmingFinalize(null);
+                              }}
+                              className={styles.btnOutlineSm}
+                              autoFocus
+                            >
+                              No
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`Complete run ${run.id}`}
+                              onClick={() => {
+                                setConfirmingFinalize({
+                                  runId: run.id,
+                                  status: RunStatus.COMPLETED,
+                                });
+                              }}
+                              className={styles.btnGreenSm}
+                            >
+                              Complete Run
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Abort run ${run.id}`}
+                              onClick={() => {
+                                setConfirmingFinalize({
+                                  runId: run.id,
+                                  status: RunStatus.ABORTED,
+                                });
+                              }}
+                              className={styles.btnRedSm}
+                            >
+                              Abort Run
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     {pendingCases.length === 0 && (

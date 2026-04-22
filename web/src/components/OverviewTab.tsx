@@ -56,6 +56,11 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const [activeRuns, setActiveRuns] = useState<RunMeta[]>([]);
+  const [activeRunsStatus, setActiveRunsStatus] = useState<
+    Map<string, { pendingCases: number; totalInScope: number }>
+  >(new Map());
+
+  const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
 
   const [sinceRef, setSinceRef] = useState("");
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
@@ -70,13 +75,22 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const [coverageRes, activeRunsRes] = await Promise.all([
-          client.getCoverageReport({ repoId: path }),
+        const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
+          client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }),
           client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
+          client.getRepoStatus({ repoId: path }),
         ]);
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
         setActiveRuns(activeRunsRes.runs);
+        setActiveRunsStatus(
+          new Map(
+            statusRes.activeRuns.map((r) => [
+              r.runId,
+              { pendingCases: r.pendingCases, totalInScope: r.totalInScope },
+            ])
+          )
+        );
         if (!silent) {
           const n = coverageRes.entries.length;
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
@@ -87,10 +101,14 @@ export default function OverviewTab({ repoId, basePath }: Props) {
         setLoading(false);
       }
     },
-    [announce]
+    [announce, coverageFilter]
   );
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    setCoverageFilter(ResultStatus.UNSPECIFIED);
+  }, [repoId]);
 
   useEffect(() => {
     if (repoId) {
@@ -130,6 +148,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const statCases = entries.length;
   const statPassed = entries.filter((e) => e.latestStatus === ResultStatus.PASSED).length;
   const statFailed = entries.filter((e) => e.latestStatus === ResultStatus.FAILED).length;
+  const statBlocked = entries.filter((e) => e.latestStatus === ResultStatus.BLOCKED).length;
+  const statSkipped = entries.filter((e) => e.latestStatus === ResultStatus.SKIPPED).length;
   const statNever = entries.filter((e) => e.latestStatus === ResultStatus.NEVER).length;
 
   return (
@@ -177,6 +197,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               { label: "Total Cases", value: statCases },
               { label: "Passed", value: statPassed },
               { label: "Failed", value: statFailed },
+              { label: "Blocked", value: statBlocked },
+              { label: "Skipped", value: statSkipped },
               { label: "Never Run", value: statNever },
             ].map((stat) => (
               <div key={stat.label} className={styles.statCard}>
@@ -200,24 +222,69 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                 </Link>
               </div>
               <ul className={styles.runList} role="list">
-                {activeRuns.map((run) => (
-                  <li key={run.id} className={styles.runRow}>
-                    <span className={styles.runId}>{run.id}</span>
-                    {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
-                    {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                    <time className={styles.runDate} dateTime={run.date}>
-                      {run.date}
-                    </time>
-                  </li>
-                ))}
+                {activeRuns.map((run) => {
+                  const status = activeRunsStatus.get(run.id);
+                  return (
+                    <li key={run.id} className={styles.runRow}>
+                      <span className={styles.runId}>{run.id}</span>
+                      {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
+                      {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                      <time className={styles.runDate} dateTime={run.date}>
+                        {run.date}
+                      </time>
+                      {status && (
+                        <div className={styles.runProgressWrap}>
+                          <div
+                            className={styles.runProgressTrack}
+                            role="progressbar"
+                            aria-label="Run progress"
+                            aria-valuemin={0}
+                            aria-valuemax={status.totalInScope}
+                            aria-valuenow={status.totalInScope - status.pendingCases}
+                          >
+                            <div
+                              className={styles.runProgressBar}
+                              style={{
+                                width:
+                                  status.totalInScope > 0
+                                    ? `${Math.round(((status.totalInScope - status.pendingCases) / status.totalInScope) * 100)}%`
+                                    : "0%",
+                              }}
+                            />
+                          </div>
+                          <span className={styles.runProgressText}>
+                            {status.totalInScope - status.pendingCases}/{status.totalInScope} done
+                          </span>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
 
           <div className={styles.card}>
-            <h3 className={`${styles.label} ${styles.sectionLabel}`}>
-              Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
-            </h3>
+            <div className={styles.coverageHeader}>
+              <h3 className={`${styles.label} ${styles.sectionLabel}`}>
+                Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
+              </h3>
+              <select
+                aria-label="Filter coverage by status"
+                value={coverageFilter}
+                onChange={(e) => {
+                  setCoverageFilter(Number(e.target.value));
+                }}
+                className={styles.filterSelect}
+              >
+                <option value={ResultStatus.UNSPECIFIED}>All statuses</option>
+                <option value={ResultStatus.PASSED}>Passed</option>
+                <option value={ResultStatus.FAILED}>Failed</option>
+                <option value={ResultStatus.BLOCKED}>Blocked</option>
+                <option value={ResultStatus.SKIPPED}>Skipped</option>
+                <option value={ResultStatus.NEVER}>Never run</option>
+              </select>
+            </div>
             <ul className={styles.coverageList} role="list">
               {[...entries]
                 .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))

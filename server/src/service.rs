@@ -312,6 +312,66 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn bulk_create_cases(
+        &self,
+        request: Request<pb::BulkCreateCasesRequest>,
+    ) -> Result<Response<pb::BulkCreateCasesResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.cases.is_empty() {
+            return Err(invalid("cases list must not be empty"));
+        }
+        let mut created: Vec<pb::Case> = Vec::with_capacity(req.cases.len());
+        for entry in &req.cases {
+            if entry.case_path.is_empty() {
+                return Err(invalid("each entry must have a case_path"));
+            }
+            if entry.title.is_empty() {
+                return Err(invalid(format!(
+                    "entry '{}' must have a title",
+                    entry.case_path
+                )));
+            }
+            let priority = priority_from_i32(entry.priority).unwrap_or("medium");
+            let body = if entry.body.is_empty() {
+                None
+            } else {
+                Some(entry.body.as_str())
+            };
+            let case = repo::create_case(
+                &self.pool,
+                &req.repo_id,
+                &entry.case_path,
+                &entry.title,
+                &entry.description,
+                entry.tags.clone(),
+                priority,
+                body,
+            )
+            .await
+            .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let case_clone = case.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
+                        eprintln!(
+                            "warning: github sync failed for {}/{}: {e}",
+                            repo_id, case_clone.case_path
+                        );
+                    }
+                });
+            }
+            created.push(case_to_pb(&case));
+        }
+        Ok(Response::new(pb::BulkCreateCasesResponse {
+            cases: created,
+        }))
+    }
+
     async fn update_case(
         &self,
         request: Request<pb::UpdateCaseRequest>,
@@ -344,6 +404,11 @@ impl AmelisoService for AmelisoServer {
         } else {
             Some(req.body.as_str())
         };
+        let new_path = if req.new_path.is_empty() {
+            None
+        } else {
+            Some(req.new_path.as_str())
+        };
         let case = repo::update_case(
             &self.pool,
             &req.repo_id,
@@ -353,6 +418,7 @@ impl AmelisoService for AmelisoServer {
             tags,
             priority,
             body,
+            new_path,
         )
         .await
         .map_err(repo_err)?;
@@ -504,6 +570,11 @@ impl AmelisoService for AmelisoServer {
         } else {
             None
         };
+        let new_slug = if req.new_slug.is_empty() {
+            None
+        } else {
+            Some(req.new_slug.as_str())
+        };
         let suite = repo::update_suite(
             &self.pool,
             &req.repo_id,
@@ -511,6 +582,7 @@ impl AmelisoService for AmelisoServer {
             name,
             description,
             cases,
+            new_slug,
         )
         .await
         .map_err(repo_err)?;
@@ -608,9 +680,18 @@ impl AmelisoService for AmelisoServer {
         } else {
             req.tester
         };
-        let meta = repo::create_run(&self.pool, &req.repo_id, &req.slug, &tester, env, suite)
-            .await
-            .map_err(repo_err)?;
+        let inline_cases = req.cases;
+        let meta = repo::create_run(
+            &self.pool,
+            &req.repo_id,
+            &req.slug,
+            &tester,
+            env,
+            suite,
+            inline_cases,
+        )
+        .await
+        .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
@@ -756,6 +837,30 @@ impl AmelisoService for AmelisoServer {
         Ok(Response::new(pb::DeleteRunResponse { dir_path }))
     }
 
+    async fn update_run(
+        &self,
+        request: Request<pb::UpdateRunRequest>,
+    ) -> Result<Response<pb::UpdateRunResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.run_id.is_empty() {
+            return Err(invalid("run_id is required"));
+        }
+        if req.new_slug.is_empty() {
+            return Err(invalid("new_slug is required"));
+        }
+        let run = repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
+            .await
+            .map_err(repo_err)?;
+        let new_dir_path = format!("runs/{}", run.run_id);
+        Ok(Response::new(pb::UpdateRunResponse {
+            run: Some(run_meta_to_pb(&run)),
+            new_dir_path,
+        }))
+    }
+
     async fn get_pending_cases(
         &self,
         request: Request<pb::GetPendingCasesRequest>,
@@ -834,6 +939,63 @@ impl AmelisoService for AmelisoServer {
         let cases = repo::list_cases(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
+
+        // If caller passed changed_files directly, skip GitHub and use those.
+        if !req.changed_files.is_empty() {
+            let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+            let case_map: std::collections::HashMap<&str, &repo::LoadedCase> =
+                cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
+            let mut affected_set: std::collections::HashSet<String> =
+                std::collections::HashSet::new();
+            let mut reasons: Vec<String> = Vec::new();
+            for file in &req.changed_files {
+                for path in &known_paths {
+                    if text_references_case(file, path) {
+                        reasons.push(format!("file {} references {}", file, path));
+                        affected_set.insert(path.clone());
+                    }
+                }
+            }
+            let source_changed: Vec<&str> = req
+                .changed_files
+                .iter()
+                .filter(|f| !is_doc_file(f))
+                .map(|f| f.as_str())
+                .collect();
+            if !source_changed.is_empty() && affected_set.is_empty() {
+                reasons.push(format!(
+                    "{} source file(s) changed with no explicit case references — all {} case(s) flagged",
+                    source_changed.len(),
+                    known_paths.len()
+                ));
+                for p in &known_paths {
+                    affected_set.insert(p.clone());
+                }
+            }
+            let mut affected: Vec<String> = affected_set.into_iter().collect();
+            affected.sort_by_key(|p| {
+                case_map
+                    .get(p.as_str())
+                    .map(|c| priority_rank(&c.priority))
+                    .unwrap_or(3)
+            });
+            let reason = if reasons.is_empty() {
+                "no relevant changes in provided file list".to_owned()
+            } else {
+                reasons.join("; ")
+            };
+            let pb_cases = affected
+                .iter()
+                .map(|path| pb::AffectedCase {
+                    case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
+                    reason: reason.clone(),
+                })
+                .collect();
+            return Ok(Response::new(pb::GetAffectedCasesResponse {
+                cases: pb_cases,
+                reason,
+            }));
+        }
 
         if req.since_ref.is_empty() {
             let affected = cases
@@ -992,10 +1154,8 @@ impl AmelisoService for AmelisoServer {
             }
         }
 
-        let active_runs_meta: Vec<&RunRow> = runs
-            .iter()
-            .filter(|r| r.status == "in-progress")
-            .collect();
+        let active_runs_meta: Vec<&RunRow> =
+            runs.iter().filter(|r| r.status == "in-progress").collect();
 
         let mut active_runs: Vec<pb::ActiveRunStatus> = Vec::new();
         for run_meta in &active_runs_meta {
@@ -1449,6 +1609,99 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn bulk_create_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "".to_owned(),
+                cases: vec![pb::BulkCaseEntry {
+                    case_path: "auth/login".to_owned(),
+                    title: "Login".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_empty_cases_list() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("cases list must not be empty"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_entry_with_empty_case_path() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkCaseEntry {
+                    case_path: "".to_owned(),
+                    title: "Login".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_entry_with_empty_title() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkCaseEntry {
+                    case_path: "auth/login".to_owned(),
+                    title: "".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_valid_passes_validation() {
+        // Validation passes → hits DB → Internal error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![
+                    pb::BulkCaseEntry {
+                        case_path: "auth/login".to_owned(),
+                        title: "Login".to_owned(),
+                        ..Default::default()
+                    },
+                    pb::BulkCaseEntry {
+                        case_path: "billing/checkout".to_owned(),
+                        title: "Checkout".to_owned(),
+                        ..Default::default()
+                    },
+                ],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn delete_case_rejects_empty_repo_id() {
         let s = server();
         let err = s
@@ -1567,11 +1820,27 @@ mod tests {
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "".to_owned(),
                 since_ref: "HEAD~1".to_owned(),
+                changed_files: vec![],
             }))
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn get_affected_cases_with_changed_files_passes_validation() {
+        // changed_files path: validation passes, then list_cases hits DB → Internal error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: String::new(),
+                changed_files: vec!["src/auth.ts".to_owned()],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
@@ -2625,6 +2894,41 @@ mod tests {
                 tester: "alice".to_owned(),
                 environment: "staging".to_owned(),
                 suite: "smoke".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_both_suite_and_cases() {
+        // Passing both suite and non-empty cases list is invalid.
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                suite: "regression".to_owned(),
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("suite") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_inline_cases_passes_validation() {
+        // Non-empty cases list + no suite → passes validation → DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2659,6 +2963,37 @@ mod tests {
                 tags: vec!["smoke".to_owned()],
                 body: "## Steps\n\n1. Navigate to /login".to_owned(),
                 priority: pb::Priority::High as i32,
+                new_path: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_case_with_new_path_passes_validation() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                new_path: "auth/signin".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_suite_with_new_slug_passes_validation() {
+        let s = server();
+        let err = s
+            .update_suite(Request::new(pb::UpdateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2673,6 +3008,7 @@ mod tests {
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "abc123".to_owned(),
+                changed_files: vec![],
             }))
             .await
             .unwrap_err();
@@ -2687,6 +3023,7 @@ mod tests {
             .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "".to_owned(),
+                changed_files: vec![],
             }))
             .await
             .unwrap_err();
@@ -2787,6 +3124,18 @@ mod tests {
             .get_coverage_report(Request::new(pb::GetCoverageReportRequest {
                 repo_id: "owner/repo".to_owned(),
                 ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_repo_status_passes_validation() {
+        let s = server();
+        let err = s
+            .get_repo_status(Request::new(pb::GetRepoStatusRequest {
+                repo_id: "owner/repo".to_owned(),
             }))
             .await
             .unwrap_err();
@@ -3357,5 +3706,218 @@ mod tests {
         // ends_cleanly '.' branch via the starts_with path (path at start of text, . suffix)
         // Distinct from dot_suffix which hits '.' via the ' ' and '/' prefix loop paths.
         assert!(text_references_case("auth/login.md", "auth/login"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_empty_results_list() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("results must not be empty"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_entry_with_empty_case_path() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "".to_owned(),
+                    status: pb::ResultStatus::Passed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_invalid_status() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: 999,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("status must be one of"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_failed_without_notes() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Failed as i32,
+                    notes: "".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes are required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_rejects_blocked_without_notes() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![pb::BulkResultEntry {
+                    case_path: "auth/login".to_owned(),
+                    status: pb::ResultStatus::Blocked as i32,
+                    notes: "   ".to_owned(),
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes are required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_record_results_valid_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .bulk_record_results(Request::new(pb::BulkRecordResultsRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                results: vec![
+                    pb::BulkResultEntry {
+                        case_path: "auth/login".to_owned(),
+                        status: pb::ResultStatus::Passed as i32,
+                        notes: "".to_owned(),
+                    },
+                    pb::BulkResultEntry {
+                        case_path: "auth/logout".to_owned(),
+                        status: pb::ResultStatus::Failed as i32,
+                        notes: "Button missing".to_owned(),
+                    },
+                ],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn update_run_rejects_empty_run_id() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("run_id is required"));
+    }
+
+    #[tokio::test]
+    async fn update_run_rejects_empty_new_slug() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("new_slug is required"));
+    }
+
+    #[tokio::test]
+    async fn update_run_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "smoke-v2".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 }

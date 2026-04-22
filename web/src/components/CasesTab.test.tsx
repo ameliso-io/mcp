@@ -332,6 +332,18 @@ describe("CasesTab", () => {
     );
   });
 
+  it("filters by suite when suite slug input is typed", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    const suiteInput = screen.getByRole("searchbox", {
+      name: "Filter by suite slug",
+    }) as HTMLInputElement;
+    await userEvent.type(suiteInput, "smoke");
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
+    );
+  });
+
   it("calls onFiltersChange when priority filter changes", async () => {
     const onFiltersChange = vi.fn();
     render(<CasesTab repoId="owner/repo" onFiltersChange={onFiltersChange} />);
@@ -899,5 +911,22 @@ describe("CasesTab", () => {
     // fireEvent bypasses HTML5 required validation — triggers guard: !newPath
     fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
     expect(client.createCase).not.toHaveBeenCalled();
+  });
+
+  it("calls updateCase with newPath when rename path field is filled", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    const renameInput = screen.getByRole("textbox", {
+      name: "Rename path (optional)",
+    }) as HTMLInputElement;
+    await userEvent.type(renameInput, "auth/sign-in");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(client.updateCase).toHaveBeenCalledWith(
+        expect.objectContaining({ newPath: "auth/sign-in" })
+      )
+    );
   });
 });

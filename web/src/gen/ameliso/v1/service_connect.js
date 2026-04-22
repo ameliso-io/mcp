@@ -4,6 +4,8 @@
 // @ts-nocheck
 
 import {
+  BulkCreateCasesRequest,
+  BulkCreateCasesResponse,
   BulkRecordResultsRequest,
   BulkRecordResultsResponse,
   CreateCaseRequest,
@@ -30,6 +32,8 @@ import {
   GetGitHubInstallUrlResponse,
   GetPendingCasesRequest,
   GetPendingCasesResponse,
+  GetRepoStatusRequest,
+  GetRepoStatusResponse,
   GetRunRequest,
   GetRunResponse,
   GetSuiteRequest,
@@ -52,6 +56,8 @@ import {
   SyncRepositoryResponse,
   UpdateCaseRequest,
   UpdateCaseResponse,
+  UpdateRunRequest,
+  UpdateRunResponse,
   UpdateSuiteRequest,
   UpdateSuiteResponse,
 } from "./service_pb.js";
@@ -93,6 +99,15 @@ export const AmelisoService = {
       name: "CreateCase",
       I: CreateCaseRequest,
       O: CreateCaseResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkCreateCases
+     */
+    bulkCreateCases: {
+      name: "BulkCreateCases",
+      I: BulkCreateCasesRequest,
+      O: BulkCreateCasesResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -235,6 +250,17 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
+     * Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.UpdateRun
+     */
+    updateRun: {
+      name: "UpdateRun",
+      I: UpdateRunRequest,
+      O: UpdateRunResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * --- Reports ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
@@ -254,6 +280,17 @@ export const AmelisoService = {
       name: "GetAffectedCases",
       I: GetAffectedCasesRequest,
       O: GetAffectedCasesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.GetRepoStatus
+     */
+    getRepoStatus: {
+      name: "GetRepoStatus",
+      I: GetRepoStatusRequest,
+      O: GetRepoStatusResponse,
       kind: MethodKind.Unary,
     },
     /**

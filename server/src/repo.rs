@@ -243,12 +243,80 @@ pub async fn update_case(
     tags: Option<Vec<String>>,
     priority: Option<&str>,
     body: Option<&str>,
+    new_path: Option<&str>,
 ) -> RResult<LoadedCase> {
     validate_slug_path(case_path, "case")?;
     if let Some(p) = priority {
         validate_priority(p)?;
     }
-    let existing = get_case(pool, repo_id, case_path).await?;
+    let effective_path = if let Some(np) = new_path {
+        validate_slug_path(np, "new_path")?;
+        if np != case_path {
+            let conflict: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM cases WHERE repo_id=$1 AND case_path=$2)",
+            )
+            .bind(repo_id)
+            .bind(np)
+            .fetch_one(pool)
+            .await
+            .map_err(map_db)?;
+            if conflict {
+                return Err(RepoError::AlreadyExists(format!(
+                    "case already exists: {}",
+                    np
+                )));
+            }
+            // Rename: update case_path, fix suites referencing old path, fix results, fix run_cases.
+            let rows =
+                sqlx::query("UPDATE cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
+                    .bind(repo_id)
+                    .bind(case_path)
+                    .bind(np)
+                    .execute(pool)
+                    .await
+                    .map_err(map_db)?
+                    .rows_affected();
+            if rows == 0 {
+                return Err(RepoError::NotFound(format!(
+                    "case not found: {}",
+                    case_path
+                )));
+            }
+            // Update suite case lists: replace old path in arrays.
+            sqlx::query(
+                "UPDATE suites SET cases = array_replace(cases, $2, $3) WHERE repo_id=$1 AND $2 = ANY(cases)",
+            )
+            .bind(repo_id)
+            .bind(case_path)
+            .bind(np)
+            .execute(pool)
+            .await
+            .map_err(map_db)?;
+            // Update results recorded against this case.
+            sqlx::query("UPDATE results SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
+                .bind(repo_id)
+                .bind(case_path)
+                .bind(np)
+                .execute(pool)
+                .await
+                .map_err(map_db)?;
+            // Update inline run_cases scope entries.
+            sqlx::query("UPDATE run_cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
+                .bind(repo_id)
+                .bind(case_path)
+                .bind(np)
+                .execute(pool)
+                .await
+                .map_err(map_db)?;
+            np
+        } else {
+            case_path
+        }
+    } else {
+        case_path
+    };
+
+    let existing = get_case(pool, repo_id, effective_path).await?;
     let new_title = title.unwrap_or(&existing.title);
     let new_desc = description.unwrap_or(&existing.description);
     let new_tags = tags.as_ref().unwrap_or(&existing.tags);
@@ -261,7 +329,7 @@ pub async fn update_case(
          WHERE repo_id=$1 AND case_path=$2",
     )
     .bind(repo_id)
-    .bind(case_path)
+    .bind(effective_path)
     .bind(new_title)
     .bind(new_desc)
     .bind(new_tags)
@@ -275,12 +343,12 @@ pub async fn update_case(
     if rows == 0 {
         return Err(RepoError::NotFound(format!(
             "case not found: {}",
-            case_path
+            effective_path
         )));
     }
 
     Ok(LoadedCase {
-        case_path: case_path.to_owned(),
+        case_path: effective_path.to_owned(),
         title: new_title.to_owned(),
         description: new_desc.to_owned(),
         tags: new_tags.to_owned(),
@@ -451,9 +519,54 @@ pub async fn update_suite(
     name: Option<&str>,
     description: Option<Option<String>>,
     cases: Option<Vec<String>>,
+    new_slug: Option<&str>,
 ) -> RResult<SuiteRow> {
     validate_slug_path(slug, "suite")?;
-    let existing = get_suite(pool, repo_id, slug).await?;
+    let effective_slug = if let Some(ns) = new_slug {
+        validate_slug_path(ns, "new_slug")?;
+        if ns != slug {
+            let conflict: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM suites WHERE repo_id=$1 AND slug=$2)",
+            )
+            .bind(repo_id)
+            .bind(ns)
+            .fetch_one(pool)
+            .await
+            .map_err(map_db)?;
+            if conflict {
+                return Err(RepoError::AlreadyExists(format!(
+                    "suite already exists: {}",
+                    ns
+                )));
+            }
+            // Rename: update slug and also update any runs that reference the old slug.
+            let rows = sqlx::query("UPDATE suites SET slug=$3 WHERE repo_id=$1 AND slug=$2")
+                .bind(repo_id)
+                .bind(slug)
+                .bind(ns)
+                .execute(pool)
+                .await
+                .map_err(map_db)?
+                .rows_affected();
+            if rows == 0 {
+                return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
+            }
+            sqlx::query("UPDATE runs SET suite=$3 WHERE repo_id=$1 AND suite=$2")
+                .bind(repo_id)
+                .bind(slug)
+                .bind(ns)
+                .execute(pool)
+                .await
+                .map_err(map_db)?;
+            ns
+        } else {
+            slug
+        }
+    } else {
+        slug
+    };
+
+    let existing = get_suite(pool, repo_id, effective_slug).await?;
     let new_name = name.unwrap_or(&existing.name);
     let new_desc = description.unwrap_or(existing.description.clone());
     let new_cases = if let Some(c) = cases {
@@ -467,7 +580,7 @@ pub async fn update_suite(
         "UPDATE suites SET name=$3, description=$4, cases=$5 WHERE repo_id=$1 AND slug=$2",
     )
     .bind(repo_id)
-    .bind(slug)
+    .bind(effective_slug)
     .bind(new_name)
     .bind(&new_desc)
     .bind(&new_cases)
@@ -476,11 +589,14 @@ pub async fn update_suite(
     .map_err(map_db)?
     .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
+        return Err(RepoError::NotFound(format!(
+            "suite not found: {}",
+            effective_slug
+        )));
     }
 
     Ok(SuiteRow {
-        slug: slug.to_owned(),
+        slug: effective_slug.to_owned(),
         name: new_name.to_owned(),
         description: new_desc,
         cases: new_cases,
@@ -549,8 +665,14 @@ pub async fn create_run(
     tester: &str,
     environment: Option<String>,
     suite: Option<String>,
+    inline_cases: Vec<String>,
 ) -> RResult<RunRow> {
     validate_slug_path(slug, "run slug")?;
+    if !inline_cases.is_empty() && suite.as_deref().is_some_and(|s| !s.is_empty()) {
+        return Err(RepoError::InvalidArg(
+            "cannot specify both suite and cases — use one or the other".to_owned(),
+        ));
+    }
     if let Some(ref suite_slug) = suite {
         if !suite_slug.is_empty() {
             validate_slug_path(suite_slug, "suite")?;
@@ -595,6 +717,20 @@ pub async fn create_run(
             "run already exists: {}",
             run_id
         )));
+    }
+
+    if !inline_cases.is_empty() {
+        for case_path in &inline_cases {
+            sqlx::query(
+                "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+            )
+            .bind(repo_id)
+            .bind(&run_id)
+            .bind(case_path)
+            .execute(pool)
+            .await
+            .map_err(map_db)?;
+        }
     }
 
     Ok(RunRow {
@@ -754,6 +890,67 @@ pub async fn delete_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<(
     Ok(())
 }
 
+pub async fn update_run(
+    pool: &PgPool,
+    repo_id: &str,
+    run_id: &str,
+    new_slug: &str,
+) -> RResult<RunRow> {
+    validate_slug_path(run_id, "run")?;
+    validate_slug_path(new_slug, "new_slug")?;
+    // run_id format: YYYY-MM-DD-{slug}. Extract date prefix (first 10 chars).
+    let date_prefix = run_id.get(..10).ok_or_else(|| {
+        RepoError::InvalidArg(format!(
+            "run_id '{}' does not start with a date prefix (YYYY-MM-DD)",
+            run_id
+        ))
+    })?;
+    let new_run_id = format!("{}-{}", date_prefix, new_slug);
+    if new_run_id == run_id {
+        return get_run(pool, repo_id, run_id).await.map(|r| r.meta);
+    }
+    let conflict: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM runs WHERE repo_id=$1 AND run_id=$2)")
+            .bind(repo_id)
+            .bind(&new_run_id)
+            .fetch_one(pool)
+            .await
+            .map_err(map_db)?;
+    if conflict {
+        return Err(RepoError::AlreadyExists(format!(
+            "run already exists: {}",
+            new_run_id
+        )));
+    }
+    let rows = sqlx::query("UPDATE runs SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(&new_run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?
+        .rows_affected();
+    if rows == 0 {
+        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+    }
+    // Cascade to results and run_cases.
+    sqlx::query("UPDATE results SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(&new_run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    sqlx::query("UPDATE run_cases SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(&new_run_id)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    get_run(pool, repo_id, &new_run_id).await.map(|r| r.meta)
+}
+
 // ---------------------------------------------------------------------------
 // Pending cases
 // ---------------------------------------------------------------------------
@@ -766,7 +963,26 @@ pub async fn get_pending_cases(
     validate_slug_path(run_id, "run")?;
     let run = get_run(pool, repo_id, run_id).await?;
 
-    let (scope, total) = if let Some(ref suite_slug) = run.meta.suite {
+    // Check for inline run_cases first.
+    let inline: Vec<String> = sqlx::query_scalar(
+        "SELECT case_path FROM run_cases WHERE repo_id=$1 AND run_id=$2 ORDER BY case_path",
+    )
+    .bind(repo_id)
+    .bind(run_id)
+    .fetch_all(pool)
+    .await
+    .map_err(map_db)?;
+
+    let (scope, total) = if !inline.is_empty() {
+        let inline_set: std::collections::HashSet<String> = inline.into_iter().collect();
+        let all = list_cases(pool, repo_id).await?;
+        let filtered: Vec<_> = all
+            .into_iter()
+            .filter(|c| inline_set.contains(&c.case_path))
+            .collect();
+        let total = filtered.len();
+        (filtered, total)
+    } else if let Some(ref suite_slug) = run.meta.suite {
         if suite_slug.is_empty() {
             let all = list_cases(pool, repo_id).await?;
             let total = all.len();
@@ -1212,6 +1428,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         )
         .await
         .unwrap_err();
@@ -1229,6 +1446,7 @@ mod tests {
             None,
             Some("turbo"),
             None,
+            None,
         )
         .await
         .unwrap_err();
@@ -1244,6 +1462,7 @@ mod tests {
             &lazy_pool(),
             "owner/repo",
             "auth/login",
+            None,
             None,
             None,
             None,
@@ -1293,17 +1512,103 @@ mod tests {
 
     #[tokio::test]
     async fn update_suite_invalid_slug_returns_invalid_arg() {
-        let err = update_suite(&lazy_pool(), "owner/repo", "../escape", None, None, None)
-            .await
-            .unwrap_err();
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "../escape",
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
 
     #[tokio::test]
     async fn update_suite_valid_slug_passes_validation_and_hits_db() {
-        let err = update_suite(&lazy_pool(), "owner/repo", "regression", None, None, None)
-            .await
-            .unwrap_err();
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "regression",
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_suite_invalid_new_slug_returns_invalid_arg() {
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            None,
+            None,
+            None,
+            Some("bad slug!"),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_suite_valid_new_slug_passes_validation_and_hits_db() {
+        // Valid new_slug passes slug validation then hits DB (not found).
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            None,
+            None,
+            None,
+            Some("smoke-v2"),
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_case_invalid_new_path_returns_invalid_arg() {
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("bad path!"),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_case_valid_new_path_passes_validation_and_hits_db() {
+        // Valid new_path passes path validation then hits DB (not found).
+        let err = update_case(
+            &lazy_pool(),
+            "owner/repo",
+            "auth/login",
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("auth/signin"),
+        )
+        .await
+        .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
@@ -1333,6 +1638,7 @@ mod tests {
             "tester",
             None,
             None,
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1349,6 +1655,7 @@ mod tests {
             "tester",
             None,
             Some("bad suite!".to_owned()),
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1366,6 +1673,7 @@ mod tests {
             "tester",
             None,
             Some("".to_owned()),
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1396,9 +1704,17 @@ mod tests {
     async fn create_run_no_suite_passes_validation_and_hits_db() {
         // suite: None — outer `if let Some(ref suite_slug) = suite` is false, skipping
         // all suite validation; passes pre-DB checks → DB error.
-        let err = create_run(&lazy_pool(), "owner/repo", "smoke", "tester", None, None)
-            .await
-            .unwrap_err();
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            None,
+            vec![],
+        )
+        .await
+        .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
@@ -1413,6 +1729,7 @@ mod tests {
             "tester",
             None,
             Some("regression".to_owned()),
+            vec![],
         )
         .await
         .unwrap_err();
@@ -1807,7 +2124,7 @@ mod tests {
     #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
     async fn create_and_finalize_run(pool: PgPool) {
         let repo = "test-repo";
-        let run = create_run(&pool, repo, "sprint-1", "alice", None, None)
+        let run = create_run(&pool, repo, "sprint-1", "alice", None, None, vec![])
             .await
             .unwrap();
         assert_eq!(run.status, "in-progress");
@@ -1825,7 +2142,7 @@ mod tests {
         create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
             .await
             .unwrap();
-        let run = create_run(&pool, repo, "sprint-2", "", None, None)
+        let run = create_run(&pool, repo, "sprint-2", "", None, None, vec![])
             .await
             .unwrap();
         finalize_run(&pool, repo, &run.run_id, "aborted")
@@ -1836,6 +2153,40 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, RepoError::ClosedRun(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_invalid_run_id_returns_invalid_arg() {
+        let err = update_run(&lazy_pool(), "owner/repo", "bad run!", "smoke-v2")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_invalid_new_slug_returns_invalid_arg() {
+        let err = update_run(&lazy_pool(), "owner/repo", "2026-01-01-smoke", "bad slug!")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_short_run_id_returns_invalid_arg() {
+        // run_id shorter than 10 chars — date prefix extraction fails.
+        let err = update_run(&lazy_pool(), "owner/repo", "short", "smoke-v2")
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn update_run_valid_args_passes_validation_and_hits_db() {
+        // Valid run_id + new_slug pass all validation → hits DB (no connection → DB error).
+        let err = update_run(&lazy_pool(), "owner/repo", "2026-01-01-smoke", "smoke-v2")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
     #[sqlx::test]

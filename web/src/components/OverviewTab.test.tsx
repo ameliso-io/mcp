@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
@@ -59,6 +59,24 @@ describe("OverviewTab", () => {
     expect(screen.getAllByText("1").length).toBeGreaterThan(0);
   });
 
+  it("shows Blocked and Skipped stat counts", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("a/b", "A", "high", ResultStatus.BLOCKED),
+        makeCovEntry("c/d", "C", "low", ResultStatus.SKIPPED),
+        makeCovEntry("e/f", "E", "medium", ResultStatus.PASSED),
+      ],
+      runCount: 1,
+    } as never);
+    const { container } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
+    await waitFor(() => container.querySelector('[data-stat="Blocked"]'));
+    expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("1");
+    expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("1");
+    expect(container.querySelector('[data-stat="Passed"]')).toHaveTextContent("1");
+  });
+
   it("shows coverage entries with failed first", async () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("auth/login"));
@@ -77,6 +95,40 @@ describe("OverviewTab", () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     expect(screen.getByText("run-abc")).toBeInTheDocument();
+  });
+
+  it("shows pending count for active runs when getRepoStatus has matching data", async () => {
+    const activeRun = makeRunMeta({ id: "2026-01-01-sprint", tester: "bob", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 5,
+      highCases: 2,
+      mediumCases: 2,
+      lowCases: 1,
+      passed: 3,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 2,
+      suiteCount: 1,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "2026-01-01-sprint",
+          tester: "bob",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 2,
+          totalInScope: 5,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    expect(screen.getByText("3/5 done")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuenow", "3");
+    expect(bar).toHaveAttribute("aria-valuemax", "5");
   });
 
   it("calls getAffectedCases when Check Diff submitted", async () => {
@@ -223,9 +275,9 @@ describe("OverviewTab", () => {
       runCount: 3,
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
-    expect(screen.getByText("Skipped")).toBeInTheDocument();
-    expect(screen.getByText("Never run")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
@@ -310,9 +362,9 @@ describe("OverviewTab", () => {
       runCount: 1,
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
-    expect(screen.getByText("Skipped")).toBeInTheDocument();
-    expect(screen.getByText("Never run")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
@@ -604,6 +656,40 @@ describe("OverviewTab", () => {
     expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
   });
 
+  it("progress bar renders 0% width when totalInScope is zero", async () => {
+    const activeRun = makeRunMeta({ id: "run-zero", tester: "eve", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "run-zero",
+          tester: "eve",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 0,
+          totalInScope: 0,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    expect(screen.getByText("0/0 done")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuemax", "0");
+    expect((bar.firstChild as HTMLElement).style.width).toBe("0%");
+  });
+
   it("UNSPECIFIED status sorts after PASSED in coverage list (default branch)", async () => {
     // statusSortOrder returns 5 for UNSPECIFIED (default case), PASSED returns 4.
     // So PASSED entries must appear before UNSPECIFIED in the rendered list.
@@ -621,15 +707,57 @@ describe("OverviewTab", () => {
     expect(body.indexOf("Login")).toBeLessThan(body.indexOf("Reset"));
   });
 
-  it("shows all four stat card labels and Never Run count is 0 when no never-run cases", async () => {
-    // default entries: 1 PASSED + 1 FAILED — no NEVER entries
-    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+  it("shows all six stat card labels and zero counts for absent statuses", async () => {
+    // default entries: 1 PASSED + 1 FAILED — no NEVER/BLOCKED/SKIPPED entries
+    const { container } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await waitFor(() => expect(screen.getByText("Total Cases")).toBeInTheDocument());
     // stat card labels appear (may also appear in coverage list — use getAllByText)
     expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
     expect(screen.getByText("Never Run")).toBeInTheDocument();
-    // statNever = 0 since no NEVER entries in default coverage data
-    expect(screen.getByText("0")).toBeInTheDocument();
+    // statNever = statBlocked = statSkipped = 0 since no such entries in default data
+    expect(container.querySelector('[data-stat="Never Run"]')).toHaveTextContent("0");
+    expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("0");
+    expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("0");
+  });
+
+  it("filter select defaults to All statuses and triggers reload with statusFilter when changed", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    expect(select).toHaveValue(String(ResultStatus.UNSPECIFIED));
+    // Change to Failed filter
+    fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ statusFilter: ResultStatus.FAILED })
+      )
+    );
+  });
+
+  it("resets coverage filter to All statuses when repoId changes", async () => {
+    const { rerender } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // Set filter to FAILED
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
+    expect(select).toHaveValue(String(ResultStatus.FAILED));
+    // Switch to a different repo
+    rerender(<OverviewTab repoId="other/repo" basePath="/repositories/other/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "Filter coverage by status" })
+      ).toHaveValue(String(ResultStatus.UNSPECIFIED))
+    );
+    // Reload should use UNSPECIFIED filter for the new repo
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED })
+      )
+    );
   });
 });

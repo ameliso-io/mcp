@@ -669,4 +669,21 @@ describe("SuitesTab", () => {
     await waitFor(() => expect(screen.getByText("Smoke Tests")).toBeInTheDocument());
     expect(screen.queryByText("User Login")).not.toBeInTheDocument();
   });
+
+  it("calls updateSuite with newSlug when rename slug field is filled", async () => {
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    const renameInput = screen.getByRole("textbox", {
+      name: "Rename slug (optional)",
+    }) as HTMLInputElement;
+    await userEvent.type(renameInput, "smoke-v2");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(client.updateSuite).toHaveBeenCalledWith(
+        expect.objectContaining({ newSlug: "smoke-v2" })
+      )
+    );
+  });
 });

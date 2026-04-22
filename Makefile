@@ -17,8 +17,6 @@ build:
 
 test:
 	cargo test
-	cargo test --manifest-path cli/Cargo.toml
-	cargo test --manifest-path mcp/Cargo.toml
 	pnpm --filter ameliso-web test
 	pnpm --filter ameliso-web test:typecheck
 

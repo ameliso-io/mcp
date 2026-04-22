@@ -71,6 +71,7 @@ export default function CasesTab({
     initialPriorityFilter ?? Priority.UNSPECIFIED
   );
   const [tagFilter, setTagFilter] = useState(initialTagFilter ?? "");
+  const [suiteFilter, setSuiteFilter] = useState("");
   const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,6 +109,7 @@ export default function CasesTab({
   const [editPriority, setEditPriority] = useState<Priority>(Priority.MEDIUM);
   const [editTags, setEditTags] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [editNewPath, setEditNewPath] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function fetchBody(casePath: string): Promise<string> {
@@ -147,6 +149,7 @@ export default function CasesTab({
     setEditPriority(stringToPriority(c.priority));
     setEditTags(c.tags.join(", "));
     setEditBody("");
+    setEditNewPath("");
     try {
       setEditBody(await fetchBody(c.path));
     } catch {
@@ -187,6 +190,7 @@ export default function CasesTab({
         query: debouncedSearch,
         priority: priorityFilter,
         tags: tagFilter ? [tagFilter] : [],
+        suite: suiteFilter,
       });
       setCases(res.cases);
     } catch (e) {
@@ -194,7 +198,7 @@ export default function CasesTab({
     } finally {
       setLoading(false);
     }
-  }, [repoId, debouncedSearch, priorityFilter, tagFilter]);
+  }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter]);
 
   useEffect(() => {
     void load();
@@ -277,6 +281,7 @@ export default function CasesTab({
               .filter(Boolean)
           : [],
         body: editBody,
+        newPath: editNewPath,
       });
       setEditingPath(null);
       lastFocusRef.current?.focus();
@@ -463,6 +468,16 @@ export default function CasesTab({
             ))}
           </select>
         )}
+        <input
+          type="search"
+          aria-label="Filter by suite slug"
+          placeholder="Suite slug…"
+          value={suiteFilter}
+          onChange={(e) => {
+            setSuiteFilter(e.target.value);
+          }}
+          className={styles.filterSelect}
+        />
         <select
           aria-label="Sort cases"
           value={sortBy}
@@ -610,6 +625,19 @@ export default function CasesTab({
                           }}
                           rows={8}
                           className={styles.textarea}
+                        />
+                      </label>
+                    </div>
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>
+                        Rename path (optional)
+                        <input
+                          value={editNewPath}
+                          onChange={(e) => {
+                            setEditNewPath(e.target.value);
+                          }}
+                          className={styles.input}
+                          placeholder="leave blank to keep current path"
                         />
                       </label>
                     </div>

@@ -4,6 +4,8 @@
 // @ts-nocheck
 
 import {
+  BulkCreateCasesRequest,
+  BulkCreateCasesResponse,
   BulkRecordResultsRequest,
   BulkRecordResultsResponse,
   CreateCaseRequest,
@@ -30,6 +32,8 @@ import {
   GetGitHubInstallUrlResponse,
   GetPendingCasesRequest,
   GetPendingCasesResponse,
+  GetRepoStatusRequest,
+  GetRepoStatusResponse,
   GetRunRequest,
   GetRunResponse,
   GetSuiteRequest,
@@ -52,6 +56,8 @@ import {
   SyncRepositoryResponse,
   UpdateCaseRequest,
   UpdateCaseResponse,
+  UpdateRunRequest,
+  UpdateRunResponse,
   UpdateSuiteRequest,
   UpdateSuiteResponse,
 } from "./service_pb.js";
@@ -93,6 +99,15 @@ export declare const AmelisoService: {
       readonly name: "CreateCase";
       readonly I: typeof CreateCaseRequest;
       readonly O: typeof CreateCaseResponse;
+      readonly kind: MethodKind.Unary;
+    };
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkCreateCases
+     */
+    readonly bulkCreateCases: {
+      readonly name: "BulkCreateCases";
+      readonly I: typeof BulkCreateCasesRequest;
+      readonly O: typeof BulkCreateCasesResponse;
       readonly kind: MethodKind.Unary;
     };
     /**
@@ -235,6 +250,17 @@ export declare const AmelisoService: {
       readonly kind: MethodKind.Unary;
     };
     /**
+     * Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.UpdateRun
+     */
+    readonly updateRun: {
+      readonly name: "UpdateRun";
+      readonly I: typeof UpdateRunRequest;
+      readonly O: typeof UpdateRunResponse;
+      readonly kind: MethodKind.Unary;
+    };
+    /**
      * --- Reports ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
@@ -254,6 +280,17 @@ export declare const AmelisoService: {
       readonly name: "GetAffectedCases";
       readonly I: typeof GetAffectedCasesRequest;
       readonly O: typeof GetAffectedCasesResponse;
+      readonly kind: MethodKind.Unary;
+    };
+    /**
+     * Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.GetRepoStatus
+     */
+    readonly getRepoStatus: {
+      readonly name: "GetRepoStatus";
+      readonly I: typeof GetRepoStatusRequest;
+      readonly O: typeof GetRepoStatusResponse;
       readonly kind: MethodKind.Unary;
     };
     /**

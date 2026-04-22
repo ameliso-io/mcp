@@ -73,5 +73,16 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS run_cases (
+            repo_id TEXT NOT NULL,
+            run_id TEXT NOT NULL,
+            case_path TEXT NOT NULL,
+            PRIMARY KEY (repo_id, run_id, case_path)
+        )",
+    )
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
