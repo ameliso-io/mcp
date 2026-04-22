@@ -698,6 +698,38 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
   });
 
+  it("discards stale listCases response when filter changes before first load resolves", async () => {
+    let resolveFirst!: (v: ReturnType<typeof makeListCasesResponse>) => void;
+    let resolveSecond!: (v: ReturnType<typeof makeListCasesResponse>) => void;
+    const secondCase = makeCase({ path: "auth/logout", title: "Logout" });
+    vi.mocked(client.listCases)
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res as typeof resolveFirst;
+          }) as ReturnType<typeof client.listCases>
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveSecond = res as typeof resolveSecond;
+          }) as ReturnType<typeof client.listCases>
+      );
+
+    render(<CasesTab repoId="owner/repo" initialPriorityFilter={Priority.UNSPECIFIED} />);
+    // Change filter to trigger second load before first resolves
+    const prioritySelect = screen.getByRole("combobox", { name: /priority/i });
+    await userEvent.selectOptions(prioritySelect, "High");
+    // Resolve second first (out of order)
+    resolveSecond(makeListCasesResponse({ cases: [secondCase] }));
+    await waitFor(() => screen.getByText("Logout"));
+    // Now resolve first (stale) — must not overwrite second result
+    resolveFirst(makeListCasesResponse({ cases: [mockCase] }));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText("User Login")).not.toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
+  });
+
   it("discards stale getCase response when a second expand fires before first resolves", async () => {
     const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
     vi.mocked(client.listCases).mockResolvedValue(
