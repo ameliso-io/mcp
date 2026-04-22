@@ -297,6 +297,8 @@ export default function OverviewTab({ repoId }: Props) {
               onChange={(e) => setSinceRef(e.target.value)}
               placeholder="Since ref (default: last run commit)"
               className={styles.repoInput}
+              autoComplete="off"
+              spellCheck={false}
             />
             <button type="submit" disabled={affectedLoading} className={styles.btn}>
               {affectedLoading ? "Checking…" : "Check Diff"}

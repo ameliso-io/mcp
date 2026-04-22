@@ -466,6 +466,8 @@ export default function RunsTab({
                   required
                   autoFocus
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
@@ -486,6 +488,8 @@ export default function RunsTab({
                   value={newEnv}
                   onChange={(e) => setNewEnv(e.target.value)}
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
@@ -496,6 +500,8 @@ export default function RunsTab({
                   value={newSuite}
                   onChange={(e) => setNewSuite(e.target.value)}
                   className={styles.input}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </label>
             </div>
