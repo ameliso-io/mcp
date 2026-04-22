@@ -78,6 +78,7 @@ export default function CasesTab({
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [actionAnnouncement, announceAction] = useAnnounce();
   const prevCountRef = useRef<number | null>(null);
@@ -251,6 +252,7 @@ export default function CasesTab({
   }
 
   async function handleDelete(casePath: string) {
+    setDeleting(true);
     try {
       await client.deleteCase({ repoId, casePath });
       if (expandedPath === casePath) setExpandedPath(null);
@@ -259,6 +261,8 @@ export default function CasesTab({
       await load();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -708,9 +712,10 @@ export default function CasesTab({
                           type="button"
                           onClick={() => handleDelete(c.path)}
                           aria-label={`Confirm delete ${c.path}`}
+                          disabled={deleting}
                           className={styles.btnDangerSm}
                         >
-                          Yes
+                          {deleting ? "Deleting…" : "Yes"}
                         </button>
                         <button
                           type="button"

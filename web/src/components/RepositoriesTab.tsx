@@ -33,6 +33,7 @@ export default function RepositoriesTab({
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
   const prevActiveRef = useRef(activeRepoId);
   const prevFilterCountRef = useRef<number | null>(null);
 
@@ -150,6 +151,7 @@ export default function RepositoriesTab({
 
   async function handleRemove(id: string) {
     setError(null);
+    setRemoving(true);
     const repo = repos.find((r) => r.id === id);
     try {
       await client.removeRepository({ id });
@@ -159,6 +161,8 @@ export default function RepositoriesTab({
       announce(`${repo?.fullName ?? /* v8 ignore next */ id} removed`);
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -333,8 +337,9 @@ export default function RepositoriesTab({
                         className={styles.btnDanger}
                         onClick={() => handleRemove(repo.id)}
                         aria-label={`Confirm remove ${repo.fullName}`}
+                        disabled={removing}
                       >
-                        Yes
+                        {removing ? "Removing…" : "Yes"}
                       </button>
                       <button
                         type="button"

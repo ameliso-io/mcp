@@ -43,6 +43,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   });
   const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Edit suite state
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
@@ -145,6 +146,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   }
 
   async function handleDelete(slug: string) {
+    setDeleting(true);
     try {
       await client.deleteSuite({ repoId, slug });
       if (expanded === slug) setExpanded(null);
@@ -153,6 +155,8 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       await load();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -444,9 +448,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                           type="button"
                           onClick={() => handleDelete(suite.slug)}
                           aria-label={`Confirm delete ${suite.slug}`}
+                          disabled={deleting}
                           className={styles.btnDangerSm}
                         >
-                          Yes
+                          {deleting ? "Deleting…" : "Yes"}
                         </button>
                         <button
                           type="button"

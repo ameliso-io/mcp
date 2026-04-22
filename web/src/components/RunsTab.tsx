@@ -89,6 +89,7 @@ export default function RunsTab({
   const [bulkPassing, setBulkPassing] = useState(false);
 
   const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
+  const [deletingRun, setDeletingRun] = useState(false);
   const [confirmingFinalize, setConfirmingFinalize] = useState<{
     runId: string;
     status: RunStatus;
@@ -323,6 +324,7 @@ export default function RunsTab({
   }
 
   async function handleDeleteRun(runId: string) {
+    setDeletingRun(true);
     try {
       await client.deleteRun({ repoId, runId });
       if (selectedRunId === runId) {
@@ -336,6 +338,8 @@ export default function RunsTab({
       await load();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      setDeletingRun(false);
     }
   }
 
@@ -566,9 +570,10 @@ export default function RunsTab({
                       type="button"
                       onClick={() => handleDeleteRun(run.id)}
                       aria-label={`Confirm delete ${run.id}`}
+                      disabled={deletingRun}
                       className={styles.btnDangerSm}
                     >
-                      Yes
+                      {deletingRun ? "Deleting…" : "Yes"}
                     </button>
                     <button
                       type="button"
