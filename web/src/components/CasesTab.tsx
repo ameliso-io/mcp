@@ -108,6 +108,7 @@ export default function CasesTab({
   const [editPriority, setEditPriority] = useState<Priority>(Priority.MEDIUM);
   const [editTags, setEditTags] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [editNewPath, setEditNewPath] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function fetchBody(casePath: string): Promise<string> {
@@ -147,6 +148,7 @@ export default function CasesTab({
     setEditPriority(stringToPriority(c.priority));
     setEditTags(c.tags.join(", "));
     setEditBody("");
+    setEditNewPath("");
     try {
       setEditBody(await fetchBody(c.path));
     } catch {
@@ -277,6 +279,7 @@ export default function CasesTab({
               .filter(Boolean)
           : [],
         body: editBody,
+        newPath: editNewPath,
       });
       setEditingPath(null);
       lastFocusRef.current?.focus();
@@ -612,6 +615,19 @@ export default function CasesTab({
                           }}
                           rows={8}
                           className={styles.textarea}
+                        />
+                      </label>
+                    </div>
+                    <div className={styles.fullCol}>
+                      <label className={styles.labelSm}>
+                        Rename path (optional)
+                        <input
+                          value={editNewPath}
+                          onChange={(e) => {
+                            setEditNewPath(e.target.value);
+                          }}
+                          className={styles.input}
+                          placeholder="leave blank to keep current path"
                         />
                       </label>
                     </div>

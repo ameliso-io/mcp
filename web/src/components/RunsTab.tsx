@@ -93,6 +93,9 @@ export default function RunsTab({
     status: RunStatus;
   } | null>(null);
   const [confirmingBulkPass, setConfirmingBulkPass] = useState<string | null>(null);
+  const [renamingRunId, setRenamingRunId] = useState<string | null>(null);
+  const [renameNewSlug, setRenameNewSlug] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const [actionAnnouncement, announce] = useAnnounce();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -323,6 +326,25 @@ export default function RunsTab({
     }
   }
 
+  async function handleRenameRun(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — form only renders when renamingRunId is set */
+    if (!renamingRunId || !renameNewSlug) return;
+    setRenaming(true);
+    try {
+      await client.updateRun({ repoId, runId: renamingRunId, newSlug: renameNewSlug });
+      setRenamingRunId(null);
+      setRenameNewSlug("");
+      lastFocusRef.current?.focus();
+      announce("Run renamed");
+      load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setRenaming(false);
+    }
+  }
+
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
@@ -496,6 +518,20 @@ export default function RunsTab({
                     {run.date}
                   </time>
                 </button>
+                {renamingRunId !== run.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      lastFocusRef.current = document.activeElement as HTMLElement;
+                      setRenamingRunId(run.id);
+                      setRenameNewSlug("");
+                    }}
+                    aria-label={`Rename ${run.id}`}
+                    className={styles.btnOutlineSm}
+                  >
+                    Rename
+                  </button>
+                )}
                 {confirmingDeleteRun === run.id ? (
                   <>
                     <span className={styles.confirmText}>Delete?</span>
@@ -532,6 +568,46 @@ export default function RunsTab({
                   </button>
                 )}
               </div>
+              {renamingRunId === run.id && (
+                <form
+                  aria-label={`Rename run ${run.id}`}
+                  onSubmit={handleRenameRun}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setRenamingRunId(null);
+                      lastFocusRef.current?.focus();
+                    }
+                  }}
+                  className={styles.renameForm}
+                >
+                  <span className={styles.renamePrefix}>{run.id.slice(0, 10)}-</span>
+                  <input
+                    value={renameNewSlug}
+                    onChange={(e) => {
+                      setRenameNewSlug(e.target.value);
+                    }}
+                    required
+                    autoFocus
+                    className={styles.renameInput}
+                    placeholder="new-slug"
+                    aria-label="New slug"
+                  />
+                  <button type="submit" disabled={renaming} className={styles.btnSaveSm}>
+                    {renaming ? "Renaming…" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenamingRunId(null);
+                      lastFocusRef.current?.focus();
+                    }}
+                    className={styles.btnCancelSm}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              )}
             </div>
 
             {selectedRunId === run.id && (

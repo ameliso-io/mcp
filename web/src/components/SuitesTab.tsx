@@ -49,6 +49,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editCases, setEditCases] = useState("");
+  const [editNewSlug, setEditNewSlug] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function toggleExpand(slug: string) {
@@ -80,6 +81,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     setEditName(suite.name);
     setEditDesc(suite.description);
     setEditCases(suite.cases.join(", "));
+    setEditNewSlug("");
   }
 
   const load = useCallback(async () => {
@@ -173,6 +175,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
               .filter(Boolean)
           : [],
         replaceCases: true,
+        newSlug: editNewSlug,
       });
       setEditingSlug(null);
       lastFocusRef.current?.focus();
@@ -365,6 +368,19 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                           setEditCases(e.target.value);
                         }}
                         className={styles.input}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.label}>
+                      Rename slug (optional)
+                      <input
+                        value={editNewSlug}
+                        onChange={(e) => {
+                          setEditNewSlug(e.target.value);
+                        }}
+                        className={styles.input}
+                        placeholder="leave blank to keep current slug"
                       />
                     </label>
                   </div>

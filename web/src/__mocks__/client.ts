@@ -22,6 +22,7 @@ export const client = {
   bulkRecordResults: vi.fn().mockResolvedValue({ results: [], pendingCount: 0, totalInScope: 0 }),
   finalizeRun: vi.fn().mockResolvedValue({ run: undefined }),
   deleteRun: vi.fn().mockResolvedValue({ dirPath: "" }),
+  updateRun: vi.fn().mockResolvedValue({ run: undefined, newDirPath: "" }),
   getPendingCases: vi.fn().mockResolvedValue({ cases: [], totalInScope: 0 }),
   getCoverageReport: vi.fn().mockResolvedValue({ entries: [], runCount: 0 }),
   getAffectedCases: vi.fn().mockResolvedValue({ cases: [], reason: "" }),

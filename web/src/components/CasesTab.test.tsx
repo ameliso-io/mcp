@@ -899,4 +899,21 @@ describe("CasesTab", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
     expect(client.createCase).not.toHaveBeenCalled();
   });
+
+  it("calls updateCase with newPath when rename path field is filled", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("Edit"));
+    await userEvent.click(screen.getByText("Edit"));
+    await waitFor(() => screen.getByText("Save"));
+    const renameInput = screen.getByRole("textbox", {
+      name: "Rename path (optional)",
+    }) as HTMLInputElement;
+    await userEvent.type(renameInput, "auth/sign-in");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(client.updateCase).toHaveBeenCalledWith(
+        expect.objectContaining({ newPath: "auth/sign-in" })
+      )
+    );
+  });
 });
