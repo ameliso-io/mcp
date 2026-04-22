@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
@@ -145,104 +145,113 @@ export default function RunsTab({
     load();
   }, [load]);
 
-  const selectRun = useCallback(async (runId: string, status: RunStatus) => {
-    if (selectedRunId === runId) {
-      setSelectedRunId(null);
+  const selectRun = useCallback(
+    async (runId: string, status: RunStatus) => {
+      if (selectedRunId === runId) {
+        setSelectedRunId(null);
+        setPendingCases([]);
+        setRecordedResults([]);
+        setResultStatusFilter(null);
+        setRecordingCase(null);
+        setCaseBody(null);
+        return;
+      }
+      setSelectedRunId(runId);
+      setLoadingPending(true);
       setPendingCases([]);
       setRecordedResults([]);
       setResultStatusFilter(null);
       setRecordingCase(null);
       setCaseBody(null);
-      return;
-    }
-    setSelectedRunId(runId);
-    setLoadingPending(true);
-    setPendingCases([]);
-    setRecordedResults([]);
-    setResultStatusFilter(null);
-    setRecordingCase(null);
-    setCaseBody(null);
-    try {
-      if (status === RunStatus.IN_PROGRESS) {
-        const res = await client.getPendingCases({ repoId, runId });
+      try {
+        if (status === RunStatus.IN_PROGRESS) {
+          const res = await client.getPendingCases({ repoId, runId });
+          setPendingCases(res.cases);
+          setTotalInScope(res.totalInScope);
+        } else {
+          const [runRes, casesRes] = await Promise.all([
+            client.getRun({ repoId, runId }),
+            client.listCases({ repoId }),
+          ]);
+          setRecordedResults(runRes.run?.results ?? /* v8 ignore next */ []);
+          setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
+        }
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setLoadingPending(false);
+      }
+    },
+    [selectedRunId, repoId]
+  );
+
+  const handleCreate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — required fields prevent submission when blank */
+      if (!repoId || !newSlug) return;
+      setCreating(true);
+      try {
+        const created = await client.createRun({
+          repoId,
+          slug: newSlug,
+          tester: newTester,
+          environment: newEnv,
+          suite: newSuite,
+        });
+        setShowCreate(false);
+        lastFocusRef.current?.focus();
+        setNewSlug("");
+        setNewTester("");
+        setNewEnv("");
+        setNewSuite("");
+        announce("Run created");
+        await load();
+        // Auto-expand the newly created run
+        if (created.run) {
+          await selectRun(created.run.id, created.run.status);
+        }
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setCreating(false);
+      }
+    },
+    [repoId, newSlug, newTester, newEnv, newSuite, announce, load, selectRun]
+  );
+
+  const handleRecord = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — record form only shown when both are set */
+      if (!selectedRunId || !recordingCase) return;
+      setRecording(true);
+      try {
+        await client.recordResult({
+          repoId,
+          runId: selectedRunId,
+          casePath: recordingCase,
+          status: recordStatus,
+          notes: recordNotes,
+        });
+        setRecordingCase(null);
+        lastFocusRef.current?.focus();
+        setRecordNotes("");
+        setRecordStatus(ResultStatus.PASSED);
+        setCaseBody(null);
+        announce("Result recorded");
+        // Refresh pending
+        const res = await client.getPendingCases({ repoId, runId: selectedRunId });
         setPendingCases(res.cases);
         setTotalInScope(res.totalInScope);
-      } else {
-        const [runRes, casesRes] = await Promise.all([
-          client.getRun({ repoId, runId }),
-          client.listCases({ repoId }),
-        ]);
-        setRecordedResults(runRes.run?.results ?? /* v8 ignore next */ []);
-        setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setRecording(false);
       }
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoadingPending(false);
-    }
-  }, [selectedRunId, repoId]);
-
-  const handleCreate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newSlug) return;
-    setCreating(true);
-    try {
-      const created = await client.createRun({
-        repoId,
-        slug: newSlug,
-        tester: newTester,
-        environment: newEnv,
-        suite: newSuite,
-      });
-      setShowCreate(false);
-      lastFocusRef.current?.focus();
-      setNewSlug("");
-      setNewTester("");
-      setNewEnv("");
-      setNewSuite("");
-      announce("Run created");
-      await load();
-      // Auto-expand the newly created run
-      if (created.run) {
-        await selectRun(created.run.id, created.run.status);
-      }
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setCreating(false);
-    }
-  }, [repoId, newSlug, newTester, newEnv, newSuite, announce, load, selectRun]);
-
-  const handleRecord = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    /* v8 ignore next 2 — record form only shown when both are set */
-    if (!selectedRunId || !recordingCase) return;
-    setRecording(true);
-    try {
-      await client.recordResult({
-        repoId,
-        runId: selectedRunId,
-        casePath: recordingCase,
-        status: recordStatus,
-        notes: recordNotes,
-      });
-      setRecordingCase(null);
-      lastFocusRef.current?.focus();
-      setRecordNotes("");
-      setRecordStatus(ResultStatus.PASSED);
-      setCaseBody(null);
-      announce("Result recorded");
-      // Refresh pending
-      const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-      setPendingCases(res.cases);
-      setTotalInScope(res.totalInScope);
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setRecording(false);
-    }
-  }, [selectedRunId, recordingCase, repoId, recordStatus, recordNotes, announce]);
+    },
+    [selectedRunId, recordingCase, repoId, recordStatus, recordNotes, announce]
+  );
 
   async function openRecord(casePath: string) {
     if (recordingCase === casePath) {
@@ -321,6 +330,24 @@ export default function RunsTab({
       setError(errorMessage(e));
     }
   }
+
+  const resultCounts = useMemo(
+    () => ({
+      passed: recordedResults.filter((r) => r.status === ResultStatus.PASSED).length,
+      failed: recordedResults.filter((r) => r.status === ResultStatus.FAILED).length,
+      blocked: recordedResults.filter((r) => r.status === ResultStatus.BLOCKED).length,
+      skipped: recordedResults.filter((r) => r.status === ResultStatus.SKIPPED).length,
+    }),
+    [recordedResults]
+  );
+
+  const filteredResults = useMemo(
+    () =>
+      resultStatusFilter !== null
+        ? recordedResults.filter((r) => r.status === resultStatusFilter)
+        : recordedResults,
+    [recordedResults, resultStatusFilter]
+  );
 
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
@@ -527,83 +554,49 @@ export default function RunsTab({
                   </div>
                 ) : run.status !== RunStatus.IN_PROGRESS ? (
                   <div>
-                    {recordedResults.length > 0 &&
-                      (() => {
-                        const counts = {
-                          passed: recordedResults.filter((r) => r.status === ResultStatus.PASSED)
-                            .length,
-                          failed: recordedResults.filter((r) => r.status === ResultStatus.FAILED)
-                            .length,
-                          blocked: recordedResults.filter((r) => r.status === ResultStatus.BLOCKED)
-                            .length,
-                          skipped: recordedResults.filter((r) => r.status === ResultStatus.SKIPPED)
-                            .length,
-                        };
-                        return (
-                          <div
-                            className={styles.resultFilters}
-                            role="group"
-                            aria-label="Filter by result status"
+                    {recordedResults.length > 0 && (
+                      <div
+                        className={styles.resultFilters}
+                        role="group"
+                        aria-label="Filter by result status"
+                      >
+                        {[
+                          { label: "Passed", count: resultCounts.passed, status: ResultStatus.PASSED },
+                          { label: "Failed", count: resultCounts.failed, status: ResultStatus.FAILED },
+                          { label: "Blocked", count: resultCounts.blocked, status: ResultStatus.BLOCKED },
+                          { label: "Skipped", count: resultCounts.skipped, status: ResultStatus.SKIPPED },
+                        ]
+                          .filter((s) => s.count > 0)
+                          .map((s) => (
+                            <button
+                              key={s.label}
+                              type="button"
+                              onClick={() =>
+                                setResultStatusFilter((rsf) => (rsf === s.status ? null : s.status))
+                              }
+                              aria-pressed={resultStatusFilter === s.status}
+                              className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
+                              data-status={ResultStatus[s.status]}
+                            >
+                              {s.count} {s.label}
+                            </button>
+                          ))}
+                        {resultStatusFilter !== null && (
+                          <button
+                            type="button"
+                            onClick={() => setResultStatusFilter(null)}
+                            className={styles.showAllBtn}
                           >
-                            {[
-                              {
-                                label: "Passed",
-                                count: counts.passed,
-                                status: ResultStatus.PASSED,
-                              },
-                              {
-                                label: "Failed",
-                                count: counts.failed,
-                                status: ResultStatus.FAILED,
-                              },
-                              {
-                                label: "Blocked",
-                                count: counts.blocked,
-                                status: ResultStatus.BLOCKED,
-                              },
-                              {
-                                label: "Skipped",
-                                count: counts.skipped,
-                                status: ResultStatus.SKIPPED,
-                              },
-                            ]
-                              .filter((s) => s.count > 0)
-                              .map((s) => (
-                                <button
-                                  key={s.label}
-                                  type="button"
-                                  onClick={() =>
-                                    setResultStatusFilter((rsf) =>
-                                      rsf === s.status ? null : s.status
-                                    )
-                                  }
-                                  aria-pressed={resultStatusFilter === s.status}
-                                  className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
-                                  data-status={ResultStatus[s.status]}
-                                >
-                                  {s.count} {s.label}
-                                </button>
-                              ))}
-                            {resultStatusFilter !== null && (
-                              <button
-                                type="button"
-                                onClick={() => setResultStatusFilter(null)}
-                                className={styles.showAllBtn}
-                              >
-                                Show all
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
+                            Show all
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
                       <ul className={styles.resultList} role="list">
-                        {(resultStatusFilter !== null
-                          ? recordedResults.filter((r) => r.status === resultStatusFilter)
-                          : recordedResults
-                        ).map((r) => (
+                        {filteredResults.map((r) => (
                           <li key={r.casePath} className={styles.resultRow}>
                             <span
                               className={styles.resultStatusBadge}
