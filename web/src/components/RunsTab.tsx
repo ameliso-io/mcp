@@ -241,10 +241,12 @@ export default function RunsTab({
         setNewEnv("");
         setNewSuite("");
         announce("Run created");
-        await load();
-        // Auto-expand the newly created run
         if (created.run) {
-          await selectRun(created.run.id, created.run.status);
+          const newRun = created.run;
+          if (statusFilter === RunStatus.UNSPECIFIED || newRun.status === statusFilter) {
+            setRuns((prev) => [newRun, ...prev]);
+          }
+          await selectRun(newRun.id, newRun.status);
         }
       } catch (e) {
         setError(errorMessage(e));
@@ -252,7 +254,7 @@ export default function RunsTab({
         setCreating(false);
       }
     },
-    [repoId, newSlug, newTester, newEnv, newSuite, announce, load, selectRun]
+    [repoId, newSlug, newTester, newEnv, newSuite, statusFilter, announce, selectRun]
   );
 
   const handleRecord = useCallback(
