@@ -127,12 +127,10 @@ pub async fn github_push(
     }
 
     for file_path in &remove {
-        let Some(case_path) = file_path
+        let case_path = file_path
             .strip_prefix("cases/")
             .and_then(|p| p.strip_suffix(".md"))
-        else {
-            continue;
-        };
+            .expect("remove set only contains is_case_file paths");
         if let Err(e) = crate::repo::delete_case_if_exists(&state.pool, &repo_id, case_path).await {
             eprintln!("webhook: delete failed for {case_path}: {e}");
         }
@@ -355,6 +353,22 @@ mod tests {
             .await
             .into_response();
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn github_push_case_file_removed_no_db_returns_internal_error() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(
+            r#"{"commits":[{"added":[],"modified":[],"removed":["cases/auth/login.md"]}],"repository":{"full_name":"owner/repo"}}"#,
+        );
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 
     #[tokio::test]
