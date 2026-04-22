@@ -16,6 +16,8 @@ interface Props {
   basePath: string;
 }
 
+const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
 function statusSortOrder(s: ResultStatus): number {
   switch (s) {
     case ResultStatus.FAILED:
@@ -383,12 +385,11 @@ export default function OverviewTab({ repoId, basePath }: Props) {
             ) : (
               <ul className={styles.affectedList} role="list">
                 {[...affected]
-                  .sort((a, b) => {
-                    const order = { high: 0, medium: 1, low: 2 } as Record<string, number>;
-                    return (
-                      (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3)
-                    );
-                  })
+                  .sort(
+                    (a, b) =>
+                      (PRIORITY_ORDER[a.case?.priority ?? ""] ?? 3) -
+                      (PRIORITY_ORDER[b.case?.priority ?? ""] ?? 3)
+                  )
                   .map((ac, idx) => (
                     <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
                       {ac.case?.priority && (
