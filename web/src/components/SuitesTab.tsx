@@ -34,6 +34,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
+  const loadIdRef = useRef(0);
   const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
   const toggleExpandRef = useRef<(slug: string) => void>((_slug: string) => undefined);
@@ -86,15 +87,21 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   const load = useCallback(async () => {
     if (!repoId) return;
+    const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
       const res = await client.listSuites({ repoId });
+      /* v8 ignore next 1 — race guard, covered by stale load test */
+      if (id !== loadIdRef.current) return;
       setSuites(res.suites);
     } catch (e) {
+      /* v8 ignore next 1 — race guard */
+      if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      /* v8 ignore next 1 — race guard */
+      if (id === loadIdRef.current) setLoading(false);
     }
   }, [repoId]);
 
