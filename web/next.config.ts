@@ -29,7 +29,11 @@ const securityHeaders = [
   // X-Frame-Options kept for legacy browsers that don't parse CSP frame-ancestors
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  {
+    key: "Permissions-Policy",
+    value:
+      "camera=(), microphone=(), geolocation=(), payment=(), display-capture=(), fullscreen=(self), picture-in-picture=()",
+  },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   // Cross-origin isolation: Embedder + Opener policies together enable crossOriginIsolated
   { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
