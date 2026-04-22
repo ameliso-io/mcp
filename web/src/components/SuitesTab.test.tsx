@@ -296,6 +296,17 @@ describe("SuitesTab", () => {
     expect(screen.queryByText("load failed")).not.toBeInTheDocument();
   });
 
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.listSuites)
+      .mockRejectedValueOnce(new Error("load failed"))
+      .mockResolvedValueOnce({ suites: [] } as never);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("load failed")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.listSuites).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText("load failed")).not.toBeInTheDocument();
+  });
+
   it("fills description in create form", async () => {
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await userEvent.click(screen.getByText("+ New Suite"));

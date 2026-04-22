@@ -846,8 +846,12 @@ describe("RunsTab", () => {
     await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled());
     expect(screen.getByText("auto-refresh 30s")).toBeInTheDocument();
     if (capturedCallback) {
-      await act(async () => { await capturedCallback!(); });
-      await act(async () => { await capturedCallback!(); });
+      await act(async () => {
+        await capturedCallback!();
+      });
+      await act(async () => {
+        await capturedCallback!();
+      });
     }
     expect(screen.getByText("data may be stale")).toBeInTheDocument();
     expect(screen.queryByText("auto-refresh 30s")).not.toBeInTheDocument();
@@ -859,6 +863,17 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
     await userEvent.click(screen.getByText("×"));
+    expect(screen.queryByText("load error")).not.toBeInTheDocument();
+  });
+
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.listRuns)
+      .mockRejectedValueOnce(new Error("load error"))
+      .mockResolvedValueOnce({ runs: [] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalledTimes(2));
     expect(screen.queryByText("load error")).not.toBeInTheDocument();
   });
 

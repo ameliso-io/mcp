@@ -482,6 +482,17 @@ describe("CasesTab", () => {
     expect(screen.queryByText("server down")).not.toBeInTheDocument();
   });
 
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.listCases)
+      .mockRejectedValueOnce(new Error("server down"))
+      .mockResolvedValueOnce({ cases: [] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("server down")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.listCases).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText("server down")).not.toBeInTheDocument();
+  });
+
   it("fills description and body textarea in create form", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,
