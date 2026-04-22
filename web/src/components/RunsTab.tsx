@@ -128,22 +128,29 @@ export default function RunsTab({
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
   const pendingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingPollAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     if (pendingPollRef.current) clearInterval(pendingPollRef.current);
     const selectedRun = runs.find((r) => r.id === selectedRunId);
     if (selectedRun && selectedRun.status === RunStatus.IN_PROGRESS) {
-      pendingPollRef.current = setInterval(async () => {
-        try {
-          const res = await client.getPendingCases({ repoId, runId: selectedRunId! });
-          setPendingCases(res.cases);
-          setTotalInScope(res.totalInScope);
-        } catch {
-          // silently ignore poll errors
-        }
+      pendingPollRef.current = setInterval(() => {
+        pendingPollAbortRef.current?.abort();
+        const ctrl = new AbortController();
+        pendingPollAbortRef.current = ctrl;
+        client
+          .getPendingCases({ repoId, runId: selectedRunId! }, { signal: ctrl.signal })
+          .then((res) => {
+            setPendingCases(res.cases);
+            setTotalInScope(res.totalInScope);
+          })
+          .catch(() => {
+            // silently ignore poll errors
+          });
       }, 30_000);
     }
     return () => {
       if (pendingPollRef.current) clearInterval(pendingPollRef.current);
+      pendingPollAbortRef.current?.abort();
     };
   }, [repoId, selectedRunId, runs]);
 
