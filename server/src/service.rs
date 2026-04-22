@@ -3130,6 +3130,18 @@ mod tests {
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
+    #[tokio::test]
+    async fn get_repo_status_passes_validation() {
+        let s = server();
+        let err = s
+            .get_repo_status(Request::new(pb::GetRepoStatusRequest {
+                repo_id: "owner/repo".to_owned(),
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
     // ── invalid helper ────────────────────────────────────────────────────────
 
     #[test]
