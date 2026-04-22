@@ -8,8 +8,13 @@ import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
+import LoadingSpinner from "./LoadingSpinner";
 
-const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
+const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
+  ssr: false,
+  /* v8 ignore next 1 — loading shown during initial chunk fetch, not reachable in unit tests */
+  loading: () => <LoadingSpinner />,
+});
 
 interface Props {
   repoId: string;
