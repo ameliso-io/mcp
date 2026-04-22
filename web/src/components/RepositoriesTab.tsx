@@ -59,8 +59,10 @@ export default function RepositoriesTab({
     setError(null);
     try {
       const installationIds = [...new Set(repos.map((r) => r.installationId).filter(Boolean))];
-      for (const installationId of installationIds) {
-        const res = await client.handleGitHubCallback({ installationId });
+      const results = await Promise.all(
+        installationIds.map((id) => client.handleGitHubCallback({ installationId: id }))
+      );
+      for (const res of results) {
         setRepos((prev) => {
           const ids = new Set(res.repositories.map((r) => r.id));
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
