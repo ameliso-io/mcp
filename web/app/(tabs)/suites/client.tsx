@@ -22,7 +22,7 @@ function SuitesInner() {
         params.delete("expanded");
       }
       const qs = params.toString();
-      router.replace(qs ? `/suites?${qs}` : "/suites");
+      router.replace(qs ? `/suites?${qs}` : "/suites", { scroll: false });
     },
     [router, searchParams]
   );

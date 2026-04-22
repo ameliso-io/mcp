@@ -31,7 +31,7 @@ function RunsInner() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("suite");
     const qs = params.toString();
-    router.replace(qs ? `/runs?${qs}` : "/runs");
+    router.replace(qs ? `/runs?${qs}` : "/runs", { scroll: false });
   }, [router, searchParams]);
 
   const handleStatusFilterChange = useCallback(
@@ -44,7 +44,7 @@ function RunsInner() {
         params.delete("status");
       }
       const qs = params.toString();
-      router.replace(qs ? `/runs?${qs}` : "/runs");
+      router.replace(qs ? `/runs?${qs}` : "/runs", { scroll: false });
     },
     [router, searchParams]
   );

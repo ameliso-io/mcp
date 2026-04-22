@@ -56,7 +56,7 @@ function CasesInner() {
         params.delete("sort");
       }
       const qs = params.toString();
-      router.replace(qs ? `/cases?${qs}` : "/cases");
+      router.replace(qs ? `/cases?${qs}` : "/cases", { scroll: false });
     },
     [router, searchParams]
   );
