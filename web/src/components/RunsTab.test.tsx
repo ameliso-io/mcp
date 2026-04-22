@@ -144,7 +144,8 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("In Progress"));
     await waitFor(() =>
       expect(client.listRuns).toHaveBeenLastCalledWith(
-        expect.objectContaining({ status: RunStatus.IN_PROGRESS })
+        expect.objectContaining({ status: RunStatus.IN_PROGRESS }),
+        expect.anything()
       )
     );
   });
@@ -195,7 +196,8 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" initialStatusFilter={RunStatus.ABORTED} />);
     await waitFor(() =>
       expect(client.listRuns).toHaveBeenCalledWith(
-        expect.objectContaining({ status: RunStatus.ABORTED })
+        expect.objectContaining({ status: RunStatus.ABORTED }),
+        expect.anything()
       )
     );
     expect(screen.getByRole("button", { name: "Aborted" })).toHaveAttribute("aria-pressed", "true");

@@ -113,6 +113,7 @@ export default function RunsTab({
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   const loadIdRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
   const selectingRef = useRef<string | null>(null);
   const prevRunCountRef = useRef<number | null>(null);
   const recordingBodyRef = useRef<string | null>(null);
@@ -148,27 +149,38 @@ export default function RunsTab({
 
   const load = useCallback(async () => {
     if (!repoId) return;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listRuns({ repoId, status: statusFilter });
+      const res = await client.listRuns({ repoId, status: statusFilter }, { signal });
       /* v8 ignore next 1 — race guard, covered by stale listRuns test */
       if (id !== loadIdRef.current) return;
       setRuns(res.runs);
     } catch (e) {
+      if (signal.aborted) return;
       /* v8 ignore next 1 — race guard */
       if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
       /* v8 ignore next 1 — race guard */
-      if (id === loadIdRef.current) setLoading(false);
+      if (!signal.aborted && id === loadIdRef.current) setLoading(false);
     }
   }, [repoId, statusFilter]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      loadAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (loading) return;
