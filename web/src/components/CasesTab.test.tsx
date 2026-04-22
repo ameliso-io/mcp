@@ -234,7 +234,8 @@ describe("CasesTab", () => {
     await userEvent.selectOptions(prioritySelect, "High");
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(
-        expect.objectContaining({ priority: expect.any(Number) })
+        expect.objectContaining({ priority: expect.any(Number) }),
+        expect.anything()
       )
     );
   });
@@ -378,7 +379,10 @@ describe("CasesTab", () => {
     const tagSelect = screen.getByDisplayValue("All tags");
     await userEvent.selectOptions(tagSelect, "smoke");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ["smoke"] }),
+        expect.anything()
+      )
     );
   });
 
@@ -406,7 +410,8 @@ describe("CasesTab", () => {
     );
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(
-        expect.objectContaining({ query: "login", priority: Priority.HIGH })
+        expect.objectContaining({ query: "login", priority: Priority.HIGH }),
+        expect.anything()
       )
     );
     expect(screen.getByDisplayValue("Sort: Path")).toBeInTheDocument();
@@ -756,7 +761,9 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
 
     // resolve stale first fetch — should not overwrite second body
-    await act(async () => resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" })));
+    await act(async () =>
+      resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }))
+    );
     expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
   });

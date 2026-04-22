@@ -91,6 +91,7 @@ export default function CasesTab({
   const expandingRef = useRef<string | null>(null);
   const editingBodyRef = useRef<string | null>(null);
   const loadIdRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [actionAnnouncement, announceAction] = useAnnounce();
@@ -195,32 +196,46 @@ export default function CasesTab({
 
   const load = useCallback(async () => {
     if (!repoId) return;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listCases({
-        repoId,
-        query: debouncedSearch,
-        priority: priorityFilter,
-        tags: tagFilter ? [tagFilter] : [],
-      });
+      const res = await client.listCases(
+        {
+          repoId,
+          query: debouncedSearch,
+          priority: priorityFilter,
+          tags: tagFilter ? [tagFilter] : [],
+        },
+        { signal }
+      );
       /* v8 ignore next 1 — race guard, covered by stale listCases test */
       if (id !== loadIdRef.current) return;
       setCases(res.cases);
     } catch (e) {
+      if (signal.aborted) return;
       /* v8 ignore next 1 — race guard */
       if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
       /* v8 ignore next 1 — race guard */
-      if (id === loadIdRef.current) setLoading(false);
+      if (!signal.aborted && id === loadIdRef.current) setLoading(false);
     }
   }, [repoId, debouncedSearch, priorityFilter, tagFilter]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      loadAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (loading) return;
