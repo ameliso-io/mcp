@@ -224,7 +224,7 @@ impl AmelisoService for AmelisoServer {
             match repo::get_suite(&self.pool, &req.repo_id, &req.suite).await {
                 Ok(suite) => {
                     let suite_set: std::collections::HashSet<&str> =
-                        suite.cases.iter().map(|p| p.as_str()).collect();
+                        suite.cases.iter().map(String::as_str).collect();
                     cases.retain(|c| suite_set.contains(c.case_path.as_str()));
                 }
                 Err(e) => return Err(repo_err(e)),
@@ -959,7 +959,7 @@ impl AmelisoService for AmelisoServer {
                 .changed_files
                 .iter()
                 .filter(|f| !is_doc_file(f))
-                .map(|f| f.as_str())
+                .map(String::as_str)
                 .collect();
             if !source_changed.is_empty() && affected_set.is_empty() {
                 reasons.push(format!(
@@ -975,8 +975,7 @@ impl AmelisoService for AmelisoServer {
             affected.sort_by_key(|p| {
                 case_map
                     .get(p.as_str())
-                    .map(|c| priority_rank(&c.priority))
-                    .unwrap_or(3)
+                    .map_or(3, |c| priority_rank(&c.priority))
             });
             let reason = if reasons.is_empty() {
                 "no relevant changes in provided file list".to_owned()
@@ -1067,7 +1066,7 @@ impl AmelisoService for AmelisoServer {
             .changed_files
             .iter()
             .filter(|f| !is_doc_file(f))
-            .map(|f| f.as_str())
+            .map(String::as_str)
             .collect();
 
         if !source_changed.is_empty() && affected.is_empty() {
@@ -1088,8 +1087,7 @@ impl AmelisoService for AmelisoServer {
         affected.sort_by_key(|p| {
             case_map
                 .get(p.as_str())
-                .map(|c| priority_rank(&c.priority))
-                .unwrap_or(3)
+                .map_or(3, |c| priority_rank(&c.priority))
         });
 
         let pb_cases = affected
