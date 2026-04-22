@@ -261,7 +261,12 @@ export default function CasesTab({
           body: newBody,
         });
         if (res.case && noFiltersActive) {
-          setCases((prev) => [...prev, res.case!]);
+          const created = res.case;
+          setCases((prev) =>
+            prev.some((c) => c.path === created.path)
+              ? prev.map((c) => (c.path === created.path ? created : c))
+              : [...prev, created]
+          );
         } else {
           load();
         }

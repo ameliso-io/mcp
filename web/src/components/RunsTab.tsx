@@ -251,7 +251,11 @@ export default function RunsTab({
         if (created.run) {
           const newRun = created.run;
           if (statusFilter === RunStatus.UNSPECIFIED || newRun.status === statusFilter) {
-            setRuns((prev) => [newRun, ...prev]);
+            setRuns((prev) =>
+              prev.some((r) => r.id === newRun.id)
+                ? prev.map((r) => (r.id === newRun.id ? newRun : r))
+                : [newRun, ...prev]
+            );
           }
           await selectRun(newRun.id, newRun.status);
         }
