@@ -736,4 +736,28 @@ describe("OverviewTab", () => {
       )
     );
   });
+
+  it("resets coverage filter to All statuses when repoId changes", async () => {
+    const { rerender } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // Set filter to FAILED
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
+    expect(select).toHaveValue(String(ResultStatus.FAILED));
+    // Switch to a different repo
+    rerender(<OverviewTab repoId="other/repo" basePath="/repositories/other/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "Filter coverage by status" })
+      ).toHaveValue(String(ResultStatus.UNSPECIFIED))
+    );
+    // Reload should use UNSPECIFIED filter for the new repo
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED })
+      )
+    );
+  });
 });
