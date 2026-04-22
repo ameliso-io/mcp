@@ -72,7 +72,9 @@
     "serde_yaml",
     "upsert",
     "upserts",
-    "notvalidhex"
+    "notvalidhex",
+    "esbuild",
+    "unrs"
   ],
   "flagWords": []
 }
