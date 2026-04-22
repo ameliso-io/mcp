@@ -89,6 +89,23 @@ describe("RunsTab", () => {
     await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled());
   });
 
+  it("creates run with inline cases when cases field is filled", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "inline");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Inline cases (optional, comma-separated paths)" }),
+      "auth/login, billing/checkout"
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith(
+        expect.objectContaining({ cases: ["auth/login", "billing/checkout"] })
+      )
+    );
+  });
+
   it("shows status filter buttons", async () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("No runs found."));

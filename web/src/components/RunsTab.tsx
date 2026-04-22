@@ -67,6 +67,7 @@ export default function RunsTab({
   const [newTester, setNewTester] = useState("");
   const [newEnv, setNewEnv] = useState("");
   const [newSuite, setNewSuite] = useState("");
+  const [newCases, setNewCases] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
@@ -161,6 +162,12 @@ export default function RunsTab({
         tester: newTester,
         environment: newEnv,
         suite: newSuite,
+        cases: newCases
+          ? newCases
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : [],
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
@@ -168,6 +175,7 @@ export default function RunsTab({
       setNewTester("");
       setNewEnv("");
       setNewSuite("");
+      setNewCases("");
       announce("Run created");
       await load();
       // Auto-expand the newly created run
@@ -457,6 +465,19 @@ export default function RunsTab({
                     setNewSuite(e.target.value);
                   }}
                   className={styles.input}
+                />
+              </label>
+            </div>
+            <div className={styles.fullCol}>
+              <label className={styles.label}>
+                Inline cases (optional, comma-separated paths)
+                <input
+                  value={newCases}
+                  onChange={(e) => {
+                    setNewCases(e.target.value);
+                  }}
+                  className={styles.input}
+                  placeholder="auth/login, billing/checkout"
                 />
               </label>
             </div>
