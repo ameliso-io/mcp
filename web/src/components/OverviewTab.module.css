@@ -50,10 +50,6 @@
   cursor: default;
 }
 
-.goToRunsBtn:hover {
-  background: var(--color-primary-bg);
-}
-
 .errorCard {
   composes: card;
   background: var(--color-danger-bg);
@@ -183,6 +179,10 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+}
+
+.goToRunsBtn:hover {
+  background: var(--color-primary-bg);
 }
 
 .runList {
