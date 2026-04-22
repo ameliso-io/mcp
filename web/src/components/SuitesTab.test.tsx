@@ -47,11 +47,6 @@ beforeEach(() => {
 });
 
 describe("SuitesTab", () => {
-  it("renders empty state when no repo path", () => {
-    render(<SuitesTab repoId="" basePath="" />);
-    expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument();
-  });
-
   it("shows suites after load", async () => {
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("Smoke Tests")).toBeInTheDocument());

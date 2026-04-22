@@ -134,7 +134,6 @@ export default function RunsTab({
   const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
-    if (!repoId) return;
     loadAbortRef.current?.abort();
     const ctrl = new AbortController();
     loadAbortRef.current = ctrl;
@@ -374,10 +373,6 @@ export default function RunsTab({
         : recordedResults,
     [recordedResults, resultStatusFilter]
   );
-
-  if (!repoId) {
-    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
-  }
 
   return (
     <div>

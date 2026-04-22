@@ -88,7 +88,6 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
-    if (!repoId) return;
     loadAbortRef.current?.abort();
     const ctrl = new AbortController();
     loadAbortRef.current = ctrl;
@@ -196,10 +195,6 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     } finally {
       setSaving(false);
     }
-  }
-
-  if (!repoId) {
-    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   return (

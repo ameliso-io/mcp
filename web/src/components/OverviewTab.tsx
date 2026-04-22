@@ -85,7 +85,6 @@ export default function OverviewTab({
 
   const load = useCallback(
     async (silent = false) => {
-      if (!repoId) return;
       loadAbortRef.current?.abort();
       const ctrl = new AbortController();
       loadAbortRef.current = ctrl;
@@ -211,15 +210,6 @@ export default function OverviewTab({
           >
             ×
           </button>
-        </div>
-      )}
-
-      {!repoId && !loading && (
-        <div className={styles.emptyCard}>
-          <p className={styles.emptyTitle}>No repository selected</p>
-          <p className={styles.emptyDesc}>
-            Go to the Repositories tab and click &quot;Use&quot; on a connected repository.
-          </p>
         </div>
       )}
 

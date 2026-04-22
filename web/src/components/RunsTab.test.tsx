@@ -37,11 +37,6 @@ beforeEach(() => {
 });
 
 describe("RunsTab", () => {
-  it("renders empty state when no repo path", () => {
-    render(<RunsTab repoId="" />);
-    expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument();
-  });
-
   it("shows empty runs list", async () => {
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("No runs found.")).toBeInTheDocument());

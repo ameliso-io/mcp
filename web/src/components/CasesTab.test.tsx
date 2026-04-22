@@ -27,11 +27,6 @@ beforeEach(() => {
 });
 
 describe("CasesTab", () => {
-  it("renders empty state when no repo path", () => {
-    render(<CasesTab repoId="" />);
-    expect(screen.getByText(/Set a repository path/i)).toBeInTheDocument();
-  });
-
   it("shows cases after load", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());

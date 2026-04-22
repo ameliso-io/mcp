@@ -48,11 +48,6 @@ beforeEach(() => {
 });
 
 describe("OverviewTab", () => {
-  it("shows helpful empty state when no repo selected", () => {
-    render(<OverviewTab repoId="" basePath="" />);
-    expect(screen.getByText(/No repository selected/i)).toBeInTheDocument();
-  });
-
   it("loads and displays stat counts", async () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("2")).toBeInTheDocument());
