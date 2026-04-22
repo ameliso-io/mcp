@@ -1467,4 +1467,26 @@ mod tests {
             .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
+
+    // -----------------------------------------------------------------------
+    // list_* functions — no validation, always hit the DB
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn list_cases_returns_db_error_when_no_connection() {
+        let err = list_cases(&lazy_pool(), "owner/repo").await.unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn list_suites_returns_db_error_when_no_connection() {
+        let err = list_suites(&lazy_pool(), "owner/repo").await.unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn list_runs_returns_db_error_when_no_connection() {
+        let err = list_runs(&lazy_pool(), "owner/repo").await.unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
 }
