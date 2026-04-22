@@ -196,7 +196,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   if (!repoId) {
     return (
-      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+      <div className={styles.noRepo}>
+        Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
+      </div>
     );
   }
 
@@ -484,7 +486,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                 </div>
 
                 {expanded === suite.slug && (
-                  <div className={styles.expandedPanel}>
+                  <div className={styles.expandedPanel} aria-busy={expandedCasesLoading}>
                     {expandedCasesLoading ? (
                       <p className={styles.expandedLoading} role="status">
                         Loading…
