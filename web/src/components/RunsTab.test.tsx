@@ -122,7 +122,11 @@ describe("RunsTab", () => {
 
   it("adds new run to list from createRun response without re-fetching", async () => {
     vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [] }));
-    const newRun = makeRunMeta({ id: "2026-01-02-smoke", suite: "smoke", status: RunStatus.IN_PROGRESS });
+    const newRun = makeRunMeta({
+      id: "2026-01-02-smoke",
+      suite: "smoke",
+      status: RunStatus.IN_PROGRESS,
+    });
     vi.mocked(client.createRun).mockResolvedValue(makeCreateRunResponse({ run: newRun }));
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("No runs found."));
@@ -234,7 +238,6 @@ describe("RunsTab", () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByText(mockRun.id)).not.toBeInTheDocument();
     expect(screen.getByText("run-ip")).toBeInTheDocument();
-
   });
 
   it("calls onStatusFilterChange when filter button clicked", async () => {

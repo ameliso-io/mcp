@@ -268,7 +268,7 @@ export default function CasesTab({
               : [...prev, created]
           );
         } else {
-          load();
+          void load();
         }
         setShowCreate(false);
         lastFocusRef.current?.focus();
@@ -337,7 +337,7 @@ export default function CasesTab({
           const updated = res.case;
           setCases((prev) => prev.map((c) => (c.path === editingPath ? updated : c)));
         } else {
-          load();
+          void load();
         }
         setEditingPath(null);
         lastFocusRef.current?.focus();
@@ -536,7 +536,9 @@ export default function CasesTab({
         <select
           aria-label="Filter by priority"
           value={priorityFilter}
-          onChange={(e) => setPriorityFilter(Number(e.target.value) as Priority)}
+          onChange={(e) => {
+            setPriorityFilter(Number(e.target.value));
+          }}
           className={styles.filterSelect}
         >
           <option value={Priority.UNSPECIFIED}>All priorities</option>
@@ -548,7 +550,9 @@ export default function CasesTab({
           <select
             aria-label="Filter by tag"
             value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
+            onChange={(e) => {
+              setTagFilter(e.target.value);
+            }}
             className={styles.filterSelect}
           >
             <option value="">All tags</option>

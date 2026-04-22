@@ -11,12 +11,12 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
+import LoadingSpinner from "./LoadingSpinner";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
-import LoadingSpinner from "./LoadingSpinner";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
   ssr: false,
@@ -411,7 +411,7 @@ export default function RunsTab({
       setRenameNewSlug("");
       lastFocusRef.current?.focus();
       announce("Run renamed");
-      load();
+      void load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -806,7 +806,15 @@ export default function RunsTab({
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <ul className={isResultsStale ? `${styles.resultList} ${styles.resultListStale}` : styles.resultList} role="list" aria-busy={isResultsStale}>
+                      <ul
+                        className={
+                          isResultsStale
+                            ? `${styles.resultList} ${styles.resultListStale}`
+                            : styles.resultList
+                        }
+                        role="list"
+                        aria-busy={isResultsStale}
+                      >
                         {deferredFilteredResults.map((r) => {
                           const caseEntry = caseTitleMap.get(r.casePath);
                           return (

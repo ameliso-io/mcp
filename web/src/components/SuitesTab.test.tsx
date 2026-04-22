@@ -761,7 +761,9 @@ describe("SuitesTab", () => {
           }) as ReturnType<typeof client.listSuites>
       );
 
-    const { rerender } = render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    const { rerender } = render(
+      <SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await act(async () => {
       rerender(<SuitesTab repoId="owner/repo2" basePath="/repositories/owner/repo2" />);
     });

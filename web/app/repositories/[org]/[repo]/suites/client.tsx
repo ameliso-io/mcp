@@ -25,7 +25,9 @@ function SuitesInner() {
       }
       const qs = params.toString();
       startTransition(() => {
-        router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route, { scroll: false });
+        router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route, {
+          scroll: false,
+        });
       });
     },
     [router, searchParams, basePath, startTransition]

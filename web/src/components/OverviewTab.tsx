@@ -187,7 +187,14 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       else if (e.latestStatus === ResultStatus.SKIPPED) skipped++;
       else if (e.latestStatus === ResultStatus.NEVER) never++;
     }
-    return { statCases: entries.length, statPassed: passed, statFailed: failed, statBlocked: blocked, statSkipped: skipped, statNever: never };
+    return {
+      statCases: entries.length,
+      statPassed: passed,
+      statFailed: failed,
+      statBlocked: blocked,
+      statSkipped: skipped,
+      statNever: never,
+    };
   }, [entries]);
 
   return (

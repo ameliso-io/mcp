@@ -59,7 +59,9 @@ function CasesInner() {
       }
       const qs = params.toString();
       startTransition(() => {
-        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route, { scroll: false });
+        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route, {
+          scroll: false,
+        });
       });
     },
     [router, searchParams, basePath, startTransition]

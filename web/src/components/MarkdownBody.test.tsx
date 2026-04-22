@@ -40,7 +40,6 @@ describe("MarkdownBody", () => {
   it("applies body CSS module class", () => {
     const { container } = render(<MarkdownBody body="text" />);
     expect(container.firstChild).toHaveClass(styles["body"]!);
-
   });
 
   it("sets --md-max-height CSS variable when maxHeight provided", () => {

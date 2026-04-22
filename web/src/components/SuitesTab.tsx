@@ -195,8 +195,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
           replaceCases: true,
           newSlug: editNewSlug,
         });
-        if (res.suite)
-          setSuites((prev) => prev.map((s) => (s.slug === editingSlug ? res.suite! : s)));
+        if (res.suite) {
+          const suite = res.suite;
+          setSuites((prev) => prev.map((s) => (s.slug === editingSlug ? suite : s)));
+        }
         setEditingSlug(null);
         lastFocusRef.current?.focus();
         announce("Suite updated");
@@ -327,7 +329,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
             </button>
             <button
               type="button"
-              onClick={() => setError(null)}
+              onClick={() => {
+                setError(null);
+              }}
               className={styles.errorDismiss}
               aria-label="Dismiss"
             >
