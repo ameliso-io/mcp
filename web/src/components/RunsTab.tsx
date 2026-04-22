@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useTransition } from "react";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
 import { client } from "@/client";
@@ -98,6 +98,7 @@ export default function RunsTab({
   const [renameNewSlug, setRenameNewSlug] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [actionAnnouncement, announce] = useAnnounce();
+  const [filterPending, startFilterTransition] = useTransition();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
@@ -379,7 +380,9 @@ export default function RunsTab({
 
   if (!repoId) {
     return (
-      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+      <div className={styles.noRepo}>
+        Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
+      </div>
     );
   }
 
@@ -391,7 +394,7 @@ export default function RunsTab({
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2 className={styles.title}>Runs</h2>
-          <div role="group" aria-label="Filter by status">
+          <div role="group" aria-label="Filter by status" aria-busy={filterPending}>
             {(
               [
                 { label: "All", value: RunStatus.UNSPECIFIED },
@@ -404,8 +407,10 @@ export default function RunsTab({
                 key={opt.value}
                 type="button"
                 onClick={() => {
-                  setStatusFilter(opt.value);
-                  onStatusFilterChange?.(opt.value);
+                  startFilterTransition(() => {
+                    setStatusFilter(opt.value);
+                    onStatusFilterChange?.(opt.value);
+                  });
                 }}
                 aria-pressed={statusFilter === opt.value}
                 className={
