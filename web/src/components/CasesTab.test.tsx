@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import CasesTab from "./CasesTab";
@@ -785,5 +785,14 @@ describe("CasesTab", () => {
       .getAllByRole("textbox")
       .find((i) => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement;
     expect(bodyTextarea.value).toBe("");
+  });
+
+  it("does not call createCase when create form submitted with empty path", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("+ New Case"));
+    await userEvent.click(screen.getByText("+ New Case"));
+    // fireEvent bypasses HTML5 required validation — triggers guard: !newPath
+    fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+    expect(client.createCase).not.toHaveBeenCalled();
   });
 });

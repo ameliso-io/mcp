@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RunsTab from "./RunsTab";
@@ -1253,5 +1253,14 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("1 Failed"));
     await waitFor(() => expect(screen.queryByText("Show all")).not.toBeInTheDocument());
     expect(screen.getByText("auth/logout")).toBeInTheDocument();
+  });
+
+  it("does not call createRun when create form submitted with empty slug", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("+ New Run"));
+    await userEvent.click(screen.getByText("+ New Run"));
+    // fireEvent bypasses HTML5 required validation — triggers guard: !newSlug
+    fireEvent.submit(screen.getByRole("button", { name: "Create Run" }).closest("form")!);
+    expect(client.createRun).not.toHaveBeenCalled();
   });
 });

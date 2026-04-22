@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
@@ -537,5 +537,14 @@ describe("SuitesTab", () => {
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [oneCaseSuite] } as never);
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("1 case")).toBeInTheDocument());
+  });
+
+  it("does not call createSuite when create form submitted with empty slug", async () => {
+    render(<SuitesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("+ New Suite"));
+    await userEvent.click(screen.getByText("+ New Suite"));
+    // fireEvent bypasses HTML5 required validation — triggers guard: !newSlug
+    fireEvent.submit(screen.getByRole("button", { name: "Create Suite" }).closest("form")!);
+    expect(client.createSuite).not.toHaveBeenCalled();
   });
 });
