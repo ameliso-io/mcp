@@ -1,5 +1,8 @@
 import Link from "next/link";
 import styles from "../../../app.module.css";
+import { pageMetadata } from "@/lib/metadata";
+
+export const metadata = pageMetadata("Not Found", "This repository could not be found");
 
 export default function RepoNotFound() {
   return (
