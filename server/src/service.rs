@@ -312,6 +312,64 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn bulk_create_cases(
+        &self,
+        request: Request<pb::BulkCreateCasesRequest>,
+    ) -> Result<Response<pb::BulkCreateCasesResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.cases.is_empty() {
+            return Err(invalid("cases list must not be empty"));
+        }
+        let mut created: Vec<pb::Case> = Vec::with_capacity(req.cases.len());
+        for entry in &req.cases {
+            if entry.case_path.is_empty() {
+                return Err(invalid("each entry must have a case_path"));
+            }
+            if entry.title.is_empty() {
+                return Err(invalid(format!(
+                    "entry '{}' must have a title",
+                    entry.case_path
+                )));
+            }
+            let priority = priority_from_i32(entry.priority).unwrap_or("medium");
+            let body = if entry.body.is_empty() {
+                None
+            } else {
+                Some(entry.body.as_str())
+            };
+            let case = repo::create_case(
+                &self.pool,
+                &req.repo_id,
+                &entry.case_path,
+                &entry.title,
+                &entry.description,
+                entry.tags.clone(),
+                priority,
+                body,
+            )
+            .await
+            .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let case_clone = case.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
+                        eprintln!(
+                            "warning: github sync failed for {}/{}: {e}",
+                            repo_id, case_clone.case_path
+                        );
+                    }
+                });
+            }
+            created.push(case_to_pb(&case));
+        }
+        Ok(Response::new(pb::BulkCreateCasesResponse { cases: created }))
+    }
+
     async fn update_case(
         &self,
         request: Request<pb::UpdateCaseRequest>,
@@ -1501,6 +1559,99 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "".to_owned(),
+                cases: vec![pb::BulkCaseEntry {
+                    case_path: "auth/login".to_owned(),
+                    title: "Login".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_empty_cases_list() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("cases list must not be empty"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_entry_with_empty_case_path() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkCaseEntry {
+                    case_path: "".to_owned(),
+                    title: "Login".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_rejects_entry_with_empty_title() {
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkCaseEntry {
+                    case_path: "auth/login".to_owned(),
+                    title: "".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title"));
+    }
+
+    #[tokio::test]
+    async fn bulk_create_cases_valid_passes_validation() {
+        // Validation passes → hits DB → Internal error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![
+                    pb::BulkCaseEntry {
+                        case_path: "auth/login".to_owned(),
+                        title: "Login".to_owned(),
+                        ..Default::default()
+                    },
+                    pb::BulkCaseEntry {
+                        case_path: "billing/checkout".to_owned(),
+                        title: "Checkout".to_owned(),
+                        ..Default::default()
+                    },
+                ],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]

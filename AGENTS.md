@@ -27,7 +27,7 @@ runs/{YYYY-MM-DD}-{slug}/
 ```
 server/          # gRPC server (Rust + tonic); exposes AmelisoService (26 RPCs)
 server/proto/    # Protobuf definitions (ameliso/v1/types.proto + service.proto)
-mcp/             # MCP server (Rust + rmcp); stdio transport; 24 tools
+mcp/             # MCP server (Rust + rmcp); stdio transport; 25 tools
 cli/             # CLI (Rust + clap); calls repo logic directly
 web/             # React browser client (Next.js + TypeScript); talks gRPC-Web to server
 ```
@@ -45,6 +45,7 @@ Available tools:
 | `list_cases` | List cases; filter by tags, priority, full-text query, or suite slug |
 | `get_case` | Get full case details including steps and body |
 | `create_case` | Create a new case file; priority must be low\|medium\|high |
+| `bulk_create_cases` | Create multiple cases in one call — preferred when setting up a new project or adding a batch; pass a `cases` array of `{case_path, title, priority?, tags?, description?, body?}` |
 | `update_case` | Patch-style update: all fields optional — omit any to keep existing value |
 | `delete_case` | Delete a case file |
 | `coverage_report` | Latest status per case; filter by status |
@@ -97,6 +98,8 @@ ameliso cases create auth/login --title "User Login" --json  # machine-readable:
 ameliso cases update auth/login --priority high              # patch: change only priority
 ameliso cases update auth/login --title "User Login Flow" --json  # machine-readable: { file_path, path, title, ... }
 ameliso cases delete auth/login --json                       # machine-readable: { file_path }
+ameliso cases bulk-create auth/login:"User Login":high billing/checkout:Checkout:medium
+ameliso cases bulk-create auth/login:"User Login":high --json  # machine-readable: [{ case_path, title, priority, tags }]
 
 # Runs
 ameliso runs list

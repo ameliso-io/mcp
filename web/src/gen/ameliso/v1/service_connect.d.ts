@@ -3,58 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import {
-  BulkRecordResultsRequest,
-  BulkRecordResultsResponse,
-  CreateCaseRequest,
-  CreateCaseResponse,
-  CreateRunRequest,
-  CreateRunResponse,
-  CreateSuiteRequest,
-  CreateSuiteResponse,
-  DeleteCaseRequest,
-  DeleteCaseResponse,
-  DeleteRunRequest,
-  DeleteRunResponse,
-  DeleteSuiteRequest,
-  DeleteSuiteResponse,
-  FinalizeRunRequest,
-  FinalizeRunResponse,
-  GetAffectedCasesRequest,
-  GetAffectedCasesResponse,
-  GetCaseRequest,
-  GetCaseResponse,
-  GetCoverageReportRequest,
-  GetCoverageReportResponse,
-  GetGitHubInstallUrlRequest,
-  GetGitHubInstallUrlResponse,
-  GetPendingCasesRequest,
-  GetPendingCasesResponse,
-  GetRunRequest,
-  GetRunResponse,
-  GetSuiteRequest,
-  GetSuiteResponse,
-  HandleGitHubCallbackRequest,
-  HandleGitHubCallbackResponse,
-  ListCasesRequest,
-  ListCasesResponse,
-  ListRepositoriesRequest,
-  ListRepositoriesResponse,
-  ListRunsRequest,
-  ListRunsResponse,
-  ListSuitesRequest,
-  ListSuitesResponse,
-  RecordResultRequest,
-  RecordResultResponse,
-  RemoveRepositoryRequest,
-  RemoveRepositoryResponse,
-  SyncRepositoryRequest,
-  SyncRepositoryResponse,
-  UpdateCaseRequest,
-  UpdateCaseResponse,
-  UpdateSuiteRequest,
-  UpdateSuiteResponse,
-} from "./service_pb.js";
+import { BulkCreateCasesRequest, BulkCreateCasesResponse, BulkRecordResultsRequest, BulkRecordResultsResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRepoStatusRequest, GetRepoStatusResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -64,7 +13,7 @@ import { MethodKind } from "@bufbuild/protobuf";
  * @generated from service ameliso.v1.AmelisoService
  */
 export declare const AmelisoService: {
-  readonly typeName: "ameliso.v1.AmelisoService";
+  readonly typeName: "ameliso.v1.AmelisoService",
   readonly methods: {
     /**
      * --- Cases ---
@@ -72,236 +21,257 @@ export declare const AmelisoService: {
      * @generated from rpc ameliso.v1.AmelisoService.ListCases
      */
     readonly listCases: {
-      readonly name: "ListCases";
-      readonly I: typeof ListCasesRequest;
-      readonly O: typeof ListCasesResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "ListCases",
+      readonly I: typeof ListCasesRequest,
+      readonly O: typeof ListCasesResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.GetCase
      */
     readonly getCase: {
-      readonly name: "GetCase";
-      readonly I: typeof GetCaseRequest;
-      readonly O: typeof GetCaseResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetCase",
+      readonly I: typeof GetCaseRequest,
+      readonly O: typeof GetCaseResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.CreateCase
      */
     readonly createCase: {
-      readonly name: "CreateCase";
-      readonly I: typeof CreateCaseRequest;
-      readonly O: typeof CreateCaseResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "CreateCase",
+      readonly I: typeof CreateCaseRequest,
+      readonly O: typeof CreateCaseResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkCreateCases
+     */
+    readonly bulkCreateCases: {
+      readonly name: "BulkCreateCases",
+      readonly I: typeof BulkCreateCasesRequest,
+      readonly O: typeof BulkCreateCasesResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.UpdateCase
      */
     readonly updateCase: {
-      readonly name: "UpdateCase";
-      readonly I: typeof UpdateCaseRequest;
-      readonly O: typeof UpdateCaseResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "UpdateCase",
+      readonly I: typeof UpdateCaseRequest,
+      readonly O: typeof UpdateCaseResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
      */
     readonly deleteCase: {
-      readonly name: "DeleteCase";
-      readonly I: typeof DeleteCaseRequest;
-      readonly O: typeof DeleteCaseResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "DeleteCase",
+      readonly I: typeof DeleteCaseRequest,
+      readonly O: typeof DeleteCaseResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * --- Suites ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.ListSuites
      */
     readonly listSuites: {
-      readonly name: "ListSuites";
-      readonly I: typeof ListSuitesRequest;
-      readonly O: typeof ListSuitesResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "ListSuites",
+      readonly I: typeof ListSuitesRequest,
+      readonly O: typeof ListSuitesResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.GetSuite
      */
     readonly getSuite: {
-      readonly name: "GetSuite";
-      readonly I: typeof GetSuiteRequest;
-      readonly O: typeof GetSuiteResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetSuite",
+      readonly I: typeof GetSuiteRequest,
+      readonly O: typeof GetSuiteResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.CreateSuite
      */
     readonly createSuite: {
-      readonly name: "CreateSuite";
-      readonly I: typeof CreateSuiteRequest;
-      readonly O: typeof CreateSuiteResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "CreateSuite",
+      readonly I: typeof CreateSuiteRequest,
+      readonly O: typeof CreateSuiteResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.UpdateSuite
      */
     readonly updateSuite: {
-      readonly name: "UpdateSuite";
-      readonly I: typeof UpdateSuiteRequest;
-      readonly O: typeof UpdateSuiteResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "UpdateSuite",
+      readonly I: typeof UpdateSuiteRequest,
+      readonly O: typeof UpdateSuiteResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.DeleteSuite
      */
     readonly deleteSuite: {
-      readonly name: "DeleteSuite";
-      readonly I: typeof DeleteSuiteRequest;
-      readonly O: typeof DeleteSuiteResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "DeleteSuite",
+      readonly I: typeof DeleteSuiteRequest,
+      readonly O: typeof DeleteSuiteResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * --- Runs ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.ListRuns
      */
     readonly listRuns: {
-      readonly name: "ListRuns";
-      readonly I: typeof ListRunsRequest;
-      readonly O: typeof ListRunsResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "ListRuns",
+      readonly I: typeof ListRunsRequest,
+      readonly O: typeof ListRunsResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.GetRun
      */
     readonly getRun: {
-      readonly name: "GetRun";
-      readonly I: typeof GetRunRequest;
-      readonly O: typeof GetRunResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetRun",
+      readonly I: typeof GetRunRequest,
+      readonly O: typeof GetRunResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.CreateRun
      */
     readonly createRun: {
-      readonly name: "CreateRun";
-      readonly I: typeof CreateRunRequest;
-      readonly O: typeof CreateRunResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "CreateRun",
+      readonly I: typeof CreateRunRequest,
+      readonly O: typeof CreateRunResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.RecordResult
      */
     readonly recordResult: {
-      readonly name: "RecordResult";
-      readonly I: typeof RecordResultRequest;
-      readonly O: typeof RecordResultResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "RecordResult",
+      readonly I: typeof RecordResultRequest,
+      readonly O: typeof RecordResultResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
      */
     readonly bulkRecordResults: {
-      readonly name: "BulkRecordResults";
-      readonly I: typeof BulkRecordResultsRequest;
-      readonly O: typeof BulkRecordResultsResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "BulkRecordResults",
+      readonly I: typeof BulkRecordResultsRequest,
+      readonly O: typeof BulkRecordResultsResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
      */
     readonly finalizeRun: {
-      readonly name: "FinalizeRun";
-      readonly I: typeof FinalizeRunRequest;
-      readonly O: typeof FinalizeRunResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "FinalizeRun",
+      readonly I: typeof FinalizeRunRequest,
+      readonly O: typeof FinalizeRunResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.DeleteRun
      */
     readonly deleteRun: {
-      readonly name: "DeleteRun";
-      readonly I: typeof DeleteRunRequest;
-      readonly O: typeof DeleteRunResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "DeleteRun",
+      readonly I: typeof DeleteRunRequest,
+      readonly O: typeof DeleteRunResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.GetPendingCases
      */
     readonly getPendingCases: {
-      readonly name: "GetPendingCases";
-      readonly I: typeof GetPendingCasesRequest;
-      readonly O: typeof GetPendingCasesResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetPendingCases",
+      readonly I: typeof GetPendingCasesRequest,
+      readonly O: typeof GetPendingCasesResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * --- Reports ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
      */
     readonly getCoverageReport: {
-      readonly name: "GetCoverageReport";
-      readonly I: typeof GetCoverageReportRequest;
-      readonly O: typeof GetCoverageReportResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetCoverageReport",
+      readonly I: typeof GetCoverageReportRequest,
+      readonly O: typeof GetCoverageReportResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * Return cases affected by source changes since since_ref (uses GitHub compare API).
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetAffectedCases
      */
     readonly getAffectedCases: {
-      readonly name: "GetAffectedCases";
-      readonly I: typeof GetAffectedCasesRequest;
-      readonly O: typeof GetAffectedCasesResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetAffectedCases",
+      readonly I: typeof GetAffectedCasesRequest,
+      readonly O: typeof GetAffectedCasesResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
+     *
+     * @generated from rpc ameliso.v1.AmelisoService.GetRepoStatus
+     */
+    readonly getRepoStatus: {
+      readonly name: "GetRepoStatus",
+      readonly I: typeof GetRepoStatusRequest,
+      readonly O: typeof GetRepoStatusResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * --- GitHub App ---
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetGitHubInstallUrl
      */
     readonly getGitHubInstallUrl: {
-      readonly name: "GetGitHubInstallUrl";
-      readonly I: typeof GetGitHubInstallUrlRequest;
-      readonly O: typeof GetGitHubInstallUrlResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "GetGitHubInstallUrl",
+      readonly I: typeof GetGitHubInstallUrlRequest,
+      readonly O: typeof GetGitHubInstallUrlResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
      */
     readonly handleGitHubCallback: {
-      readonly name: "HandleGitHubCallback";
-      readonly I: typeof HandleGitHubCallbackRequest;
-      readonly O: typeof HandleGitHubCallbackResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "HandleGitHubCallback",
+      readonly I: typeof HandleGitHubCallbackRequest,
+      readonly O: typeof HandleGitHubCallbackResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
      */
     readonly listRepositories: {
-      readonly name: "ListRepositories";
-      readonly I: typeof ListRepositoriesRequest;
-      readonly O: typeof ListRepositoriesResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "ListRepositories",
+      readonly I: typeof ListRepositoriesRequest,
+      readonly O: typeof ListRepositoriesResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
      */
     readonly syncRepository: {
-      readonly name: "SyncRepository";
-      readonly I: typeof SyncRepositoryRequest;
-      readonly O: typeof SyncRepositoryResponse;
-      readonly kind: MethodKind.Unary;
-    };
+      readonly name: "SyncRepository",
+      readonly I: typeof SyncRepositoryRequest,
+      readonly O: typeof SyncRepositoryResponse,
+      readonly kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
      */
     readonly removeRepository: {
-      readonly name: "RemoveRepository";
-      readonly I: typeof RemoveRepositoryRequest;
-      readonly O: typeof RemoveRepositoryResponse;
-      readonly kind: MethodKind.Unary;
-    };
-  };
+      readonly name: "RemoveRepository",
+      readonly I: typeof RemoveRepositoryRequest,
+      readonly O: typeof RemoveRepositoryResponse,
+      readonly kind: MethodKind.Unary,
+    },
+  }
 };
+

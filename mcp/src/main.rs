@@ -162,6 +162,29 @@ struct CreateCaseRequest {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct BulkCaseEntryInput {
+    case_path: String,
+    title: String,
+    #[schemars(description = "One-line description (optional)")]
+    description: Option<String>,
+    #[schemars(description = "Comma-separated tags (optional)")]
+    tags: Option<String>,
+    #[schemars(description = "low | medium | high (default: medium)")]
+    priority: Option<String>,
+    #[schemars(
+        description = "Full markdown body (steps, expected results). Defaults to a template."
+    )]
+    body: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct BulkCreateCasesRequest {
+    repo_id: String,
+    #[schemars(description = "List of cases to create")]
+    cases: Vec<BulkCaseEntryInput>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct UpdateCaseRequest {
     repo_id: String,
     case_path: String,
@@ -481,6 +504,59 @@ impl AmelisoMcp {
                         c.tags.join(", ")
                     }
                 )
+            }
+            Err(e) => format!("error: {e}"),
+        }
+    }
+
+    #[tool(
+        description = "Create multiple test cases in a single call. More efficient than calling create_case N times when setting up a new project or adding a batch of cases. Returns one line per created case."
+    )]
+    async fn bulk_create_cases(
+        &self,
+        Parameters(req): Parameters<BulkCreateCasesRequest>,
+    ) -> String {
+        let mut client = self.client();
+        let entries: Vec<pb::BulkCaseEntry> = req
+            .cases
+            .into_iter()
+            .map(|e| {
+                let tags: Vec<String> = e
+                    .tags
+                    .as_deref()
+                    .unwrap_or("")
+                    .split(',')
+                    .map(|s| s.trim().to_owned())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                let priority = priority_str_to_i32(e.priority.as_deref().unwrap_or("medium"));
+                pb::BulkCaseEntry {
+                    case_path: e.case_path,
+                    title: e.title,
+                    description: e.description.unwrap_or_default(),
+                    tags,
+                    priority,
+                    body: e.body.unwrap_or_default(),
+                }
+            })
+            .collect();
+        match client
+            .bulk_create_cases(pb::BulkCreateCasesRequest {
+                repo_id: req.repo_id,
+                cases: entries,
+            })
+            .await
+        {
+            Ok(r) => {
+                let cases = r.into_inner().cases;
+                if cases.is_empty() {
+                    return "created: 0 cases".to_owned();
+                }
+                let lines: Vec<String> = cases
+                    .iter()
+                    .map(|c| format!("created: {} ({})", c.case_path, c.priority))
+                    .collect();
+                format!("{}\ntotal: {} case(s)", lines.join("\n"), cases.len())
             }
             Err(e) => format!("error: {e}"),
         }

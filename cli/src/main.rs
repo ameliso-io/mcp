@@ -237,6 +237,23 @@ enum CasesCmd {
         #[arg(long, help = "Output as JSON")]
         json: bool,
     },
+    #[command(
+        about = "Create multiple test cases at once",
+        long_about = "Create multiple test cases in one call.\n\
+Each ENTRY is: case_path:title or case_path:title:priority or case_path:title:priority:tags\n\
+Example: ameliso cases bulk-create auth/login:\"User Login\":high billing/checkout:Checkout:medium"
+    )]
+    BulkCreate {
+        #[arg(long, env = "AMELISO_REPO_ID")]
+        repo_id: String,
+        #[arg(
+            required = true,
+            help = "ENTRY: case_path:title[:priority[:tags]]  (colon-separated)"
+        )]
+        entries: Vec<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -630,6 +647,63 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
                 }))?);
             } else {
                 println!("Deleted: {}", resp.file_path);
+            }
+        }
+        CasesCmd::BulkCreate { repo_id, entries, json } => {
+            let mut parsed_entries: Vec<pb::BulkCaseEntry> = Vec::new();
+            for entry in &entries {
+                let parts: Vec<&str> = entry.splitn(4, ':').collect();
+                let case_path = parts.first().copied().unwrap_or("").to_owned();
+                let title = parts.get(1).copied().unwrap_or("").to_owned();
+                if case_path.is_empty() || title.is_empty() {
+                    return Err(anyhow!(
+                        "invalid entry '{}': expected case_path:title[:priority[:tags]]",
+                        entry
+                    ));
+                }
+                let priority = priority_str_to_i32(parts.get(2).copied().unwrap_or("medium"));
+                let tags: Vec<String> = parts
+                    .get(3)
+                    .copied()
+                    .unwrap_or("")
+                    .split(',')
+                    .map(|s| s.trim().to_owned())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                parsed_entries.push(pb::BulkCaseEntry {
+                    case_path,
+                    title,
+                    description: String::new(),
+                    tags,
+                    priority,
+                    body: String::new(),
+                });
+            }
+            let cases = c
+                .bulk_create_cases(pb::BulkCreateCasesRequest {
+                    repo_id,
+                    cases: parsed_entries,
+                })
+                .await
+                .map_err(grpc_err)?
+                .into_inner()
+                .cases;
+            if json {
+                let arr: Vec<_> = cases
+                    .iter()
+                    .map(|c| serde_json::json!({
+                        "case_path": c.path,
+                        "title": c.title,
+                        "priority": c.priority,
+                        "tags": c.tags,
+                    }))
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&arr)?);
+            } else {
+                for c in &cases {
+                    println!("created: {} ({})", c.path, c.priority);
+                }
+                println!("total: {} case(s)", cases.len());
             }
         }
     }
@@ -1651,6 +1725,39 @@ mod tests {
         ])
         .expect("should parse");
         assert!(matches!(cli.command, Commands::Cases(CasesCmd::Delete { .. })));
+    }
+
+    #[test]
+    fn cli_cases_bulk_create_parses_entries() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "bulk-create",
+            "--repo-id", "owner/repo",
+            "auth/login:User Login:high",
+            "billing/checkout:Checkout:medium",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::BulkCreate { entries, json, .. }) = cli.command {
+            assert_eq!(entries.len(), 2);
+            assert!(!json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_cases_bulk_create_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "cases", "bulk-create",
+            "--repo-id", "owner/repo",
+            "--json",
+            "auth/login:Login:high",
+        ])
+        .expect("should parse");
+        if let Commands::Cases(CasesCmd::BulkCreate { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
     }
 
     #[test]
