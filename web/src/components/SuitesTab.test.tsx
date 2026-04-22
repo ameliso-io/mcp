@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
 import { client } from "@/client";
+import type { Suite } from "@/gen/ameliso/v1/types_pb";
 import {
   makeCase,
   makeCreateSuiteResponse,
