@@ -117,6 +117,18 @@ describe("CasesTab", () => {
     );
   });
 
+  it("removes case from list after deleteCase without re-fetching", async () => {
+    vi.mocked(client.deleteCase).mockResolvedValue(
+      makeDeleteCaseResponse({ filePath: "cases/auth/login.md" })
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete auth/login" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete auth/login" }));
+    await waitFor(() => expect(screen.queryByText("User Login")).not.toBeInTheDocument());
+    expect(client.listCases).toHaveBeenCalledTimes(1);
+  });
+
   it("does not call deleteCase when inline confirm cancelled", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -738,13 +750,17 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByRole("button", { name: /Edit auth\/login/ }));
     await userEvent.click(screen.getByRole("button", { name: /Edit auth\/logout/ }));
     await waitFor(() => {
-      const textarea = screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }) as HTMLTextAreaElement;
+      const textarea = screen.getByRole("textbox", {
+        name: "Steps / Body (Markdown)",
+      }) as HTMLTextAreaElement;
       expect(textarea.value).toBe("second body");
     });
 
     resolveFirst(makeGetCaseResponse({ case: mockCase, body: "first body" }));
     await new Promise((r) => setTimeout(r, 50));
-    const textarea = screen.getByRole("textbox", { name: "Steps / Body (Markdown)" }) as HTMLTextAreaElement;
+    const textarea = screen.getByRole("textbox", {
+      name: "Steps / Body (Markdown)",
+    }) as HTMLTextAreaElement;
     expect(textarea.value).not.toBe("first body");
     expect(textarea.value).toBe("second body");
   });

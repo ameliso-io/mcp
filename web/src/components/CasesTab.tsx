@@ -89,6 +89,7 @@ export default function CasesTab({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
+  const editingBodyRef = useRef<string | null>(null);
   const loadIdRef = useRef(0);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [filterAnnouncement, announceFilter] = useAnnounce();
@@ -161,8 +162,11 @@ export default function CasesTab({
     setEditPriority(stringToPriority(c.priority));
     setEditTags(c.tags.join(", "));
     setEditBody("");
+    editingBodyRef.current = c.path;
     try {
-      setEditBody(await fetchBody(c.path));
+      const body = await fetchBody(c.path);
+      /* v8 ignore next 1 — race guard, covered by stale startEdit test */
+      if (editingBodyRef.current === c.path) setEditBody(body);
     } catch {
       // body stays empty; server will preserve existing body on update
     }
@@ -270,10 +274,10 @@ export default function CasesTab({
   async function handleDelete(casePath: string) {
     try {
       await client.deleteCase({ repoId, casePath });
+      setCases((prev) => prev.filter((c) => c.path !== casePath));
       if (expandedPath === casePath) setExpandedPath(null);
       setConfirmingDelete(null);
       announceAction("Case deleted");
-      load();
     } catch (e) {
       setError(errorMessage(e));
     }
