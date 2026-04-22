@@ -41,11 +41,13 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   // Edit suite state
-  const [editingSlug, setEditingSlug] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editCases, setEditCases] = useState("");
-  const [editNewSlug, setEditNewSlug] = useState("");
+  const [editState, setEditState] = useState<{
+    slug: string;
+    name: string;
+    desc: string;
+    cases: string;
+    newSlug: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function toggleExpand(slug: string) {
@@ -73,11 +75,13 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   function startEdit(suite: Suite) {
     lastFocusRef.current = document.activeElement as HTMLElement;
-    setEditingSlug(suite.slug);
-    setEditName(suite.name);
-    setEditDesc(suite.description);
-    setEditCases(suite.cases.join(", "));
-    setEditNewSlug("");
+    setEditState({
+      slug: suite.slug,
+      name: suite.name,
+      desc: suite.description,
+      cases: suite.cases.join(", "),
+      newSlug: "",
+    });
   }
 
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -162,25 +166,25 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
-    /* v8 ignore next 2 — form only renders when editingSlug is set */
-    if (!editingSlug) return;
+    /* v8 ignore next 2 — form only renders when editState is set */
+    if (!editState) return;
     setSaving(true);
     try {
       await client.updateSuite({
         repoId,
-        slug: editingSlug,
-        name: editName,
-        description: editDesc,
-        cases: editCases
-          ? editCases
+        slug: editState.slug,
+        name: editState.name,
+        description: editState.desc,
+        cases: editState.cases
+          ? editState.cases
               .split(",")
               .map((c) => c.trim())
               .filter(Boolean)
           : [],
         replaceCases: true,
-        newSlug: editNewSlug,
+        newSlug: editState.newSlug,
       });
-      setEditingSlug(null);
+      setEditState(null);
       lastFocusRef.current?.focus();
       announce("Suite updated");
       load();
@@ -321,7 +325,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       <ul className={styles.list} aria-busy={loading} role="list">
         {suites.map((suite) => (
           <li key={suite.slug}>
-            {editingSlug === suite.slug ? (
+            {editState?.slug === suite.slug ? (
               <div className={styles.card}>
                 <h3 className={styles.cardTitleSm}>Edit: {suite.slug}</h3>
                 <form
@@ -330,7 +334,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
                       e.preventDefault();
-                      setEditingSlug(null);
+                      setEditState(null);
                       lastFocusRef.current?.focus();
                     }
                   }}
@@ -340,9 +344,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     <label className={styles.label}>
                       Name
                       <input
-                        value={editName}
+                        value={editState.name}
                         onChange={(e) => {
-                          setEditName(e.target.value);
+                          setEditState((s) => s && { ...s, name: e.target.value });
                         }}
                         required
                         autoFocus
@@ -354,9 +358,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     <label className={styles.label}>
                       Description
                       <input
-                        value={editDesc}
+                        value={editState.desc}
                         onChange={(e) => {
-                          setEditDesc(e.target.value);
+                          setEditState((s) => s && { ...s, desc: e.target.value });
                         }}
                         className={styles.input}
                       />
@@ -366,9 +370,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     <label className={styles.label}>
                       Cases (comma-separated paths)
                       <input
-                        value={editCases}
+                        value={editState.cases}
                         onChange={(e) => {
-                          setEditCases(e.target.value);
+                          setEditState((s) => s && { ...s, cases: e.target.value });
                         }}
                         className={styles.input}
                       />
@@ -378,9 +382,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     <label className={styles.label}>
                       Rename slug (optional)
                       <input
-                        value={editNewSlug}
+                        value={editState.newSlug}
                         onChange={(e) => {
-                          setEditNewSlug(e.target.value);
+                          setEditState((s) => s && { ...s, newSlug: e.target.value });
                         }}
                         className={styles.input}
                         placeholder="leave blank to keep current slug"
@@ -394,7 +398,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                     <button
                       type="button"
                       onClick={() => {
-                        setEditingSlug(null);
+                        setEditState(null);
                         lastFocusRef.current?.focus();
                       }}
                       className={styles.btnCancelSm}
