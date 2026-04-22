@@ -415,6 +415,21 @@ describe("CasesTab", () => {
     await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
 
+  it("calls listCases with search term after debounce fires", async () => {
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    vi.mocked(client.listCases).mockClear();
+    const searchInput = screen.getByRole("searchbox", { name: "Search cases" });
+    fireEvent.change(searchInput, { target: { value: "xyz-unique-search" } });
+    await waitFor(
+      () =>
+        expect(client.listCases).toHaveBeenCalledWith(
+          expect.objectContaining({ query: "xyz-unique-search" }),
+        ),
+      { timeout: 1000 },
+    );
+  });
+
   it("shows medium priority label and opens edit for medium priority case", async () => {
     const mediumCase = makeCase({
       priority: "medium",
