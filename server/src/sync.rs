@@ -150,9 +150,8 @@ pub async fn delete_case_file(pool: &PgPool, repo_id: &str, case_path: &str) -> 
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
     let file_path = format!("cases/{case_path}.md");
     let existing = crate::github::get_file(&owner, &repo_name, &file_path, &token).await?;
-    let (_, sha) = match existing {
-        Some(e) => e,
-        None => return Ok(()),
+    let Some((_, sha)) = existing else {
+        return Ok(());
     };
     let message = format!("chore(cases): delete {case_path}");
     crate::github::delete_file(&owner, &repo_name, &file_path, &message, &sha, &token).await

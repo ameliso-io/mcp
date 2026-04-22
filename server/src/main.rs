@@ -24,9 +24,8 @@ fn load_env() {
 }
 
 async fn sync_installations(pool: &sqlx::PgPool) -> anyhow::Result<()> {
-    let cfg = match ameliso_server::github::config() {
-        Some(c) => c,
-        None => return Ok(()),
+    let Some(cfg) = ameliso_server::github::config() else {
+        return Ok(());
     };
     let jwt = ameliso_server::github::generate_jwt(&cfg.app_id, &cfg.private_key)?;
     let installations = ameliso_server::github::list_app_installations(&jwt).await?;

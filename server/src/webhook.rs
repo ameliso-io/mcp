@@ -15,9 +15,8 @@ pub struct WebhookState {
 }
 
 fn verify_signature(secret: &str, body: &[u8], sig_header: &str) -> bool {
-    let sig_hex = match sig_header.strip_prefix("sha256=") {
-        Some(s) => s,
-        None => return false,
+    let Some(sig_hex) = sig_header.strip_prefix("sha256=") else {
+        return false;
     };
     let Ok(sig_bytes) = hex::decode(sig_hex) else {
         return false;
@@ -127,12 +126,11 @@ pub async fn github_push(
     }
 
     for file_path in &remove {
-        let case_path = match file_path
+        let Some(case_path) = file_path
             .strip_prefix("cases/")
             .and_then(|p| p.strip_suffix(".md"))
-        {
-            Some(p) => p,
-            None => continue,
+        else {
+            continue;
         };
         if let Err(e) = crate::repo::delete_case_if_exists(&state.pool, &repo_id, case_path).await {
             eprintln!("webhook: delete failed for {case_path}: {e}");
@@ -164,9 +162,8 @@ async fn process_upsert(
     file_path: &str,
 ) -> anyhow::Result<()> {
     let file = crate::github::get_file(owner, repo_name, file_path, token).await?;
-    let (content_b64, _) = match file {
-        Some(f) => f,
-        None => return Ok(()),
+    let Some((content_b64, _)) = file else {
+        return Ok(());
     };
     let parsed = crate::sync::parse_case_from_base64(file_path, &content_b64)?;
     crate::repo::upsert_case(
