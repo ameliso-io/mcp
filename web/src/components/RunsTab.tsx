@@ -778,8 +778,7 @@ export default function RunsTab({
                         {pendingCases.length} pending
                         <span className={styles.refreshHint}>auto-refresh 30s</span>
                       </h3>
-                      {run.status === RunStatus.IN_PROGRESS && (
-                        <div className={styles.pendingActions}>
+                      <div className={styles.pendingActions}>
                           {pendingCases.length > 0 &&
                             (confirmingBulkPass === run.id ? (
                               <>
@@ -878,8 +877,7 @@ export default function RunsTab({
                               </button>
                             </>
                           )}
-                        </div>
-                      )}
+                      </div>
                     </div>
 
                     {pendingCases.length === 0 && (

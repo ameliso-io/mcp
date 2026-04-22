@@ -74,7 +74,7 @@ const config = [
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       // TODO: enable and fix incrementally
       "early-return/prefer-early-return": "off",
-      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-unnecessary-condition": "error",
       "default/no-localhost": "off",
       "default/no-hardcoded-urls": "off",
       "default/no-default-params": "off",
