@@ -562,6 +562,7 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolve!({ cases: [] });
+    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
   it('shows "No cases found." when case list is empty', async () => {
@@ -617,6 +618,7 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("User Login"));
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolve!({ case: mockCase, body: "" });
+    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
   it('shows "Creating…" on Create button while case creation is in progress', async () => {
@@ -634,6 +636,7 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("Create"));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ case: mockCase, filePath: "cases/auth/new.md" });
+    await waitFor(() => expect(screen.queryByText("Creating…")).not.toBeInTheDocument());
   });
 
   it('shows "Saving…" on Save button while case update is in progress', async () => {
@@ -650,6 +653,7 @@ describe("CasesTab", () => {
     await userEvent.click(screen.getByText("Save"));
     expect(screen.getByText("Saving…")).toBeInTheDocument();
     resolve!({ case: mockCase });
+    await waitFor(() => expect(screen.queryByText("Saving…")).not.toBeInTheDocument());
   });
 
   it("does not show description paragraph when case description is empty", async () => {

@@ -922,6 +922,7 @@ describe("RunsTab", () => {
     render(<RunsTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolve!({ runs: [] });
+    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
   it("resets recordStatus to PASSED after recording a result", async () => {
@@ -963,6 +964,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText(/All Passed/));
     expect(screen.getByText("Marking…")).toBeInTheDocument();
     resolve!({ results: [], pendingCount: 0, totalInScope: 1 });
+    await waitFor(() => expect(screen.queryByText("Marking…")).not.toBeInTheDocument());
   });
 
   it('shows "Creating…" on Create Run button while run creation in progress', async () => {
@@ -979,6 +981,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ run: mockRun, dirPath: "runs/2026-01-01-smoke" });
+    await waitFor(() => expect(screen.queryByText("Creating…")).not.toBeInTheDocument());
   });
 
   it('shows "Saving…" on Save Result button while recording result', async () => {
@@ -998,6 +1001,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("Save Result"));
     expect(screen.getByText("Saving…")).toBeInTheDocument();
     resolve!({ result: undefined });
+    await waitFor(() => expect(screen.queryByText("Saving…")).not.toBeInTheDocument());
   });
 
   it('shows "Loading…" while pending cases are loading after run expanded', async () => {
@@ -1013,6 +1017,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0));
     resolve!({ cases: [mockCase], totalInScope: 1 });
+    await waitFor(() => expect(screen.queryAllByText("Loading…").length).toBe(0));
   });
 
   it('shows "Loading steps…" while case body is loading in record form', async () => {
@@ -1030,6 +1035,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("Record"));
     await waitFor(() => expect(screen.getByText("Loading steps…")).toBeInTheDocument());
     resolve!({ case: mockCase, body: "## Steps" });
+    await waitFor(() => expect(screen.queryByText("Loading steps…")).not.toBeInTheDocument());
   });
 
   it("shows progress bar text when totalInScope > 0 and some cases pending", async () => {

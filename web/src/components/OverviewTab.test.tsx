@@ -429,20 +429,23 @@ describe("OverviewTab", () => {
   });
 
   it("shows loading state while fetching coverage data", async () => {
-    let resolve: (v: unknown) => void;
+    let resolveCoverage: (v: unknown) => void;
+    let resolveRuns: (v: unknown) => void;
     vi.mocked(client.getCoverageReport).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
+        resolveCoverage = res;
       }) as never
     );
     vi.mocked(client.listRuns).mockReturnValue(
       new Promise((res) => {
-        resolve = res;
+        resolveRuns = res;
       }) as never
     );
     render(<OverviewTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve!({ entries: [], runCount: 0, runs: [] });
+    resolveCoverage!({ entries: [], runCount: 0 });
+    resolveRuns!({ runs: [] });
+    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
   it('shows "Checking…" on Check Diff button while loading', async () => {
@@ -457,6 +460,7 @@ describe("OverviewTab", () => {
     await userEvent.click(screen.getByText("Check Diff"));
     expect(screen.getByText("Checking…")).toBeInTheDocument();
     resolveAffected!({ cases: [], reason: "" });
+    await waitFor(() => expect(screen.queryByText("Checking…")).not.toBeInTheDocument());
   });
 
   it("unmounts cleanly when polling interval is active", async () => {

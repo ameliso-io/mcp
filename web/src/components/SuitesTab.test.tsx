@@ -366,6 +366,7 @@ describe("SuitesTab", () => {
     render(<SuitesTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolve!({ suites: [] });
+    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
   it('shows "Creating…" on Create Suite button while creating', async () => {
@@ -383,6 +384,7 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
     resolve!({ suite: mockSuite, filePath: "suites/regression.yaml" });
+    await waitFor(() => expect(screen.queryByText("Creating…")).not.toBeInTheDocument());
   });
 
   it('shows "No suites found." when suites list is empty', async () => {
@@ -403,6 +405,7 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("Smoke Tests"));
     await waitFor(() => expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0));
     resolve!({ cases: [] });
+    await waitFor(() => expect(screen.queryAllByText("Loading…").length).toBe(0));
   });
 
   it('shows "Saving…" on Save button while update in progress', async () => {
@@ -419,6 +422,7 @@ describe("SuitesTab", () => {
     await userEvent.click(screen.getByText("Save"));
     expect(screen.getByText("Saving…")).toBeInTheDocument();
     resolve!({ suite: mockSuite });
+    await waitFor(() => expect(screen.queryByText("Saving…")).not.toBeInTheDocument());
   });
 
   it("shows suite description in card view", async () => {
