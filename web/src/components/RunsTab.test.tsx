@@ -1643,4 +1643,23 @@ describe("RunsTab", () => {
       ).toBe(true)
     );
   });
+
+  it("sets aria-busy on expanded panel while pending cases load", async () => {
+    let resolve!: (v: ReturnType<typeof makeGetPendingCasesResponse>) => void;
+    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
+    vi.mocked(client.getPendingCases).mockImplementationOnce(
+      () =>
+        new Promise((res) => {
+          resolve = res as typeof resolve;
+        }) as ReturnType<typeof client.getPendingCases>
+    );
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText(mockRun.id));
+    await userEvent.click(screen.getByText(mockRun.id));
+    await waitFor(() => {
+      expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+    });
+    resolve(makeGetPendingCasesResponse({ cases: [mockCase], totalInScope: 1 }));
+    await waitFor(() => screen.getByText("auth/login"));
+  });
 });

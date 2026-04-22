@@ -765,19 +765,22 @@ describe("CasesTab", () => {
     expect(screen.getAllByText("smoke").length).toBeGreaterThan(0);
   });
 
-  it('shows "Loading…" while case body is loading on expand', async () => {
-    let resolve: (v: unknown) => void;
-    vi.mocked(client.getCase).mockReturnValue(
-      new Promise((res) => {
-        resolve = res;
-      }) as never
+  it("sets aria-busy on expanded panel while body loads", async () => {
+    let resolve!: (v: ReturnType<typeof makeGetCaseResponse>) => void;
+    vi.mocked(client.getCase).mockImplementationOnce(
+      () =>
+        new Promise((res) => {
+          resolve = res as typeof resolve;
+        }) as ReturnType<typeof client.getCase>
     );
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
-    expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve!({ case: mockCase, body: "" });
-    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
+    await waitFor(() => {
+      expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+    });
+    resolve(makeGetCaseResponse({ case: mockCase, body: "## Steps" }));
+    await waitFor(() => screen.getByText(/Steps/));
   });
 
   it('shows "Creating…" on Create button while case creation is in progress', async () => {
