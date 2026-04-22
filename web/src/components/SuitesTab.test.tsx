@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SuitesTab from "./SuitesTab";
@@ -514,5 +514,39 @@ describe("SuitesTab", () => {
     );
     render(<SuitesTab repoId="owner/repo" initialExpanded="smoke" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
+  });
+
+  it("discards stale listSuites response when repoId changes before first load resolves", async () => {
+    let resolveFirst!: (v: ReturnType<typeof makeListSuitesResponse>) => void;
+    let resolveSecond!: (v: ReturnType<typeof makeListSuitesResponse>) => void;
+    const newSuite = makeSuite({ slug: "new-suite", name: "New Suite", cases: [] });
+
+    vi.mocked(client.listSuites)
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res as typeof resolveFirst;
+          }) as ReturnType<typeof client.listSuites>
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveSecond = res as typeof resolveSecond;
+          }) as ReturnType<typeof client.listSuites>
+      );
+
+    const { rerender } = render(<SuitesTab repoId="owner/repo" />);
+    await act(async () => {
+      rerender(<SuitesTab repoId="owner/repo2" />);
+    });
+
+    resolveSecond(makeListSuitesResponse({ suites: [newSuite] }));
+    await waitFor(() => screen.getByText("New Suite"));
+
+    resolveFirst(makeListSuitesResponse({ suites: [mockSuite] }));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument();
+    expect(screen.getByText("New Suite")).toBeInTheDocument();
   });
 });
