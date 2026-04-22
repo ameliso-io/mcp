@@ -356,7 +356,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       )}
 
       {repoId && (
-        <div className={styles.card}>
+        <div className={styles.card} aria-busy={affectedLoading}>
           <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
           <form
             aria-label="Check affected cases by git diff"
