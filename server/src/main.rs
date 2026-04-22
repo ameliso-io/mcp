@@ -54,6 +54,23 @@ async fn sync_installations(pool: &sqlx::PgPool) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn kill_port(port: u16) {
+    let Ok(out) = std::process::Command::new("lsof")
+        .args(["-ti", &format!("tcp:{port}")])
+        .output()
+    else {
+        return;
+    };
+    for pid_str in String::from_utf8_lossy(&out.stdout).split_whitespace() {
+        if let Ok(pid) = pid_str.trim().parse::<u32>() {
+            let _ = std::process::Command::new("kill")
+                .args(["-9", &pid.to_string()])
+                .status();
+            eprintln!("killed pid {pid} occupying port {port}");
+        }
+    }
+}
+
 fn validate_env() {
     let required = [
         (
@@ -119,6 +136,8 @@ async fn main() -> Result<()> {
     let webhook_app = Router::new()
         .route("/webhook/github", post(github_push))
         .with_state(webhook_state);
+    kill_port(port);
+    kill_port(webhook_port);
     let webhook_listener = tokio::net::TcpListener::bind(webhook_addr).await?;
     println!("webhook server listening on {}", webhook_addr);
 
