@@ -842,29 +842,30 @@ pub async fn finalize_run(
 
 pub async fn delete_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<()> {
     validate_slug_path(run_id, "run")?;
-    // Delete child rows first (no FK cascade defined), then the run.
+    let mut tx = pool.begin().await.map_err(map_db)?;
     sqlx::query("DELETE FROM results WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
     sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
     let rows = sqlx::query("DELETE FROM runs WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
         return Err(RepoError::NotFound(format!("run not found: {run_id}")));
     }
+    tx.commit().await.map_err(map_db)?;
     Ok(())
 }
 
@@ -886,11 +887,12 @@ pub async fn update_run(
     if new_run_id == run_id {
         return get_run(pool, repo_id, run_id).await.map(|r| r.meta);
     }
+    let mut tx = pool.begin().await.map_err(map_db)?;
     let conflict: bool =
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM runs WHERE repo_id=$1 AND run_id=$2)")
             .bind(repo_id)
             .bind(&new_run_id)
-            .fetch_one(pool)
+            .fetch_one(&mut *tx)
             .await
             .map_err(map_db)?;
     if conflict {
@@ -902,28 +904,29 @@ pub async fn update_run(
         .bind(repo_id)
         .bind(run_id)
         .bind(&new_run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
         return Err(RepoError::NotFound(format!("run not found: {run_id}")));
     }
-    // Cascade to results and run_cases.
+    // Cascade to results and run_cases atomically.
     sqlx::query("UPDATE results SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .bind(&new_run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
     sqlx::query("UPDATE run_cases SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .bind(&new_run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
+    tx.commit().await.map_err(map_db)?;
     get_run(pool, repo_id, &new_run_id).await.map(|r| r.meta)
 }
 
