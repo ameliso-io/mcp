@@ -184,7 +184,7 @@ export default function OverviewTab({ repoId }: Props) {
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No repository selected</p>
           <p className={styles.emptyDesc}>
-            Go to the Repositories tab and click &quot;Use&quot; on a connected repository.
+            Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
           </p>
         </div>
       )}
