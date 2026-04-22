@@ -66,10 +66,13 @@ const config = [
       "max-lines-per-function": "off",
 
       // Async JSX event handlers (onClick, onSubmit, etc.) are idiomatic React
-      "@typescript-eslint/no-misused-promises": ["error", { checksVoidReturn: { attributes: false } }],
+      "@typescript-eslint/no-misused-promises": [
+        "error",
+        { checksVoidReturn: { attributes: false } },
+      ],
       "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       // TODO: enable and fix incrementally
-      "@typescript-eslint/restrict-template-expressions": "off",
       "early-return/prefer-early-return": "off",
       "@typescript-eslint/no-unnecessary-condition": "off",
       "default/no-localhost": "off",
