@@ -1218,7 +1218,7 @@ impl AmelisoMcp {
     }
 
     #[tool(
-        description = "Show test cases that may need re-running given recent git changes. Requires since_ref (e.g. HEAD~5 or a commit SHA) — if omitted, ALL cases are returned as needing re-run. Returns cases with title, priority, and tags."
+        description = "Show test cases that may need re-running given recent git changes. Pass since_ref (GitHub API comparison) or changed_files (comma-separated paths from git diff --name-only, for local workflows without GitHub). If neither is provided, ALL cases are returned. Source files that don't explicitly reference a case path cause ALL cases to be flagged."
     )]
     async fn get_affected_cases(&self, Parameters(req): Parameters<AffectedRequest>) -> String {
         let mut client = self.client();
