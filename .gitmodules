@@ -1,0 +1,3 @@
+[submodule ".claude/skills/product-manager"]
+	path = .claude/skills/product-manager
+	url = https://github.com/Digidai/product-manager-skills
