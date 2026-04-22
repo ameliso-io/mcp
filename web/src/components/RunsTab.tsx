@@ -365,6 +365,7 @@ export default function RunsTab({
   async function handleDeleteRun(runId: string) {
     try {
       await client.deleteRun({ repoId, runId });
+      setRuns((prev) => prev.filter((r) => r.id !== runId));
       if (selectedRunId === runId) {
         setSelectedRunId(null);
         setPendingCases([]);
@@ -373,7 +374,6 @@ export default function RunsTab({
       }
       setConfirmingDeleteRun(null);
       announce("Run deleted");
-      await load();
     } catch (e) {
       setError(errorMessage(e));
     }
