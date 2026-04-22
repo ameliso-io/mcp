@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
@@ -135,12 +135,15 @@ export default function OverviewTab({ repoId }: Props) {
     [repoId, sinceRef, announce]
   );
 
+  const deferredEntries = useDeferredValue(entries);
+  const isEntriesStale = entries !== deferredEntries;
+
   const sortedEntries = useMemo(
     () =>
-      [...entries].sort(
+      [...deferredEntries].sort(
         (a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)
       ),
-    [entries]
+    [deferredEntries]
   );
 
   const sortedAffected = useMemo(
@@ -158,13 +161,13 @@ export default function OverviewTab({ repoId }: Props) {
     let passed = 0;
     let failed = 0;
     let never = 0;
-    for (const e of entries) {
+    for (const e of deferredEntries) {
       if (e.latestStatus === ResultStatus.PASSED) passed++;
       else if (e.latestStatus === ResultStatus.FAILED) failed++;
       else if (e.latestStatus === ResultStatus.NEVER) never++;
     }
-    return { statCases: entries.length, statPassed: passed, statFailed: failed, statNever: never };
-  }, [entries]);
+    return { statCases: deferredEntries.length, statPassed: passed, statFailed: failed, statNever: never };
+  }, [deferredEntries]);
 
   return (
     <div>
@@ -255,7 +258,7 @@ export default function OverviewTab({ repoId }: Props) {
             <h3 className={`${styles.label} ${styles.sectionLabel}`}>
               Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
             </h3>
-            <ul className={styles.coverageList} role="list">
+            <ul className={styles.coverageList} role="list" aria-busy={isEntriesStale || undefined}>
               {sortedEntries.map((entry) => (
                 <li key={entry.case?.path} className={styles.coverageRow}>
                   <span
