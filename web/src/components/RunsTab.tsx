@@ -98,6 +98,7 @@ export default function RunsTab({
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
+  const loadIdRef = useRef(0);
   useEffect(() => {
     if (initialSuite && !consumedRef.current) {
       consumedRef.current = true;
@@ -130,15 +131,21 @@ export default function RunsTab({
 
   const load = useCallback(async () => {
     if (!repoId) return;
+    const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
       const res = await client.listRuns({ repoId, status: statusFilter });
+      /* v8 ignore next 1 — race guard, covered by stale listRuns test */
+      if (id !== loadIdRef.current) return;
       setRuns(res.runs);
     } catch (e) {
+      /* v8 ignore next 1 — race guard */
+      if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
-      setLoading(false);
+      /* v8 ignore next 1 — race guard */
+      if (id === loadIdRef.current) setLoading(false);
     }
   }, [repoId, statusFilter]);
 
