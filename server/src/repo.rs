@@ -675,6 +675,7 @@ pub async fn create_run(
     let today = Local::now().format("%Y-%m-%d").to_string();
     let run_id = format!("{today}-{slug}");
 
+    let mut tx = pool.begin().await.map_err(map_db)?;
     let rows = sqlx::query(
         "INSERT INTO runs (repo_id, run_id, date, tester, status, environment, suite)
          VALUES ($1, $2, $3, $4, 'in-progress', $5, $6)
@@ -686,7 +687,7 @@ pub async fn create_run(
     .bind(tester)
     .bind(&environment)
     .bind(&suite)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
     .map_err(map_db)?
     .rows_affected();
@@ -697,19 +698,18 @@ pub async fn create_run(
         )));
     }
 
-    if !inline_cases.is_empty() {
-        for case_path in &inline_cases {
-            sqlx::query(
-                "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-            )
-            .bind(repo_id)
-            .bind(&run_id)
-            .bind(case_path)
-            .execute(pool)
-            .await
-            .map_err(map_db)?;
-        }
+    for case_path in &inline_cases {
+        sqlx::query(
+            "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        )
+        .bind(repo_id)
+        .bind(&run_id)
+        .bind(case_path)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?;
     }
+    tx.commit().await.map_err(map_db)?;
 
     Ok(RunRow {
         run_id,
