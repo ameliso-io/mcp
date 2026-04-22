@@ -22,11 +22,6 @@
   margin-bottom: 6px;
 }
 
-.repoForm {
-  display: flex;
-  gap: 8px;
-}
-
 .repoInput {
   flex: 1;
   padding: 8px 12px;
@@ -114,12 +109,6 @@
 .emptyDesc {
   margin: 0 0 16px;
   font-size: 14px;
-}
-
-.emptyHint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-subtle);
 }
 
 .loadingMsg {
@@ -398,12 +387,6 @@
   color: var(--color-muted);
   font-size: 14px;
   margin: 0;
-}
-
-.inline {
-  background: var(--color-surface-alt);
-  padding: 1px 6px;
-  border-radius: 4px;
 }
 
 .sectionLabel {
