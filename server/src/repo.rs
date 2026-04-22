@@ -267,16 +267,15 @@ pub async fn update_case(
                 )));
             }
             // Rename: update case_path, fix suites referencing old path, fix results, fix run_cases.
-            let rows = sqlx::query(
-                "UPDATE cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2",
-            )
-            .bind(repo_id)
-            .bind(case_path)
-            .bind(np)
-            .execute(pool)
-            .await
-            .map_err(map_db)?
-            .rows_affected();
+            let rows =
+                sqlx::query("UPDATE cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
+                    .bind(repo_id)
+                    .bind(case_path)
+                    .bind(np)
+                    .execute(pool)
+                    .await
+                    .map_err(map_db)?
+                    .rows_affected();
             if rows == 0 {
                 return Err(RepoError::NotFound(format!(
                     "case not found: {}",
@@ -294,25 +293,21 @@ pub async fn update_case(
             .await
             .map_err(map_db)?;
             // Update results recorded against this case.
-            sqlx::query(
-                "UPDATE results SET case_path=$3 WHERE repo_id=$1 AND case_path=$2",
-            )
-            .bind(repo_id)
-            .bind(case_path)
-            .bind(np)
-            .execute(pool)
-            .await
-            .map_err(map_db)?;
+            sqlx::query("UPDATE results SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
+                .bind(repo_id)
+                .bind(case_path)
+                .bind(np)
+                .execute(pool)
+                .await
+                .map_err(map_db)?;
             // Update inline run_cases scope entries.
-            sqlx::query(
-                "UPDATE run_cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2",
-            )
-            .bind(repo_id)
-            .bind(case_path)
-            .bind(np)
-            .execute(pool)
-            .await
-            .map_err(map_db)?;
+            sqlx::query("UPDATE run_cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
+                .bind(repo_id)
+                .bind(case_path)
+                .bind(np)
+                .execute(pool)
+                .await
+                .map_err(map_db)?;
             np
         } else {
             case_path
@@ -545,28 +540,24 @@ pub async fn update_suite(
                 )));
             }
             // Rename: update slug and also update any runs that reference the old slug.
-            let rows = sqlx::query(
-                "UPDATE suites SET slug=$3 WHERE repo_id=$1 AND slug=$2",
-            )
-            .bind(repo_id)
-            .bind(slug)
-            .bind(ns)
-            .execute(pool)
-            .await
-            .map_err(map_db)?
-            .rows_affected();
+            let rows = sqlx::query("UPDATE suites SET slug=$3 WHERE repo_id=$1 AND slug=$2")
+                .bind(repo_id)
+                .bind(slug)
+                .bind(ns)
+                .execute(pool)
+                .await
+                .map_err(map_db)?
+                .rows_affected();
             if rows == 0 {
                 return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
             }
-            sqlx::query(
-                "UPDATE runs SET suite=$3 WHERE repo_id=$1 AND suite=$2",
-            )
-            .bind(repo_id)
-            .bind(slug)
-            .bind(ns)
-            .execute(pool)
-            .await
-            .map_err(map_db)?;
+            sqlx::query("UPDATE runs SET suite=$3 WHERE repo_id=$1 AND suite=$2")
+                .bind(repo_id)
+                .bind(slug)
+                .bind(ns)
+                .execute(pool)
+                .await
+                .map_err(map_db)?;
             ns
         } else {
             slug
@@ -598,7 +589,10 @@ pub async fn update_suite(
     .map_err(map_db)?
     .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("suite not found: {}", effective_slug)));
+        return Err(RepoError::NotFound(format!(
+            "suite not found: {}",
+            effective_slug
+        )));
     }
 
     Ok(SuiteRow {
@@ -1457,17 +1451,33 @@ mod tests {
 
     #[tokio::test]
     async fn update_suite_invalid_slug_returns_invalid_arg() {
-        let err = update_suite(&lazy_pool(), "owner/repo", "../escape", None, None, None, None)
-            .await
-            .unwrap_err();
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "../escape",
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
         assert!(matches!(err, RepoError::InvalidArg(_)));
     }
 
     #[tokio::test]
     async fn update_suite_valid_slug_passes_validation_and_hits_db() {
-        let err = update_suite(&lazy_pool(), "owner/repo", "regression", None, None, None, None)
-            .await
-            .unwrap_err();
+        let err = update_suite(
+            &lazy_pool(),
+            "owner/repo",
+            "regression",
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
