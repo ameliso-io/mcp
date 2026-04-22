@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     siteName: "Ameliso",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: {
       default: "Ameliso",
       template: "%s | Ameliso",
