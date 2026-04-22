@@ -18,9 +18,9 @@ function RepositoriesInner() {
   const handleRepoSelect = useCallback(
     (id: string) => {
       setRepoId(id);
-      if (id) router.push("/overview");
+      if (id) startTransition(() => router.push("/overview"));
     },
-    [setRepoId, router]
+    [setRepoId, router, startTransition]
   );
 
   const handleInstallationHandled = useCallback(() => {
