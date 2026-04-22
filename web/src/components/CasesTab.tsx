@@ -113,13 +113,15 @@ export default function CasesTab({
   const [bodyLoading, setBodyLoading] = useState(false);
 
   // Edit case form
-  const [editingPath, setEditingPath] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editPriority, setEditPriority] = useState<Priority>(Priority.MEDIUM);
-  const [editTags, setEditTags] = useState("");
-  const [editBody, setEditBody] = useState("");
-  const [editNewPath, setEditNewPath] = useState("");
+  const [editState, setEditState] = useState<{
+    path: string;
+    title: string;
+    desc: string;
+    priority: Priority;
+    tags: string;
+    body: string;
+    newPath: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function fetchBody(casePath: string): Promise<string> {
@@ -153,15 +155,19 @@ export default function CasesTab({
 
   async function startEdit(c: Case) {
     lastFocusRef.current = document.activeElement as HTMLElement;
-    setEditingPath(c.path);
-    setEditTitle(c.title);
-    setEditDesc(c.description);
-    setEditPriority(stringToPriority(c.priority));
-    setEditTags(c.tags.join(", "));
-    setEditBody("");
-    setEditNewPath("");
+    setEditState({
+      path: c.path,
+      title: c.title,
+      desc: c.description,
+      priority: stringToPriority(c.priority),
+      tags: c.tags.join(", "),
+      body: "",
+      newPath: "",
+    });
     try {
-      setEditBody(await fetchBody(c.path));
+      setEditState((s) => s && { ...s, body: "" });
+      const body = await fetchBody(c.path);
+      setEditState((s) => s && { ...s, body });
     } catch {
       // body stays empty; server will preserve existing body on update
     }
@@ -258,7 +264,14 @@ export default function CasesTab({
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
-      setCreateForm({ path: "", title: "", desc: "", priority: Priority.MEDIUM, tags: "", body: "" });
+      setCreateForm({
+        path: "",
+        title: "",
+        desc: "",
+        priority: Priority.MEDIUM,
+        tags: "",
+        body: "",
+      });
       announceAction("Case created");
       load();
     } catch (e) {
@@ -282,26 +295,26 @@ export default function CasesTab({
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
-    /* v8 ignore next 2 — form only renders when editingPath is set */
-    if (!editingPath) return;
+    /* v8 ignore next 2 — form only renders when editState is set */
+    if (!editState) return;
     setSaving(true);
     try {
       await client.updateCase({
         repoId,
-        casePath: editingPath,
-        title: editTitle,
-        description: editDesc,
-        priority: editPriority,
-        tags: editTags
-          ? editTags
+        casePath: editState.path,
+        title: editState.title,
+        description: editState.desc,
+        priority: editState.priority,
+        tags: editState.tags
+          ? editState.tags
               .split(",")
               .map((t) => t.trim())
               .filter(Boolean)
           : [],
-        body: editBody,
-        newPath: editNewPath,
+        body: editState.body,
+        newPath: editState.newPath,
       });
-      setEditingPath(null);
+      setEditState(null);
       lastFocusRef.current?.focus();
       announceAction("Case updated");
       load();
@@ -569,19 +582,19 @@ export default function CasesTab({
           <li key={c.path}>
             <div
               className={
-                expandedPath === c.path || editingPath === c.path
+                expandedPath === c.path || editState?.path === c.path
                   ? styles.caseCardOpen
                   : styles.caseCard
               }
             >
-              {editingPath === c.path ? (
+              {editState?.path === c.path ? (
                 <form
                   aria-label={`Edit case ${c.path}`}
                   onSubmit={handleUpdate}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
                       e.preventDefault();
-                      setEditingPath(null);
+                      setEditState(null);
                       lastFocusRef.current?.focus();
                     }
                   }}
@@ -592,9 +605,9 @@ export default function CasesTab({
                       Title
                       <input
                         autoFocus
-                        value={editTitle}
+                        value={editState.title}
                         onChange={(e) => {
-                          setEditTitle(e.target.value);
+                          setEditState((s) => s && { ...s, title: e.target.value });
                         }}
                         required
                         className={styles.input}
@@ -605,9 +618,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Priority
                       <select
-                        value={editPriority}
+                        value={editState.priority}
                         onChange={(e) => {
-                          setEditPriority(Number(e.target.value));
+                          setEditState((s) => s && { ...s, priority: Number(e.target.value) });
                         }}
                         className={styles.input}
                       >
@@ -621,9 +634,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Description
                       <input
-                        value={editDesc}
+                        value={editState.desc}
                         onChange={(e) => {
-                          setEditDesc(e.target.value);
+                          setEditState((s) => s && { ...s, desc: e.target.value });
                         }}
                         className={styles.input}
                       />
@@ -633,9 +646,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Tags (comma-separated)
                       <input
-                        value={editTags}
+                        value={editState.tags}
                         onChange={(e) => {
-                          setEditTags(e.target.value);
+                          setEditState((s) => s && { ...s, tags: e.target.value });
                         }}
                         className={styles.input}
                       />
@@ -645,9 +658,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Steps / Body (Markdown)
                       <textarea
-                        value={editBody}
+                        value={editState.body}
                         onChange={(e) => {
-                          setEditBody(e.target.value);
+                          setEditState((s) => s && { ...s, body: e.target.value });
                         }}
                         rows={8}
                         className={styles.textarea}
@@ -658,9 +671,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Rename path (optional)
                       <input
-                        value={editNewPath}
+                        value={editState.newPath}
                         onChange={(e) => {
-                          setEditNewPath(e.target.value);
+                          setEditState((s) => s && { ...s, newPath: e.target.value });
                         }}
                         className={styles.input}
                         placeholder="leave blank to keep current path"
@@ -674,7 +687,7 @@ export default function CasesTab({
                     <button
                       type="button"
                       onClick={() => {
-                        setEditingPath(null);
+                        setEditState(null);
                         lastFocusRef.current?.focus();
                       }}
                       className={styles.btnCancelSm}
@@ -762,7 +775,7 @@ export default function CasesTab({
               )}
             </div>
 
-            {expandedPath === c.path && editingPath !== c.path && (
+            {expandedPath === c.path && editState?.path !== c.path && (
               <div className={styles.expandedPanel}>
                 {bodyLoading ? (
                   <p className={styles.expandedLoading} role="status">
