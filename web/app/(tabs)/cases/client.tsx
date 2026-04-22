@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, Suspense } from "react";
+import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
 import { useRepoId } from "@/hooks/useRepoId";
@@ -23,6 +23,7 @@ function CasesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [repoId] = useRepoId();
+  const [, startTransition] = useTransition();
 
   const initialSearch = searchParams.get("q") ?? "";
   const initialPriorityFilter =
@@ -56,9 +57,11 @@ function CasesInner() {
         params.delete("sort");
       }
       const qs = params.toString();
-      router.replace(qs ? `/cases?${qs}` : "/cases", { scroll: false });
+      startTransition(() => {
+        router.replace(qs ? `/cases?${qs}` : "/cases", { scroll: false });
+      });
     },
-    [router, searchParams]
+    [router, searchParams, startTransition]
   );
 
   return (
