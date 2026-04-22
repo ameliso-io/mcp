@@ -691,6 +691,38 @@ describe("OverviewTab", () => {
     expect((bar.firstChild as HTMLElement).style.width).toBe("0%");
   });
 
+  it("progress bar aria-valuetext uses singular 'case' when totalInScope is 1", async () => {
+    const activeRun = makeRunMeta({ id: "run-one", tester: "eve", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 1,
+      highCases: 1,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 1,
+      suiteCount: 0,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "run-one",
+          tester: "eve",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 1,
+          totalInScope: 1,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuetext", "0 of 1 case complete");
+  });
+
   it("UNSPECIFIED status sorts after PASSED in coverage list (default branch)", async () => {
     // statusSortOrder returns 5 for UNSPECIFIED (default case), PASSED returns 4.
     // So PASSED entries must appear before UNSPECIFIED in the rendered list.
