@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, useTransition, useDeferredValue } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useTransition,
+  useDeferredValue,
+} from "react";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
@@ -685,7 +693,7 @@ export default function RunsTab({
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <ul className={styles.resultList} role="list" aria-busy={isResultsStale}>
+                      <ul className={isResultsStale ? `${styles.resultList} ${styles.resultListStale}` : styles.resultList} role="list" aria-busy={isResultsStale}>
                         {deferredFilteredResults.map((r) => {
                           const caseEntry = caseTitleMap.get(r.casePath);
                           return (
