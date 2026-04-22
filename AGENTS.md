@@ -60,7 +60,7 @@ Available tools:
 | `update_suite` | Patch-style update: all fields optional — omit any to keep existing value. Pass `cases` to replace the full case list (including empty to clear all). |
 | `delete_suite` | Delete a suite file |
 | `bulk_record_results` | Record multiple case results in one call; returns per-result confirmation + progress |
-| `get_affected_cases` | Cases that may need re-running based on git changes; shows title/priority/tags |
+| `get_affected_cases` | Cases that may need re-running based on git changes; pass `since_ref` (GitHub) or `changed_files` (local `git diff --name-only` output) |
 | `get_pending_cases` | Cases in a run's scope with no result yet; sorted high→medium→low priority |
 | `list_repositories` | List all connected GitHub repos and their `repo_id` values — use this first if `repo_id` is unknown |
 | `sync_repository` | Force a full re-sync of all case files from GitHub — use after pushing case changes when you can't wait for the webhook |
@@ -133,9 +133,9 @@ ameliso suites delete smoke --json                     # machine-readable: { fil
 ameliso coverage
 ameliso coverage --status never
 ameliso coverage --json          # machine-readable JSON: { run_count, entries[] }
-ameliso affected
+ameliso affected --since HEAD~10           # GitHub-backed: compare via GitHub API
 ameliso affected --json          # machine-readable JSON: { reason, cases[] }
-ameliso affected --since HEAD~10
+ameliso affected --files "$(git diff --name-only HEAD~10 | tr '\n' ',')"  # local git: no GitHub needed
 ameliso status --repo-id owner/repo
 ameliso status --repo-id owner/repo --json  # machine-readable JSON: { cases, coverage, active_runs[] }
 
