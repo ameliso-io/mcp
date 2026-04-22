@@ -63,3 +63,52 @@ pub async fn remove(pool: &PgPool, id: &str) -> anyhow::Result<()> {
         .map_err(map_db)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::postgres::PgPoolOptions;
+
+    fn lazy_pool() -> PgPool {
+        PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
+            .expect("lazy pool")
+    }
+
+    fn sample_repo() -> StoredRepo {
+        StoredRepo {
+            id: "owner/repo".to_owned(),
+            name: "repo".to_owned(),
+            full_name: "owner/repo".to_owned(),
+            html_url: "https://github.com/owner/repo".to_owned(),
+            installation_id: "inst-1".to_owned(),
+            added_at: "2026-04-21T00:00:00Z".to_owned(),
+        }
+    }
+
+    #[tokio::test]
+    async fn load_returns_db_error_when_no_connection() {
+        let err = load(&lazy_pool()).await.unwrap_err();
+        assert!(err.to_string().contains("pool") || !err.to_string().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_returns_db_error_when_no_connection() {
+        let err = get(&lazy_pool(), "owner/repo").await.unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[tokio::test]
+    async fn add_or_update_returns_db_error_when_no_connection() {
+        let err = add_or_update(&lazy_pool(), &sample_repo())
+            .await
+            .unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[tokio::test]
+    async fn remove_returns_db_error_when_no_connection() {
+        let err = remove(&lazy_pool(), "owner/repo").await.unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+}
