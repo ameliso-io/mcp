@@ -91,6 +91,7 @@ ameliso cases delete auth/login
 # Runs
 ameliso runs list
 ameliso runs list --status in-progress
+ameliso runs list --json             # machine-readable JSON array of run objects
 ameliso runs get 2026-04-21-smoke
 ameliso runs create smoke --tester alice --environment staging
 ameliso runs record 2026-04-21-smoke auth/login passed --notes "Worked on Chrome"
@@ -100,6 +101,7 @@ ameliso runs pending 2026-04-21-smoke
 
 # Suites
 ameliso suites list
+ameliso suites list --json           # machine-readable JSON array of suite objects
 ameliso suites get smoke
 ameliso suites create smoke --name "Smoke Suite" --cases auth/login,billing/checkout
 ameliso suites update smoke --cases auth/login,billing/checkout,payments/refund  # patch: change only cases

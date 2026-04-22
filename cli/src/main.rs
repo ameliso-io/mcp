@@ -210,6 +210,8 @@ enum RunsCmd {
             help = "Filter by status: in-progress | completed | aborted"
         )]
         status: Option<String>,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Show a single run with results")]
     Get {
@@ -283,6 +285,8 @@ enum SuitesCmd {
     List {
         #[arg(long, env = "AMELISO_REPO_ID")]
         repo_id: String,
+        #[arg(long, help = "Output as JSON")]
+        json: bool,
     },
     #[command(about = "Show a single suite")]
     Get {
@@ -518,7 +522,7 @@ async fn run_cases(channel: Channel, cmd: CasesCmd) -> Result<()> {
 async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
     let mut c = client(channel);
     match cmd {
-        RunsCmd::List { repo_id, status } => {
+        RunsCmd::List { repo_id, status, json } => {
             let status_i32 = status
                 .as_deref()
                 .map(run_status_str_to_i32)
@@ -532,7 +536,22 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
                 .map_err(grpc_err)?
                 .into_inner()
                 .runs;
-            if runs.is_empty() {
+            if json {
+                let arr: Vec<_> = runs
+                    .iter()
+                    .map(|r| {
+                        serde_json::json!({
+                            "id": r.id,
+                            "date": r.date,
+                            "tester": r.tester,
+                            "status": run_status_i32_to_str(r.status),
+                            "suite": r.suite,
+                            "environment": r.environment,
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&arr)?);
+            } else if runs.is_empty() {
                 println!("No runs found.");
             } else {
                 for r in &runs {
@@ -860,14 +879,27 @@ async fn run_runs(channel: Channel, cmd: RunsCmd) -> Result<()> {
 async fn run_suites(channel: Channel, cmd: SuitesCmd) -> Result<()> {
     let mut c = client(channel);
     match cmd {
-        SuitesCmd::List { repo_id } => {
+        SuitesCmd::List { repo_id, json } => {
             let suites = c
                 .list_suites(pb::ListSuitesRequest { repo_id })
                 .await
                 .map_err(grpc_err)?
                 .into_inner()
                 .suites;
-            if suites.is_empty() {
+            if json {
+                let arr: Vec<_> = suites
+                    .iter()
+                    .map(|s| {
+                        serde_json::json!({
+                            "slug": s.slug,
+                            "name": s.name,
+                            "description": s.description,
+                            "cases": s.cases,
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&arr)?);
+            } else if suites.is_empty() {
                 println!("No suites found.");
             } else {
                 for s in &suites {
@@ -1463,6 +1495,32 @@ mod tests {
             assert_eq!(slug, "smoke");
             assert_eq!(name, "Smoke Tests");
             assert_eq!(cases, "auth/login,auth/logout");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_runs_list_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "runs", "list", "--repo-id", "owner/repo", "--json",
+        ])
+        .expect("should parse");
+        if let Commands::Runs(RunsCmd::List { json, .. }) = cli.command {
+            assert!(json);
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_suites_list_json_flag_set() {
+        let cli = Cli::try_parse_from([
+            "ameliso", "suites", "list", "--repo-id", "owner/repo", "--json",
+        ])
+        .expect("should parse");
+        if let Commands::Suites(SuitesCmd::List { json, .. }) = cli.command {
+            assert!(json);
         } else {
             panic!("wrong variant");
         }
