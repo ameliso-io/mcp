@@ -9,7 +9,6 @@ import { useAnnounce } from "@/hooks/useAnnounce";
 
 interface Props {
   onRepoSelect: (id: string) => void;
-  activeRepoId: string;
   installationId?: string | undefined;
   setupAction?: string | undefined;
   onInstallationHandled?: (() => void) | undefined;
@@ -19,7 +18,6 @@ interface Props {
 
 export default function RepositoriesTab({
   onRepoSelect,
-  activeRepoId,
   installationId,
   setupAction,
   onInstallationHandled,
@@ -37,7 +35,7 @@ export default function RepositoriesTab({
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
-  const prevActiveRef = useRef(activeRepoId);
+
   const prevFilterCountRef = useRef<number | null>(null);
 
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -130,17 +128,6 @@ export default function RepositoriesTab({
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    if (activeRepoId === prevActiveRef.current) return;
-    prevActiveRef.current = activeRepoId;
-    if (activeRepoId) {
-      const repo = repos.find((r) => r.id === activeRepoId);
-      if (repo) announce(`${repo.fullName} selected`);
-    } else {
-      announce("Repository deselected");
-    }
-  }, [activeRepoId, repos, announce]);
 
   async function handleSync(id: string) {
     setSyncing(id);
@@ -307,14 +294,12 @@ export default function RepositoriesTab({
 
       <ul aria-busy={loading} role="list" className={styles.repoList}>
         {filteredRepos.map((repo) => {
-          const isActive = activeRepoId === repo.id;
           return (
-            <li key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
+            <li key={repo.id} className={styles.repoCard}>
               <div className={styles.repoRow}>
                 <div className={styles.repoInfo}>
                   <div className={styles.repoNameRow}>
                     <span className={styles.repoName}>{repo.fullName}</span>
-                    {isActive && <span className={styles.badgeActive}>Active</span>}
                   </div>
                   <div className={styles.repoUrl}>
                     <a
@@ -328,27 +313,15 @@ export default function RepositoriesTab({
                   </div>
                 </div>
                 <div className={styles.repoActions}>
-                  {!isActive ? (
-                    <button
-                      type="button"
-                      className={styles.btnPrimary}
-                      onClick={() => {
-                        onRepoSelect(repo.id);
-                      }}
-                    >
-                      Use
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className={styles.btnOutline}
-                      onClick={() => {
-                        onRepoSelect("");
-                      }}
-                    >
-                      Deselect
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className={styles.btnPrimary}
+                    onClick={() => {
+                      onRepoSelect(repo.id);
+                    }}
+                  >
+                    Use
+                  </button>
                   <button
                     type="button"
                     className={styles.btnSecondary}

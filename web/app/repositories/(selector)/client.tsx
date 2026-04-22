@@ -55,7 +55,6 @@ function RepositoriesInner() {
 
   return (
     <RepositoriesTab
-      activeRepoId=""
       onRepoSelect={handleRepoSelect}
       installationId={installationId}
       setupAction={setupAction}
