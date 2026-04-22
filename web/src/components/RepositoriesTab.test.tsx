@@ -42,7 +42,10 @@ describe("RepositoriesTab", () => {
 
   it("shows Connect GitHub Repo link when configured", async () => {
     vi.mocked(client.getGitHubInstallUrl).mockResolvedValue(
-      makeGetGitHubInstallUrlResponse({ url: "https://github.com/apps/ameliso/install", configured: true })
+      makeGetGitHubInstallUrlResponse({
+        url: "https://github.com/apps/ameliso/install",
+        configured: true,
+      })
     );
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getByText("+ Connect GitHub Repo")).toBeInTheDocument());
@@ -140,6 +143,17 @@ describe("RepositoriesTab", () => {
     render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
     await waitFor(() => expect(screen.getByText("network error")).toBeInTheDocument());
     await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("network error")).not.toBeInTheDocument();
+  });
+
+  it("retries load when Retry button clicked after error", async () => {
+    vi.mocked(client.listRepositories)
+      .mockRejectedValueOnce(new Error("network error"))
+      .mockResolvedValue(makeListRepositoriesResponse({ repositories: [makeRepo()] }));
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("network error")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.getByText("owner/repo")).toBeInTheDocument());
     expect(screen.queryByText("network error")).not.toBeInTheDocument();
   });
 

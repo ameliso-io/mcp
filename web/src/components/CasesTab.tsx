@@ -274,7 +274,18 @@ export default function CasesTab({
         setCreating(false);
       }
     },
-    [repoId, newPath, newTitle, newDesc, newPriority, newTags, newBody, noFiltersActive, announceAction, load]
+    [
+      repoId,
+      newPath,
+      newTitle,
+      newDesc,
+      newPriority,
+      newTags,
+      newBody,
+      noFiltersActive,
+      announceAction,
+      load,
+    ]
   );
 
   async function handleDelete(casePath: string) {
@@ -544,14 +555,19 @@ export default function CasesTab({
       {error && (
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className={styles.errorDismiss}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
+          <div className={styles.errorActions}>
+            <button type="button" onClick={load} className={styles.errorRetry}>
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className={styles.errorDismiss}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
