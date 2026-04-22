@@ -1,4 +1,4 @@
-import OverviewPageClient from "./client";
+import OverviewTab from "@/components/OverviewTab";
 import { pageMetadata } from "@/lib/metadata";
 
 interface Props {
@@ -16,5 +16,5 @@ export default async function OverviewPage({ params }: Props) {
   const { org, repo } = await params;
   const repoId = `${org}/${repo}`;
   const basePath = `/repositories/${org}/${repo}`;
-  return <OverviewPageClient repoId={repoId} basePath={basePath} />;
+  return <OverviewTab repoId={repoId} basePath={basePath} />;
 }
