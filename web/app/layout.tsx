@@ -5,21 +5,16 @@ import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
   variable: "--font-sans",
   display: "swap",
-  // Enables size-adjust on fallbacks to minimize CLS during font swap
-  fallback: ["system-ui", "sans-serif"],
 });
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#1e293b" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
-  ],
-  interactiveWidget: "resizes-visual",
+  colorScheme: "light",
+  themeColor: "#1e293b",
 };
 
 export const metadata: Metadata = {
@@ -37,7 +32,6 @@ export const metadata: Metadata = {
     description: "Test coverage and quality management",
     type: "website",
     siteName: "Ameliso",
-    locale: "en_US",
   },
   twitter: {
     card: "summary",
@@ -51,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

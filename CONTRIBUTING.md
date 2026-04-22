@@ -2,9 +2,9 @@
 
 Ameliso is a **git-native manual testing management tool**. It reads and writes
 test cases, runs, and results stored as plain Markdown/YAML files in a
-*controlled repository* (typically your project's git repo).
+_controlled repository_ (typically your project's git repo).
 
-The tool itself lives in this repo (`server/`, `mcp/`, `cli/`).
+The tool itself lives in this repo
 The file formats for controlled repositories are defined in [REPO_STRUCTURE.md](REPO_STRUCTURE.md).
 
 Always follow the guidelines at https://github.com/tupe12334/guidelines when contributing.
@@ -17,27 +17,23 @@ cargo build       # build all crates
 ```
 
 Git hooks activate automatically after `pnpm install`:
+
 - `pre-commit`: `make pre-commit` — fmt (Rust + web), clippy, buf lint, web ESLint, cspell
 - `pre-push`: `make pre-push` — fmt-check, build, test, coverage check
 
 ## Project structure
 
-| Directory | Purpose |
-|-----------|---------|
-| `server/` | gRPC server (tonic 0.12). Implements `AmelisoService` (24 RPCs). |
-| `server/proto/` | Protobuf definitions for `AmelisoService`. |
-| `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 24 RPCs as 21 MCP tools. |
-| `cli/` | CLI binary (clap 4). Wraps all RPCs as subcommands. |
-| `web/` | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
+| Directory       | Purpose                                                                            |
+| --------------- | ---------------------------------------------------------------------------------- |
+| `server/`       | gRPC server (tonic 0.12). Implements `AmelisoService` (27 RPCs).                   |
+| `server/proto/` | Protobuf definitions for `AmelisoService`.                                         |
+| `web/`          | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
 
 ## Engineering constraints
 
 - **Language**: Rust for all backend logic. TypeScript only for UI (`web/`).
 - **Service communication**: gRPC only. No REST or WebSocket between services.
 - **Package manager**: `pnpm` only. Never `npm install` or `yarn`.
-- **No logic duplication**: repo logic lives in `server/src/repo.rs`. The `mcp/`
-  and `cli/` crates currently call the gRPC server directly (they are not in the
-  Cargo workspace while the migration from file-based to gRPC-backed is in progress).
 - **No panics**: use `anyhow::Result` and `?`. No `unwrap()` or `expect()` in
   production code paths.
 
@@ -84,7 +80,4 @@ Do not commit generated files from `server/generated/`.
 2. Run `cd server && buf lint && buf generate` — regenerates Rust bindings (via `build.rs`) and TypeScript bindings (`web/src/gen/`). Commit the generated files.
 3. Implement the handler in `server/src/service.rs`.
 4. Add repo logic in `server/src/repo.rs` if needed.
-5. Add a corresponding MCP tool in `mcp/src/main.rs`.
-6. Add a corresponding CLI subcommand in `cli/src/main.rs`.
-7. Add an integration test in `server/tests/integration.rs`.
-8. Update the tool count in `AGENTS.md` and `README.md`.
+5. Add unit tests for the new handler in `server/src/service.rs` (validation tests + passes-validation test).

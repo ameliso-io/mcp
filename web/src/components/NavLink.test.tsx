@@ -53,18 +53,6 @@ describe("NavLink", () => {
     expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
   });
 
-  it('marks /overview link active when pathname is "/"', () => {
-    mockUsePathname.mockReturnValue("/");
-    render(<NavLink href="/overview" label="Overview" />);
-    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
-  });
-
-  it('does not mark non-overview link active when pathname is "/"', () => {
-    mockUsePathname.mockReturnValue("/");
-    render(<NavLink href="/cases" label="Cases" />);
-    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute("aria-current");
-  });
-
   it("sets data-pending on label span when navigation is pending", () => {
     mockUseLinkStatus.mockReturnValue({ pending: true });
     render(<NavLink href="/cases" label="Cases" />);

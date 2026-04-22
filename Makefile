@@ -21,7 +21,7 @@ test:
 	pnpm --filter ameliso-web test:typecheck
 
 coverage-check:
-	cargo llvm-cov -p ameliso-server --fail-under-lines 0
+	cargo llvm-cov -p ameliso-server --fail-under-lines 85
 	pnpm --filter ameliso-web test:coverage
 
 fmt:

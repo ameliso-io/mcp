@@ -1,17 +1,10 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
 import { client } from "@/client";
 import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
-import {
-  makeAffectedCase,
-  makeCoverageEntry,
-  makeGetAffectedCasesResponse,
-  makeGetCoverageReportResponse,
-  makeListRunsResponse,
-  makeRunMeta,
-} from "@/test/factories";
+import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "@/test/factories";
 
 vi.mock("@/client");
 
@@ -46,47 +39,100 @@ const coverageEntries = [
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(client.getCoverageReport).mockResolvedValue(
-    makeGetCoverageReportResponse({ entries: coverageEntries, runCount: 5 })
-  );
-  vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse());
-  vi.mocked(client.getAffectedCases).mockResolvedValue(makeGetAffectedCasesResponse());
+  vi.mocked(client.getCoverageReport).mockResolvedValue({
+    entries: coverageEntries,
+    runCount: 5,
+  } as never);
+  vi.mocked(client.listRuns).mockResolvedValue({ runs: [] } as never);
+  vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: "" } as never);
 });
 
 describe("OverviewTab", () => {
   it("shows helpful empty state when no repo selected", () => {
-    render(<OverviewTab repoId="" />);
+    render(<OverviewTab repoId="" basePath="" />);
     expect(screen.getByText(/No repository selected/i)).toBeInTheDocument();
   });
 
   it("loads and displays stat counts", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("2")).toBeInTheDocument());
     expect(screen.getAllByText("1").length).toBeGreaterThan(0);
   });
 
+  it("shows Blocked and Skipped stat counts", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("a/b", "A", "high", ResultStatus.BLOCKED),
+        makeCovEntry("c/d", "C", "low", ResultStatus.SKIPPED),
+        makeCovEntry("e/f", "E", "medium", ResultStatus.PASSED),
+      ],
+      runCount: 1,
+    } as never);
+    const { container } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
+    await waitFor(() => container.querySelector('[data-stat="Blocked"]'));
+    expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("1");
+    expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("1");
+    expect(container.querySelector('[data-stat="Passed"]')).toHaveTextContent("1");
+  });
+
   it("shows coverage entries with failed first", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("auth/login"));
     const entries = screen.getAllByText(/auth\//);
     expect(entries[0]!.textContent).toBe("auth/logout");
   });
 
   it("shows last run date on coverage entries", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getAllByText("2026-01-01").length).toBeGreaterThan(0));
   });
 
   it("shows active runs panel when in-progress runs exist", async () => {
     const activeRun = makeRunMeta({ id: "run-abc", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [activeRun] }));
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     expect(screen.getByText("run-abc")).toBeInTheDocument();
   });
 
+  it("shows pending count for active runs when getRepoStatus has matching data", async () => {
+    const activeRun = makeRunMeta({ id: "2026-01-01-sprint", tester: "bob", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 5,
+      highCases: 2,
+      mediumCases: 2,
+      lowCases: 1,
+      passed: 3,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 2,
+      suiteCount: 1,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "2026-01-01-sprint",
+          tester: "bob",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 2,
+          totalInScope: 5,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    expect(screen.getByText("3/5 done")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuenow", "3");
+    expect(bar).toHaveAttribute("aria-valuemax", "5");
+  });
+
   it("calls getAffectedCases when Check Diff submitted", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() =>
@@ -97,8 +143,8 @@ describe("OverviewTab", () => {
   });
 
   it('shows "no cases affected" when diff returns empty list', async () => {
-    vi.mocked(client.getAffectedCases).mockResolvedValue(makeGetAffectedCasesResponse());
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: "" } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText(/No cases affected/)).toBeInTheDocument());
@@ -109,10 +155,11 @@ describe("OverviewTab", () => {
       case: { path: "auth/login", title: "User Login", priority: "high" },
       reason: "modified",
     });
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({ cases: [affectedCase] })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [affectedCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("modified")).toBeInTheDocument());
@@ -120,15 +167,18 @@ describe("OverviewTab", () => {
 
   it("renders Go to Runs link pointing to /runs", async () => {
     const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
-    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [activeRun] }));
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Go to Runs"));
-    expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute("href", "/runs");
+    expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute(
+      "href",
+      "/repositories/owner/repo/runs"
+    );
   });
 
   it("shows affectedError when getAffectedCases throws", async () => {
     vi.mocked(client.getAffectedCases).mockRejectedValue(new Error("network error"));
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("network error")).toBeInTheDocument());
@@ -136,7 +186,7 @@ describe("OverviewTab", () => {
 
   it("shows error banner when getCoverageReport fails", async () => {
     vi.mocked(client.getCoverageReport).mockRejectedValue(new Error("coverage failed"));
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("coverage failed")).toBeInTheDocument());
   });
 
@@ -149,10 +199,11 @@ describe("OverviewTab", () => {
       case: { path: "auth/logout", title: "Low Priority", priority: "low" },
       reason: "added",
     });
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({ cases: [lowCase, highCase] })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [lowCase, highCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
@@ -162,10 +213,11 @@ describe("OverviewTab", () => {
   });
 
   it('shows singular "run" when runCount is 1', async () => {
-    vi.mocked(client.getCoverageReport).mockResolvedValue(
-      makeGetCoverageReportResponse({ entries: coverageEntries, runCount: 1 })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: coverageEntries,
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Coverage \(1 run\)/)).toBeInTheDocument());
   });
 
@@ -174,21 +226,38 @@ describe("OverviewTab", () => {
       case: { path: "auth/reset", title: "Medium Priority", priority: "medium" },
       reason: "changed",
     });
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({ cases: [mediumCase] })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [mediumCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("Medium Priority")).toBeInTheDocument());
   });
 
   it('shows "No cases found" when coverage entries are empty', async () => {
-    vi.mocked(client.getCoverageReport).mockResolvedValue(makeGetCoverageReportResponse());
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
       expect(screen.getByText("No cases found in this repository.")).toBeInTheDocument()
     );
+  });
+
+  it("active runs panel not shown when coverage entries empty even with active runs", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-active",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() =>
+      expect(screen.getByText("No cases found in this repository.")).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
   });
 
   it("shows BLOCKED, SKIPPED, NEVER, and UNSPECIFIED status entries in coverage", async () => {
@@ -201,16 +270,14 @@ describe("OverviewTab", () => {
       "low",
       ResultStatus.UNSPECIFIED
     );
-    vi.mocked(client.getCoverageReport).mockResolvedValue(
-      makeGetCoverageReportResponse({
-        entries: [blockedEntry, skippedEntry, neverEntry, unknownEntry],
-        runCount: 3,
-      })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
-    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
-    expect(screen.getByText("Skipped")).toBeInTheDocument();
-    expect(screen.getByText("Never run")).toBeInTheDocument();
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [blockedEntry, skippedEntry, neverEntry, unknownEntry],
+      runCount: 3,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
@@ -223,10 +290,11 @@ describe("OverviewTab", () => {
       case: { path: "other/thing", title: "Unknown Priority", priority: "" },
       reason: "added",
     });
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({ cases: [unknownCase, knownCase] })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [unknownCase, knownCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("High Priority")).toBeInTheDocument());
@@ -240,10 +308,11 @@ describe("OverviewTab", () => {
       case: { path: "auth/login", title: "Known", priority: "high" },
       reason: "modified",
     });
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({ cases: [nullCaseAffected, knownCase] })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [nullCaseAffected, knownCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("Known")).toBeInTheDocument());
@@ -251,16 +320,17 @@ describe("OverviewTab", () => {
 
   it("clears existing poll interval when rerendered with new repoId while active runs exist", async () => {
     const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [activeRun] }));
-    const { rerender } = render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    const { rerender } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     await act(async () => {
-      rerender(<OverviewTab repoId="owner/new-repo" />);
+      rerender(<OverviewTab repoId="owner/new-repo" basePath="/repositories/owner/new-repo" />);
     });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenCalledWith(
-        expect.objectContaining({ repoId: "owner/new-repo" }),
-        expect.anything()
+        expect.objectContaining({ repoId: "owner/new-repo" })
       )
     );
   });
@@ -271,44 +341,43 @@ describe("OverviewTab", () => {
       case: { path: "auth/login", title: "Known2", priority: "high" },
       reason: "modified",
     });
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({ cases: [knownCase, nullCaseAffected] })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [knownCase, nullCaseAffected],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("Known2")).toBeInTheDocument());
   });
 
   it("shows Blocked, Skipped, Never, and Unknown status labels in coverage", async () => {
-    vi.mocked(client.getCoverageReport).mockResolvedValue(
-      makeGetCoverageReportResponse({
-        entries: [
-          makeCovEntry("a", "A", "high", ResultStatus.BLOCKED),
-          makeCovEntry("b", "B", "high", ResultStatus.SKIPPED),
-          makeCovEntry("c", "C", "high", ResultStatus.NEVER),
-          makeCovEntry("d", "D", "high", ResultStatus.UNSPECIFIED),
-        ],
-        runCount: 1,
-      })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
-    await waitFor(() => expect(screen.getByText("Blocked")).toBeInTheDocument());
-    expect(screen.getByText("Skipped")).toBeInTheDocument();
-    expect(screen.getByText("Never run")).toBeInTheDocument();
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("a", "A", "high", ResultStatus.BLOCKED),
+        makeCovEntry("b", "B", "high", ResultStatus.SKIPPED),
+        makeCovEntry("c", "C", "high", ResultStatus.NEVER),
+        makeCovEntry("d", "D", "high", ResultStatus.UNSPECIFIED),
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
   it("dismisses error banner when X button clicked", async () => {
     vi.mocked(client.getCoverageReport).mockRejectedValue(new Error("coverage failed"));
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("coverage failed")).toBeInTheDocument());
     await userEvent.click(screen.getByText("×"));
     expect(screen.queryByText("coverage failed")).not.toBeInTheDocument();
   });
 
   it("sets sinceRef when typing in diff input", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     const sinceInput = screen.getByRole("textbox", { name: /Git ref to compare from/ });
     await userEvent.type(sinceInput, "HEAD~3");
@@ -322,7 +391,7 @@ describe("OverviewTab", () => {
 
   it("dismisses affectedError when X button clicked", async () => {
     vi.mocked(client.getAffectedCases).mockRejectedValue(new Error("diff error"));
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("diff error")).toBeInTheDocument());
@@ -332,45 +401,55 @@ describe("OverviewTab", () => {
   });
 
   it("shows loading state while fetching coverage data", async () => {
-    let resolve!: (v: ReturnType<typeof makeGetCoverageReportResponse>) => void;
+    let resolveCoverage: (v: unknown) => void;
+    let resolveRuns: (v: unknown) => void;
     vi.mocked(client.getCoverageReport).mockReturnValue(
       new Promise((res) => {
-        resolve = res as typeof resolve;
-      })
+        resolveCoverage = res;
+      }) as never
     );
-    vi.mocked(client.listRuns).mockReturnValue(new Promise(() => {}));
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.listRuns).mockReturnValue(
+      new Promise((res) => {
+        resolveRuns = res;
+      }) as never
+    );
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve(makeGetCoverageReportResponse());
+    resolveCoverage!({ entries: [], runCount: 0 });
+    resolveRuns!({ runs: [] });
+    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
   it('shows "Checking…" on Check Diff button while loading', async () => {
-    let resolveAffected!: (v: ReturnType<typeof makeGetAffectedCasesResponse>) => void;
+    let resolveAffected: (v: unknown) => void;
     vi.mocked(client.getAffectedCases).mockReturnValue(
       new Promise((res) => {
-        resolveAffected = res as typeof resolveAffected;
-      })
+        resolveAffected = res;
+      }) as never
     );
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     expect(screen.getByText("Checking…")).toBeInTheDocument();
-    await act(async () => resolveAffected(makeGetAffectedCasesResponse()));
+    resolveAffected!({ cases: [], reason: "" });
+    await waitFor(() => expect(screen.queryByText("Checking…")).not.toBeInTheDocument());
   });
 
   it("unmounts cleanly when polling interval is active", async () => {
     const activeRun = makeRunMeta({ id: "run-unmount", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [activeRun] }));
-    const { unmount } = render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    const { unmount } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     unmount();
   });
 
   it("getCoverageReport call count matches render cycle — poll uses silent=true so no extra announce", async () => {
     const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [activeRun] }));
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     // Spy on announce by verifying only one announcement fires for the initial load
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
       expect(
         screen.getAllByRole("status").some((el) => el.textContent?.includes("2 cases loaded"))
@@ -381,13 +460,11 @@ describe("OverviewTab", () => {
   });
 
   it("announces singular '1 case loaded' when exactly one coverage entry returned", async () => {
-    vi.mocked(client.getCoverageReport).mockResolvedValue(
-      makeGetCoverageReportResponse({
-        entries: [makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED)],
-        runCount: 1,
-      })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED)],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
       expect(
         screen.getAllByRole("status").some((el) => el.textContent?.includes("1 case loaded"))
@@ -396,7 +473,7 @@ describe("OverviewTab", () => {
   });
 
   it("announces plural 'N cases loaded' when multiple coverage entries returned", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
       expect(
         screen.getAllByRole("status").some((el) => el.textContent?.includes("2 cases loaded"))
@@ -405,8 +482,8 @@ describe("OverviewTab", () => {
   });
 
   it("announces 'No cases found' when coverage is empty", async () => {
-    vi.mocked(client.getCoverageReport).mockResolvedValue(makeGetCoverageReportResponse());
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
       expect(
         screen.getAllByRole("status").some((el) => el.textContent?.includes("No cases found"))
@@ -415,14 +492,11 @@ describe("OverviewTab", () => {
   });
 
   it("announces singular '1 case affected' when exactly one affected case returned", async () => {
-    vi.mocked(client.getAffectedCases).mockResolvedValue(
-      makeGetAffectedCasesResponse({
-        cases: [
-          makeAffectedCase({ case: { path: "auth/login", title: "Login", priority: "high" } }),
-        ],
-      })
-    );
-    render(<OverviewTab repoId="owner/repo" />);
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [makeAffectedCase({ case: { path: "auth/login", title: "Login", priority: "high" } })],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() =>
@@ -433,7 +507,7 @@ describe("OverviewTab", () => {
   });
 
   it("announces 'No cases affected' when diff returns no cases", async () => {
-    render(<OverviewTab repoId="owner/repo" />);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() =>
@@ -443,39 +517,247 @@ describe("OverviewTab", () => {
     );
   });
 
-  it("discards stale getCoverageReport response when repoId changes before first load resolves", async () => {
-    let resolveFirst!: (v: ReturnType<typeof makeGetCoverageReportResponse>) => void;
-    let resolveSecond!: (v: ReturnType<typeof makeGetCoverageReportResponse>) => void;
-    const newEntry = makeCovEntry("new/feature", "New Feature", "medium", ResultStatus.NEVER);
+  it("does not show lastRunDate when it is empty", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        {
+          ...makeCovEntry("auth/login", "User Login", "high", ResultStatus.PASSED),
+          lastRunDate: "",
+        },
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    expect(screen.queryByText("2026-01-01")).not.toBeInTheDocument();
+  });
 
-    vi.mocked(client.getCoverageReport)
-      .mockImplementationOnce(
-        () =>
-          new Promise((res) => {
-            resolveFirst = res as typeof resolveFirst;
-          })
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise((res) => {
-            resolveSecond = res as typeof resolveSecond;
-          })
-      );
-    vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse());
+  it("shows plural runs in Coverage heading", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Coverage \(5 runs\)/)).toBeInTheDocument());
+  });
 
-    const { rerender } = render(<OverviewTab repoId="owner/repo" />);
-    await act(async () => {
-      rerender(<OverviewTab repoId="owner/repo2" />);
+  it('shows "auto-refresh 30s" label in active runs panel', async () => {
+    const activeRun = makeRunMeta({ id: "run-ar", tester: "dave", suite: "", date: "2026-03-01" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/auto-refresh 30s/)).toBeInTheDocument());
+  });
+
+  it("shows non-zero Never Run stat when entries include never-run cases", async () => {
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [makeCovEntry("auth/never", "NeverCase", "low", ResultStatus.NEVER)],
+      runCount: 2,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Never Run")).toBeInTheDocument());
+    // stat card shows "1" for Never Run count
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+  });
+
+  it("shows suite badge and tester in active runs panel", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-badge",
+      tester: "carol",
+      suite: "e2e",
+      date: "2026-02-01",
     });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("e2e")).toBeInTheDocument());
+    expect(screen.getByText("carol")).toBeInTheDocument();
+    expect(screen.getByText("2026-02-01")).toBeInTheDocument();
+  });
 
-    resolveSecond(makeGetCoverageReportResponse({ entries: [newEntry], runCount: 1 }));
-    await waitFor(() => screen.getByText("new/feature"));
+  it("polling timer callback triggers reload when active runs present", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-timer",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    let capturedCallback: (() => void) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    expect(capturedCallback).not.toBeNull();
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    expect(client.getCoverageReport).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
 
-    await act(async () =>
-      resolveFirst(makeGetCoverageReportResponse({ entries: coverageEntries, runCount: 5 }))
+  it("Go to Runs button not shown when onGoToRuns prop is not provided", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-no-goto",
+      tester: "alice",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Go to Runs" })).not.toBeInTheDocument();
+  });
+
+  it("does not show suite badge or tester span when active run has empty suite and tester", async () => {
+    const bareRun = makeRunMeta({ id: "run-bare", tester: "", suite: "", date: "2026-04-01" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [bareRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("run-bare")).toBeInTheDocument());
+    // suite badge and tester span are conditionally rendered — must be absent
+    expect(screen.queryByText("smoke")).not.toBeInTheDocument();
+    expect(screen.queryByText("alice")).not.toBeInTheDocument();
+  });
+
+  it("polling timer callback shows error banner when load fails", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-poll-err",
+      tester: "bob",
+      suite: "smoke",
+      date: "2026-01-01",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getCoverageReport)
+      .mockResolvedValueOnce({ entries: coverageEntries, runCount: 5 } as never)
+      .mockRejectedValueOnce(new Error("poll error"));
+    let capturedCallback: (() => void) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => void;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    await waitFor(() => expect(screen.getByText("poll error")).toBeInTheDocument());
+    spy.mockRestore();
+  });
+
+  it("active runs panel not shown when coverage entries exist but no active runs", async () => {
+    // default mocks: entries=[2 entries], listRuns=[] — activeRuns is empty
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // active runs panel only shown when activeRuns.length > 0
+    expect(screen.queryByText(/Active Runs/)).not.toBeInTheDocument();
+  });
+
+  it("progress bar renders 0% width when totalInScope is zero", async () => {
+    const activeRun = makeRunMeta({ id: "run-zero", tester: "eve", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "run-zero",
+          tester: "eve",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 0,
+          totalInScope: 0,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    expect(screen.getByText("0/0 done")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuemax", "0");
+    expect((bar.firstChild as HTMLElement).style.width).toBe("0%");
+  });
+
+  it("UNSPECIFIED status sorts after PASSED in coverage list (default branch)", async () => {
+    // statusSortOrder returns 5 for UNSPECIFIED (default case), PASSED returns 4.
+    // So PASSED entries must appear before UNSPECIFIED in the rendered list.
+    vi.mocked(client.getCoverageReport).mockResolvedValue({
+      entries: [
+        makeCovEntry("auth/reset", "Reset", "high", ResultStatus.UNSPECIFIED),
+        makeCovEntry("auth/login", "Login", "high", ResultStatus.PASSED),
+      ],
+      runCount: 1,
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("Login")).toBeInTheDocument());
+    // PASSED (Login) must appear before UNSPECIFIED (Reset) in DOM — sort order 4 < 5.
+    const body = document.body.innerHTML;
+    expect(body.indexOf("Login")).toBeLessThan(body.indexOf("Reset"));
+  });
+
+  it("shows all six stat card labels and zero counts for absent statuses", async () => {
+    // default entries: 1 PASSED + 1 FAILED — no NEVER/BLOCKED/SKIPPED entries
+    const { container } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
     );
+    await waitFor(() => expect(screen.getByText("Total Cases")).toBeInTheDocument());
+    // stat card labels appear (may also appear in coverage list — use getAllByText)
+    expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Failed").length).toBeGreaterThan(0);
+    expect(screen.getByText("Never Run")).toBeInTheDocument();
+    // statNever = statBlocked = statSkipped = 0 since no such entries in default data
+    expect(container.querySelector('[data-stat="Never Run"]')).toHaveTextContent("0");
+    expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("0");
+    expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("0");
+  });
 
-    expect(screen.queryByText("auth/login")).not.toBeInTheDocument();
-    expect(screen.getByText("new/feature")).toBeInTheDocument();
+  it("filter select defaults to All statuses and triggers reload with statusFilter when changed", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    expect(select).toHaveValue(String(ResultStatus.UNSPECIFIED));
+    // Change to Failed filter
+    fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ statusFilter: ResultStatus.FAILED })
+      )
+    );
+  });
+
+  it("resets coverage filter to All statuses when repoId changes", async () => {
+    const { rerender } = render(
+      <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    // Set filter to FAILED
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
+    expect(select).toHaveValue(String(ResultStatus.FAILED));
+    // Switch to a different repo
+    rerender(<OverviewTab repoId="other/repo" basePath="/repositories/other/repo" />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "Filter coverage by status" })
+      ).toHaveValue(String(ResultStatus.UNSPECIFIED))
+    );
+    // Reload should use UNSPECIFIED filter for the new repo
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED })
+      )
+    );
   });
 });

@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useDeferredValue } from "react";
+import type { Route } from "next";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import styles from "./SuitesTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
-import styles from "./SuitesTab.module.css";
 
 interface Props {
   repoId: string;
-  initialExpanded?: string | undefined;
+  basePath: string;
+  initialExpanded?: string;
   onExpandedChange?: (slug: string | null) => void;
 }
 
-export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }: Props) {
+export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
-  const deferredSuites = useDeferredValue(suites);
-  const isSuitesStale = suites !== deferredSuites;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -34,11 +34,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
-  const loadIdRef = useRef(0);
-  const loadAbortRef = useRef<AbortController | null>(null);
   const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
-  const toggleExpandRef = useRef<(slug: string) => void>(() => {});
+  const toggleExpandRef = useRef<(slug: string) => void>((_slug: string) => undefined);
   useEffect(() => {
     onExpandedChangeRef.current = onExpandedChange;
     toggleExpandRef.current = toggleExpand;
@@ -51,6 +49,7 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editCases, setEditCases] = useState("");
+  const [editNewSlug, setEditNewSlug] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function toggleExpand(slug: string) {
@@ -82,42 +81,26 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
     setEditName(suite.name);
     setEditDesc(suite.description);
     setEditCases(suite.cases.join(", "));
+    setEditNewSlug("");
   }
 
   const load = useCallback(async () => {
     if (!repoId) return;
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
-    const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listSuites({ repoId }, { signal });
-      /* v8 ignore next 1 — race guard, covered by stale load test */
-      if (id !== loadIdRef.current) return;
+      const res = await client.listSuites({ repoId });
       setSuites(res.suites);
     } catch (e) {
-      if (signal.aborted) return;
-      /* v8 ignore next 1 — race guard */
-      if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
-      /* v8 ignore next 1 — race guard */
-      if (!signal.aborted && id === loadIdRef.current) setLoading(false);
+      setLoading(false);
     }
   }, [repoId]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    return () => {
-      loadAbortRef.current?.abort();
-    };
-  }, []);
 
   // Auto-expand suite from URL param after first load
   useEffect(() => {
@@ -129,101 +112,84 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
     }
   }, [suites]);
 
-  const handleCreate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      /* v8 ignore next 2 — required fields prevent submission when blank */
-      if (!repoId || !newSlug || !newName) return;
-      setCreating(true);
-      try {
-        const res = await client.createSuite({
-          repoId,
-          slug: newSlug,
-          name: newName,
-          description: newDesc,
-          cases: newCases
-            ? newCases
-                .split(",")
-                .map((c) => c.trim())
-                .filter(Boolean)
-            : [],
-        });
-        if (res.suite) {
-          const created = res.suite;
-          setSuites((prev) =>
-            prev.some((s) => s.slug === created.slug)
-              ? prev.map((s) => (s.slug === created.slug ? created : s))
-              : [...prev, created]
-          );
-        }
-        setShowCreate(false);
-        lastFocusRef.current?.focus();
-        setNewSlug("");
-        setNewName("");
-        setNewDesc("");
-        setNewCases("");
-        announce("Suite created");
-      } catch (e) {
-        setError(errorMessage(e));
-      } finally {
-        setCreating(false);
-      }
-    },
-    [repoId, newSlug, newName, newDesc, newCases, announce]
-  );
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
+    if (!repoId || !newSlug || !newName) return;
+    setCreating(true);
+    try {
+      await client.createSuite({
+        repoId,
+        slug: newSlug,
+        name: newName,
+        description: newDesc,
+        cases: newCases
+          ? newCases
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : [],
+      });
+      setShowCreate(false);
+      lastFocusRef.current?.focus();
+      setNewSlug("");
+      setNewName("");
+      setNewDesc("");
+      setNewCases("");
+      announce("Suite created");
+      load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setCreating(false);
+    }
+  }
 
   async function handleDelete(slug: string) {
     try {
       await client.deleteSuite({ repoId, slug });
-      setSuites((prev) => prev.filter((s) => s.slug !== slug));
       if (expanded === slug) setExpanded(null);
       setConfirmingDelete(null);
       announce("Suite deleted");
+      load();
     } catch (e) {
       setError(errorMessage(e));
     }
   }
 
-  const handleUpdate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      /* v8 ignore next 2 — form only renders when editingSlug is set */
-      if (!editingSlug) return;
-      setSaving(true);
-      try {
-        const res = await client.updateSuite({
-          repoId,
-          slug: editingSlug,
-          name: editName,
-          description: editDesc,
-          cases: editCases
-            ? editCases
-                .split(",")
-                .map((c) => c.trim())
-                .filter(Boolean)
-            : [],
-          replaceCases: true,
-        });
-        if (res.suite)
-          setSuites((prev) => prev.map((s) => (s.slug === editingSlug ? res.suite! : s)));
-        setEditingSlug(null);
-        lastFocusRef.current?.focus();
-        announce("Suite updated");
-      } catch (e) {
-        setError(errorMessage(e));
-      } finally {
-        setSaving(false);
-      }
-    },
-    [editingSlug, repoId, editName, editDesc, editCases, announce]
-  );
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingSlug is set */
+    if (!editingSlug) return;
+    setSaving(true);
+    try {
+      await client.updateSuite({
+        repoId,
+        slug: editingSlug,
+        name: editName,
+        description: editDesc,
+        cases: editCases
+          ? editCases
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : [],
+        replaceCases: true,
+        newSlug: editNewSlug,
+      });
+      setEditingSlug(null);
+      lastFocusRef.current?.focus();
+      announce("Suite updated");
+      load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (!repoId) {
-    return (
-      <div className={styles.noRepo}>
-        Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
-      </div>
-    );
+    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
 
   return (
@@ -265,13 +231,13 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                 Slug
                 <input
                   value={newSlug}
-                  onChange={(e) => setNewSlug(e.target.value)}
+                  onChange={(e) => {
+                    setNewSlug(e.target.value);
+                  }}
                   required
                   autoFocus
                   className={styles.input}
                   placeholder="e.g. smoke"
-                  autoComplete="off"
-                  spellCheck={false}
                 />
               </label>
             </div>
@@ -280,7 +246,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                 Name
                 <input
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  onChange={(e) => {
+                    setNewName(e.target.value);
+                  }}
                   required
                   className={styles.input}
                   placeholder="e.g. Smoke Tests"
@@ -292,7 +260,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                 Description
                 <input
                   value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
+                  onChange={(e) => {
+                    setNewDesc(e.target.value);
+                  }}
                   className={styles.input}
                 />
               </label>
@@ -302,11 +272,11 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                 Cases (comma-separated paths)
                 <input
                   value={newCases}
-                  onChange={(e) => setNewCases(e.target.value)}
+                  onChange={(e) => {
+                    setNewCases(e.target.value);
+                  }}
                   className={styles.input}
                   placeholder="auth/login, auth/logout"
-                  autoComplete="off"
-                  spellCheck={false}
                 />
               </label>
             </div>
@@ -322,19 +292,16 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
       {error && (
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
-          <div className={styles.errorActions}>
-            <button type="button" onClick={load} className={styles.errorRetry}>
-              Retry
-            </button>
-            <button
-              type="button"
-              onClick={() => setError(null)}
-              className={styles.errorDismiss}
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+            }}
+            className={styles.errorDismiss}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -344,16 +311,12 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
         </div>
       )}
 
-      {!loading && deferredSuites.length === 0 && !error && (
+      {!loading && suites.length === 0 && !error && (
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
-      <ul
-        className={isSuitesStale ? `${styles.list} ${styles.listStale}` : styles.list}
-        aria-busy={loading || isSuitesStale || undefined}
-        role="list"
-      >
-        {deferredSuites.map((suite) => (
+      <ul className={styles.list} aria-busy={loading} role="list">
+        {suites.map((suite) => (
           <li key={suite.slug}>
             {editingSlug === suite.slug ? (
               <div className={styles.card}>
@@ -375,7 +338,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                       Name
                       <input
                         value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
+                        onChange={(e) => {
+                          setEditName(e.target.value);
+                        }}
                         required
                         autoFocus
                         className={styles.input}
@@ -387,7 +352,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                       Description
                       <input
                         value={editDesc}
-                        onChange={(e) => setEditDesc(e.target.value)}
+                        onChange={(e) => {
+                          setEditDesc(e.target.value);
+                        }}
                         className={styles.input}
                       />
                     </label>
@@ -397,10 +364,23 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                       Cases (comma-separated paths)
                       <input
                         value={editCases}
-                        onChange={(e) => setEditCases(e.target.value)}
+                        onChange={(e) => {
+                          setEditCases(e.target.value);
+                        }}
                         className={styles.input}
-                        autoComplete="off"
-                        spellCheck={false}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.label}>
+                      Rename slug (optional)
+                      <input
+                        value={editNewSlug}
+                        onChange={(e) => {
+                          setEditNewSlug(e.target.value);
+                        }}
+                        className={styles.input}
+                        placeholder="leave blank to keep current slug"
                       />
                     </label>
                   </div>
@@ -440,7 +420,7 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                       </span>
                     </button>
                     <Link
-                      href={`/runs?suite=${encodeURIComponent(suite.slug)}`}
+                      href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route}
                       aria-label={`Run ${suite.slug}`}
                       className={styles.btnGreenSm}
                     >
@@ -448,7 +428,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                     </Link>
                     <button
                       type="button"
-                      onClick={() => startEdit(suite)}
+                      onClick={() => {
+                        startEdit(suite);
+                      }}
                       aria-label={`Edit ${suite.slug}`}
                       className={styles.btnOutlineSm}
                     >
@@ -467,7 +449,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                         </button>
                         <button
                           type="button"
-                          onClick={() => setConfirmingDelete(null)}
+                          onClick={() => {
+                            setConfirmingDelete(null);
+                          }}
                           aria-label="Cancel delete"
                           className={styles.btnOutlineSm}
                           autoFocus
@@ -478,7 +462,9 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setConfirmingDelete(suite.slug)}
+                        onClick={() => {
+                          setConfirmingDelete(suite.slug);
+                        }}
                         aria-label={`Delete ${suite.slug}`}
                         className={styles.btnDangerSm}
                       >
@@ -490,7 +476,7 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
                 </div>
 
                 {expanded === suite.slug && (
-                  <div className={styles.expandedPanel} aria-busy={expandedCasesLoading}>
+                  <div className={styles.expandedPanel}>
                     {expandedCasesLoading ? (
                       <p className={styles.expandedLoading} role="status">
                         Loading…

@@ -604,6 +604,75 @@
   font-size: 12px;
 }
 
+.btnOutlineSm {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btnOutlineSm:hover {
+  background: var(--color-surface);
+}
+
+.btnSaveSm {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btnSaveSm:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btnCancelSm {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btnCancelSm:hover {
+  background: var(--color-surface);
+}
+
+.renameForm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.renamePrefix {
+  font-size: 13px;
+  color: var(--color-muted);
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.renameInput {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
 .btnDangerSm:hover {
   background: var(--color-danger-bg);
 }

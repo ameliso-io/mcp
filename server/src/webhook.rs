@@ -54,6 +54,30 @@ fn is_case_file(path: &str) -> bool {
     path.starts_with("cases/") && path.ends_with(".md")
 }
 
+fn collect_case_changes(
+    commits: &[Commit],
+) -> (
+    std::collections::HashSet<String>,
+    std::collections::HashSet<String>,
+) {
+    let mut upsert: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut remove: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for commit in commits {
+        for path in commit.added.iter().chain(commit.modified.iter()) {
+            if is_case_file(path) {
+                upsert.insert(path.clone());
+            }
+        }
+        for path in &commit.removed {
+            if is_case_file(path) {
+                upsert.remove(path);
+                remove.insert(path.clone());
+            }
+        }
+    }
+    (upsert, remove)
+}
+
 pub async fn github_push(
     State(state): State<Arc<WebhookState>>,
     headers: HeaderMap,
@@ -79,22 +103,7 @@ pub async fn github_push(
 
     let repo_id = payload.repository.full_name.clone();
 
-    let mut upsert: std::collections::HashSet<String> = std::collections::HashSet::new();
-    let mut remove: std::collections::HashSet<String> = std::collections::HashSet::new();
-
-    for commit in &payload.commits {
-        for path in commit.added.iter().chain(commit.modified.iter()) {
-            if is_case_file(path) {
-                upsert.insert(path.clone());
-            }
-        }
-        for path in &commit.removed {
-            if is_case_file(path) {
-                upsert.remove(path);
-                remove.insert(path.clone());
-            }
-        }
-    }
+    let (upsert, remove) = collect_case_changes(&payload.commits);
 
     if upsert.is_empty() && remove.is_empty() {
         return (StatusCode::OK, "no case files changed");
@@ -179,6 +188,16 @@ async fn process_upsert(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::body::Bytes;
+    use axum::extract::State;
+    use axum::response::IntoResponse;
+    use std::sync::Arc;
+
+    fn lazy_pool() -> sqlx::PgPool {
+        sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
+            .unwrap()
+    }
 
     #[test]
     fn verify_signature_valid() {
@@ -238,5 +257,121 @@ mod tests {
         assert!(!is_case_file("runs/2026-01-01.md"));
         assert!(!is_case_file("cases/auth/login.txt"));
         assert!(!is_case_file("README.md"));
+    }
+
+    fn commit(added: &[&str], modified: &[&str], removed: &[&str]) -> Commit {
+        Commit {
+            added: added.iter().map(|s| s.to_string()).collect(),
+            modified: modified.iter().map(|s| s.to_string()).collect(),
+            removed: removed.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn collect_case_changes_added_case_goes_to_upsert() {
+        let commits = vec![commit(&["cases/auth/login.md"], &[], &[])];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.contains("cases/auth/login.md"));
+        assert!(remove.is_empty());
+    }
+
+    #[test]
+    fn collect_case_changes_modified_case_goes_to_upsert() {
+        let commits = vec![commit(&[], &["cases/auth/login.md"], &[])];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.contains("cases/auth/login.md"));
+        assert!(remove.is_empty());
+    }
+
+    #[test]
+    fn collect_case_changes_removed_case_goes_to_remove() {
+        let commits = vec![commit(&[], &[], &["cases/auth/login.md"])];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.is_empty());
+        assert!(remove.contains("cases/auth/login.md"));
+    }
+
+    #[test]
+    fn collect_case_changes_non_case_files_ignored() {
+        let commits = vec![commit(&["src/main.rs", "README.md"], &[], &[])];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.is_empty());
+        assert!(remove.is_empty());
+    }
+
+    #[test]
+    fn collect_case_changes_add_then_remove_lands_in_remove_only() {
+        let commits = vec![
+            commit(&["cases/auth/login.md"], &[], &[]),
+            commit(&[], &[], &["cases/auth/login.md"]),
+        ];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(!upsert.contains("cases/auth/login.md"));
+        assert!(remove.contains("cases/auth/login.md"));
+    }
+
+    #[test]
+    fn collect_case_changes_empty_commits_returns_empty() {
+        let (upsert, remove) = collect_case_changes(&[]);
+        assert!(upsert.is_empty());
+        assert!(remove.is_empty());
+    }
+
+    #[tokio::test]
+    async fn github_push_no_case_files_changed_returns_ok() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(r#"{"commits":[],"repository":{"full_name":"owner/repo"}}"#);
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn github_push_invalid_json_returns_bad_request() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from_static(b"not json at all");
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn github_push_missing_signature_returns_unauthorized() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: Some("test-secret".to_owned()),
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(r#"{"commits":[],"repository":{"full_name":"owner/repo"}}"#);
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn github_push_case_file_added_no_db_returns_internal_error() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(
+            r#"{"commits":[{"added":["cases/auth/login.md"],"modified":[],"removed":[]}],"repository":{"full_name":"owner/repo"}}"#,
+        );
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

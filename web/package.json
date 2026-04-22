@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "next dev --port 5173",
     "build": "next build",
@@ -13,8 +14,8 @@
     "test:typecheck": "tsc --project tsconfig.test.json --noEmit",
     "test:coverage": "vitest run --coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "lint": "npx eslint src/ app/ middleware.ts",
-    "lint:fix": "eslint src/ app/ middleware.ts --fix",
+    "lint": "npx eslint src/ app/ proxy.ts",
+    "lint:fix": "eslint src/ app/ proxy.ts --fix",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check ."
   },
@@ -41,6 +42,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^2.0.0",
     "eslint": "^9.39.4",
+    "eslint-config-agent": "^3.0.1",
     "eslint-config-next": "^16.2.4",
     "jsdom": "^29.0.2",
     "prettier": "^3.8.3",
