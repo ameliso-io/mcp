@@ -76,8 +76,11 @@ All tools accept `repo_id` — the repository identifier (e.g. `owner/repo`). If
 # Build first (only needed once)
 cargo build --release
 
+# Environment variables (set once)
+export AMELISO_SERVER_URL=http://localhost:50052  # default: http://[::1]:50052
+export AMELISO_REPO_ID=owner/repo                # use `ameliso repos list` if unknown
+
 # Cases
-export AMELISO_REPO=/path/to/project
 ameliso cases list
 ameliso cases list --tags auth --query login
 ameliso cases list --priority high

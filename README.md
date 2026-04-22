@@ -38,7 +38,8 @@ Binaries land in `target/release/`:
 ### CLI usage
 
 ```sh
-export AMELISO_REPO=/path/to/your/project
+export AMELISO_SERVER_URL=http://localhost:50052  # default: http://[::1]:50052
+export AMELISO_REPO_ID=owner/repo                # use `ameliso repos list` if unknown
 
 # Cases
 ameliso cases list
