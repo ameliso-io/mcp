@@ -125,7 +125,10 @@ describe("OverviewTab", () => {
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText(/Active Runs/));
-    expect(screen.getByText("2/5 pending")).toBeInTheDocument();
+    expect(screen.getByText("3/5 done")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuenow", "3");
+    expect(bar).toHaveAttribute("aria-valuemax", "5");
   });
 
   it("calls getAffectedCases when Check Diff submitted", async () => {

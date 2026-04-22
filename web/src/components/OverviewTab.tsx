@@ -227,9 +227,29 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                         {run.date}
                       </time>
                       {status && (
-                        <span className={styles.runPending}>
-                          {status.pendingCases}/{status.totalInScope} pending
-                        </span>
+                        <div className={styles.runProgressWrap}>
+                          <div
+                            className={styles.runProgressTrack}
+                            role="progressbar"
+                            aria-label="Run progress"
+                            aria-valuemin={0}
+                            aria-valuemax={status.totalInScope}
+                            aria-valuenow={status.totalInScope - status.pendingCases}
+                          >
+                            <div
+                              className={styles.runProgressBar}
+                              style={{
+                                width:
+                                  status.totalInScope > 0
+                                    ? `${Math.round(((status.totalInScope - status.pendingCases) / status.totalInScope) * 100)}%`
+                                    : "0%",
+                              }}
+                            />
+                          </div>
+                          <span className={styles.runProgressText}>
+                            {status.totalInScope - status.pendingCases}/{status.totalInScope} done
+                          </span>
+                        </div>
                       )}
                     </li>
                   );

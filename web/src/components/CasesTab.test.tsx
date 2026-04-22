@@ -340,9 +340,7 @@ describe("CasesTab", () => {
     }) as HTMLInputElement;
     await userEvent.type(suiteInput, "smoke");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(
-        expect.objectContaining({ suite: "smoke" })
-      )
+      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
     );
   });
 
