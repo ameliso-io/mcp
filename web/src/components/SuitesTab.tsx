@@ -112,38 +112,41 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     }
   }, [suites]);
 
-  const handleCreate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newSlug || !newName) return;
-    setCreating(true);
-    try {
-      await client.createSuite({
-        repoId,
-        slug: newSlug,
-        name: newName,
-        description: newDesc,
-        cases: newCases
-          ? newCases
-              .split(",")
-              .map((c) => c.trim())
-              .filter(Boolean)
-          : [],
-      });
-      setShowCreate(false);
-      lastFocusRef.current?.focus();
-      setNewSlug("");
-      setNewName("");
-      setNewDesc("");
-      setNewCases("");
-      announce("Suite created");
-      await load();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setCreating(false);
-    }
-  }, [repoId, newSlug, newName, newDesc, newCases, announce, load]);
+  const handleCreate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — required fields prevent submission when blank */
+      if (!repoId || !newSlug || !newName) return;
+      setCreating(true);
+      try {
+        await client.createSuite({
+          repoId,
+          slug: newSlug,
+          name: newName,
+          description: newDesc,
+          cases: newCases
+            ? newCases
+                .split(",")
+                .map((c) => c.trim())
+                .filter(Boolean)
+            : [],
+        });
+        setShowCreate(false);
+        lastFocusRef.current?.focus();
+        setNewSlug("");
+        setNewName("");
+        setNewDesc("");
+        setNewCases("");
+        announce("Suite created");
+        load();
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setCreating(false);
+      }
+    },
+    [repoId, newSlug, newName, newDesc, newCases, announce, load]
+  );
 
   async function handleDelete(slug: string) {
     try {
@@ -157,39 +160,44 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     }
   }
 
-  const handleUpdate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    /* v8 ignore next 2 — form only renders when editingSlug is set */
-    if (!editingSlug) return;
-    setSaving(true);
-    try {
-      await client.updateSuite({
-        repoId,
-        slug: editingSlug,
-        name: editName,
-        description: editDesc,
-        cases: editCases
-          ? editCases
-              .split(",")
-              .map((c) => c.trim())
-              .filter(Boolean)
-          : [],
-        replaceCases: true,
-        newSlug: editNewSlug,
-      });
-      setEditingSlug(null);
-      lastFocusRef.current?.focus();
-      announce("Suite updated");
-      await load();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  }, [editingSlug, repoId, editName, editDesc, editCases, announce, load]);
+  const handleUpdate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      /* v8 ignore next 2 — form only renders when editingSlug is set */
+      if (!editingSlug) return;
+      setSaving(true);
+      try {
+        await client.updateSuite({
+          repoId,
+          slug: editingSlug,
+          name: editName,
+          description: editDesc,
+          cases: editCases
+            ? editCases
+                .split(",")
+                .map((c) => c.trim())
+                .filter(Boolean)
+            : [],
+          replaceCases: true,
+          newSlug: editNewSlug,
+        });
+        setEditingSlug(null);
+        lastFocusRef.current?.focus();
+        announce("Suite updated");
+        load();
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editingSlug, repoId, editName, editDesc, editCases, editNewSlug, announce, load]
+  );
 
   if (!repoId) {
-    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
+    return (
+      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+    );
   }
 
   return (

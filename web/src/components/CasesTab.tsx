@@ -338,7 +338,9 @@ export default function CasesTab({
   );
 
   if (!repoId) {
-    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
+    return (
+      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+    );
   }
 
   const isStale = cases !== deferredCases;
@@ -575,217 +577,190 @@ export default function CasesTab({
         role="list"
       >
         {sortedCases.map((c) => (
-            <li key={c.path}>
-              <div
-                className={
-                  expandedPath === c.path || editingPath === c.path
-                    ? styles.caseCardOpen
-                    : styles.caseCard
-                }
-              >
-                {editingPath === c.path ? (
-                  <form
-                    aria-label={`Edit case ${c.path}`}
-                    onSubmit={handleUpdate}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        e.preventDefault();
+          <li key={c.path}>
+            <div
+              className={
+                expandedPath === c.path || editingPath === c.path
+                  ? styles.caseCardOpen
+                  : styles.caseCard
+              }
+            >
+              {editingPath === c.path ? (
+                <form
+                  aria-label={`Edit case ${c.path}`}
+                  onSubmit={handleUpdate}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setEditingPath(null);
+                      lastFocusRef.current?.focus();
+                    }
+                  }}
+                  className={styles.formGridSm}
+                >
+                  <div>
+                    <label className={styles.labelSm}>
+                      Title
+                      <input
+                        autoFocus
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        required
+                        className={styles.input}
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <label className={styles.labelSm}>
+                      Priority
+                      <select
+                        value={editPriority}
+                        onChange={(e) => setEditPriority(Number(e.target.value) as Priority)}
+                        className={styles.input}
+                      >
+                        <option value={Priority.LOW}>Low</option>
+                        <option value={Priority.MEDIUM}>Medium</option>
+                        <option value={Priority.HIGH}>High</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.labelSm}>
+                      Description
+                      <input
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.labelSm}>
+                      Tags (comma-separated)
+                      <input
+                        value={editTags}
+                        onChange={(e) => setEditTags(e.target.value)}
+                        className={styles.input}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.labelSm}>
+                      Steps / Body (Markdown)
+                      <textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        rows={8}
+                        className={styles.textarea}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.formActions}>
+                    <button type="submit" disabled={saving} className={styles.btnSaveSm}>
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         setEditingPath(null);
                         lastFocusRef.current?.focus();
-                      }
-                    }}
-                    className={styles.formGridSm}
+                      }}
+                      className={styles.btnCancelSm}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className={styles.caseRow}>
+                  <button
+                    type="button"
+                    className={styles.caseExpandBtn}
+                    onClick={() => toggleExpand(c.path)}
+                    aria-expanded={expandedPath === c.path}
                   >
-                    <div>
-                      <label className={styles.labelSm}>
-                        Title
-                        <input
-                          autoFocus
-                          value={editTitle}
-                          onChange={(e) => {
-                            setEditTitle(e.target.value);
-                          }}
-                          required
-                          className={styles.input}
-                        />
-                      </label>
-                    </div>
-                    <div>
-                      <label className={styles.labelSm}>
-                        Priority
-                        <select
-                          value={editPriority}
-                          onChange={(e) => {
-                            setEditPriority(Number(e.target.value));
-                          }}
-                          className={styles.input}
-                        >
-                          <option value={Priority.LOW}>Low</option>
-                          <option value={Priority.MEDIUM}>Medium</option>
-                          <option value={Priority.HIGH}>High</option>
-                        </select>
-                      </label>
-                    </div>
-                    <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>
-                        Description
-                        <input
-                          value={editDesc}
-                          onChange={(e) => {
-                            setEditDesc(e.target.value);
-                          }}
-                          className={styles.input}
-                        />
-                      </label>
-                    </div>
-                    <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>
-                        Tags (comma-separated)
-                        <input
-                          value={editTags}
-                          onChange={(e) => {
-                            setEditTags(e.target.value);
-                          }}
-                          className={styles.input}
-                        />
-                      </label>
-                    </div>
-                    <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>
-                        Steps / Body (Markdown)
-                        <textarea
-                          value={editBody}
-                          onChange={(e) => {
-                            setEditBody(e.target.value);
-                          }}
-                          rows={8}
-                          className={styles.textarea}
-                        />
-                      </label>
-                    </div>
-                    <div className={styles.fullCol}>
-                      <label className={styles.labelSm}>
-                        Rename path (optional)
-                        <input
-                          value={editNewPath}
-                          onChange={(e) => {
-                            setEditNewPath(e.target.value);
-                          }}
-                          className={styles.input}
-                          placeholder="leave blank to keep current path"
-                        />
-                      </label>
-                    </div>
-                    <div className={styles.formActions}>
-                      <button type="submit" disabled={saving} className={styles.btnSaveSm}>
-                        {saving ? "Saving…" : "Save"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingPath(null);
-                          lastFocusRef.current?.focus();
-                        }}
-                        className={styles.btnCancelSm}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className={styles.caseRow}>
-                    <button
-                      type="button"
-                      className={styles.caseExpandBtn}
-                      onClick={() => toggleExpand(c.path)}
-                      aria-expanded={expandedPath === c.path}
-                    >
-                      <span
-                        className={styles.priorityDot}
-                        data-priority={c.priority}
-                        aria-hidden="true"
-                      />
-                      <div className={styles.caseInfo}>
-                        <div className={styles.caseMeta}>
-                          <span className={styles.casePath}>{c.path}</span>
-                          <span className={styles.priorityBadge} data-priority={c.priority}>
-                            {priorityLabel(c.priority)}
+                    <span
+                      className={styles.priorityDot}
+                      data-priority={c.priority}
+                      aria-hidden="true"
+                    />
+                    <div className={styles.caseInfo}>
+                      <div className={styles.caseMeta}>
+                        <span className={styles.casePath}>{c.path}</span>
+                        <span className={styles.priorityBadge} data-priority={c.priority}>
+                          {priorityLabel(c.priority)}
+                        </span>
+                        {c.tags.map((t) => (
+                          <span key={t} className={styles.tag}>
+                            {t}
                           </span>
-                          {c.tags.map((t) => (
-                            <span key={t} className={styles.tag}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                        <p className={styles.caseTitle}>{c.title}</p>
-                        {c.description && <p className={styles.caseDesc}>{c.description}</p>}
+                        ))}
                       </div>
-                      <span className={styles.chevron} aria-hidden="true">
-                        {expandedPath === c.path ? "▲" : "▼"}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => startEdit(c)}
-                      aria-label={`Edit ${c.path}`}
-                      className={styles.btnOutlineSm}
-                    >
-                      Edit
-                    </button>
-                    {confirmingDelete === c.path ? (
-                      <>
-                        <span className={styles.confirmText}>Delete?</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(c.path)}
-                          aria-label={`Confirm delete ${c.path}`}
-                          className={styles.btnDangerSm}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setConfirmingDelete(null);
-                          }}
-                          aria-label="Cancel delete"
-                          className={styles.btnOutlineSm}
-                          autoFocus
-                        >
-                          No
-                        </button>
-                      </>
-                    ) : (
+                      <p className={styles.caseTitle}>{c.title}</p>
+                      {c.description && <p className={styles.caseDesc}>{c.description}</p>}
+                    </div>
+                    <span className={styles.chevron} aria-hidden="true">
+                      {expandedPath === c.path ? "▲" : "▼"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(c)}
+                    aria-label={`Edit ${c.path}`}
+                    className={styles.btnOutlineSm}
+                  >
+                    Edit
+                  </button>
+                  {confirmingDelete === c.path ? (
+                    <>
+                      <span className={styles.confirmText}>Delete?</span>
                       <button
                         type="button"
-                        onClick={() => {
-                          setConfirmingDelete(c.path);
-                        }}
-                        aria-label={`Delete ${c.path}`}
+                        onClick={() => handleDelete(c.path)}
+                        aria-label={`Confirm delete ${c.path}`}
                         className={styles.btnDangerSm}
                       >
-                        Delete
+                        Yes
                       </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {expandedPath === c.path && editingPath !== c.path && (
-                <div className={styles.expandedPanel}>
-                  {bodyLoading ? (
-                    <p className={styles.expandedLoading} role="status">
-                      Loading…
-                    </p>
-                  ) : expandedBody ? (
-                    <MarkdownBody body={expandedBody} />
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(null)}
+                        aria-label="Cancel delete"
+                        className={styles.btnOutlineSm}
+                        autoFocus
+                      >
+                        No
+                      </button>
+                    </>
                   ) : (
-                    <p className={styles.noBody}>No body.</p>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(c.path)}
+                      aria-label={`Delete ${c.path}`}
+                      className={styles.btnDangerSm}
+                    >
+                      Delete
+                    </button>
                   )}
                 </div>
               )}
-            </li>
-          ))}
+            </div>
+
+            {expandedPath === c.path && editingPath !== c.path && (
+              <div className={styles.expandedPanel}>
+                {bodyLoading ? (
+                  <p className={styles.expandedLoading} role="status">
+                    Loading…
+                  </p>
+                ) : expandedBody ? (
+                  <MarkdownBody body={expandedBody} />
+                ) : (
+                  <p className={styles.noBody}>No body.</p>
+                )}
+              </div>
+            )}
+          </li>
+        ))}
       </ul>
     </div>
   );

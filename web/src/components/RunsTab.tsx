@@ -378,7 +378,9 @@ export default function RunsTab({
   );
 
   if (!repoId) {
-    return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
+    return (
+      <div className={styles.noRepo}>Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.</div>
+    );
   }
 
   return (
