@@ -241,6 +241,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                             aria-valuemin={0}
                             aria-valuemax={status.totalInScope}
                             aria-valuenow={status.totalInScope - status.pendingCases}
+                            aria-valuetext={`${status.totalInScope - status.pendingCases} of ${status.totalInScope} case${status.totalInScope !== 1 ? "s" : ""} complete`}
                           >
                             <div
                               className={styles.runProgressBar}

@@ -129,6 +129,7 @@ describe("OverviewTab", () => {
     const bar = screen.getByRole("progressbar", { name: "Run progress" });
     expect(bar).toHaveAttribute("aria-valuenow", "3");
     expect(bar).toHaveAttribute("aria-valuemax", "5");
+    expect(bar).toHaveAttribute("aria-valuetext", "3 of 5 cases complete");
   });
 
   it("calls getAffectedCases when Check Diff submitted", async () => {
