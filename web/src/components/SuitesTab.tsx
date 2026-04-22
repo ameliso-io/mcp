@@ -25,11 +25,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   const [expandedCasesLoading, setExpandedCasesLoading] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
-  const [newSlug, setNewSlug] = useState("");
-
-  const [newName, setNewName] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newCases, setNewCases] = useState("");
+  const [createForm, setCreateForm] = useState({ slug: "", name: "", desc: "", cases: "" });
   const [creating, setCreating] = useState(false);
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -125,16 +121,16 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newSlug || !newName) return;
+    if (!repoId || !createForm.slug || !createForm.name) return;
     setCreating(true);
     try {
       await client.createSuite({
         repoId,
-        slug: newSlug,
-        name: newName,
-        description: newDesc,
-        cases: newCases
-          ? newCases
+        slug: createForm.slug,
+        name: createForm.name,
+        description: createForm.desc,
+        cases: createForm.cases
+          ? createForm.cases
               .split(",")
               .map((c) => c.trim())
               .filter(Boolean)
@@ -142,10 +138,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
-      setNewSlug("");
-      setNewName("");
-      setNewDesc("");
-      setNewCases("");
+      setCreateForm({ slug: "", name: "", desc: "", cases: "" });
       announce("Suite created");
       load();
     } catch (e) {
@@ -240,9 +233,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
               <label className={styles.label}>
                 Slug
                 <input
-                  value={newSlug}
+                  value={createForm.slug}
                   onChange={(e) => {
-                    setNewSlug(e.target.value);
+                    setCreateForm((f) => ({ ...f, slug: e.target.value }));
                   }}
                   required
                   autoFocus
@@ -255,9 +248,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
               <label className={styles.label}>
                 Name
                 <input
-                  value={newName}
+                  value={createForm.name}
                   onChange={(e) => {
-                    setNewName(e.target.value);
+                    setCreateForm((f) => ({ ...f, name: e.target.value }));
                   }}
                   required
                   className={styles.input}
@@ -269,9 +262,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
               <label className={styles.label}>
                 Description
                 <input
-                  value={newDesc}
+                  value={createForm.desc}
                   onChange={(e) => {
-                    setNewDesc(e.target.value);
+                    setCreateForm((f) => ({ ...f, desc: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -281,9 +274,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
               <label className={styles.label}>
                 Cases (comma-separated paths)
                 <input
-                  value={newCases}
+                  value={createForm.cases}
                   onChange={(e) => {
-                    setNewCases(e.target.value);
+                    setCreateForm((f) => ({ ...f, cases: e.target.value }));
                   }}
                   className={styles.input}
                   placeholder="auth/login, auth/logout"
