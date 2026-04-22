@@ -13,10 +13,10 @@ const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
 interface Props {
   repoId: string;
-  initialSuite?: string;
-  onInitialSuiteConsumed?: () => void;
-  initialStatusFilter?: RunStatus;
-  onStatusFilterChange?: (s: RunStatus) => void;
+  initialSuite?: string | undefined;
+  onInitialSuiteConsumed?: (() => void) | undefined;
+  initialStatusFilter?: RunStatus | undefined;
+  onStatusFilterChange?: ((s: RunStatus) => void) | undefined;
 }
 
 function statusLabel(s: ResultStatus): string {

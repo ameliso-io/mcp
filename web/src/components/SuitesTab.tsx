@@ -12,8 +12,8 @@ import { useAnnounce } from "@/hooks/useAnnounce";
 interface Props {
   repoId: string;
   basePath: string;
-  initialExpanded?: string;
-  onExpandedChange?: (slug: string | null) => void;
+  initialExpanded?: string | undefined;
+  onExpandedChange?: ((slug: string | null) => void) | undefined;
 }
 
 export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
