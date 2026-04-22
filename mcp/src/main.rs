@@ -1300,6 +1300,22 @@ impl AmelisoMcp {
             Err(e) => format!("error: {e}"),
         }
     }
+
+    #[tool(
+        description = "Remove a connected GitHub repository from this Ameliso installation. All synced case data for the repo will be deleted. Use list_repositories to find the repo_id."
+    )]
+    async fn remove_repository(&self, Parameters(req): Parameters<RepoIdRequest>) -> String {
+        let mut client = self.client();
+        match client
+            .remove_repository(pb::RemoveRepositoryRequest {
+                id: req.repo_id.clone(),
+            })
+            .await
+        {
+            Ok(_) => format!("removed: {}", req.repo_id),
+            Err(e) => format!("error: {e}"),
+        }
+    }
 }
 
 #[cfg(test)]

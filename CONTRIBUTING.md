@@ -26,7 +26,7 @@ Git hooks activate automatically after `pnpm install`:
 |-----------|---------|
 | `server/` | gRPC server (tonic 0.12). Implements `AmelisoService` (26 RPCs). |
 | `server/proto/` | Protobuf definitions for `AmelisoService`. |
-| `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 26 RPCs as 23 MCP tools. |
+| `mcp/` | MCP server (rmcp 1.5, stdio). Wraps all 26 RPCs as 24 MCP tools. |
 | `cli/` | CLI binary (clap 4). Wraps all RPCs as subcommands. |
 | `web/` | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
 

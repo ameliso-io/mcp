@@ -143,6 +143,11 @@ enum ReposCmd {
         #[arg(help = "Repository ID, e.g. owner/repo")]
         repo_id: String,
     },
+    #[command(about = "Remove a connected GitHub repository and all its synced case data")]
+    Remove {
+        #[arg(help = "Repository ID, e.g. owner/repo")]
+        repo_id: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -1530,6 +1535,13 @@ async fn run_repos(channel: Channel, cmd: ReposCmd) -> Result<()> {
                 .ok_or_else(|| anyhow!("server returned empty repository"))?;
             println!("synced: {}", repo.full_name);
         }
+        ReposCmd::Remove { repo_id } => {
+            let mut c = client(channel);
+            c.remove_repository(pb::RemoveRepositoryRequest { id: repo_id.clone() })
+                .await
+                .map_err(grpc_err)?;
+            println!("removed: {repo_id}");
+        }
     }
     Ok(())
 }
@@ -2095,6 +2107,17 @@ mod tests {
         let cli = Cli::try_parse_from(["ameliso", "repos", "sync", "owner/repo"])
             .expect("should parse");
         if let Commands::Repos(ReposCmd::Sync { repo_id }) = cli.command {
+            assert_eq!(repo_id, "owner/repo");
+        } else {
+            panic!("wrong variant");
+        }
+    }
+
+    #[test]
+    fn cli_repos_remove_parses_repo_id() {
+        let cli = Cli::try_parse_from(["ameliso", "repos", "remove", "owner/repo"])
+            .expect("should parse");
+        if let Commands::Repos(ReposCmd::Remove { repo_id }) = cli.command {
             assert_eq!(repo_id, "owner/repo");
         } else {
             panic!("wrong variant");
