@@ -717,4 +717,22 @@ describe("CasesTab", () => {
     expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
   });
+
+  it("sets aria-busy on expanded panel while body loads", async () => {
+    let resolve!: (v: ReturnType<typeof makeGetCaseResponse>) => void;
+    vi.mocked(client.getCase).mockImplementationOnce(
+      () =>
+        new Promise((res) => {
+          resolve = res as typeof resolve;
+        }) as ReturnType<typeof client.getCase>
+    );
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => {
+      expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+    });
+    resolve(makeGetCaseResponse({ case: mockCase, body: "## Steps" }));
+    await waitFor(() => screen.getByText(/Steps/));
+  });
 });
