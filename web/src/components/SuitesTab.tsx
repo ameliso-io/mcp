@@ -33,6 +33,7 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
   const loadIdRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
   const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
   const toggleExpandRef = useRef<(slug: string) => void>(() => {});
@@ -83,27 +84,38 @@ export default function SuitesTab({ repoId, initialExpanded, onExpandedChange }:
 
   const load = useCallback(async () => {
     if (!repoId) return;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     const id = ++loadIdRef.current;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listSuites({ repoId });
+      const res = await client.listSuites({ repoId }, { signal });
       /* v8 ignore next 1 — race guard, covered by stale load test */
       if (id !== loadIdRef.current) return;
       setSuites(res.suites);
     } catch (e) {
+      if (signal.aborted) return;
       /* v8 ignore next 1 — race guard */
       if (id !== loadIdRef.current) return;
       setError(errorMessage(e));
     } finally {
       /* v8 ignore next 1 — race guard */
-      if (id === loadIdRef.current) setLoading(false);
+      if (!signal.aborted && id === loadIdRef.current) setLoading(false);
     }
   }, [repoId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      loadAbortRef.current?.abort();
+    };
+  }, []);
 
   // Auto-expand suite from URL param after first load
   useEffect(() => {
