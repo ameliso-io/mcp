@@ -403,7 +403,7 @@ describe("SuitesTab", () => {
     );
     render(<SuitesTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve(makeListSuitesResponse());
+    await act(async () => resolve(makeListSuitesResponse()));
   });
 
   it('shows "Creating…" on Create Suite button while creating', async () => {
@@ -420,7 +420,9 @@ describe("SuitesTab", () => {
     await userEvent.type(inputs[1]!, "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
-    resolve(makeCreateSuiteResponse({ suite: mockSuite, filePath: "suites/regression.yaml" }));
+    await act(async () =>
+      resolve(makeCreateSuiteResponse({ suite: mockSuite, filePath: "suites/regression.yaml" }))
+    );
   });
 
   it('shows "No suites found." when suites list is empty', async () => {
@@ -537,15 +539,15 @@ describe("SuitesTab", () => {
     await waitFor(() => screen.getByText("Smoke Tests"));
     await userEvent.click(screen.getByRole("button", { name: "Delete smoke" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
-    await waitFor(() =>
-      expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.queryByText("Smoke Tests")).not.toBeInTheDocument());
     expect(client.listSuites).toHaveBeenCalledTimes(1);
   });
 
   it("updates suite in list from updateSuite response without re-fetching", async () => {
     const updatedSuite = makeSuite({ slug: "smoke", name: "Updated Smoke", cases: [] });
-    vi.mocked(client.updateSuite).mockResolvedValue(makeUpdateSuiteResponse({ suite: updatedSuite }));
+    vi.mocked(client.updateSuite).mockResolvedValue(
+      makeUpdateSuiteResponse({ suite: updatedSuite })
+    );
     render(<SuitesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));

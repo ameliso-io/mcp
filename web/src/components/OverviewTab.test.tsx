@@ -354,7 +354,7 @@ describe("OverviewTab", () => {
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     expect(screen.getByText("Checking…")).toBeInTheDocument();
-    resolveAffected(makeGetAffectedCasesResponse());
+    await act(async () => resolveAffected(makeGetAffectedCasesResponse()));
   });
 
   it("unmounts cleanly when polling interval is active", async () => {
@@ -470,8 +470,9 @@ describe("OverviewTab", () => {
     resolveSecond(makeGetCoverageReportResponse({ entries: [newEntry], runCount: 1 }));
     await waitFor(() => screen.getByText("new/feature"));
 
-    resolveFirst(makeGetCoverageReportResponse({ entries: coverageEntries, runCount: 5 }));
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () =>
+      resolveFirst(makeGetCoverageReportResponse({ entries: coverageEntries, runCount: 5 }))
+    );
 
     expect(screen.queryByText("auth/login")).not.toBeInTheDocument();
     expect(screen.getByText("new/feature")).toBeInTheDocument();

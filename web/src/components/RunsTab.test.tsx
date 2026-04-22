@@ -105,7 +105,11 @@ describe("RunsTab", () => {
 
   it("adds new run to list from createRun response without re-fetching", async () => {
     vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [] }));
-    const newRun = makeRunMeta({ id: "2026-01-02-smoke", suite: "smoke", status: RunStatus.IN_PROGRESS });
+    const newRun = makeRunMeta({
+      id: "2026-01-02-smoke",
+      suite: "smoke",
+      status: RunStatus.IN_PROGRESS,
+    });
     vi.mocked(client.createRun).mockResolvedValue(makeCreateRunResponse({ run: newRun }));
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("No runs found."));
@@ -174,8 +178,7 @@ describe("RunsTab", () => {
     resolveSecond(makeListRunsResponse({ runs: [inProgressRun] }));
     await waitFor(() => screen.getByText("run-ip"));
     // Now resolve first (stale) — must not overwrite second result
-    resolveFirst(makeListRunsResponse({ runs: [mockRun] }));
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () => resolveFirst(makeListRunsResponse({ runs: [mockRun] })));
     expect(screen.queryByText(mockRun.id)).not.toBeInTheDocument();
     expect(screen.getByText("run-ip")).toBeInTheDocument();
   });
@@ -243,8 +246,7 @@ describe("RunsTab", () => {
     // Cancel the record form before body resolves
     await userEvent.click(screen.getByText("Cancel"));
     // Now resolve stale body — must not show it
-    resolve(makeGetCaseResponse({ case: mockCase, body: "## Stale Steps" }));
-    await new Promise((r) => setTimeout(r, 50));
+    await act(async () => resolve(makeGetCaseResponse({ case: mockCase, body: "## Stale Steps" })));
     expect(screen.queryByText(/Stale Steps/)).not.toBeInTheDocument();
   });
 
@@ -1101,7 +1103,7 @@ describe("RunsTab", () => {
     );
     render(<RunsTab repoId="owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve(makeListRunsResponse());
+    await act(async () => resolve(makeListRunsResponse()));
   });
 
   it("resets recordStatus to PASSED after recording a result", async () => {

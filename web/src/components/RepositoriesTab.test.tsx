@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import RepositoriesTab from "./RepositoriesTab";
@@ -422,7 +422,7 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByText("Sync"));
     await userEvent.click(screen.getByText("Sync"));
     expect(screen.getByText("Syncing…")).toBeInTheDocument();
-    resolve(makeSyncRepositoryResponse({ repository: makeRepo() }));
+    await act(async () => resolve(makeSyncRepositoryResponse({ repository: makeRepo() })));
   });
 
   it('shows "Refreshing…" on Refresh All button while refreshing', async () => {
@@ -439,7 +439,9 @@ describe("RepositoriesTab", () => {
     await waitFor(() => screen.getByText("↻ Refresh All"));
     await userEvent.click(screen.getByText("↻ Refresh All"));
     expect(screen.getByText("Refreshing…")).toBeInTheDocument();
-    resolve(makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] }));
+    await act(async () =>
+      resolve(makeHandleGitHubCallbackResponse({ repositories: [makeRepo()] }))
+    );
   });
 
   it("shows loading state while fetching repos", async () => {
