@@ -409,3 +409,24 @@
 .sectionLabel {
   margin-bottom: 12px;
 }
+
+.coverageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.coverageHeader .sectionLabel {
+  margin-bottom: 0;
+}
+
+.filterSelect {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}

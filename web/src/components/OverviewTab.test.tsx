@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
@@ -277,7 +277,7 @@ describe("OverviewTab", () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
     expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
-    expect(screen.getByText("Never run")).toBeInTheDocument();
+    expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
@@ -364,7 +364,7 @@ describe("OverviewTab", () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
     expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
-    expect(screen.getByText("Never run")).toBeInTheDocument();
+    expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
@@ -721,5 +721,19 @@ describe("OverviewTab", () => {
     expect(container.querySelector('[data-stat="Never Run"]')).toHaveTextContent("0");
     expect(container.querySelector('[data-stat="Blocked"]')).toHaveTextContent("0");
     expect(container.querySelector('[data-stat="Skipped"]')).toHaveTextContent("0");
+  });
+
+  it("filter select defaults to All statuses and triggers reload with statusFilter when changed", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    expect(select).toHaveValue(String(ResultStatus.UNSPECIFIED));
+    // Change to Failed filter
+    fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ statusFilter: ResultStatus.FAILED })
+      )
+    );
   });
 });

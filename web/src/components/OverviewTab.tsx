@@ -60,6 +60,8 @@ export default function OverviewTab({ repoId, basePath }: Props) {
     Map<string, { pendingCases: number; totalInScope: number }>
   >(new Map());
 
+  const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
+
   const [sinceRef, setSinceRef] = useState("");
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
   const [affectedLoading, setAffectedLoading] = useState(false);
@@ -74,7 +76,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       setError(null);
       try {
         const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
-          client.getCoverageReport({ repoId: path }),
+          client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }),
           client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
           client.getRepoStatus({ repoId: path }),
         ]);
@@ -99,7 +101,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
         setLoading(false);
       }
     },
-    [announce]
+    [announce, coverageFilter]
   );
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -259,9 +261,26 @@ export default function OverviewTab({ repoId, basePath }: Props) {
           )}
 
           <div className={styles.card}>
-            <h3 className={`${styles.label} ${styles.sectionLabel}`}>
-              Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
-            </h3>
+            <div className={styles.coverageHeader}>
+              <h3 className={`${styles.label} ${styles.sectionLabel}`}>
+                Coverage ({runCount} run{runCount !== 1 ? "s" : ""})
+              </h3>
+              <select
+                aria-label="Filter coverage by status"
+                value={coverageFilter}
+                onChange={(e) => {
+                  setCoverageFilter(Number(e.target.value));
+                }}
+                className={styles.filterSelect}
+              >
+                <option value={ResultStatus.UNSPECIFIED}>All statuses</option>
+                <option value={ResultStatus.PASSED}>Passed</option>
+                <option value={ResultStatus.FAILED}>Failed</option>
+                <option value={ResultStatus.BLOCKED}>Blocked</option>
+                <option value={ResultStatus.SKIPPED}>Skipped</option>
+                <option value={ResultStatus.NEVER}>Never run</option>
+              </select>
+            </div>
             <ul className={styles.coverageList} role="list">
               {[...entries]
                 .sort((a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus))
