@@ -103,6 +103,7 @@ fn case_to_pb(c: &repo::LoadedCase) -> pb::Case {
         priority: c.priority.clone(),
         created_at: c.created_at.clone(),
         updated_at: c.updated_at.clone(),
+        body: c.body.clone(),
     }
 }
 
@@ -1009,6 +1010,7 @@ impl AmelisoService for AmelisoServer {
                     priority: row.priority,
                     created_at: row.created_at,
                     updated_at: row.updated_at,
+                    body: row.body.clone(),
                 };
                 Some(pb::CoverageEntry {
                     case: Some(case),

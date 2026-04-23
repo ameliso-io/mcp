@@ -12,6 +12,9 @@ message Case {
   string priority = 5;
   string created_at = 6;
   string updated_at = 7;
+  // Markdown body — the actual test procedure/steps. Populated when the caller
+  // needs full case content (e.g. ListCases, GetCase, GetPendingCases).
+  string body = 8;
 }
 
 message Suite {

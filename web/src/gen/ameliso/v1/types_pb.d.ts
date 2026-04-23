@@ -48,6 +48,14 @@ export declare type Case = Message<"ameliso.v1.Case"> & {
    * @generated from field: string updated_at = 7;
    */
   updatedAt: string;
+
+  /**
+   * Markdown body — the actual test procedure/steps. Populated when the caller
+   * needs full case content (e.g. ListCases, GetCase, GetPendingCases).
+   *
+   * @generated from field: string body = 8;
+   */
+  body: string;
 };
 
 /**
@@ -409,3 +417,4 @@ export enum Priority {
  * Describes the enum ameliso.v1.Priority.
  */
 export declare const PrioritySchema: GenEnum<Priority>;
+
