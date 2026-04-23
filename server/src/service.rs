@@ -755,10 +755,9 @@ impl AmelisoService for AmelisoServer {
         .await
         .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
-        let (pending_cases, _) =
-            repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
-                .await
-                .unwrap_or_default();
+        let (pending_cases, _) = repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
+            .await
+            .unwrap_or_default();
         let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
             .await
             .unwrap_or_default();
@@ -898,10 +897,23 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("run_id is required"));
         }
         let status = run_status_from_i32(req.status);
-        if !matches!(status, "completed" | "aborted") {
+        if status == "in-progress" {
             return Err(invalid("status must be completed or aborted"));
         }
-        let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, status)
+        let resolved_status = if matches!(status, "completed" | "aborted") {
+            status
+        } else {
+            // UNSPECIFIED: auto-detect from results — aborted if any failure, else completed.
+            let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?;
+            if run.results.iter().any(|r| r.status == "failed") {
+                "aborted"
+            } else {
+                "completed"
+            }
+        };
+        let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, resolved_status)
             .await
             .map_err(repo_err)?;
         Ok(Response::new(pb::FinalizeRunResponse {
@@ -2214,6 +2226,21 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn finalize_run_unspecified_status_auto_detects() {
+        // UNSPECIFIED passes validation; handler then queries run from DB → Internal (no DB).
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                status: pb::RunStatus::Unspecified as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]

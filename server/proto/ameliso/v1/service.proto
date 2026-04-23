@@ -281,6 +281,8 @@ message BulkRecordResultsResponse {
 message FinalizeRunRequest {
   string repo_id = 1;
   string run_id = 2;
+  // Desired final status. When UNSPECIFIED (or omitted), the server auto-detects:
+  // ABORTED if any recorded result is FAILED, otherwise COMPLETED.
   RunStatus status = 3;
 }
 
