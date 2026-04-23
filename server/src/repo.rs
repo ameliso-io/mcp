@@ -54,6 +54,7 @@ pub struct RunRow {
     pub status: String,
     pub environment: Option<String>,
     pub suite: Option<String>,
+    pub commit_sha: String,
 }
 
 #[derive(Debug)]
@@ -91,19 +92,17 @@ pub struct CoverageRow {
 
 fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
     if path.is_empty() {
-        return Err(RepoError::InvalidArg(format!("{} path is empty", kind)));
+        return Err(RepoError::InvalidArg(format!("{kind} path is empty")));
     }
     if path.contains("..") || path.starts_with('/') || path.starts_with('\\') {
         return Err(RepoError::InvalidArg(format!(
-            "invalid {} path: must not contain '..' or start with '/'",
-            kind
+            "invalid {kind} path: must not contain '..' or start with '/'"
         )));
     }
     for segment in path.split('/') {
         if segment.is_empty() {
             return Err(RepoError::InvalidArg(format!(
-                "invalid {} path '{}': contains empty segment",
-                kind, path
+                "invalid {kind} path '{path}': contains empty segment"
             )));
         }
         if !segment
@@ -111,8 +110,7 @@ fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
         {
             return Err(RepoError::InvalidArg(format!(
-                "invalid {} path '{}': segments must contain only a-z, 0-9, hyphens, underscores",
-                kind, path
+                "invalid {kind} path '{path}': segments must contain only a-z, 0-9, hyphens, underscores"
             )));
         }
     }
@@ -122,8 +120,7 @@ fn validate_slug_path(path: &str, kind: &str) -> RResult<()> {
 fn validate_priority(priority: &str) -> RResult<()> {
     if !matches!(priority, "low" | "medium" | "high") {
         return Err(RepoError::InvalidArg(format!(
-            "invalid priority '{}'; must be one of: low, medium, high",
-            priority
+            "invalid priority '{priority}'; must be one of: low, medium, high"
         )));
     }
     Ok(())
@@ -132,8 +129,7 @@ fn validate_priority(priority: &str) -> RResult<()> {
 fn validate_result_status(status: &str) -> RResult<()> {
     if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
         return Err(RepoError::InvalidArg(format!(
-            "invalid result status '{}'; must be one of: passed, failed, blocked, skipped",
-            status
+            "invalid result status '{status}'; must be one of: passed, failed, blocked, skipped"
         )));
     }
     Ok(())
@@ -142,8 +138,7 @@ fn validate_result_status(status: &str) -> RResult<()> {
 fn validate_finalize_status(status: &str) -> RResult<()> {
     if !matches!(status, "completed" | "aborted") {
         return Err(RepoError::InvalidArg(format!(
-            "invalid finalize status '{}'; must be one of: completed, aborted",
-            status
+            "invalid finalize status '{status}'; must be one of: completed, aborted"
         )));
     }
     Ok(())
@@ -176,7 +171,7 @@ pub async fn get_case(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<
     .fetch_optional(pool)
     .await
     .map_err(map_db)?
-    .ok_or_else(|| RepoError::NotFound(format!("case not found: {}", case_path)))
+    .ok_or_else(|| RepoError::NotFound(format!("case not found: {case_path}")))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -216,8 +211,7 @@ pub async fn create_case(
 
     if rows_affected == 0 {
         return Err(RepoError::AlreadyExists(format!(
-            "case already exists: {}",
-            case_path
+            "case already exists: {case_path}"
         )));
     }
 
@@ -251,7 +245,9 @@ pub async fn update_case(
     }
     let effective_path = if let Some(np) = new_path {
         validate_slug_path(np, "new_path")?;
-        if np != case_path {
+        if np == case_path {
+            case_path
+        } else {
             let conflict: bool = sqlx::query_scalar(
                 "SELECT EXISTS(SELECT 1 FROM cases WHERE repo_id=$1 AND case_path=$2)",
             )
@@ -262,55 +258,48 @@ pub async fn update_case(
             .map_err(map_db)?;
             if conflict {
                 return Err(RepoError::AlreadyExists(format!(
-                    "case already exists: {}",
-                    np
+                    "case already exists: {np}"
                 )));
             }
-            // Rename: update case_path, fix suites referencing old path, fix results, fix run_cases.
+            // Rename atomically: update case_path and all referencing tables.
+            let mut tx = pool.begin().await.map_err(map_db)?;
             let rows =
                 sqlx::query("UPDATE cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
                     .bind(repo_id)
                     .bind(case_path)
                     .bind(np)
-                    .execute(pool)
+                    .execute(&mut *tx)
                     .await
                     .map_err(map_db)?
                     .rows_affected();
             if rows == 0 {
-                return Err(RepoError::NotFound(format!(
-                    "case not found: {}",
-                    case_path
-                )));
+                return Err(RepoError::NotFound(format!("case not found: {case_path}")));
             }
-            // Update suite case lists: replace old path in arrays.
             sqlx::query(
                 "UPDATE suites SET cases = array_replace(cases, $2, $3) WHERE repo_id=$1 AND $2 = ANY(cases)",
             )
             .bind(repo_id)
             .bind(case_path)
             .bind(np)
-            .execute(pool)
+            .execute(&mut *tx)
             .await
             .map_err(map_db)?;
-            // Update results recorded against this case.
             sqlx::query("UPDATE results SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
                 .bind(repo_id)
                 .bind(case_path)
                 .bind(np)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?;
-            // Update inline run_cases scope entries.
             sqlx::query("UPDATE run_cases SET case_path=$3 WHERE repo_id=$1 AND case_path=$2")
                 .bind(repo_id)
                 .bind(case_path)
                 .bind(np)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?;
+            tx.commit().await.map_err(map_db)?;
             np
-        } else {
-            case_path
         }
     } else {
         case_path
@@ -342,8 +331,7 @@ pub async fn update_case(
     .rows_affected();
     if rows == 0 {
         return Err(RepoError::NotFound(format!(
-            "case not found: {}",
-            effective_path
+            "case not found: {effective_path}"
         )));
     }
 
@@ -361,30 +349,63 @@ pub async fn update_case(
 
 pub async fn delete_case(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<()> {
     validate_slug_path(case_path, "case")?;
+    let mut tx = pool.begin().await.map_err(map_db)?;
     let rows = sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
         .bind(repo_id)
         .bind(case_path)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!(
-            "case not found: {}",
-            case_path
-        )));
+        return Err(RepoError::NotFound(format!("case not found: {case_path}")));
     }
+    // Remove case from suite case lists and inline run scopes.
+    sqlx::query(
+        "UPDATE suites SET cases = array_remove(cases, $2) WHERE repo_id=$1 AND $2 = ANY(cases)",
+    )
+    .bind(repo_id)
+    .bind(case_path)
+    .execute(&mut *tx)
+    .await
+    .map_err(map_db)?;
+    sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND case_path=$2")
+        .bind(repo_id)
+        .bind(case_path)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?;
+    tx.commit().await.map_err(map_db)?;
     Ok(())
 }
 
 pub async fn delete_case_if_exists(pool: &PgPool, repo_id: &str, case_path: &str) -> RResult<()> {
     validate_slug_path(case_path, "case")?;
-    sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
+    let mut tx = pool.begin().await.map_err(map_db)?;
+    let rows = sqlx::query("DELETE FROM cases WHERE repo_id=$1 AND case_path=$2")
         .bind(repo_id)
         .bind(case_path)
-        .execute(pool)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?
+        .rows_affected();
+    if rows > 0 {
+        sqlx::query(
+            "UPDATE suites SET cases = array_remove(cases, $2) WHERE repo_id=$1 AND $2 = ANY(cases)",
+        )
+        .bind(repo_id)
+        .bind(case_path)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
+        sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND case_path=$2")
+            .bind(repo_id)
+            .bind(case_path)
+            .execute(&mut *tx)
+            .await
+            .map_err(map_db)?;
+    }
+    tx.commit().await.map_err(map_db)?;
     Ok(()) // no error if not found
 }
 
@@ -448,7 +469,7 @@ pub async fn get_suite(pool: &PgPool, repo_id: &str, slug: &str) -> RResult<Suit
     .fetch_optional(pool)
     .await
     .map_err(map_db)?
-    .ok_or_else(|| RepoError::NotFound(format!("suite not found: {}", slug)))
+    .ok_or_else(|| RepoError::NotFound(format!("suite not found: {slug}")))
 }
 
 async fn validate_suite_cases(pool: &PgPool, repo_id: &str, cases: &[String]) -> RResult<()> {
@@ -463,10 +484,7 @@ async fn validate_suite_cases(pool: &PgPool, repo_id: &str, cases: &[String]) ->
         .await
         .map_err(map_db)?;
         if !exists {
-            return Err(RepoError::NotFound(format!(
-                "case not found: {}",
-                case_path
-            )));
+            return Err(RepoError::NotFound(format!("case not found: {case_path}")));
         }
     }
     Ok(())
@@ -499,8 +517,7 @@ pub async fn create_suite(
 
     if rows == 0 {
         return Err(RepoError::AlreadyExists(format!(
-            "suite already exists: {}",
-            slug
+            "suite already exists: {slug}"
         )));
     }
 
@@ -524,7 +541,9 @@ pub async fn update_suite(
     validate_slug_path(slug, "suite")?;
     let effective_slug = if let Some(ns) = new_slug {
         validate_slug_path(ns, "new_slug")?;
-        if ns != slug {
+        if ns == slug {
+            slug
+        } else {
             let conflict: bool = sqlx::query_scalar(
                 "SELECT EXISTS(SELECT 1 FROM suites WHERE repo_id=$1 AND slug=$2)",
             )
@@ -535,32 +554,31 @@ pub async fn update_suite(
             .map_err(map_db)?;
             if conflict {
                 return Err(RepoError::AlreadyExists(format!(
-                    "suite already exists: {}",
-                    ns
+                    "suite already exists: {ns}"
                 )));
             }
-            // Rename: update slug and also update any runs that reference the old slug.
+            // Rename atomically: update slug and cascade to runs referencing it.
+            let mut tx = pool.begin().await.map_err(map_db)?;
             let rows = sqlx::query("UPDATE suites SET slug=$3 WHERE repo_id=$1 AND slug=$2")
                 .bind(repo_id)
                 .bind(slug)
                 .bind(ns)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?
                 .rows_affected();
             if rows == 0 {
-                return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
+                return Err(RepoError::NotFound(format!("suite not found: {slug}")));
             }
             sqlx::query("UPDATE runs SET suite=$3 WHERE repo_id=$1 AND suite=$2")
                 .bind(repo_id)
                 .bind(slug)
                 .bind(ns)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(map_db)?;
+            tx.commit().await.map_err(map_db)?;
             ns
-        } else {
-            slug
         }
     } else {
         slug
@@ -590,8 +608,7 @@ pub async fn update_suite(
     .rows_affected();
     if rows == 0 {
         return Err(RepoError::NotFound(format!(
-            "suite not found: {}",
-            effective_slug
+            "suite not found: {effective_slug}"
         )));
     }
 
@@ -613,7 +630,7 @@ pub async fn delete_suite(pool: &PgPool, repo_id: &str, slug: &str) -> RResult<(
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("suite not found: {}", slug)));
+        return Err(RepoError::NotFound(format!("suite not found: {slug}")));
     }
     Ok(())
 }
@@ -624,7 +641,7 @@ pub async fn delete_suite(pool: &PgPool, repo_id: &str, slug: &str) -> RResult<(
 
 pub async fn list_runs(pool: &PgPool, repo_id: &str) -> RResult<Vec<RunRow>> {
     sqlx::query_as::<_, RunRow>(
-        "SELECT run_id, date, tester, status, environment, suite
+        "SELECT run_id, date, tester, status, environment, suite, commit_sha
          FROM runs WHERE repo_id=$1 ORDER BY date DESC, run_id DESC",
     )
     .bind(repo_id)
@@ -636,7 +653,7 @@ pub async fn list_runs(pool: &PgPool, repo_id: &str) -> RResult<Vec<RunRow>> {
 pub async fn get_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<LoadedRun> {
     validate_slug_path(run_id, "run")?;
     let meta = sqlx::query_as::<_, RunRow>(
-        "SELECT run_id, date, tester, status, environment, suite
+        "SELECT run_id, date, tester, status, environment, suite, commit_sha
          FROM runs WHERE repo_id=$1 AND run_id=$2",
     )
     .bind(repo_id)
@@ -644,7 +661,7 @@ pub async fn get_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<Load
     .fetch_optional(pool)
     .await
     .map_err(map_db)?
-    .ok_or_else(|| RepoError::NotFound(format!("run not found: {}", run_id)))?;
+    .ok_or_else(|| RepoError::NotFound(format!("run not found: {run_id}")))?;
 
     let results = sqlx::query_as::<_, LoadedResult>(
         "SELECT case_path, status, notes FROM results WHERE repo_id=$1 AND run_id=$2",
@@ -658,6 +675,7 @@ pub async fn get_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<Load
     Ok(LoadedRun { meta, results })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_run(
     pool: &PgPool,
     repo_id: &str,
@@ -666,8 +684,12 @@ pub async fn create_run(
     environment: Option<String>,
     suite: Option<String>,
     inline_cases: Vec<String>,
+    commit_sha: String,
 ) -> RResult<RunRow> {
     validate_slug_path(slug, "run slug")?;
+    for case_path in &inline_cases {
+        validate_slug_path(case_path, "case")?;
+    }
     if !inline_cases.is_empty() && suite.as_deref().is_some_and(|s| !s.is_empty()) {
         return Err(RepoError::InvalidArg(
             "cannot specify both suite and cases — use one or the other".to_owned(),
@@ -686,19 +708,19 @@ pub async fn create_run(
             .map_err(map_db)?;
             if !exists {
                 return Err(RepoError::NotFound(format!(
-                    "suite not found: {}",
-                    suite_slug
+                    "suite not found: {suite_slug}"
                 )));
             }
         }
     }
 
     let today = Local::now().format("%Y-%m-%d").to_string();
-    let run_id = format!("{}-{}", today, slug);
+    let run_id = format!("{today}-{slug}");
 
+    let mut tx = pool.begin().await.map_err(map_db)?;
     let rows = sqlx::query(
-        "INSERT INTO runs (repo_id, run_id, date, tester, status, environment, suite)
-         VALUES ($1, $2, $3, $4, 'in-progress', $5, $6)
+        "INSERT INTO runs (repo_id, run_id, date, tester, status, environment, suite, commit_sha)
+         VALUES ($1, $2, $3, $4, 'in-progress', $5, $6, $7)
          ON CONFLICT DO NOTHING",
     )
     .bind(repo_id)
@@ -707,31 +729,30 @@ pub async fn create_run(
     .bind(tester)
     .bind(&environment)
     .bind(&suite)
-    .execute(pool)
+    .bind(&commit_sha)
+    .execute(&mut *tx)
     .await
     .map_err(map_db)?
     .rows_affected();
 
     if rows == 0 {
         return Err(RepoError::AlreadyExists(format!(
-            "run already exists: {}",
-            run_id
+            "run already exists: {run_id}"
         )));
     }
 
-    if !inline_cases.is_empty() {
-        for case_path in &inline_cases {
-            sqlx::query(
-                "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-            )
-            .bind(repo_id)
-            .bind(&run_id)
-            .bind(case_path)
-            .execute(pool)
-            .await
-            .map_err(map_db)?;
-        }
+    for case_path in &inline_cases {
+        sqlx::query(
+            "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        )
+        .bind(repo_id)
+        .bind(&run_id)
+        .bind(case_path)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?;
     }
+    tx.commit().await.map_err(map_db)?;
 
     Ok(RunRow {
         run_id,
@@ -740,6 +761,7 @@ pub async fn create_run(
         status: "in-progress".to_owned(),
         environment,
         suite,
+        commit_sha,
     })
 }
 
@@ -765,12 +787,11 @@ pub async fn record_result(
 
     match run_status.as_deref() {
         None => {
-            return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+            return Err(RepoError::NotFound(format!("run not found: {run_id}")));
         }
-        Some("completed") | Some("aborted") => {
+        Some("completed" | "aborted") => {
             return Err(RepoError::ClosedRun(format!(
-                "run {} is closed; cannot record results",
-                run_id
+                "run {run_id} is closed; cannot record results"
             )));
         }
         _ => {}
@@ -785,10 +806,7 @@ pub async fn record_result(
             .map_err(map_db)?;
 
     if !case_exists {
-        return Err(RepoError::NotFound(format!(
-            "case not found: {}",
-            case_path
-        )));
+        return Err(RepoError::NotFound(format!("case not found: {case_path}")));
     }
 
     let previous: Option<String> = sqlx::query_scalar(
@@ -843,11 +861,10 @@ pub async fn finalize_run(
             .map_err(map_db)?;
 
     match current.as_deref() {
-        None => return Err(RepoError::NotFound(format!("run not found: {}", run_id))),
-        Some("completed") | Some("aborted") => {
+        None => return Err(RepoError::NotFound(format!("run not found: {run_id}"))),
+        Some("completed" | "aborted") => {
             return Err(RepoError::ClosedRun(format!(
-                "run {} is already closed",
-                run_id
+                "run {run_id} is already closed"
             )));
         }
         _ => {}
@@ -862,7 +879,7 @@ pub async fn finalize_run(
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+        return Err(RepoError::NotFound(format!("run not found: {run_id}")));
     }
 
     get_run(pool, repo_id, run_id).await.map(|r| r.meta)
@@ -870,23 +887,30 @@ pub async fn finalize_run(
 
 pub async fn delete_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<()> {
     validate_slug_path(run_id, "run")?;
-    // Delete results first (no FK cascade defined), then the run.
+    let mut tx = pool.begin().await.map_err(map_db)?;
     sqlx::query("DELETE FROM results WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
-        .execute(pool)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_db)?;
+    sqlx::query("DELETE FROM run_cases WHERE repo_id=$1 AND run_id=$2")
+        .bind(repo_id)
+        .bind(run_id)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
     let rows = sqlx::query("DELETE FROM runs WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+        return Err(RepoError::NotFound(format!("run not found: {run_id}")));
     }
+    tx.commit().await.map_err(map_db)?;
     Ok(())
 }
 
@@ -901,53 +925,53 @@ pub async fn update_run(
     // run_id format: YYYY-MM-DD-{slug}. Extract date prefix (first 10 chars).
     let date_prefix = run_id.get(..10).ok_or_else(|| {
         RepoError::InvalidArg(format!(
-            "run_id '{}' does not start with a date prefix (YYYY-MM-DD)",
-            run_id
+            "run_id '{run_id}' does not start with a date prefix (YYYY-MM-DD)"
         ))
     })?;
-    let new_run_id = format!("{}-{}", date_prefix, new_slug);
+    let new_run_id = format!("{date_prefix}-{new_slug}");
     if new_run_id == run_id {
         return get_run(pool, repo_id, run_id).await.map(|r| r.meta);
     }
+    let mut tx = pool.begin().await.map_err(map_db)?;
     let conflict: bool =
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM runs WHERE repo_id=$1 AND run_id=$2)")
             .bind(repo_id)
             .bind(&new_run_id)
-            .fetch_one(pool)
+            .fetch_one(&mut *tx)
             .await
             .map_err(map_db)?;
     if conflict {
         return Err(RepoError::AlreadyExists(format!(
-            "run already exists: {}",
-            new_run_id
+            "run already exists: {new_run_id}"
         )));
     }
     let rows = sqlx::query("UPDATE runs SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .bind(&new_run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?
         .rows_affected();
     if rows == 0 {
-        return Err(RepoError::NotFound(format!("run not found: {}", run_id)));
+        return Err(RepoError::NotFound(format!("run not found: {run_id}")));
     }
-    // Cascade to results and run_cases.
+    // Cascade to results and run_cases atomically.
     sqlx::query("UPDATE results SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .bind(&new_run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
     sqlx::query("UPDATE run_cases SET run_id=$3 WHERE repo_id=$1 AND run_id=$2")
         .bind(repo_id)
         .bind(run_id)
         .bind(&new_run_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
+    tx.commit().await.map_err(map_db)?;
     get_run(pool, repo_id, &new_run_id).await.map(|r| r.meta)
 }
 
@@ -1076,6 +1100,38 @@ pub async fn get_coverage_report(pool: &PgPool, repo_id: &str) -> RResult<(Vec<C
         .map_err(map_db)?;
 
     Ok((entries, run_count))
+}
+
+/// Returns a map from case_path to its latest result status string ("passed", "failed",
+/// "blocked", "skipped", or "never") for every case in the repository.
+pub async fn get_latest_statuses(
+    pool: &PgPool,
+    repo_id: &str,
+) -> RResult<std::collections::HashMap<String, String>> {
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        case_path: String,
+        status: String,
+    }
+    let rows = sqlx::query_as::<_, Row>(
+        "WITH latest_results AS (
+            SELECT DISTINCT ON (r.case_path)
+                r.case_path, r.status
+            FROM results r
+            JOIN runs ru ON ru.repo_id = r.repo_id AND ru.run_id = r.run_id
+            WHERE r.repo_id = $1
+            ORDER BY r.case_path, ru.date DESC, r.run_id DESC
+        )
+        SELECT c.case_path, COALESCE(lr.status, 'never') AS status
+        FROM cases c
+        LEFT JOIN latest_results lr ON lr.case_path = c.case_path
+        WHERE c.repo_id = $1",
+    )
+    .bind(repo_id)
+    .fetch_all(pool)
+    .await
+    .map_err(map_db)?;
+    Ok(rows.into_iter().map(|r| (r.case_path, r.status)).collect())
 }
 
 #[cfg(test)]
@@ -1639,6 +1695,7 @@ mod tests {
             None,
             None,
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1656,6 +1713,7 @@ mod tests {
             None,
             Some("bad suite!".to_owned()),
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1674,6 +1732,7 @@ mod tests {
             None,
             Some("".to_owned()),
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1712,6 +1771,7 @@ mod tests {
             None,
             None,
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1730,10 +1790,64 @@ mod tests {
             None,
             Some("regression".to_owned()),
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
         assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_inline_cases_passes_validation_and_hits_db() {
+        // Providing inline_cases without a suite should pass validation → DB error.
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            None,
+            vec!["auth/login".to_owned()],
+            String::new(),
+        )
+        .await
+        .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
+    #[tokio::test]
+    async fn create_run_invalid_inline_case_path_returns_invalid_arg() {
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            None,
+            vec!["../traversal".to_owned()],
+            String::new(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
+        assert!(err.to_string().contains("case path"));
+    }
+
+    #[tokio::test]
+    async fn create_run_suite_and_inline_cases_returns_invalid_arg() {
+        let err = create_run(
+            &lazy_pool(),
+            "owner/repo",
+            "smoke",
+            "tester",
+            None,
+            Some("regression".to_owned()),
+            vec!["auth/login".to_owned()],
+            String::new(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, RepoError::InvalidArg(_)));
     }
 
     #[tokio::test]
@@ -2053,6 +2167,14 @@ mod tests {
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
+    #[tokio::test]
+    async fn get_latest_statuses_returns_db_error_when_no_connection() {
+        let err = get_latest_statuses(&lazy_pool(), "owner/repo")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
     // -----------------------------------------------------------------------
     // DB tests — require DATABASE_URL; run with:
     //   DATABASE_URL=postgres://ameliso:ameliso@localhost/ameliso \
@@ -2124,9 +2246,18 @@ mod tests {
     #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
     async fn create_and_finalize_run(pool: PgPool) {
         let repo = "test-repo";
-        let run = create_run(&pool, repo, "sprint-1", "alice", None, None, vec![])
-            .await
-            .unwrap();
+        let run = create_run(
+            &pool,
+            repo,
+            "sprint-1",
+            "alice",
+            None,
+            None,
+            vec![],
+            String::new(),
+        )
+        .await
+        .unwrap();
         assert_eq!(run.status, "in-progress");
 
         let finalized = finalize_run(&pool, repo, &run.run_id, "completed")
@@ -2142,9 +2273,18 @@ mod tests {
         create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
             .await
             .unwrap();
-        let run = create_run(&pool, repo, "sprint-2", "", None, None, vec![])
-            .await
-            .unwrap();
+        let run = create_run(
+            &pool,
+            repo,
+            "sprint-2",
+            "",
+            None,
+            None,
+            vec![],
+            String::new(),
+        )
+        .await
+        .unwrap();
         finalize_run(&pool, repo, &run.run_id, "aborted")
             .await
             .unwrap();

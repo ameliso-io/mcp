@@ -120,6 +120,15 @@ export declare type RunMeta = Message<"ameliso.v1.RunMeta"> & {
    * @generated from field: string suite = 6;
    */
   suite: string;
+
+  /**
+   * Optional git commit SHA recorded at run creation time.
+   * Agents can use this as `since_ref` in GetAffectedCases to find
+   * tests affected since this run's baseline commit.
+   *
+   * @generated from field: string commit_sha = 7;
+   */
+  commitSha: string;
 };
 
 /**
@@ -219,6 +228,22 @@ export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
    * @generated from field: string reason = 2;
    */
   reason: string;
+
+  /**
+   * Latest test result status for this case — lets agents prioritize
+   * never-run or failed cases over recently-passed ones.
+   *
+   * @generated from field: ameliso.v1.ResultStatus latest_status = 3;
+   */
+  latestStatus: ResultStatus;
+
+  /**
+   * Markdown body of the test case — the actual test procedure/steps.
+   * Included so agents can act without a separate GetCase call.
+   *
+   * @generated from field: string body = 4;
+   */
+  body: string;
 };
 
 /**

@@ -135,6 +135,7 @@ describe("OverviewTab", () => {
     const bar = screen.getByRole("progressbar", { name: "Run progress" });
     expect(bar).toHaveAttribute("aria-valuenow", "3");
     expect(bar).toHaveAttribute("aria-valuemax", "5");
+    expect(bar).toHaveAttribute("aria-valuetext", "3 of 5 cases complete");
   });
 
   it("calls getAffectedCases when Check Diff submitted", async () => {
@@ -195,14 +196,16 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("coverage failed")).toBeInTheDocument());
   });
 
-  it("sorts affected cases high before low", async () => {
+  it("sorts affected cases high before low when status is the same", async () => {
     const highCase = makeAffectedCase({
       case: { path: "auth/login", title: "High Priority", priority: "high" },
       reason: "modified",
+      latestStatus: ResultStatus.NEVER,
     });
     const lowCase = makeAffectedCase({
       case: { path: "auth/logout", title: "Low Priority", priority: "low" },
       reason: "added",
+      latestStatus: ResultStatus.NEVER,
     });
     vi.mocked(client.getAffectedCases).mockResolvedValue(
       makeGetAffectedCasesResponse({ cases: [lowCase, highCase] })
@@ -214,6 +217,32 @@ describe("OverviewTab", () => {
     const titles = screen.getAllByText(/Priority/);
     expect(titles[0]!.textContent).toBe("High Priority");
     expect(titles[1]!.textContent).toBe("Low Priority");
+  });
+
+  it("sorts affected cases failed before passed regardless of priority", async () => {
+    const passedCase = makeAffectedCase({
+      case: { path: "billing/pay", title: "Passed High", priority: "high" },
+      reason: "modified",
+      latestStatus: ResultStatus.PASSED,
+    });
+    const failedCase = makeAffectedCase({
+      case: { path: "billing/refund", title: "Failed Low", priority: "low" },
+      reason: "added",
+      latestStatus: ResultStatus.FAILED,
+    });
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [passedCase, failedCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("Passed High")).toBeInTheDocument());
+    const affectedItems = screen
+      .getAllByRole("listitem")
+      .filter((el) => el.textContent?.includes("billing/"));
+    expect(affectedItems[0]!.textContent).toContain("Failed Low");
+    expect(affectedItems[1]!.textContent).toContain("Passed High");
   });
 
   it('shows singular "run" when runCount is 1', async () => {
@@ -576,6 +605,35 @@ describe("OverviewTab", () => {
     expect(screen.getByText("2026-02-01")).toBeInTheDocument();
   });
 
+  it("shows abbreviated commit SHA in active run row when commitSha is set", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-sha",
+      tester: "alice",
+      suite: "",
+      date: "2026-04-01",
+      commitSha: "abc1234567890",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    const shaEl = screen.getByTitle("abc1234567890");
+    expect(shaEl.textContent).toBe("abc1234");
+  });
+
+  it("does not show commit SHA code element when commitSha is empty", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-no-sha",
+      tester: "bob",
+      suite: "",
+      date: "2026-04-01",
+      commitSha: "",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("run-no-sha")).toBeInTheDocument());
+    expect(screen.queryByTitle("")).not.toBeInTheDocument();
+  });
+
   it("polling timer callback triggers reload when active runs present", async () => {
     const activeRun = makeRunMeta({
       id: "run-timer",
@@ -697,6 +755,38 @@ describe("OverviewTab", () => {
     expect((bar.firstChild as HTMLElement).style.width).toBe("0%");
   });
 
+  it("progress bar aria-valuetext uses singular 'case' when totalInScope is 1", async () => {
+    const activeRun = makeRunMeta({ id: "run-one", tester: "eve", environment: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 1,
+      highCases: 1,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 1,
+      suiteCount: 0,
+      runCount: 1,
+      activeRuns: [
+        {
+          runId: "run-one",
+          tester: "eve",
+          suite: "",
+          date: "2026-01-01",
+          pendingCases: 1,
+          totalInScope: 1,
+        },
+      ],
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText(/Active Runs/));
+    const bar = screen.getByRole("progressbar", { name: "Run progress" });
+    expect(bar).toHaveAttribute("aria-valuetext", "0 of 1 case complete");
+  });
+
   it("UNSPECIFIED status sorts after PASSED in coverage list (default branch)", async () => {
     // statusSortOrder returns 5 for UNSPECIFIED (default case), PASSED returns 4.
     // So PASSED entries must appear before UNSPECIFIED in the rendered list.
@@ -740,6 +830,47 @@ describe("OverviewTab", () => {
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenLastCalledWith(
         expect.objectContaining({ statusFilter: ResultStatus.FAILED })
+      )
+    );
+  });
+
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.getCoverageReport).mockRejectedValueOnce(new Error("load error"));
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.getCoverageReport).toHaveBeenCalledTimes(2));
+  });
+
+  it("passes changedFiles when textarea is filled, ignoring sinceRef", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    const textarea = screen.getByRole("textbox", { name: /Paste git diff --name-only/ });
+    await userEvent.type(textarea, "src/auth.ts\nsrc/login.ts");
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(client.getAffectedCases).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changedFiles: ["src/auth.ts", "src/login.ts"],
+          sinceRef: "",
+        })
+      )
+    );
+  });
+
+  it("passes empty changedFiles and uses sinceRef when textarea is empty", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    const sinceInput = screen.getByRole("textbox", { name: /Git ref to compare from/ });
+    await userEvent.type(sinceInput, "HEAD~1");
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(client.getAffectedCases).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changedFiles: [],
+          sinceRef: "HEAD~1",
+        })
       )
     );
   });

@@ -950,11 +950,52 @@ describe("RunsTab", () => {
     spy.mockRestore();
   });
 
+  it("shows stale warning after two consecutive poll failures", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.getPendingCases)
+      .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
+      .mockRejectedValue(new Error("poll error"));
+    let capturedCallback: (() => Promise<void>) | null = null;
+    const spy = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation((fn: TimerHandler, delay?: number) => {
+        if (delay === 30_000) capturedCallback = fn as () => Promise<void>;
+        return 0 as unknown as ReturnType<typeof setInterval>;
+      });
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => expect(client.getPendingCases).toHaveBeenCalled());
+    expect(screen.getByText("auto-refresh 30s")).toBeInTheDocument();
+    if (capturedCallback) {
+      await act(async () => {
+        await capturedCallback!();
+      });
+      await act(async () => {
+        await capturedCallback!();
+      });
+    }
+    expect(screen.getByText("data may be stale")).toBeInTheDocument();
+    expect(screen.queryByText("auto-refresh 30s")).not.toBeInTheDocument();
+    spy.mockRestore();
+  });
+
   it("dismisses error when X button clicked", async () => {
     vi.mocked(client.listRuns).mockRejectedValue(new Error("load error"));
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
     await userEvent.click(screen.getByText("×"));
+    expect(screen.queryByText("load error")).not.toBeInTheDocument();
+  });
+
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.listRuns)
+      .mockRejectedValueOnce(new Error("load error"))
+      .mockResolvedValueOnce({ runs: [] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.listRuns).toHaveBeenCalledTimes(2));
     expect(screen.queryByText("load error")).not.toBeInTheDocument();
   });
 
@@ -1356,6 +1397,29 @@ describe("RunsTab", () => {
     expect(screen.getByText("staging")).toBeInTheDocument();
   });
 
+  it("shows abbreviated commit SHA when run has commitSha", async () => {
+    const runWithSha = makeRunMeta({ commitSha: "abc1234567890" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [runWithSha] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("abc1234")).toBeInTheDocument());
+  });
+
+  it("fills commit SHA field in create form and passes it to createRun", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "sprint-1");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Commit SHA (optional)" }),
+      "deadbeef"
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith(
+        expect.objectContaining({ commitSha: "deadbeef" })
+      )
+    );
+  });
+
   it("does not show Record button for completed run", async () => {
     const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
@@ -1604,6 +1668,24 @@ describe("RunsTab", () => {
     expect(screen.queryByRole("textbox", { name: "New slug" })).not.toBeInTheDocument();
   });
 
+  it("reloads run list after successful rename", async () => {
+    const renamedRun = { ...mockRun, id: "2026-01-01-smoke-v2" };
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    vi.mocked(client.updateRun).mockResolvedValue({
+      run: renamedRun,
+      newDirPath: "runs/2026-01-01-smoke-v2",
+    } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [renamedRun] } as never);
+    await userEvent.click(screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "New slug" }), "smoke-v2");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Rename 2026-01-01-smoke-v2" })).toBeInTheDocument()
+    );
+  });
+
   it("shows error when updateRun fails", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.updateRun).mockRejectedValue(new Error("rename failed"));
@@ -1734,5 +1816,117 @@ describe("RunsTab", () => {
     });
     resolve(makeGetPendingCasesResponse({ cases: [mockCase], totalInScope: 1 }));
     await waitFor(() => screen.getByText("auth/login"));
+  });
+
+  it("shows search input when runs exist", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+  });
+
+  it("does not show search input when no runs", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("No runs found."));
+    expect(screen.queryByRole("searchbox", { name: "Search runs" })).not.toBeInTheDocument();
+  });
+
+  it("filters runs by tester", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-smoke", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "alice");
+    expect(screen.getByText("2026-01-01-smoke")).toBeInTheDocument();
+    expect(screen.queryByText("2026-01-02-smoke")).not.toBeInTheDocument();
+  });
+
+  it("filters runs by run ID", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-regression", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "regression");
+    expect(screen.queryByText("2026-01-01-smoke")).not.toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-regression")).toBeInTheDocument();
+  });
+
+  it("filters runs by suite", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", suite: "smoke", tester: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", suite: "regression", tester: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "regress");
+    expect(screen.queryByText("2026-01-01-smoke")).not.toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-reg")).toBeInTheDocument();
+  });
+
+  it("shows no-match empty state when filter matches nothing", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "xyz-not-found");
+    expect(screen.getByText(/No runs match/)).toBeInTheDocument();
+  });
+
+  it("keeps selected run visible even when it does not match filter", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 0 } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.click(screen.getByRole("button", { name: "In Progress run 2026-01-01-smoke" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "bob");
+    expect(screen.getByText("2026-01-01-smoke")).toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-reg")).toBeInTheDocument();
+  });
+
+  it("whitespace-only search shows all runs", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "   ");
+    expect(screen.getByText("2026-01-01-smoke")).toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-reg")).toBeInTheDocument();
+  });
+
+  it("announces singular run found", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    const searchBox = await screen.findByRole("searchbox", { name: "Search runs" });
+    // "2026-01-0" matches both runs → sets prevCount=2; "2026-01-01" matches only run1 → announces "1 run found"
+    await userEvent.type(searchBox, "2026-01-01");
+    await waitFor(() => {
+      const live = document.querySelectorAll('[role="status"]');
+      expect(Array.from(live).some((el) => el.textContent === "1 run found")).toBe(true);
+    });
+  });
+
+  it("announces plural runs found when count changes", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    const searchBox = await screen.findByRole("searchbox", { name: "Search runs" });
+    // narrow to 1 first (sets prevCount=1 after going through 2→1), then widen to 2
+    await userEvent.type(searchBox, "2026-01-01");
+    await waitFor(() => {
+      const live = document.querySelectorAll('[role="status"]');
+      expect(Array.from(live).some((el) => el.textContent === "1 run found")).toBe(true);
+    });
+    await userEvent.clear(searchBox);
+    await userEvent.type(searchBox, "0");
+    await waitFor(() => {
+      const live = document.querySelectorAll('[role="status"]');
+      expect(Array.from(live).some((el) => el.textContent === "2 runs found")).toBe(true);
+    });
   });
 });

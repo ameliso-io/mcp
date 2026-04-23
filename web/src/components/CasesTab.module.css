@@ -54,6 +54,11 @@
   margin-bottom: 4px;
 }
 
+.requiredLabel::after {
+  content: " *";
+  color: var(--color-danger);
+}
+
 .labelSm {
   font-size: 12px;
   color: var(--color-muted);
@@ -122,8 +127,20 @@
 .errorActions {
   display: flex;
   align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
+
+.errorRetry {
+  background: none;
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger-text);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 
 .errorDismiss {
   background: none;
@@ -132,7 +149,7 @@
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
-  padding: 0 0 0 12px;
+  padding: 0;
   flex-shrink: 0;
 }
 

@@ -63,6 +63,7 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
   const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
 
   const [sinceRef, setSinceRef] = useState("");
+  const [changedFilesText, setChangedFilesText] = useState("");
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
   const [affectedLoading, setAffectedLoading] = useState(false);
   const [affectedError, setAffectedError] = useState<string | null>(null);
@@ -127,35 +128,38 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => {
-        void load(repoId, true);
-      }, 30_000);
+      pollRef.current = setInterval(() => void load(repoId, true), 30_000);
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [repoId, activeRuns.length, load]);
 
-  const handleAffected = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      /* v8 ignore next 2 — component returns early rendering when repoId is empty */
-      if (!repoId) return;
-      setAffectedLoading(true);
-      setAffectedError(null);
-      try {
-        const res = await client.getAffectedCases({ repoId, sinceRef });
-        setAffected(res.cases);
-        const n = res.cases.length;
-        announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
-      } catch (err) {
-        setAffectedError(errorMessage(err));
-      } finally {
-        setAffectedLoading(false);
-      }
-    },
-    [repoId, sinceRef, announce]
-  );
+  async function handleAffected(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — component returns early rendering when repoId is empty */
+    if (!repoId) return;
+    setAffectedLoading(true);
+    setAffectedError(null);
+    try {
+      const parsedChangedFiles = changedFilesText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const res = await client.getAffectedCases({
+        repoId,
+        sinceRef: parsedChangedFiles.length ? "" : sinceRef,
+        changedFiles: parsedChangedFiles,
+      });
+      setAffected(res.cases);
+      const n = res.cases.length;
+      announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
+    } catch (err) {
+      setAffectedError(errorMessage(err));
+    } finally {
+      setAffectedLoading(false);
+    }
+  }
 
   const sortedEntries = useMemo(
     () =>
@@ -170,8 +174,21 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
       affected === null
         ? null
         : [...affected].sort((a, b) => {
-            const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
-            return (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3);
+            const statusOrder: Partial<Record<number, number>> = {
+              [ResultStatus.FAILED]: 0,
+              [ResultStatus.NEVER]: 1,
+              [ResultStatus.BLOCKED]: 2,
+              [ResultStatus.SKIPPED]: 3,
+              [ResultStatus.PASSED]: 4,
+            };
+            const sA = statusOrder[a.latestStatus] ?? 5;
+            const sB = statusOrder[b.latestStatus] ?? 5;
+            if (sA !== sB) return sA - sB;
+            const priorityOrder = { high: 0, medium: 1, low: 2 } as Record<string, number>;
+            return (
+              (priorityOrder[a.case?.priority ?? ""] ?? 3) -
+              (priorityOrder[b.case?.priority ?? ""] ?? 3)
+            );
           }),
     [affected]
   );
@@ -210,7 +227,13 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <div className={styles.errorActions}>
-            <button type="button" onClick={() => load(repoId)} className={styles.errorRetry}>
+            <button
+              type="button"
+              onClick={() => {
+                void load(repoId);
+              }}
+              className={styles.errorRetry}
+            >
               Retry
             </button>
             <button
@@ -284,6 +307,11 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                       <time className={styles.runDate} dateTime={run.date}>
                         {run.date}
                       </time>
+                      {run.commitSha && (
+                        <code className={styles.runCommitSha} title={run.commitSha}>
+                          {run.commitSha.slice(0, 7)}
+                        </code>
+                      )}
                       {status && (
                         <div className={styles.runProgressWrap}>
                           <div
@@ -293,6 +321,7 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                             aria-valuemin={0}
                             aria-valuemax={status.totalInScope}
                             aria-valuenow={status.totalInScope - status.pendingCases}
+                            aria-valuetext={`${status.totalInScope - status.pendingCases} of ${status.totalInScope} case${status.totalInScope !== 1 ? "s" : ""} complete`}
                           >
                             <div
                               className={styles.runProgressBar}
@@ -377,21 +406,31 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
             onSubmit={handleAffected}
             className={styles.affectedForm}
           >
-            <input
-              type="text"
-              aria-label="Git ref to compare from (leave empty to use last run commit)"
-              value={sinceRef}
+            <div className={styles.affectedFormRow}>
+              <input
+                type="text"
+                aria-label="Git ref to compare from (leave empty to use last run commit)"
+                value={sinceRef}
+                onChange={(e) => {
+                  setSinceRef(e.target.value);
+                }}
+                placeholder="Since ref (default: last run commit)"
+                className={styles.repoInput}
+              />
+              <button type="submit" disabled={affectedLoading} className={styles.btn}>
+                {affectedLoading ? "Checking…" : "Check Diff"}
+              </button>
+            </div>
+            <textarea
+              aria-label="Paste git diff --name-only output (overrides ref above)"
+              value={changedFilesText}
               onChange={(e) => {
-                setSinceRef(e.target.value);
+                setChangedFilesText(e.target.value);
               }}
-              placeholder="Since ref (default: last run commit)"
-              className={styles.repoInput}
-              autoComplete="off"
-              spellCheck={false}
+              rows={3}
+              placeholder={"Or paste git diff --name-only output here…"}
+              className={styles.changedFilesInput}
             />
-            <button type="submit" disabled={affectedLoading} className={styles.btn}>
-              {affectedLoading ? "Checking…" : "Check Diff"}
-            </button>
           </form>
           {affectedError && (
             <div className={styles.inlineError} role="alert">
@@ -425,8 +464,19 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                         <span className="sr-only">{ac.case.priority} priority</span>
                       </>
                     )}
+                    <span
+                      className={styles.statusDot}
+                      aria-hidden="true"
+                      data-status={ResultStatus[ac.latestStatus]}
+                    />
                     <span className={styles.affectedPath}>{ac.case?.path}</span>
                     <span className={styles.affectedTitle}>{ac.case?.title}</span>
+                    <span
+                      className={styles.coverageStatus}
+                      data-status={ResultStatus[ac.latestStatus]}
+                    >
+                      {statusLabel(ac.latestStatus)}
+                    </span>
                     <span className={styles.affectedReason}>{ac.reason}</span>
                   </li>
                 ))}

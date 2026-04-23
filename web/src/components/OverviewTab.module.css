@@ -63,8 +63,20 @@
 .errorActions {
   display: flex;
   align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
+
+.errorRetry {
+  background: none;
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger-text);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 
 .errorDismiss {
   background: none;
@@ -73,7 +85,7 @@
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
-  padding: 0 0 0 12px;
+  padding: 0;
   flex-shrink: 0;
 }
 
@@ -242,6 +254,15 @@
   color: var(--color-subtle);
 }
 
+.runCommitSha {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--color-subtle);
+  background: var(--color-surface);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
 .runProgressWrap {
   margin-left: auto;
   display: flex;
@@ -342,8 +363,25 @@
 
 .affectedForm {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.affectedFormRow {
+  display: flex;
+  gap: 8px;
+}
+
+.changedFilesInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: monospace;
+  resize: vertical;
+  box-sizing: border-box;
 }
 
 .affectedList {

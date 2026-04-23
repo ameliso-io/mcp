@@ -24,9 +24,8 @@ fn load_env() {
 }
 
 async fn sync_installations(pool: &sqlx::PgPool) -> anyhow::Result<()> {
-    let cfg = match ameliso_server::github::config() {
-        Some(c) => c,
-        None => return Ok(()),
+    let Some(cfg) = ameliso_server::github::config() else {
+        return Ok(());
     };
     let jwt = ameliso_server::github::generate_jwt(&cfg.app_id, &cfg.private_key)?;
     let installations = ameliso_server::github::list_app_installations(&jwt).await?;
@@ -121,7 +120,7 @@ async fn main() -> Result<()> {
         .and_then(|p| p.parse::<u16>().ok())
         .unwrap_or(50052);
     let addr: SocketAddr = format!("0.0.0.0:{port}").parse()?;
-    println!("ameliso-server listening on {}", addr);
+    println!("ameliso-server listening on {addr}");
 
     let webhook_port = std::env::var("AMELISO_WEBHOOK_PORT")
         .ok()
@@ -139,7 +138,7 @@ async fn main() -> Result<()> {
     kill_port(port);
     kill_port(webhook_port);
     let webhook_listener = tokio::net::TcpListener::bind(webhook_addr).await?;
-    println!("webhook server listening on {}", webhook_addr);
+    println!("webhook server listening on {webhook_addr}");
 
     tokio::try_join!(
         async {

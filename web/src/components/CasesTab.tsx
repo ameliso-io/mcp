@@ -93,6 +93,7 @@ export default function CasesTab({
   const editingBodyRef = useRef<string | null>(null);
   const loadIdRef = useRef(0);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [actionAnnouncement, announceAction] = useAnnounce();
   const prevCountRef = useRef<number | null>(null);
@@ -237,135 +238,90 @@ export default function CasesTab({
     prevCountRef.current = count;
   }, [deferredCases.length, loading, announceFilter]);
 
-  const noFiltersActive = !debouncedSearch && priorityFilter === Priority.UNSPECIFIED && !tagFilter;
-
-  const handleCreate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      /* v8 ignore next 2 — required fields prevent submission when blank */
-      if (!repoId || !newPath || !newTitle) return;
-      setCreating(true);
-      try {
-        const res = await client.createCase({
-          repoId,
-          casePath: newPath,
-          title: newTitle,
-          description: newDesc,
-          priority: newPriority,
-          tags: newTags
-            ? newTags
-                .split(",")
-                .map((t) => t.trim())
-                .filter(Boolean)
-            : [],
-          body: newBody,
-        });
-        if (res.case && noFiltersActive) {
-          const created = res.case;
-          setCases((prev) =>
-            prev.some((c) => c.path === created.path)
-              /* v8 ignore next 1 — upsert branch not reached when case is always new */
-              ? prev.map((c) => (c.path === created.path ? created : c))
-              : [...prev, created]
-          );
-          /* v8 ignore next 3 — else block only reached when filter is active and excludes new case */
-        } else {
-          void load();
-        }
-        setShowCreate(false);
-        lastFocusRef.current?.focus();
-        setNewPath("");
-        setNewTitle("");
-        setNewDesc("");
-        setNewTags("");
-        setNewBody("");
-        setNewPriority(Priority.MEDIUM);
-        announceAction("Case created");
-      } catch (e) {
-        setError(errorMessage(e));
-      } finally {
-        setCreating(false);
-      }
-    },
-    [
-      repoId,
-      newPath,
-      newTitle,
-      newDesc,
-      newPriority,
-      newTags,
-      newBody,
-      noFiltersActive,
-      announceAction,
-      load,
-    ]
-  );
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
+    if (!repoId || !newPath || !newTitle) return;
+    setCreating(true);
+    try {
+      await client.createCase({
+        repoId,
+        casePath: newPath,
+        title: newTitle,
+        description: newDesc,
+        priority: newPriority,
+        tags: newTags
+          ? newTags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+        body: newBody,
+      });
+      setShowCreate(false);
+      lastFocusRef.current?.focus();
+      setNewPath("");
+      setNewTitle("");
+      setNewDesc("");
+      setNewTags("");
+      setNewBody("");
+      setNewPriority(Priority.MEDIUM);
+      announceAction("Case created");
+      await load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setCreating(false);
+    }
+  }
 
   async function handleDelete(casePath: string) {
+    setDeleting(true);
     try {
       await client.deleteCase({ repoId, casePath });
       setCases((prev) => prev.filter((c) => c.path !== casePath));
       if (expandedPath === casePath) setExpandedPath(null);
       setConfirmingDelete(null);
       announceAction("Case deleted");
+      await load();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      setDeleting(false);
     }
   }
 
-  const handleUpdate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      /* v8 ignore next 2 — form only renders when editingPath is set */
-      if (!editingPath) return;
-      setSaving(true);
-      try {
-        const res = await client.updateCase({
-          repoId,
-          casePath: editingPath,
-          title: editTitle,
-          description: editDesc,
-          priority: editPriority,
-          tags: editTags
-            ? editTags
-                .split(",")
-                .map((t) => t.trim())
-                .filter(Boolean)
-            : [],
-          body: editBody,
-          newPath: editNewPath,
-        });
-        if (res.case && noFiltersActive) {
-          const updated = res.case;
-          /* v8 ignore next 1 — ternary false branch when case path differs, only one case in tests */
-          setCases((prev) => prev.map((c) => (c.path === editingPath ? updated : c)));
-          /* v8 ignore next 3 — else block only reached when filter is active and excludes updated case */
-        } else {
-          void load();
-        }
-        setEditingPath(null);
-        lastFocusRef.current?.focus();
-        announceAction("Case updated");
-      } catch (e) {
-        setError(errorMessage(e));
-      } finally {
-        setSaving(false);
-      }
-    },
-    [
-      editingPath,
-      repoId,
-      editTitle,
-      editDesc,
-      editPriority,
-      editTags,
-      editBody,
-      editNewPath,
-      noFiltersActive,
-      announceAction,
-      load,
-    ]
-  );
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — form only renders when editingPath is set */
+    if (!editingPath) return;
+    setSaving(true);
+    try {
+      await client.updateCase({
+        repoId,
+        casePath: editingPath,
+        title: editTitle,
+        description: editDesc,
+        priority: editPriority,
+        tags: editTags
+          ? editTags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+        body: editBody,
+        newPath: editNewPath,
+      });
+      setEditingPath(null);
+      lastFocusRef.current?.focus();
+      announceAction("Case updated");
+      await load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const sortedCases = useMemo(
     () =>
@@ -424,16 +380,15 @@ export default function CasesTab({
             aria-label="Create Case"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setShowCreate(false);
-                lastFocusRef.current?.focus();
-              }
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              setShowCreate(false);
+              lastFocusRef.current?.focus();
             }}
             className={styles.formGrid}
           >
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Path (e.g. auth/login)
                 <input
                   value={newPath}
@@ -441,6 +396,9 @@ export default function CasesTab({
                     setNewPath(e.target.value);
                   }}
                   required
+                  pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
+                  title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
+                  maxLength={200}
                   autoFocus
                   className={styles.input}
                   autoComplete="off"
@@ -449,7 +407,7 @@ export default function CasesTab({
               </label>
             </div>
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Title
                 <input
                   value={newTitle}
@@ -457,6 +415,7 @@ export default function CasesTab({
                     setNewTitle(e.target.value);
                   }}
                   required
+                  maxLength={255}
                   className={styles.input}
                 />
               </label>
@@ -464,12 +423,14 @@ export default function CasesTab({
             <div className={styles.fullCol}>
               <label className={styles.label}>
                 Description
-                <input
+                <textarea
                   value={newDesc}
                   onChange={(e) => {
                     setNewDesc(e.target.value);
                   }}
-                  className={styles.input}
+                  rows={3}
+                  maxLength={1000}
+                  className={styles.textarea}
                 />
               </label>
             </div>
@@ -603,7 +564,13 @@ export default function CasesTab({
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <div className={styles.errorActions}>
-            <button type="button" onClick={load} className={styles.errorRetry}>
+            <button
+              type="button"
+              onClick={() => {
+                void load();
+              }}
+              className={styles.errorRetry}
+            >
               Retry
             </button>
             <button
@@ -649,16 +616,15 @@ export default function CasesTab({
                   aria-label={`Edit case ${c.path}`}
                   onSubmit={handleUpdate}
                   onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      setEditingPath(null);
-                      lastFocusRef.current?.focus();
-                    }
+                    if (e.key !== "Escape") return;
+                    e.preventDefault();
+                    setEditingPath(null);
+                    lastFocusRef.current?.focus();
                   }}
                   className={styles.formGridSm}
                 >
                   <div>
-                    <label className={styles.labelSm}>
+                    <label className={`${styles.labelSm} ${styles.requiredLabel}`}>
                       Title
                       <input
                         autoFocus
@@ -667,6 +633,7 @@ export default function CasesTab({
                           setEditTitle(e.target.value);
                         }}
                         required
+                        maxLength={255}
                         className={styles.input}
                       />
                     </label>
@@ -690,12 +657,14 @@ export default function CasesTab({
                   <div className={styles.fullCol}>
                     <label className={styles.labelSm}>
                       Description
-                      <input
+                      <textarea
                         value={editDesc}
                         onChange={(e) => {
                           setEditDesc(e.target.value);
                         }}
-                        className={styles.input}
+                        rows={3}
+                        maxLength={1000}
+                        className={styles.textarea}
                       />
                     </label>
                   </div>
@@ -713,22 +682,6 @@ export default function CasesTab({
                   </div>
                   <div className={styles.fullCol}>
                     <label className={styles.labelSm}>
-                      Rename path (optional)
-                      <input
-                        aria-label="Rename path (optional)"
-                        value={editNewPath}
-                        /* v8 ignore next 3 — rename path onChange not exercised in unit tests */
-                        onChange={(e) => {
-                          setEditNewPath(e.target.value);
-                        }}
-                        /* v8 ignore next 1 — editingPath is always set when edit form is shown */
-                        placeholder={editingPath ?? ""}
-                        className={styles.input}
-                      />
-                    </label>
-                  </div>
-                  <div className={styles.fullCol}>
-                    <label className={styles.labelSm}>
                       Steps / Body (Markdown)
                       <textarea
                         value={editBody}
@@ -737,6 +690,22 @@ export default function CasesTab({
                         }}
                         rows={8}
                         className={styles.textarea}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.fullCol}>
+                    <label className={styles.labelSm}>
+                      Rename path (optional)
+                      <input
+                        value={editNewPath}
+                        onChange={(e) => {
+                          setEditNewPath(e.target.value);
+                        }}
+                        pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
+                        title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
+                        maxLength={200}
+                        className={styles.input}
+                        placeholder="leave blank to keep current path"
                       />
                     </label>
                   </div>
@@ -803,9 +772,10 @@ export default function CasesTab({
                         type="button"
                         onClick={() => handleDelete(c.path)}
                         aria-label={`Confirm delete ${c.path}`}
+                        disabled={deleting}
                         className={styles.btnDangerSm}
                       >
-                        Yes
+                        {deleting ? "Deleting…" : "Yes"}
                       </button>
                       <button
                         type="button"

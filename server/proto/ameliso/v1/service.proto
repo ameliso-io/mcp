@@ -8,6 +8,17 @@ option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
 
 // AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
 // All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
+//
+// Recommended agent workflow:
+//   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
+//      including body and latest_status; sort by failed/never first.
+//   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
+//   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
+//   4. RecordResult per case — response.pending_count tells you how many remain.
+//   5. FinalizeRun — mark run complete/aborted.
+//   6. Loop from step 1 with new commit_sha.
+//
+//   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
 service AmelisoService {
   // --- Cases ---
   rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
@@ -220,6 +231,9 @@ message CreateRunRequest {
   // Optional inline case list — when set, the run is scoped to these cases without
   // requiring a pre-existing suite. Mutually exclusive with `suite`.
   repeated string cases = 6;
+  // Optional git commit SHA (HEAD at run creation time). Stored in RunMeta so agents
+  // can later pass it as `since_ref` in GetAffectedCases.
+  string commit_sha = 7;
 }
 
 message CreateRunResponse {
@@ -237,6 +251,8 @@ message RecordResultRequest {
 
 message RecordResultResponse {
   CaseResult result = 1;
+  int32 pending_count = 2;
+  int32 total_in_scope = 3;
 }
 
 message BulkResultEntry {
@@ -279,11 +295,27 @@ message DeleteRunResponse {
 message GetPendingCasesRequest {
   string repo_id = 1;
   string run_id = 2;
+  // When set (non-UNSPECIFIED), only return pending cases at this priority level.
+  // Useful for agents that want to tackle high-priority cases first.
+  Priority priority_filter = 3;
+}
+
+// A pending test case with status and body — for agent-friendly GetPendingCases.
+message PendingEntry {
+  Case case = 1;
+  string body = 2;
+  ResultStatus latest_status = 3;
 }
 
 message GetPendingCasesResponse {
   repeated Case cases = 1;
   int32 total_in_scope = 2;
+  // Same cases as `cases` but with latest coverage status included — lets
+  // agents prioritize failed/never-run cases without a separate coverage call.
+  repeated CoverageEntry entries = 3;
+  // Full pending case data (case metadata + body + latest status) in one field.
+  // Prefer this over `cases` + `entries` when body content is needed.
+  repeated PendingEntry pending = 4;
 }
 
 message UpdateRunRequest {
@@ -317,6 +349,8 @@ message GetAffectedCasesRequest {
   // If set, skip GitHub comparison and match cases against these file paths directly.
   // Pass output of `git diff --name-only <ref>` for local workflows without GitHub.
   repeated string changed_files = 3;
+  // When set (non-UNSPECIFIED), only return affected cases at this priority level.
+  Priority priority_filter = 4;
 }
 
 message GetAffectedCasesResponse {
@@ -337,6 +371,7 @@ message ActiveRunStatus {
   string date = 4;
   int32 pending_cases = 5;
   int32 total_in_scope = 6;
+  string commit_sha = 7;
 }
 
 message GetRepoStatusResponse {

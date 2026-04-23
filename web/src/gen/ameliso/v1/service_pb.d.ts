@@ -708,6 +708,14 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
    * @generated from field: repeated string cases = 6;
    */
   cases: string[];
+
+  /**
+   * Optional git commit SHA (HEAD at run creation time). Stored in RunMeta so agents
+   * can later pass it as `since_ref` in GetAffectedCases.
+   *
+   * @generated from field: string commit_sha = 7;
+   */
+  commitSha: string;
 };
 
 /**
@@ -781,6 +789,16 @@ export declare type RecordResultResponse = Message<"ameliso.v1.RecordResultRespo
    * @generated from field: ameliso.v1.CaseResult result = 1;
    */
   result?: CaseResult;
+
+  /**
+   * @generated from field: int32 pending_count = 2;
+   */
+  pendingCount: number;
+
+  /**
+   * @generated from field: int32 total_in_scope = 3;
+   */
+  totalInScope: number;
 };
 
 /**
@@ -959,6 +977,14 @@ export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCases
    * @generated from field: string run_id = 2;
    */
   runId: string;
+
+  /**
+   * When set (non-UNSPECIFIED), only return pending cases at this priority level.
+   * Useful for agents that want to tackle high-priority cases first.
+   *
+   * @generated from field: ameliso.v1.Priority priority_filter = 3;
+   */
+  priorityFilter: Priority;
 };
 
 /**
@@ -966,6 +992,34 @@ export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCases
  * Use `create(GetPendingCasesRequestSchema)` to create a new message.
  */
 export declare const GetPendingCasesRequestSchema: GenMessage<GetPendingCasesRequest>;
+
+/**
+ * A pending test case with status and body — for agent-friendly GetPendingCases.
+ *
+ * @generated from message ameliso.v1.PendingEntry
+ */
+export declare type PendingEntry = Message<"ameliso.v1.PendingEntry"> & {
+  /**
+   * @generated from field: ameliso.v1.Case case = 1;
+   */
+  case?: Case;
+
+  /**
+   * @generated from field: string body = 2;
+   */
+  body: string;
+
+  /**
+   * @generated from field: ameliso.v1.ResultStatus latest_status = 3;
+   */
+  latestStatus: ResultStatus;
+};
+
+/**
+ * Describes the message ameliso.v1.PendingEntry.
+ * Use `create(PendingEntrySchema)` to create a new message.
+ */
+export declare const PendingEntrySchema: GenMessage<PendingEntry>;
 
 /**
  * @generated from message ameliso.v1.GetPendingCasesResponse
@@ -980,6 +1034,22 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
    * @generated from field: int32 total_in_scope = 2;
    */
   totalInScope: number;
+
+  /**
+   * Same cases as `cases` but with latest coverage status included — lets
+   * agents prioritize failed/never-run cases without a separate coverage call.
+   *
+   * @generated from field: repeated ameliso.v1.CoverageEntry entries = 3;
+   */
+  entries: CoverageEntry[];
+
+  /**
+   * Full pending case data (case metadata + body + latest status) in one field.
+   * Prefer this over `cases` + `entries` when body content is needed.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
+   */
+  pending: PendingEntry[];
 };
 
 /**
@@ -1101,6 +1171,13 @@ export declare type GetAffectedCasesRequest = Message<"ameliso.v1.GetAffectedCas
    * @generated from field: repeated string changed_files = 3;
    */
   changedFiles: string[];
+
+  /**
+   * When set (non-UNSPECIFIED), only return affected cases at this priority level.
+   *
+   * @generated from field: ameliso.v1.Priority priority_filter = 4;
+   */
+  priorityFilter: Priority;
 };
 
 /**
@@ -1179,6 +1256,11 @@ export declare type ActiveRunStatus = Message<"ameliso.v1.ActiveRunStatus"> & {
    * @generated from field: int32 total_in_scope = 6;
    */
   totalInScope: number;
+
+  /**
+   * @generated from field: string commit_sha = 7;
+   */
+  commitSha: string;
 };
 
 /**
@@ -1415,6 +1497,17 @@ export declare const RemoveRepositoryResponseSchema: GenMessage<RemoveRepository
 /**
  * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
+ *
+ * Recommended agent workflow:
+ *   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
+ *      including body and latest_status; sort by failed/never first.
+ *   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
+ *   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
+ *   4. RecordResult per case — response.pending_count tells you how many remain.
+ *   5. FinalizeRun — mark run complete/aborted.
+ *   6. Loop from step 1 with new commit_sha.
+ *
+ *   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
  *
  * @generated from service ameliso.v1.AmelisoService
  */

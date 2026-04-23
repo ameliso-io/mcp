@@ -74,10 +74,9 @@ const config = [
       ],
       "@typescript-eslint/no-floating-promises": "error",
 
-      // TODO: enable and fix incrementally
-      "@typescript-eslint/restrict-template-expressions": "off",
-      "early-return/prefer-early-return": "off",
-      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+      "early-return/prefer-early-return": "error",
+      "@typescript-eslint/no-unnecessary-condition": "error",
       "default/no-localhost": "off",
       "default/no-hardcoded-urls": "off",
       "default/no-default-params": "off",

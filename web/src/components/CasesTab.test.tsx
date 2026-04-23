@@ -490,16 +490,17 @@ describe("CasesTab", () => {
     await waitFor(() => expect(client.listCases).toHaveBeenCalled());
   });
 
-  it("fires debounced search after 300ms and calls listCases", async () => {
+  it("calls listCases with search term after debounce fires", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
-    const callsBefore = vi.mocked(client.listCases).mock.calls.length;
+    vi.mocked(client.listCases).mockClear();
     const searchInput = screen.getByRole("searchbox", { name: "Search cases" });
-    fireEvent.change(searchInput, { target: { value: "login" } });
+    fireEvent.change(searchInput, { target: { value: "xyz-unique-search" } });
     await waitFor(
-      () => {
-        expect(vi.mocked(client.listCases).mock.calls.length).toBeGreaterThan(callsBefore);
-      },
+      () =>
+        expect(client.listCases).toHaveBeenCalledWith(
+          expect.objectContaining({ query: "xyz-unique-search" })
+        ),
       { timeout: 1000 }
     );
   });
@@ -541,6 +542,17 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("server down")).toBeInTheDocument());
     await userEvent.click(screen.getByText("×"));
+    expect(screen.queryByText("server down")).not.toBeInTheDocument();
+  });
+
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.listCases)
+      .mockRejectedValueOnce(new Error("server down"))
+      .mockResolvedValueOnce({ cases: [] } as never);
+    render(<CasesTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("server down")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.listCases).toHaveBeenCalledTimes(2));
     expect(screen.queryByText("server down")).not.toBeInTheDocument();
   });
 

@@ -81,6 +81,7 @@ export default function RunsTab({
   const [newEnv, setNewEnv] = useState("");
   const [newSuite, setNewSuite] = useState("");
   const [newCases, setNewCases] = useState("");
+  const [newCommitSha, setNewCommitSha] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
@@ -102,6 +103,7 @@ export default function RunsTab({
   const [bulkPassing, setBulkPassing] = useState(false);
 
   const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
+  const [deletingRun, setDeletingRun] = useState(false);
   const [confirmingFinalize, setConfirmingFinalize] = useState<{
     runId: string;
     status: RunStatus;
@@ -110,28 +112,31 @@ export default function RunsTab({
   const [renamingRunId, setRenamingRunId] = useState<string | null>(null);
   const [renameNewSlug, setRenameNewSlug] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [runSearch, setRunSearch] = useState("");
   const [actionAnnouncement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
+  const prevRunFilterCountRef = useRef<number | null>(null);
   const [filterPending, startFilterTransition] = useTransition();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   const loadIdRef = useRef(0);
   const selectingRef = useRef<string | null>(null);
-  const prevRunCountRef = useRef<number | null>(null);
   const recordingBodyRef = useRef<string | null>(null);
   useEffect(() => {
-    if (initialSuite && !consumedRef.current) {
-      consumedRef.current = true;
-      setNewSuite(initialSuite);
-      setShowCreate(true);
-      onInitialSuiteConsumed?.();
-    }
+    if (!initialSuite || consumedRef.current) return;
+    consumedRef.current = true;
+    setNewSuite(initialSuite);
+    setShowCreate(true);
+    onInitialSuiteConsumed?.();
   }, [initialSuite, onInitialSuiteConsumed]);
+
+  const [pollFailCount, setPollFailCount] = useState(0);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
   const pendingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
+    setPollFailCount(0);
     if (pendingPollRef.current) clearInterval(pendingPollRef.current);
     const selectedRun = runs.find((r) => r.id === selectedRunId);
     if (selectedRun?.status === RunStatus.IN_PROGRESS && selectedRunId) {
@@ -142,9 +147,10 @@ export default function RunsTab({
           .then((res) => {
             setPendingCases(res.cases);
             setTotalInScope(res.totalInScope);
+            setPollFailCount(0);
           })
           .catch(() => {
-            // silently ignore poll errors
+            setPollFailCount((n) => n + 1);
           });
       }, 30_000);
     }
@@ -177,14 +183,45 @@ export default function RunsTab({
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (loading) return;
-    const count = runs.length;
-    if (prevRunCountRef.current !== null && prevRunCountRef.current !== count) {
-      announceFilter(`${count} run${count !== 1 ? "s" : ""} found`);
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    /* v8 ignore next 2 — required fields prevent submission when blank */
+    if (!repoId || !newSlug) return;
+    setCreating(true);
+    try {
+      const created = await client.createRun({
+        repoId,
+        slug: newSlug,
+        tester: newTester,
+        environment: newEnv,
+        suite: newSuite,
+        cases: newCases
+          ? newCases
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : [],
+        commitSha: newCommitSha,
+      });
+      setShowCreate(false);
+      lastFocusRef.current?.focus();
+      setNewSlug("");
+      setNewTester("");
+      setNewEnv("");
+      setNewSuite("");
+      setNewCases("");
+      setNewCommitSha("");
+      announce("Run created");
+      await load();
+      if (created.run) {
+        await selectRun(created.run.id, created.run.status);
+      }
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setCreating(false);
     }
-    prevRunCountRef.current = count;
-  }, [runs.length, loading, announceFilter]);
+  }
 
   const selectRun = useCallback(
     async (runId: string, status: RunStatus) => {
@@ -239,56 +276,6 @@ export default function RunsTab({
       }
     },
     [selectedRunId, repoId]
-  );
-
-  const handleCreate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      /* v8 ignore next 2 — required fields prevent submission when blank */
-      if (!repoId || !newSlug) return;
-      setCreating(true);
-      try {
-        const created = await client.createRun({
-          repoId,
-          slug: newSlug,
-          tester: newTester,
-          environment: newEnv,
-          suite: newSuite,
-          cases: newCases
-            ? newCases
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean)
-            : [],
-        });
-        setShowCreate(false);
-        lastFocusRef.current?.focus();
-        setNewSlug("");
-        setNewTester("");
-        setNewEnv("");
-        setNewSuite("");
-        setNewCases("");
-        announce("Run created");
-        if (created.run) {
-          const newRun = created.run;
-          /* v8 ignore next 1 — false branch when active status filter excludes new run */
-          if (statusFilter === RunStatus.UNSPECIFIED || newRun.status === statusFilter) {
-            setRuns((prev) =>
-              /* v8 ignore next 2 — upsert branch when run id already exists */
-              prev.some((r) => r.id === newRun.id)
-                ? prev.map((r) => (r.id === newRun.id ? newRun : r))
-                : [newRun, ...prev]
-            );
-          }
-          await selectRun(newRun.id, newRun.status);
-        }
-      } catch (e) {
-        setError(errorMessage(e));
-      } finally {
-        setCreating(false);
-      }
-    },
-    [repoId, newSlug, newTester, newEnv, newSuite, newCases, statusFilter, announce, selectRun]
   );
 
   const handleRecord = useCallback(
@@ -370,6 +357,7 @@ export default function RunsTab({
       setSelectedRunId(null);
       setPendingCases([]);
       announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -404,6 +392,7 @@ export default function RunsTab({
   }
 
   async function handleDeleteRun(runId: string) {
+    setDeletingRun(true);
     try {
       await client.deleteRun({ repoId, runId });
       setRuns((prev) => prev.filter((r) => r.id !== runId));
@@ -415,8 +404,11 @@ export default function RunsTab({
       }
       setConfirmingDeleteRun(null);
       announce("Run deleted");
+      await load();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      setDeletingRun(false);
     }
   }
 
@@ -431,7 +423,7 @@ export default function RunsTab({
       setRenameNewSlug("");
       lastFocusRef.current?.focus();
       announce("Run renamed");
-      void load();
+      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -458,6 +450,27 @@ export default function RunsTab({
   );
   const deferredFilteredResults = useDeferredValue(filteredResults);
   const isResultsStale = filteredResults !== deferredFilteredResults;
+
+  const rq = runSearch.trim().toLowerCase();
+  const filteredRuns = rq
+    ? runs.filter(
+        (r) =>
+          r.id === selectedRunId ||
+          r.id.toLowerCase().includes(rq) ||
+          r.tester.toLowerCase().includes(rq) ||
+          r.suite.toLowerCase().includes(rq) ||
+          r.environment.toLowerCase().includes(rq)
+      )
+    : runs;
+
+  useEffect(() => {
+    if (loading || !rq) return;
+    const count = filteredRuns.length;
+    if (prevRunFilterCountRef.current !== null && prevRunFilterCountRef.current !== count) {
+      announceFilter(count === 1 ? "1 run found" : `${count} runs found`);
+    }
+    prevRunFilterCountRef.current = count;
+  }, [filteredRuns.length, loading, rq, announceFilter]);
 
   if (!repoId) {
     return (
@@ -525,16 +538,15 @@ export default function RunsTab({
             aria-label="Create Run"
             onSubmit={handleCreate}
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setShowCreate(false);
-                lastFocusRef.current?.focus();
-              }
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              setShowCreate(false);
+              lastFocusRef.current?.focus();
             }}
             className={styles.formGrid}
           >
             <div>
-              <label className={styles.label}>
+              <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Slug
                 <input
                   value={newSlug}
@@ -542,6 +554,9 @@ export default function RunsTab({
                     setNewSlug(e.target.value);
                   }}
                   required
+                  pattern="[a-z0-9_-]+"
+                  title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
+                  maxLength={100}
                   autoFocus
                   className={styles.input}
                   autoComplete="off"
@@ -557,6 +572,7 @@ export default function RunsTab({
                   onChange={(e) => {
                     setNewTester(e.target.value);
                   }}
+                  maxLength={255}
                   className={styles.input}
                 />
               </label>
@@ -569,6 +585,7 @@ export default function RunsTab({
                   onChange={(e) => {
                     setNewEnv(e.target.value);
                   }}
+                  maxLength={255}
                   className={styles.input}
                   autoComplete="off"
                   spellCheck={false}
@@ -583,6 +600,7 @@ export default function RunsTab({
                   onChange={(e) => {
                     setNewSuite(e.target.value);
                   }}
+                  maxLength={100}
                   className={styles.input}
                   autoComplete="off"
                   spellCheck={false}
@@ -602,6 +620,20 @@ export default function RunsTab({
                 />
               </label>
             </div>
+            <div>
+              <label className={styles.label}>
+                Commit SHA (optional)
+                <input
+                  value={newCommitSha}
+                  onChange={(e) => {
+                    setNewCommitSha(e.target.value);
+                  }}
+                  maxLength={40}
+                  className={styles.input}
+                  placeholder="HEAD commit SHA"
+                />
+              </label>
+            </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create Run"}
@@ -615,7 +647,13 @@ export default function RunsTab({
         <div className={styles.errorCard} role="alert">
           <span>{error}</span>
           <div className={styles.errorActions}>
-            <button type="button" onClick={load} className={styles.errorRetry}>
+            <button
+              type="button"
+              onClick={() => {
+                void load();
+              }}
+              className={styles.errorRetry}
+            >
               Retry
             </button>
             <button
@@ -632,6 +670,24 @@ export default function RunsTab({
         </div>
       )}
 
+      {runs.length > 0 && (
+        <div className={styles.searchWrapper}>
+          <input
+            type="search"
+            aria-label="Search runs"
+            placeholder="Search runs…"
+            value={runSearch}
+            onChange={(e) => {
+              setRunSearch(e.target.value);
+            }}
+            className={styles.searchInput}
+          />
+          <span className={styles.searchIcon} aria-hidden="true">
+            ⌕
+          </span>
+        </div>
+      )}
+
       {loading && (
         <div className={styles.loadingMsg} role="status">
           Loading…
@@ -642,8 +698,12 @@ export default function RunsTab({
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
+      {!loading && rq && filteredRuns.length === 0 && runs.length > 0 && (
+        <div className={styles.emptyCard}>No runs match &ldquo;{runSearch}&rdquo;.</div>
+      )}
+
       <ul className={styles.list} aria-busy={loading} role="list">
-        {runs.map((run) => (
+        {filteredRuns.map((run) => (
           <li key={run.id}>
             <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>
@@ -661,6 +721,11 @@ export default function RunsTab({
                   {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
                   {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                   {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
+                  {run.commitSha && (
+                    <code className={styles.runCommitSha} title={run.commitSha}>
+                      {run.commitSha.slice(0, 7)}
+                    </code>
+                  )}
                   <time className={styles.runDate} dateTime={run.date}>
                     {run.date}
                   </time>
@@ -686,9 +751,10 @@ export default function RunsTab({
                       type="button"
                       onClick={() => handleDeleteRun(run.id)}
                       aria-label={`Confirm delete ${run.id}`}
+                      disabled={deletingRun}
                       className={styles.btnDangerSm}
                     >
-                      Yes
+                      {deletingRun ? "Deleting…" : "Yes"}
                     </button>
                     <button
                       type="button"
@@ -720,11 +786,10 @@ export default function RunsTab({
                   aria-label={`Rename run ${run.id}`}
                   onSubmit={handleRenameRun}
                   onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      setRenamingRunId(null);
-                      lastFocusRef.current?.focus();
-                    }
+                    if (e.key !== "Escape") return;
+                    e.preventDefault();
+                    setRenamingRunId(null);
+                    lastFocusRef.current?.focus();
                   }}
                   className={styles.renameForm}
                 >
@@ -735,6 +800,9 @@ export default function RunsTab({
                       setRenameNewSlug(e.target.value);
                     }}
                     required
+                    pattern="[a-z0-9_-]+"
+                    title="Lowercase letters (a-z), digits, hyphens, underscores only (e.g. smoke)"
+                    maxLength={100}
                     autoFocus
                     className={styles.renameInput}
                     placeholder="new-slug"
@@ -892,71 +960,33 @@ export default function RunsTab({
                     <div className={styles.pendingHeader}>
                       <h3 className={styles.pendingLabel}>
                         {pendingCases.length} pending
-                        <span className={styles.refreshHint}>auto-refresh 30s</span>
+                        {pollFailCount >= 2 ? (
+                          <span className={styles.staleWarning} role="status" aria-live="polite">
+                            data may be stale
+                          </span>
+                        ) : (
+                          <span className={styles.refreshHint}>auto-refresh 30s</span>
+                        )}
                       </h3>
-                      {run.status === RunStatus.IN_PROGRESS && (
-                        <div className={styles.pendingActions}>
-                          {pendingCases.length > 0 &&
-                            (confirmingBulkPass === run.id ? (
-                              <>
-                                <span className={styles.confirmText}>Pass all?</span>
-                                <button
-                                  type="button"
-                                  aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
-                                  onClick={() => handleBulkPass(run.id)}
-                                  disabled={bulkPassing}
-                                  className={styles.btnBlueSm}
-                                >
-                                  Yes
-                                </button>
-                                <button
-                                  type="button"
-                                  aria-label="Cancel bulk pass"
-                                  onClick={() => {
-                                    setConfirmingBulkPass(null);
-                                  }}
-                                  className={styles.btnOutlineSm}
-                                  autoFocus
-                                >
-                                  No
-                                </button>
-                              </>
-                            ) : (
+                      <div className={styles.pendingActions}>
+                        {pendingCases.length > 0 &&
+                          (confirmingBulkPass === run.id ? (
+                            <>
+                              <span className={styles.confirmText}>Pass all?</span>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setConfirmingBulkPass(run.id);
-                                }}
+                                aria-label={`Confirm pass all ${pendingCases.length} pending case${pendingCases.length !== 1 ? "s" : ""}`}
+                                onClick={() => handleBulkPass(run.id)}
                                 disabled={bulkPassing}
                                 className={styles.btnBlueSm}
-                              >
-                                {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
-                              </button>
-                            ))}
-                          {confirmingFinalize?.runId === run.id ? (
-                            <>
-                              <span className={styles.confirmText}>
-                                {confirmingFinalize.status === RunStatus.COMPLETED
-                                  ? "Complete?"
-                                  : "Abort?"}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
-                                onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
-                                className={
-                                  confirmingFinalize.status === RunStatus.COMPLETED
-                                    ? styles.btnGreenSm
-                                    : styles.btnRedSm
-                                }
                               >
                                 Yes
                               </button>
                               <button
                                 type="button"
-                                aria-label="Cancel"
+                                aria-label="Cancel bulk pass"
                                 onClick={() => {
-                                  setConfirmingFinalize(null);
+                                  setConfirmingBulkPass(null);
                                 }}
                                 className={styles.btnOutlineSm}
                                 autoFocus
@@ -965,37 +995,79 @@ export default function RunsTab({
                               </button>
                             </>
                           ) : (
-                            <>
-                              <button
-                                type="button"
-                                aria-label={`Complete run ${run.id}`}
-                                onClick={() => {
-                                  setConfirmingFinalize({
-                                    runId: run.id,
-                                    status: RunStatus.COMPLETED,
-                                  });
-                                }}
-                                className={styles.btnGreenSm}
-                              >
-                                Complete Run
-                              </button>
-                              <button
-                                type="button"
-                                aria-label={`Abort run ${run.id}`}
-                                onClick={() => {
-                                  setConfirmingFinalize({
-                                    runId: run.id,
-                                    status: RunStatus.ABORTED,
-                                  });
-                                }}
-                                className={styles.btnRedSm}
-                              >
-                                Abort Run
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfirmingBulkPass(run.id);
+                              }}
+                              disabled={bulkPassing}
+                              className={styles.btnBlueSm}
+                            >
+                              {bulkPassing ? "Marking…" : `All Passed (${pendingCases.length})`}
+                            </button>
+                          ))}
+                        {confirmingFinalize?.runId === run.id ? (
+                          <>
+                            <span className={styles.confirmText}>
+                              {confirmingFinalize.status === RunStatus.COMPLETED
+                                ? "Complete?"
+                                : "Abort?"}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Confirm ${confirmingFinalize.status === RunStatus.COMPLETED ? "complete" : "abort"} run ${run.id}`}
+                              onClick={() => handleFinalize(run.id, confirmingFinalize.status)}
+                              className={
+                                confirmingFinalize.status === RunStatus.COMPLETED
+                                  ? styles.btnGreenSm
+                                  : styles.btnRedSm
+                              }
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Cancel"
+                              onClick={() => {
+                                setConfirmingFinalize(null);
+                              }}
+                              className={styles.btnOutlineSm}
+                              autoFocus
+                            >
+                              No
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`Complete run ${run.id}`}
+                              onClick={() => {
+                                setConfirmingFinalize({
+                                  runId: run.id,
+                                  status: RunStatus.COMPLETED,
+                                });
+                              }}
+                              className={styles.btnGreenSm}
+                            >
+                              Complete Run
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Abort run ${run.id}`}
+                              onClick={() => {
+                                setConfirmingFinalize({
+                                  runId: run.id,
+                                  status: RunStatus.ABORTED,
+                                });
+                              }}
+                              className={styles.btnRedSm}
+                            >
+                              Abort Run
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     {pendingCases.length === 0 && (
@@ -1038,20 +1110,18 @@ export default function RunsTab({
                           <div className={styles.pendingRow}>
                             <span className={styles.pendingPath}>{c.path}</span>
                             <span className={styles.pendingTitle}>{c.title}</span>
-                            {run.status === RunStatus.IN_PROGRESS && (
-                              <button
-                                type="button"
-                                onClick={() => openRecord(c.path)}
-                                aria-label={
-                                  recordingCase === c.path
-                                    ? `Cancel recording ${c.path}`
-                                    : `Record result for ${c.path}`
-                                }
-                                className={styles.btnRecordSm}
-                              >
-                                {recordingCase === c.path ? "Cancel" : "Record"}
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => openRecord(c.path)}
+                              aria-label={
+                                recordingCase === c.path
+                                  ? `Cancel recording ${c.path}`
+                                  : `Record result for ${c.path}`
+                              }
+                              className={styles.btnRecordSm}
+                            >
+                              {recordingCase === c.path ? "Cancel" : "Record"}
+                            </button>
                           </div>
 
                           {recordingCase === c.path && (
@@ -1071,12 +1141,11 @@ export default function RunsTab({
                                 aria-label={`Record result for ${recordingCase}`}
                                 onSubmit={handleRecord}
                                 onKeyDown={(e) => {
-                                  if (e.key === "Escape") {
-                                    e.preventDefault();
-                                    setRecordingCase(null);
-                                    setCaseBody(null);
-                                    lastFocusRef.current?.focus();
-                                  }
+                                  if (e.key !== "Escape") return;
+                                  e.preventDefault();
+                                  setRecordingCase(null);
+                                  setCaseBody(null);
+                                  lastFocusRef.current?.focus();
                                 }}
                                 className={styles.recordForm}
                               >
@@ -1132,6 +1201,7 @@ export default function RunsTab({
                                         recordStatus === ResultStatus.FAILED ||
                                         recordStatus === ResultStatus.BLOCKED
                                       }
+                                      maxLength={2000}
                                       className={
                                         recordStatus === ResultStatus.FAILED ||
                                         recordStatus === ResultStatus.BLOCKED

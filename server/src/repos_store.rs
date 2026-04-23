@@ -56,11 +56,21 @@ pub async fn add_or_update(pool: &PgPool, repo: &StoredRepo) -> anyhow::Result<(
 }
 
 pub async fn remove(pool: &PgPool, id: &str) -> anyhow::Result<()> {
+    let mut tx = pool.begin().await.map_err(map_db)?;
+    // Remove all dependent data before removing the repository entry itself.
+    for table in ["run_cases", "results", "runs", "suites", "cases"] {
+        sqlx::query(&format!("DELETE FROM {table} WHERE repo_id=$1"))
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(map_db)?;
+    }
     sqlx::query("DELETE FROM repositories WHERE id=$1")
         .bind(id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_db)?;
+    tx.commit().await.map_err(map_db)?;
     Ok(())
 }
 

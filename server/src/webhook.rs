@@ -15,9 +15,8 @@ pub struct WebhookState {
 }
 
 fn verify_signature(secret: &str, body: &[u8], sig_header: &str) -> bool {
-    let sig_hex = match sig_header.strip_prefix("sha256=") {
-        Some(s) => s,
-        None => return false,
+    let Some(sig_hex) = sig_header.strip_prefix("sha256=") else {
+        return false;
     };
     let Ok(sig_bytes) = hex::decode(sig_hex) else {
         return false;
@@ -50,6 +49,7 @@ struct Repo {
     full_name: String,
 }
 
+#[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn is_case_file(path: &str) -> bool {
     path.starts_with("cases/") && path.ends_with(".md")
 }
@@ -65,6 +65,7 @@ fn collect_case_changes(
     for commit in commits {
         for path in commit.added.iter().chain(commit.modified.iter()) {
             if is_case_file(path) {
+                remove.remove(path);
                 upsert.insert(path.clone());
             }
         }
@@ -127,13 +128,10 @@ pub async fn github_push(
     }
 
     for file_path in &remove {
-        let case_path = match file_path
+        let case_path = file_path
             .strip_prefix("cases/")
             .and_then(|p| p.strip_suffix(".md"))
-        {
-            Some(p) => p,
-            None => continue,
-        };
+            .expect("remove set only contains is_case_file paths");
         if let Err(e) = crate::repo::delete_case_if_exists(&state.pool, &repo_id, case_path).await {
             eprintln!("webhook: delete failed for {case_path}: {e}");
         }
@@ -164,9 +162,8 @@ async fn process_upsert(
     file_path: &str,
 ) -> anyhow::Result<()> {
     let file = crate::github::get_file(owner, repo_name, file_path, token).await?;
-    let (content_b64, _) = match file {
-        Some(f) => f,
-        None => return Ok(()),
+    let Some((content_b64, _)) = file else {
+        return Ok(());
     };
     let parsed = crate::sync::parse_case_from_base64(file_path, &content_b64)?;
     crate::repo::upsert_case(
@@ -360,6 +357,22 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn github_push_case_file_removed_no_db_returns_internal_error() {
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: None,
+        });
+        let headers = HeaderMap::new();
+        let body = Bytes::from(
+            r#"{"commits":[{"added":[],"modified":[],"removed":["cases/auth/login.md"]}],"repository":{"full_name":"owner/repo"}}"#,
+        );
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
     async fn github_push_case_file_added_no_db_returns_internal_error() {
         let state = Arc::new(WebhookState {
             pool: lazy_pool(),
@@ -373,5 +386,52 @@ mod tests {
             .await
             .into_response();
         assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn github_push_valid_signature_no_changes_returns_ok() {
+        let secret = "test-secret";
+        let body_str = r#"{"commits":[],"repository":{"full_name":"owner/repo"}}"#;
+        let body_bytes = body_str.as_bytes();
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(body_bytes);
+        let hex_sig = hex::encode(mac.finalize().into_bytes());
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: Some(secret.to_owned()),
+        });
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-hub-signature-256",
+            format!("sha256={hex_sig}").parse().unwrap(),
+        );
+        let body = Bytes::copy_from_slice(body_bytes);
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn collect_case_changes_remove_then_add_same_file_lands_in_upsert_only() {
+        let commits = vec![
+            commit(&[], &[], &["cases/auth/login.md"]),
+            commit(&["cases/auth/login.md"], &[], &[]),
+        ];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.contains("cases/auth/login.md"));
+        assert!(!remove.contains("cases/auth/login.md"));
+    }
+
+    #[test]
+    fn collect_case_changes_added_and_modified_non_case_file_ignored() {
+        let commits = vec![commit(
+            &["docs/README.md", "src/main.rs"],
+            &["cases/auth/login.txt"],
+            &[],
+        )];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.is_empty());
+        assert!(remove.is_empty());
     }
 }

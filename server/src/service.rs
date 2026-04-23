@@ -66,6 +66,30 @@ fn invalid(msg: impl Into<String>) -> Status {
     Status::invalid_argument(msg.into())
 }
 
+fn clean_tags(tags: Vec<String>) -> Vec<String> {
+    tags.into_iter()
+        .filter_map(|t| {
+            let s = t.trim().to_owned();
+            if s.is_empty() {
+                None
+            } else {
+                Some(s)
+            }
+        })
+        .collect()
+}
+
+#[allow(clippy::result_large_err)]
+fn check_max_len(field: &str, value: &str, max: usize) -> Result<(), Status> {
+    if value.len() > max {
+        return Err(invalid(format!(
+            "{field} must not exceed {max} characters (got {})",
+            value.len()
+        )));
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Conversions
 // ---------------------------------------------------------------------------
@@ -90,6 +114,7 @@ fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
         status: run_status_to_i32(&r.status),
         environment: r.environment.clone().unwrap_or_default(),
         suite: r.suite.clone().unwrap_or_default(),
+        commit_sha: r.commit_sha.clone(),
     }
 }
 
@@ -224,7 +249,7 @@ impl AmelisoService for AmelisoServer {
             match repo::get_suite(&self.pool, &req.repo_id, &req.suite).await {
                 Ok(suite) => {
                     let suite_set: std::collections::HashSet<&str> =
-                        suite.cases.iter().map(|p| p.as_str()).collect();
+                        suite.cases.iter().map(String::as_str).collect();
                     cases.retain(|c| suite_set.contains(c.case_path.as_str()));
                 }
                 Err(e) => return Err(repo_err(e)),
@@ -274,6 +299,10 @@ impl AmelisoService for AmelisoServer {
         if req.title.is_empty() {
             return Err(invalid("title is required"));
         }
+        check_max_len("case_path", &req.case_path, 200)?;
+        check_max_len("title", &req.title, 255)?;
+        check_max_len("description", &req.description, 1000)?;
+        check_max_len("body", &req.body, 100_000)?;
         let priority = priority_from_i32(req.priority).unwrap_or("medium");
         let body = if req.body.is_empty() {
             None
@@ -286,7 +315,7 @@ impl AmelisoService for AmelisoServer {
             &req.case_path,
             &req.title,
             &req.description,
-            req.tags,
+            clean_tags(req.tags),
             priority,
             body,
         )
@@ -334,6 +363,10 @@ impl AmelisoService for AmelisoServer {
                     entry.case_path
                 )));
             }
+            check_max_len("case_path", &entry.case_path, 200)?;
+            check_max_len("title", &entry.title, 255)?;
+            check_max_len("description", &entry.description, 1000)?;
+            check_max_len("body", &entry.body, 100_000)?;
             let priority = priority_from_i32(entry.priority).unwrap_or("medium");
             let body = if entry.body.is_empty() {
                 None
@@ -346,7 +379,7 @@ impl AmelisoService for AmelisoServer {
                 &entry.case_path,
                 &entry.title,
                 &entry.description,
-                entry.tags.clone(),
+                clean_tags(entry.tags.clone()),
                 priority,
                 body,
             )
@@ -383,6 +416,11 @@ impl AmelisoService for AmelisoServer {
         if req.case_path.is_empty() {
             return Err(invalid("case_path is required"));
         }
+        check_max_len("case_path", &req.case_path, 200)?;
+        check_max_len("new_path", &req.new_path, 200)?;
+        check_max_len("title", &req.title, 255)?;
+        check_max_len("description", &req.description, 1000)?;
+        check_max_len("body", &req.body, 100_000)?;
         let priority = priority_from_i32(req.priority);
         let title = if req.title.is_empty() {
             None
@@ -397,7 +435,12 @@ impl AmelisoService for AmelisoServer {
         let tags = if req.tags.is_empty() {
             None
         } else {
-            Some(req.tags)
+            let cleaned = clean_tags(req.tags);
+            if cleaned.is_empty() {
+                None
+            } else {
+                Some(cleaned)
+            }
         };
         let body = if req.body.is_empty() {
             None
@@ -463,8 +506,7 @@ impl AmelisoService for AmelisoServer {
                     crate::sync::delete_case_file(&pool, &repo_id, &case_path_clone).await
                 {
                     eprintln!(
-                        "warning: github delete sync failed for {}/{}: {e}",
-                        repo_id, case_path_clone
+                        "warning: github delete sync failed for {repo_id}/{case_path_clone}: {e}"
                     );
                 }
             });
@@ -523,6 +565,9 @@ impl AmelisoService for AmelisoServer {
         if req.name.is_empty() {
             return Err(invalid("name is required"));
         }
+        check_max_len("slug", &req.slug, 100)?;
+        check_max_len("name", &req.name, 255)?;
+        check_max_len("description", &req.description, 1000)?;
         let desc = if req.description.is_empty() {
             None
         } else {
@@ -555,6 +600,10 @@ impl AmelisoService for AmelisoServer {
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
+        check_max_len("slug", &req.slug, 100)?;
+        check_max_len("new_slug", &req.new_slug, 100)?;
+        check_max_len("name", &req.name, 255)?;
+        check_max_len("description", &req.description, 1000)?;
         let name = if req.name.is_empty() {
             None
         } else {
@@ -665,6 +714,10 @@ impl AmelisoService for AmelisoServer {
         if req.slug.is_empty() {
             return Err(invalid("slug is required"));
         }
+        check_max_len("slug", &req.slug, 100)?;
+        check_max_len("tester", &req.tester, 255)?;
+        check_max_len("environment", &req.environment, 255)?;
+        check_max_len("suite", &req.suite, 100)?;
         let env = if req.environment.is_empty() {
             None
         } else {
@@ -681,6 +734,7 @@ impl AmelisoService for AmelisoServer {
             req.tester
         };
         let inline_cases = req.cases;
+        let commit_sha = req.commit_sha;
         let meta = repo::create_run(
             &self.pool,
             &req.repo_id,
@@ -689,6 +743,7 @@ impl AmelisoService for AmelisoServer {
             env,
             suite,
             inline_cases,
+            commit_sha,
         )
         .await
         .map_err(repo_err)?;
@@ -724,6 +779,7 @@ impl AmelisoService for AmelisoServer {
                 "notes are required when status is failed or blocked",
             ));
         }
+        check_max_len("notes", &req.notes, 2000)?;
         let (result, _) = repo::record_result(
             &self.pool,
             &req.repo_id,
@@ -734,8 +790,14 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        let (pending_cases, total_in_scope) =
+            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?;
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
+            pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
+            total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
         }))
     }
 
@@ -791,8 +853,8 @@ impl AmelisoService for AmelisoServer {
                 .map_err(repo_err)?;
         Ok(Response::new(pb::BulkRecordResultsResponse {
             results: recorded,
-            pending_count: pending_cases.len() as i32,
-            total_in_scope: total_in_scope as i32,
+            pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
+            total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
         }))
     }
 
@@ -872,12 +934,47 @@ impl AmelisoService for AmelisoServer {
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
-        let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+        let (mut pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
+        if let Some(pri) = priority_from_i32(req.priority_filter) {
+            pending.retain(|c| c.priority.eq_ignore_ascii_case(pri));
+        }
+        let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
+            .await
+            .unwrap_or_default();
+        let entries = pending
+            .iter()
+            .map(|c| pb::CoverageEntry {
+                latest_status: result_status_to_i32(
+                    statuses
+                        .get(&c.case_path)
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                ),
+                last_run_id: String::new(),
+                last_run_date: String::new(),
+                case: Some(case_to_pb(c)),
+            })
+            .collect();
+        let pending_entries = pending
+            .iter()
+            .map(|c| pb::PendingEntry {
+                case: Some(case_to_pb(c)),
+                body: c.body.clone(),
+                latest_status: result_status_to_i32(
+                    statuses
+                        .get(&c.case_path)
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                ),
+            })
+            .collect();
         Ok(Response::new(pb::GetPendingCasesResponse {
             cases: pending.iter().map(case_to_pb).collect(),
-            total_in_scope: total as i32,
+            total_in_scope: i32::try_from(total).unwrap_or(i32::MAX),
+            entries,
+            pending: pending_entries,
         }))
     }
 
@@ -923,7 +1020,7 @@ impl AmelisoService for AmelisoServer {
 
         Ok(Response::new(pb::GetCoverageReportResponse {
             entries: pb_entries,
-            run_count: run_count as i32,
+            run_count: i32::try_from(run_count).unwrap_or(i32::MAX),
         }))
     }
 
@@ -940,6 +1037,10 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
 
+        let status_map = repo::get_latest_statuses(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
+
         // If caller passed changed_files directly, skip GitHub and use those.
         if !req.changed_files.is_empty() {
             let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
@@ -951,7 +1052,7 @@ impl AmelisoService for AmelisoServer {
             for file in &req.changed_files {
                 for path in &known_paths {
                     if text_references_case(file, path) {
-                        reasons.push(format!("file {} references {}", file, path));
+                        reasons.push(format!("file {file} references {path}"));
                         affected_set.insert(path.clone());
                     }
                 }
@@ -960,7 +1061,7 @@ impl AmelisoService for AmelisoServer {
                 .changed_files
                 .iter()
                 .filter(|f| !is_doc_file(f))
-                .map(|f| f.as_str())
+                .map(String::as_str)
                 .collect();
             if !source_changed.is_empty() && affected_set.is_empty() {
                 reasons.push(format!(
@@ -976,19 +1077,35 @@ impl AmelisoService for AmelisoServer {
             affected.sort_by_key(|p| {
                 case_map
                     .get(p.as_str())
-                    .map(|c| priority_rank(&c.priority))
-                    .unwrap_or(3)
+                    .map_or(3, |c| priority_rank(&c.priority))
             });
             let reason = if reasons.is_empty() {
                 "no relevant changes in provided file list".to_owned()
             } else {
                 reasons.join("; ")
             };
+            if let Some(pri) = priority_from_i32(req.priority_filter) {
+                affected.retain(|path| {
+                    case_map
+                        .get(path.as_str())
+                        .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+                });
+            }
             let pb_cases = affected
                 .iter()
                 .map(|path| pb::AffectedCase {
                     case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
                     reason: reason.clone(),
+                    latest_status: result_status_to_i32(
+                        status_map
+                            .get(path.as_str())
+                            .map(String::as_str)
+                            .unwrap_or("never"),
+                    ),
+                    body: case_map
+                        .get(path.as_str())
+                        .map(|c| c.body.clone())
+                        .unwrap_or_default(),
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
@@ -998,11 +1115,20 @@ impl AmelisoService for AmelisoServer {
         }
 
         if req.since_ref.is_empty() {
+            let pri_filter = priority_from_i32(req.priority_filter);
             let affected = cases
                 .iter()
+                .filter(|c| pri_filter.is_none_or(|p| c.priority.eq_ignore_ascii_case(p)))
                 .map(|c| pb::AffectedCase {
                     case: Some(case_to_pb(c)),
                     reason: "no since_ref provided; all cases flagged".to_owned(),
+                    latest_status: result_status_to_i32(
+                        status_map
+                            .get(c.case_path.as_str())
+                            .map(String::as_str)
+                            .unwrap_or("never"),
+                    ),
+                    body: c.body.clone(),
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
@@ -1046,7 +1172,7 @@ impl AmelisoService for AmelisoServer {
         let all_text = compare.commit_messages.join("\n");
         for path in &known_paths {
             if text_references_case(&all_text, path) {
-                reasons.push(format!("commit messages reference: {}", path));
+                reasons.push(format!("commit messages reference: {path}"));
                 if affected_set.insert(path.clone()) {
                     affected.push(path.clone());
                 }
@@ -1056,7 +1182,7 @@ impl AmelisoService for AmelisoServer {
         for file in &compare.changed_files {
             for path in &known_paths {
                 if text_references_case(file, path) {
-                    reasons.push(format!("file {} references {}", file, path));
+                    reasons.push(format!("file {file} references {path}"));
                     if affected_set.insert(path.clone()) {
                         affected.push(path.clone());
                     }
@@ -1068,7 +1194,7 @@ impl AmelisoService for AmelisoServer {
             .changed_files
             .iter()
             .filter(|f| !is_doc_file(f))
-            .map(|f| f.as_str())
+            .map(String::as_str)
             .collect();
 
         if !source_changed.is_empty() && affected.is_empty() {
@@ -1089,15 +1215,31 @@ impl AmelisoService for AmelisoServer {
         affected.sort_by_key(|p| {
             case_map
                 .get(p.as_str())
-                .map(|c| priority_rank(&c.priority))
-                .unwrap_or(3)
+                .map_or(3, |c| priority_rank(&c.priority))
         });
 
+        if let Some(pri) = priority_from_i32(req.priority_filter) {
+            affected.retain(|path| {
+                case_map
+                    .get(path.as_str())
+                    .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+            });
+        }
         let pb_cases = affected
             .iter()
             .map(|path| pb::AffectedCase {
                 case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
                 reason: reason.clone(),
+                latest_status: result_status_to_i32(
+                    status_map
+                        .get(path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                ),
+                body: case_map
+                    .get(path.as_str())
+                    .map(|c| c.body.clone())
+                    .unwrap_or_default(),
             })
             .collect();
 
@@ -1161,7 +1303,10 @@ impl AmelisoService for AmelisoServer {
         for run_meta in &active_runs_meta {
             let (pending, total_in_scope) =
                 match repo::get_pending_cases(pool, &repo_id, &run_meta.run_id).await {
-                    Ok((cases, total)) => (cases.len() as i32, total as i32),
+                    Ok((cases, total)) => (
+                        i32::try_from(cases.len()).unwrap_or(i32::MAX),
+                        i32::try_from(total).unwrap_or(i32::MAX),
+                    ),
                     Err(_) => (0, 0),
                 };
             active_runs.push(pb::ActiveRunStatus {
@@ -1171,6 +1316,7 @@ impl AmelisoService for AmelisoServer {
                 date: run_meta.date.clone(),
                 pending_cases: pending,
                 total_in_scope,
+                commit_sha: run_meta.commit_sha.clone(),
             });
         }
 
@@ -1184,8 +1330,8 @@ impl AmelisoService for AmelisoServer {
             blocked,
             skipped,
             never_run,
-            suite_count: suites.len() as i32,
-            run_count: runs.len() as i32,
+            suite_count: i32::try_from(suites.len()).unwrap_or(i32::MAX),
+            run_count: i32::try_from(runs.len()).unwrap_or(i32::MAX),
             active_runs,
         }))
     }
@@ -1821,6 +1967,7 @@ mod tests {
                 repo_id: "".to_owned(),
                 since_ref: "HEAD~1".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -1837,6 +1984,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: String::new(),
                 changed_files: vec!["src/auth.ts".to_owned()],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -1968,6 +2116,7 @@ mod tests {
             .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
                 repo_id: "".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -1982,6 +2131,7 @@ mod tests {
             .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2123,6 +2273,138 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("case_path is required"));
+    }
+
+    #[tokio::test]
+    async fn create_case_rejects_title_too_long() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "x".repeat(256),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn create_case_rejects_case_path_too_long() {
+        let s = server();
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "a".repeat(201),
+                title: "Login".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path must not exceed 200"));
+    }
+
+    #[tokio::test]
+    async fn update_case_rejects_title_too_long() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "x".repeat(256),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("title must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn create_case_strips_empty_and_whitespace_tags() {
+        let s = server();
+        // Tags with empty strings and whitespace-only entries should be rejected
+        // before reaching DB. Here we just verify validation passes and hits DB
+        // (non-InvalidArgument error), meaning the clean_tags path was exercised.
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login".to_owned(),
+                tags: vec!["".to_owned(), "  ".to_owned(), "smoke".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_case_strips_whitespace_only_tags() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                tags: vec!["  ".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        // Whitespace-only tags cleaned to empty → treated as no-tag update → reaches DB
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_suite_rejects_slug_too_long() {
+        let s = server();
+        let err = s
+            .create_suite(Request::new(pb::CreateSuiteRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "x".repeat(101),
+                name: "Smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("slug must not exceed 100"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_tester_too_long() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                tester: "x".repeat(256),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("tester must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn record_result_rejects_notes_too_long() {
+        let s = server();
+        let err = s
+            .record_result(Request::new(pb::RecordResultRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                case_path: "auth/login".to_owned(),
+                status: pb::ResultStatus::Failed as i32,
+                notes: "x".repeat(2001),
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("notes must not exceed 2000"));
     }
 
     #[tokio::test]
@@ -2817,6 +3099,22 @@ mod tests {
             .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_pending_cases_with_priority_filter_passes_validation() {
+        // Priority filter set to HIGH passes validation → DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                priority_filter: pb::Priority::High as i32,
             }))
             .await
             .unwrap_err();
@@ -2895,6 +3193,7 @@ mod tests {
                 environment: "staging".to_owned(),
                 suite: "smoke".to_owned(),
                 cases: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2917,6 +3216,21 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("suite") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_invalid_inline_case_path() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                slug: "smoke".to_owned(),
+                cases: vec!["../traversal".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
@@ -3009,6 +3323,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "abc123".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -3024,6 +3339,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -3373,6 +3689,7 @@ mod tests {
             status: "in-progress".to_owned(),
             environment: Some("staging".to_owned()),
             suite: Some("smoke".to_owned()),
+            commit_sha: "abc123".to_owned(),
         };
         let pb = run_meta_to_pb(&r);
         assert_eq!(pb.id, "2026-01-01-smoke");
@@ -3380,6 +3697,7 @@ mod tests {
         assert_eq!(pb.status, pb::RunStatus::InProgress as i32);
         assert_eq!(pb.environment, "staging");
         assert_eq!(pb.suite, "smoke");
+        assert_eq!(pb.commit_sha, "abc123");
     }
 
     #[test]
@@ -3391,10 +3709,12 @@ mod tests {
             status: "completed".to_owned(),
             environment: None,
             suite: None,
+            commit_sha: String::new(),
         };
         let pb = run_meta_to_pb(&r);
         assert_eq!(pb.environment, "");
         assert_eq!(pb.suite, "");
+        assert_eq!(pb.commit_sha, "");
     }
 
     #[test]

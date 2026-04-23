@@ -5,6 +5,12 @@ use sqlx::PgPool;
 
 use crate::repo::LoadedCase;
 
+fn yaml_quote(s: &str) -> String {
+    // Always double-quote to handle YAML special chars ({, [, :, #, etc.) in user input.
+    let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
+}
+
 pub fn case_to_markdown(case: &LoadedCase) -> String {
     let tags_yaml = if case.tags.is_empty() {
         "tags: []".to_owned()
@@ -19,7 +25,12 @@ pub fn case_to_markdown(case: &LoadedCase) -> String {
     };
     format!(
         "---\ntitle: {}\ndescription: {}\n{tags_yaml}\npriority: {}\ncreated_at: {}\nupdated_at: {}\n---\n\n{}",
-        case.title, case.description, case.priority, case.created_at, case.updated_at, case.body,
+        yaml_quote(&case.title),
+        yaml_quote(&case.description),
+        case.priority,
+        case.created_at,
+        case.updated_at,
+        case.body,
     )
 }
 
@@ -150,9 +161,8 @@ pub async fn delete_case_file(pool: &PgPool, repo_id: &str, case_path: &str) -> 
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
     let file_path = format!("cases/{case_path}.md");
     let existing = crate::github::get_file(&owner, &repo_name, &file_path, &token).await?;
-    let (_, sha) = match existing {
-        Some(e) => e,
-        None => return Ok(()),
+    let Some((_, sha)) = existing else {
+        return Ok(());
     };
     let message = format!("chore(cases): delete {case_path}");
     crate::github::delete_file(&owner, &repo_name, &file_path, &message, &sha, &token).await
@@ -180,11 +190,31 @@ mod tests {
     fn case_to_markdown_formats_correctly() {
         let md = case_to_markdown(&sample_case());
         assert!(md.starts_with("---\n"));
-        assert!(md.contains("title: User Login"));
+        assert!(md.contains("title: \"User Login\""));
+        assert!(md.contains("description: \"Verify login\""));
         assert!(md.contains("priority: high"));
         assert!(md.contains("  - auth"));
         assert!(md.contains("  - smoke"));
         assert!(md.contains("## Steps"));
+    }
+
+    #[test]
+    fn case_to_markdown_quotes_special_yaml_chars() {
+        let mut c = sample_case();
+        c.title = "Login: {flow} [test]".to_owned();
+        c.description = "Verifies: the #tag flow".to_owned();
+        let md = case_to_markdown(&c);
+        // Must roundtrip correctly despite special characters.
+        let parsed = parse_case_markdown("cases/auth/login.md", &md).unwrap();
+        assert_eq!(parsed.title, "Login: {flow} [test]");
+        assert_eq!(parsed.description, "Verifies: the #tag flow");
+    }
+
+    #[test]
+    fn yaml_quote_escapes_backslash_and_double_quote() {
+        assert_eq!(yaml_quote("a\\b"), "\"a\\\\b\"");
+        assert_eq!(yaml_quote("say \"hello\""), "\"say \\\"hello\\\"\"");
+        assert_eq!(yaml_quote("plain text"), "\"plain text\"");
     }
 
     #[test]
@@ -271,5 +301,37 @@ mod tests {
         let invalid_utf8 = BASE64.encode([0xFF, 0xFE]);
         let err = parse_case_from_base64("cases/auth/login.md", &invalid_utf8).unwrap_err();
         assert!(err.to_string().contains("not valid UTF-8"));
+    }
+
+    #[test]
+    fn parse_case_markdown_strips_leading_whitespace_before_delimiter() {
+        let content = "\n\n  \n---\ntitle: Trimmed\n---\n\nbody text";
+        let parsed = parse_case_markdown("cases/a/b.md", content).unwrap();
+        assert_eq!(parsed.title, "Trimmed");
+        assert_eq!(parsed.body, "body text");
+    }
+
+    #[test]
+    fn parse_case_markdown_strips_leading_newlines_from_body() {
+        let content = "---\ntitle: Body Test\n---\n\n\n\nbody starts here";
+        let parsed = parse_case_markdown("cases/a/b.md", content).unwrap();
+        assert_eq!(parsed.body, "body starts here");
+    }
+
+    #[test]
+    fn parse_case_from_base64_handles_newlines_in_encoded_string() {
+        let case = sample_case();
+        let md = case_to_markdown(&case);
+        let b64_clean = BASE64.encode(md.as_bytes());
+        // Insert line breaks every 76 chars (typical PEM/MIME wrapping)
+        let b64_wrapped: String = b64_clean
+            .as_bytes()
+            .chunks(76)
+            .map(|c| std::str::from_utf8(c).unwrap())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let parsed = parse_case_from_base64("cases/auth/login.md", &b64_wrapped).unwrap();
+        assert_eq!(parsed.title, "User Login");
+        assert_eq!(parsed.case_path, "auth/login");
     }
 }
