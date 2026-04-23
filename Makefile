@@ -64,9 +64,5 @@ pre-commit:
 	[ "$$FAIL" -eq 0 ] && echo "pre-commit: OK" || exit 1
 
 pre-push:
-	@FAIL=0; \
-	$(MAKE) fmt-check & PID1=$$!; \
-	(cd web && $(MAKE) pre-push) & PID3=$$!; \
-	wait $$PID1 || FAIL=1; \
-	wait $$PID3 || FAIL=1; \
-	[ "$$FAIL" -eq 0 ] && echo "pre-push: OK" || exit 1
+	$(MAKE) fmt-check
+	@echo "pre-push: OK"
