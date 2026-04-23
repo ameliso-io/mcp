@@ -974,6 +974,34 @@ export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCases
 export declare const GetPendingCasesRequestSchema: GenMessage<GetPendingCasesRequest>;
 
 /**
+ * A pending test case with status and body — for agent-friendly GetPendingCases.
+ *
+ * @generated from message ameliso.v1.PendingEntry
+ */
+export declare type PendingEntry = Message<"ameliso.v1.PendingEntry"> & {
+  /**
+   * @generated from field: ameliso.v1.Case case = 1;
+   */
+  case?: Case;
+
+  /**
+   * @generated from field: string body = 2;
+   */
+  body: string;
+
+  /**
+   * @generated from field: ameliso.v1.ResultStatus latest_status = 3;
+   */
+  latestStatus: ResultStatus;
+};
+
+/**
+ * Describes the message ameliso.v1.PendingEntry.
+ * Use `create(PendingEntrySchema)` to create a new message.
+ */
+export declare const PendingEntrySchema: GenMessage<PendingEntry>;
+
+/**
  * @generated from message ameliso.v1.GetPendingCasesResponse
  */
 export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCasesResponse"> & {
@@ -994,6 +1022,14 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
    * @generated from field: repeated ameliso.v1.CoverageEntry entries = 3;
    */
   entries: CoverageEntry[];
+
+  /**
+   * Full pending case data (case metadata + body + latest status) in one field.
+   * Prefer this over `cases` + `entries` when body content is needed.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
+   */
+  pending: PendingEntry[];
 };
 
 /**

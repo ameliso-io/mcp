@@ -954,10 +954,24 @@ impl AmelisoService for AmelisoServer {
                 case: Some(case_to_pb(c)),
             })
             .collect();
+        let pending_entries = pending
+            .iter()
+            .map(|c| pb::PendingEntry {
+                case: Some(case_to_pb(c)),
+                body: c.body.clone(),
+                latest_status: result_status_to_i32(
+                    statuses
+                        .get(&c.case_path)
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                ),
+            })
+            .collect();
         Ok(Response::new(pb::GetPendingCasesResponse {
             cases: pending.iter().map(case_to_pb).collect(),
             total_in_scope: i32::try_from(total).unwrap_or(i32::MAX),
             entries,
+            pending: pending_entries,
         }))
     }
 

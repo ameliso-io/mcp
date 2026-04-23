@@ -286,12 +286,22 @@ message GetPendingCasesRequest {
   string run_id = 2;
 }
 
+// A pending test case with status and body — for agent-friendly GetPendingCases.
+message PendingEntry {
+  Case case = 1;
+  string body = 2;
+  ResultStatus latest_status = 3;
+}
+
 message GetPendingCasesResponse {
   repeated Case cases = 1;
   int32 total_in_scope = 2;
   // Same cases as `cases` but with latest coverage status included — lets
   // agents prioritize failed/never-run cases without a separate coverage call.
   repeated CoverageEntry entries = 3;
+  // Full pending case data (case metadata + body + latest status) in one field.
+  // Prefer this over `cases` + `entries` when body content is needed.
+  repeated PendingEntry pending = 4;
 }
 
 message UpdateRunRequest {
