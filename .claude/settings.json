@@ -65,7 +65,8 @@
       "Bash(centy issues *)",
       "Bash(centy llm *)",
       "Bash(pnpm prettier *)",
-      "Bash(pnpm fmt *)"
+      "Bash(pnpm fmt *)",
+      "Bash(pnpm fmt:check)"
     ]
   }
 }
