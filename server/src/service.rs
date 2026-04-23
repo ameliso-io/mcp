@@ -1093,6 +1093,15 @@ impl AmelisoService for AmelisoServer {
                         .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
                 });
             }
+            if !req.tags.is_empty() {
+                affected.retain(|path| {
+                    case_map.get(path.as_str()).is_some_and(|c| {
+                        req.tags
+                            .iter()
+                            .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                    })
+                });
+            }
             let pb_cases = affected
                 .iter()
                 .map(|path| pb::AffectedCase {
@@ -1121,6 +1130,13 @@ impl AmelisoService for AmelisoServer {
             let affected = cases
                 .iter()
                 .filter(|c| pri_filter.is_none_or(|p| c.priority.eq_ignore_ascii_case(p)))
+                .filter(|c| {
+                    req.tags.is_empty()
+                        || req
+                            .tags
+                            .iter()
+                            .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                })
                 .map(|c| pb::AffectedCase {
                     case: Some(case_to_pb(c)),
                     reason: "no since_ref provided; all cases flagged".to_owned(),
@@ -1225,6 +1241,15 @@ impl AmelisoService for AmelisoServer {
                 case_map
                     .get(path.as_str())
                     .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+            });
+        }
+        if !req.tags.is_empty() {
+            affected.retain(|path| {
+                case_map.get(path.as_str()).is_some_and(|c| {
+                    req.tags
+                        .iter()
+                        .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                })
             });
         }
         let pb_cases = affected
@@ -3348,6 +3373,23 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_affected_cases_with_tags_filter_passes_validation() {
+        // tags filter is valid (validation only checks repo_id); handler hits DB → Internal.
+        let s = server();
+        let err = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "".to_owned(),
+                changed_files: vec![],
+                tags: vec!["smoke".to_owned()],
                 ..Default::default()
             }))
             .await
