@@ -34,6 +34,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
+  const expandedRef = useRef(expanded);
+  useEffect(() => {
+    expandedRef.current = expanded;
+  }, [expanded]);
   const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   const toggleExpand = useCallback(
     async (slug: string) => {
-      if (expanded === slug) {
+      if (expandedRef.current === slug) {
         setExpanded(null);
         setExpandedCases([]);
         expandingRef.current = null;
@@ -75,7 +79,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         if (expandingRef.current === slug) setExpandedCasesLoading(false);
       }
     },
-    [expanded, repoId]
+    [repoId]
   );
 
   function startEdit(suite: Suite) {
