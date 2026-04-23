@@ -4,7 +4,6 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import styles from "./RepositoriesTab.module.css";
-import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
