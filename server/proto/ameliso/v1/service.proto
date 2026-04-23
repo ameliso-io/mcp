@@ -427,6 +427,10 @@ message GetAffectedCasesRequest {
 message GetAffectedCasesResponse {
   repeated AffectedCase cases = 1;
   string reason = 2;
+  // Changed files that have no matching test case — i.e., coverage gaps.
+  // Agents can use this list to decide which new cases to create.
+  // Doc files (.md, .yml, etc.) are excluded.
+  repeated string uncovered_files = 3;
 }
 
 // --- Repo Status ---

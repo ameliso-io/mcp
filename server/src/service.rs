@@ -152,6 +152,16 @@ fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
     }
 }
 
+/// Return source files (non-doc) from `files` that no known case path covers.
+fn find_uncovered_files<'a>(files: &'a [String], known_paths: &[String]) -> Vec<&'a str> {
+    files
+        .iter()
+        .filter(|f| !is_doc_file(f))
+        .filter(|f| !known_paths.iter().any(|p| text_references_case(f, p)))
+        .map(String::as_str)
+        .collect()
+}
+
 /// Build a `PendingEntry` list from pending cases + latest status map.
 fn build_pending_entries(
     pending_cases: &[repo::LoadedCase],
@@ -1616,9 +1626,11 @@ impl AmelisoService for AmelisoServer {
                         .unwrap_or_default(),
                 })
                 .collect();
+            let uncovered = find_uncovered_files(&req.changed_files, &known_paths);
             return Ok(Response::new(pb::GetAffectedCasesResponse {
                 cases: pb_cases,
                 reason,
+                uncovered_files: uncovered.into_iter().map(str::to_owned).collect(),
             }));
         }
 
@@ -1668,6 +1680,7 @@ impl AmelisoService for AmelisoServer {
             return Ok(Response::new(pb::GetAffectedCasesResponse {
                 cases: pb_cases,
                 reason: "no since_ref provided; all cases flagged".to_owned(),
+                uncovered_files: vec![],
             }));
         }
 
@@ -1737,7 +1750,7 @@ impl AmelisoService for AmelisoServer {
                 source_changed.len(),
                 known_paths.len()
             ));
-            affected = known_paths;
+            affected = known_paths.clone();
         }
 
         let reason = if reasons.is_empty() {
@@ -1802,9 +1815,11 @@ impl AmelisoService for AmelisoServer {
             })
             .collect();
 
+        let uncovered = find_uncovered_files(&compare.changed_files, &known_paths);
         Ok(Response::new(pb::GetAffectedCasesResponse {
             cases: pb_cases,
             reason,
+            uncovered_files: uncovered.into_iter().map(str::to_owned).collect(),
         }))
     }
 
@@ -4953,6 +4968,42 @@ mod tests {
         assert!(!is_doc_file("src/auth.rs"));
         assert!(!is_doc_file("src/main.ts"));
         assert!(!is_doc_file("app.py"));
+    }
+
+    // ── find_uncovered_files ──────────────────────────────────────────────────
+
+    #[test]
+    fn find_uncovered_files_excludes_doc_files() {
+        let files = vec!["README.md".to_string(), "docs/guide.yml".to_string()];
+        let known: Vec<String> = vec![];
+        assert!(find_uncovered_files(&files, &known).is_empty());
+    }
+
+    #[test]
+    fn find_uncovered_files_excludes_covered_source_files() {
+        let files = vec!["src/auth/login.ts".to_string()];
+        let known = vec!["auth/login".to_string()];
+        assert!(find_uncovered_files(&files, &known).is_empty());
+    }
+
+    #[test]
+    fn find_uncovered_files_returns_uncovered_source_files() {
+        let files = vec!["src/auth/signup.ts".to_string()];
+        let known = vec!["auth/login".to_string()];
+        let result = find_uncovered_files(&files, &known);
+        assert_eq!(result, vec!["src/auth/signup.ts"]);
+    }
+
+    #[test]
+    fn find_uncovered_files_mixed() {
+        let files = vec![
+            "src/auth/login.ts".to_string(),
+            "src/auth/signup.ts".to_string(),
+            "README.md".to_string(),
+        ];
+        let known = vec!["auth/login".to_string()];
+        let result = find_uncovered_files(&files, &known);
+        assert_eq!(result, vec!["src/auth/signup.ts"]);
     }
 
     #[test]
