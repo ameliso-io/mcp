@@ -598,6 +598,35 @@ describe("OverviewTab", () => {
     expect(screen.getByText("2026-02-01")).toBeInTheDocument();
   });
 
+  it("shows abbreviated commit SHA in active run row when commitSha is set", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-sha",
+      tester: "alice",
+      suite: "",
+      date: "2026-04-01",
+      commitSha: "abc1234567890",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
+    const shaEl = screen.getByTitle("abc1234567890");
+    expect(shaEl.textContent).toBe("abc1234");
+  });
+
+  it("does not show commit SHA code element when commitSha is empty", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-no-sha",
+      tester: "bob",
+      suite: "",
+      date: "2026-04-01",
+      commitSha: "",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("run-no-sha")).toBeInTheDocument());
+    expect(screen.queryByTitle("")).not.toBeInTheDocument();
+  });
+
   it("polling timer callback triggers reload when active runs present", async () => {
     const activeRun = makeRunMeta({
       id: "run-timer",

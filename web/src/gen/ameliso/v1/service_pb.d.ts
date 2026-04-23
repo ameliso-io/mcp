@@ -1175,6 +1175,11 @@ export declare type ActiveRunStatus = Message<"ameliso.v1.ActiveRunStatus"> & {
    * @generated from field: int32 total_in_scope = 6;
    */
   totalInScope: number;
+
+  /**
+   * @generated from field: string commit_sha = 7;
+   */
+  commitSha: string;
 };
 
 /**

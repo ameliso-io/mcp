@@ -1049,7 +1049,10 @@ impl AmelisoService for AmelisoServer {
                     case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
                     reason: reason.clone(),
                     latest_status: result_status_to_i32(
-                        status_map.get(path.as_str()).map(String::as_str).unwrap_or("never"),
+                        status_map
+                            .get(path.as_str())
+                            .map(String::as_str)
+                            .unwrap_or("never"),
                     ),
                 })
                 .collect();
@@ -1166,7 +1169,10 @@ impl AmelisoService for AmelisoServer {
                 case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
                 reason: reason.clone(),
                 latest_status: result_status_to_i32(
-                    status_map.get(path.as_str()).map(String::as_str).unwrap_or("never"),
+                    status_map
+                        .get(path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
                 ),
             })
             .collect();
@@ -1244,6 +1250,7 @@ impl AmelisoService for AmelisoServer {
                 date: run_meta.date.clone(),
                 pending_cases: pending,
                 total_in_scope,
+                commit_sha: run_meta.commit_sha.clone(),
             });
         }
 

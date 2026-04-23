@@ -252,6 +252,11 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                       <time className={styles.runDate} dateTime={run.date}>
                         {run.date}
                       </time>
+                      {run.commitSha && (
+                        <code className={styles.runCommitSha} title={run.commitSha}>
+                          {run.commitSha.slice(0, 7)}
+                        </code>
+                      )}
                       {status && (
                         <div className={styles.runProgressWrap}>
                           <div

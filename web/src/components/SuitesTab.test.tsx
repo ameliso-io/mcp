@@ -700,11 +700,18 @@ describe("SuitesTab", () => {
 
   it("shows search bar when suites are loaded", async () => {
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getByRole("searchbox", { name: "Search suites" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("searchbox", { name: "Search suites" })).toBeInTheDocument()
+    );
   });
 
   it("filters suites by name", async () => {
-    const suite2 = makeSuite({ slug: "regression", name: "Regression Tests", description: "", cases: [] });
+    const suite2 = makeSuite({
+      slug: "regression",
+      name: "Regression Tests",
+      description: "",
+      cases: [],
+    });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByRole("searchbox", { name: "Search suites" }));
@@ -714,7 +721,12 @@ describe("SuitesTab", () => {
   });
 
   it("filters suites by slug", async () => {
-    const suite2 = makeSuite({ slug: "regression", name: "Regression Tests", description: "", cases: [] });
+    const suite2 = makeSuite({
+      slug: "regression",
+      name: "Regression Tests",
+      description: "",
+      cases: [],
+    });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByRole("searchbox", { name: "Search suites" }));
@@ -739,7 +751,12 @@ describe("SuitesTab", () => {
   });
 
   it("announces suite count when filter changes", async () => {
-    const suite2 = makeSuite({ slug: "regression", name: "Regression Tests", description: "", cases: [] });
+    const suite2 = makeSuite({
+      slug: "regression",
+      name: "Regression Tests",
+      description: "",
+      cases: [],
+    });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByRole("searchbox", { name: "Search suites" }));
@@ -752,7 +769,12 @@ describe("SuitesTab", () => {
   });
 
   it("filters suites by description", async () => {
-    const suite2 = makeSuite({ slug: "regression", name: "Regression Tests", description: "edge cases", cases: [] });
+    const suite2 = makeSuite({
+      slug: "regression",
+      name: "Regression Tests",
+      description: "edge cases",
+      cases: [],
+    });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByRole("searchbox", { name: "Search suites" }));
@@ -762,14 +784,21 @@ describe("SuitesTab", () => {
   });
 
   it("announces plural N suites found when filter matches multiple suites", async () => {
-    const suite2 = makeSuite({ slug: "regression", name: "Regression Tests", description: "", cases: [] });
+    const suite2 = makeSuite({
+      slug: "regression",
+      name: "Regression Tests",
+      description: "",
+      cases: [],
+    });
     vi.mocked(client.listSuites).mockResolvedValue({ suites: [mockSuite, suite2] } as never);
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     const input = await screen.findByRole("searchbox", { name: "Search suites" });
     // First narrow to 1 suite (prevFilterCount = 1) …
     await userEvent.type(input, "smoke");
     await waitFor(() =>
-      expect(screen.getAllByRole("status").some((el) => el.textContent?.includes("1 suite found"))).toBe(true)
+      expect(
+        screen.getAllByRole("status").some((el) => el.textContent?.includes("1 suite found"))
+      ).toBe(true)
     );
     // … then widen to 2 by clearing and typing a term both suites share.
     await userEvent.clear(input);

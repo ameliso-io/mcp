@@ -340,6 +340,7 @@ message ActiveRunStatus {
   string date = 4;
   int32 pending_cases = 5;
   int32 total_in_scope = 6;
+  string commit_sha = 7;
 }
 
 message GetRepoStatusResponse {
