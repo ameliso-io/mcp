@@ -50,6 +50,8 @@ message CoverageEntry {
   ResultStatus latest_status = 2;
   string last_run_id = 3;
   string last_run_date = 4;
+  // Markdown body of the test case — populated in GetCoverageReport and GetPendingCases.
+  string body = 5;
 }
 
 message AffectedCase {

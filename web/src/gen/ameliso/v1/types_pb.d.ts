@@ -207,6 +207,13 @@ export declare type CoverageEntry = Message<"ameliso.v1.CoverageEntry"> & {
    * @generated from field: string last_run_date = 4;
    */
   lastRunDate: string;
+
+  /**
+   * Markdown body of the test case — populated in GetCoverageReport and GetPendingCases.
+   *
+   * @generated from field: string body = 5;
+   */
+  body: string;
 };
 
 /**
@@ -402,4 +409,3 @@ export enum Priority {
  * Describes the enum ameliso.v1.Priority.
  */
 export declare const PrioritySchema: GenEnum<Priority>;
-

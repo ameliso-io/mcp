@@ -954,6 +954,7 @@ impl AmelisoService for AmelisoServer {
                 ),
                 last_run_id: String::new(),
                 last_run_date: String::new(),
+                body: c.body.clone(),
                 case: Some(case_to_pb(c)),
             })
             .collect();
@@ -1014,6 +1015,7 @@ impl AmelisoService for AmelisoServer {
                     latest_status: status_i32,
                     last_run_id: row.last_run_id,
                     last_run_date: row.last_run_date,
+                    body: row.body,
                 })
             })
             .collect();

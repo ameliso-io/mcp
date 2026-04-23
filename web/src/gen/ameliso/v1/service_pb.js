@@ -8,427 +8,393 @@ import { file_ameliso_v1_types } from "./types_pb";
 /**
  * Describes the file ameliso/v1/service.proto.
  */
-export const file_ameliso_v1_service = /*@__PURE__*/
-  fileDesc("ChhhbWVsaXNvL3YxL3NlcnZpY2UucHJvdG8SCmFtZWxpc28udjEidwoQTGlzdENhc2VzUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEgwKBHRhZ3MYAiADKAkSJgoIcHJpb3JpdHkYAyABKA4yFC5hbWVsaXNvLnYxLlByaW9yaXR5Eg0KBXF1ZXJ5GAQgASgJEg0KBXN1aXRlGAUgASgJIjQKEUxpc3RDYXNlc1Jlc3BvbnNlEh8KBWNhc2VzGAEgAygLMhAuYW1lbGlzby52MS5DYXNlIjQKDkdldENhc2VSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSEQoJY2FzZV9wYXRoGAIgASgJIj8KD0dldENhc2VSZXNwb25zZRIeCgRjYXNlGAEgASgLMhAuYW1lbGlzby52MS5DYXNlEgwKBGJvZHkYAiABKAkinwEKEUNyZWF0ZUNhc2VSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSEQoJY2FzZV9wYXRoGAIgASgJEg0KBXRpdGxlGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEgwKBHRhZ3MYBSADKAkSJgoIcHJpb3JpdHkYBiABKA4yFC5hbWVsaXNvLnYxLlByaW9yaXR5EgwKBGJvZHkYByABKAkiRwoSQ3JlYXRlQ2FzZVJlc3BvbnNlEh4KBGNhc2UYASABKAsyEC5hbWVsaXNvLnYxLkNhc2USEQoJZmlsZV9wYXRoGAIgASgJIooBCg1CdWxrQ2FzZUVudHJ5EhEKCWNhc2VfcGF0aBgBIAEoCRINCgV0aXRsZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIMCgR0YWdzGAQgAygJEiYKCHByaW9yaXR5GAUgASgOMhQuYW1lbGlzby52MS5Qcmlvcml0eRIMCgRib2R5GAYgASgJIlMKFkJ1bGtDcmVhdGVDYXNlc1JlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIoCgVjYXNlcxgCIAMoCzIZLmFtZWxpc28udjEuQnVsa0Nhc2VFbnRyeSI6ChdCdWxrQ3JlYXRlQ2FzZXNSZXNwb25zZRIfCgVjYXNlcxgBIAMoCzIQLmFtZWxpc28udjEuQ2FzZSKxAQoRVXBkYXRlQ2FzZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIRCgljYXNlX3BhdGgYAiABKAkSDQoFdGl0bGUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSDAoEdGFncxgFIAMoCRImCghwcmlvcml0eRgGIAEoDjIULmFtZWxpc28udjEuUHJpb3JpdHkSDAoEYm9keRgHIAEoCRIQCghuZXdfcGF0aBgIIAEoCSI0ChJVcGRhdGVDYXNlUmVzcG9uc2USHgoEY2FzZRgBIAEoCzIQLmFtZWxpc28udjEuQ2FzZSI3ChFEZWxldGVDYXNlUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEhEKCWNhc2VfcGF0aBgCIAEoCSInChJEZWxldGVDYXNlUmVzcG9uc2USEQoJZmlsZV9wYXRoGAEgASgJIiQKEUxpc3RTdWl0ZXNSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkiNwoSTGlzdFN1aXRlc1Jlc3BvbnNlEiEKBnN1aXRlcxgBIAMoCzIRLmFtZWxpc28udjEuU3VpdGUiMAoPR2V0U3VpdGVSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDAoEc2x1ZxgCIAEoCSI0ChBHZXRTdWl0ZVJlc3BvbnNlEiAKBXN1aXRlGAEgASgLMhEuYW1lbGlzby52MS5TdWl0ZSJlChJDcmVhdGVTdWl0ZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSDQoFY2FzZXMYBSADKAkiSgoTQ3JlYXRlU3VpdGVSZXNwb25zZRIgCgVzdWl0ZRgBIAEoCzIRLmFtZWxpc28udjEuU3VpdGUSEQoJZmlsZV9wYXRoGAIgASgJIo4BChJVcGRhdGVTdWl0ZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSDQoFY2FzZXMYBSADKAkSFQoNcmVwbGFjZV9jYXNlcxgGIAEoCBIQCghuZXdfc2x1ZxgHIAEoCSI3ChNVcGRhdGVTdWl0ZVJlc3BvbnNlEiAKBXN1aXRlGAEgASgLMhEuYW1lbGlzby52MS5TdWl0ZSIzChJEZWxldGVTdWl0ZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIMCgRzbHVnGAIgASgJIigKE0RlbGV0ZVN1aXRlUmVzcG9uc2USEQoJZmlsZV9wYXRoGAEgASgJIkkKD0xpc3RSdW5zUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEiUKBnN0YXR1cxgCIAEoDjIVLmFtZWxpc28udjEuUnVuU3RhdHVzIjUKEExpc3RSdW5zUmVzcG9uc2USIQoEcnVucxgBIAMoCzITLmFtZWxpc28udjEuUnVuTWV0YSIwCg1HZXRSdW5SZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDgoGcnVuX2lkGAIgASgJIi4KDkdldFJ1blJlc3BvbnNlEhwKA3J1bhgBIAEoCzIPLmFtZWxpc28udjEuUnVuIogBChBDcmVhdGVSdW5SZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDAoEc2x1ZxgCIAEoCRIOCgZ0ZXN0ZXIYAyABKAkSEwoLZW52aXJvbm1lbnQYBCABKAkSDQoFc3VpdGUYBSABKAkSDQoFY2FzZXMYBiADKAkSEgoKY29tbWl0X3NoYRgHIAEoCSJHChFDcmVhdGVSdW5SZXNwb25zZRIgCgNydW4YASABKAsyEy5hbWVsaXNvLnYxLlJ1bk1ldGESEAoIZGlyX3BhdGgYAiABKAkiggEKE1JlY29yZFJlc3VsdFJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJY2FzZV9wYXRoGAMgASgJEigKBnN0YXR1cxgEIAEoDjIYLmFtZWxpc28udjEuUmVzdWx0U3RhdHVzEg0KBW5vdGVzGAUgASgJIm0KFFJlY29yZFJlc3VsdFJlc3BvbnNlEiYKBnJlc3VsdBgBIAEoCzIWLmFtZWxpc28udjEuQ2FzZVJlc3VsdBIVCg1wZW5kaW5nX2NvdW50GAIgASgFEhYKDnRvdGFsX2luX3Njb3BlGAMgASgFIl0KD0J1bGtSZXN1bHRFbnRyeRIRCgljYXNlX3BhdGgYASABKAkSKAoGc3RhdHVzGAIgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMSDQoFbm90ZXMYAyABKAkiaQoYQnVsa1JlY29yZFJlc3VsdHNSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDgoGcnVuX2lkGAIgASgJEiwKB3Jlc3VsdHMYAyADKAsyGy5hbWVsaXNvLnYxLkJ1bGtSZXN1bHRFbnRyeSJzChlCdWxrUmVjb3JkUmVzdWx0c1Jlc3BvbnNlEicKB3Jlc3VsdHMYASADKAsyFi5hbWVsaXNvLnYxLkNhc2VSZXN1bHQSFQoNcGVuZGluZ19jb3VudBgCIAEoBRIWCg50b3RhbF9pbl9zY29wZRgDIAEoBSJcChJGaW5hbGl6ZVJ1blJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIOCgZydW5faWQYAiABKAkSJQoGc3RhdHVzGAMgASgOMhUuYW1lbGlzby52MS5SdW5TdGF0dXMiNwoTRmluYWxpemVSdW5SZXNwb25zZRIgCgNydW4YASABKAsyEy5hbWVsaXNvLnYxLlJ1bk1ldGEiMwoQRGVsZXRlUnVuUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEg4KBnJ1bl9pZBgCIAEoCSIlChFEZWxldGVSdW5SZXNwb25zZRIQCghkaXJfcGF0aBgBIAEoCSJoChZHZXRQZW5kaW5nQ2FzZXNSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDgoGcnVuX2lkGAIgASgJEi0KD3ByaW9yaXR5X2ZpbHRlchgDIAEoDjIULmFtZWxpc28udjEuUHJpb3JpdHkibQoMUGVuZGluZ0VudHJ5Eh4KBGNhc2UYASABKAsyEC5hbWVsaXNvLnYxLkNhc2USDAoEYm9keRgCIAEoCRIvCg1sYXRlc3Rfc3RhdHVzGAMgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMiqQEKF0dldFBlbmRpbmdDYXNlc1Jlc3BvbnNlEh8KBWNhc2VzGAEgAygLMhAuYW1lbGlzby52MS5DYXNlEhYKDnRvdGFsX2luX3Njb3BlGAIgASgFEioKB2VudHJpZXMYAyADKAsyGS5hbWVsaXNvLnYxLkNvdmVyYWdlRW50cnkSKQoHcGVuZGluZxgEIAMoCzIYLmFtZWxpc28udjEuUGVuZGluZ0VudHJ5IkUKEFVwZGF0ZVJ1blJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIOCgZydW5faWQYAiABKAkSEAoIbmV3X3NsdWcYAyABKAkiSwoRVXBkYXRlUnVuUmVzcG9uc2USIAoDcnVuGAEgASgLMhMuYW1lbGlzby52MS5SdW5NZXRhEhQKDG5ld19kaXJfcGF0aBgCIAEoCSJcChhHZXRDb3ZlcmFnZVJlcG9ydFJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIvCg1zdGF0dXNfZmlsdGVyGAIgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMiWgoZR2V0Q292ZXJhZ2VSZXBvcnRSZXNwb25zZRIqCgdlbnRyaWVzGAEgAygLMhkuYW1lbGlzby52MS5Db3ZlcmFnZUVudHJ5EhEKCXJ1bl9jb3VudBgCIAEoBSKDAQoXR2V0QWZmZWN0ZWRDYXNlc1JlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIRCglzaW5jZV9yZWYYAiABKAkSFQoNY2hhbmdlZF9maWxlcxgDIAMoCRItCg9wcmlvcml0eV9maWx0ZXIYBCABKA4yFC5hbWVsaXNvLnYxLlByaW9yaXR5IlMKGEdldEFmZmVjdGVkQ2FzZXNSZXNwb25zZRInCgVjYXNlcxgBIAMoCzIYLmFtZWxpc28udjEuQWZmZWN0ZWRDYXNlEg4KBnJlYXNvbhgCIAEoCSInChRHZXRSZXBvU3RhdHVzUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJIpEBCg9BY3RpdmVSdW5TdGF0dXMSDgoGcnVuX2lkGAEgASgJEg4KBnRlc3RlchgCIAEoCRINCgVzdWl0ZRgDIAEoCRIMCgRkYXRlGAQgASgJEhUKDXBlbmRpbmdfY2FzZXMYBSABKAUSFgoOdG90YWxfaW5fc2NvcGUYBiABKAUSEgoKY29tbWl0X3NoYRgHIAEoCSLJAgoVR2V0UmVwb1N0YXR1c1Jlc3BvbnNlEhMKC3RvdGFsX2Nhc2VzGAEgASgFEhIKCmhpZ2hfY2FzZXMYAiABKAUSFAoMbWVkaXVtX2Nhc2VzGAMgASgFEhEKCWxvd19jYXNlcxgEIAEoBRIOCgZwYXNzZWQYBSABKAUSDgoGZmFpbGVkGAYgASgFEg8KB2Jsb2NrZWQYByABKAUSDwoHc2tpcHBlZBgIIAEoBRIRCgluZXZlcl9ydW4YCSABKAUSEwoLc3VpdGVfY291bnQYCiABKAUSEQoJcnVuX2NvdW50GAsgASgFEjAKC2FjdGl2ZV9ydW5zGAwgAygLMhsuYW1lbGlzby52MS5BY3RpdmVSdW5TdGF0dXMSLwoSbGFzdF9jb21wbGV0ZWRfcnVuGA0gASgLMhMuYW1lbGlzby52MS5SdW5NZXRhIhwKGkdldEdpdEh1Ykluc3RhbGxVcmxSZXF1ZXN0Ij4KG0dldEdpdEh1Ykluc3RhbGxVcmxSZXNwb25zZRILCgN1cmwYASABKAkSEgoKY29uZmlndXJlZBgCIAEoCCI2ChtIYW5kbGVHaXRIdWJDYWxsYmFja1JlcXVlc3QSFwoPaW5zdGFsbGF0aW9uX2lkGAEgASgJIkwKHEhhbmRsZUdpdEh1YkNhbGxiYWNrUmVzcG9uc2USLAoMcmVwb3NpdG9yaWVzGAEgAygLMhYuYW1lbGlzby52MS5SZXBvc2l0b3J5IhkKF0xpc3RSZXBvc2l0b3JpZXNSZXF1ZXN0IkgKGExpc3RSZXBvc2l0b3JpZXNSZXNwb25zZRIsCgxyZXBvc2l0b3JpZXMYASADKAsyFi5hbWVsaXNvLnYxLlJlcG9zaXRvcnkiIwoVU3luY1JlcG9zaXRvcnlSZXF1ZXN0EgoKAmlkGAEgASgJIkQKFlN5bmNSZXBvc2l0b3J5UmVzcG9uc2USKgoKcmVwb3NpdG9yeRgBIAEoCzIWLmFtZWxpc28udjEuUmVwb3NpdG9yeSIlChdSZW1vdmVSZXBvc2l0b3J5UmVxdWVzdBIKCgJpZBgBIAEoCSIaChhSZW1vdmVSZXBvc2l0b3J5UmVzcG9uc2UyrRIKDkFtZWxpc29TZXJ2aWNlEkgKCUxpc3RDYXNlcxIcLmFtZWxpc28udjEuTGlzdENhc2VzUmVxdWVzdBodLmFtZWxpc28udjEuTGlzdENhc2VzUmVzcG9uc2USQgoHR2V0Q2FzZRIaLmFtZWxpc28udjEuR2V0Q2FzZVJlcXVlc3QaGy5hbWVsaXNvLnYxLkdldENhc2VSZXNwb25zZRJLCgpDcmVhdGVDYXNlEh0uYW1lbGlzby52MS5DcmVhdGVDYXNlUmVxdWVzdBoeLmFtZWxpc28udjEuQ3JlYXRlQ2FzZVJlc3BvbnNlEloKD0J1bGtDcmVhdGVDYXNlcxIiLmFtZWxpc28udjEuQnVsa0NyZWF0ZUNhc2VzUmVxdWVzdBojLmFtZWxpc28udjEuQnVsa0NyZWF0ZUNhc2VzUmVzcG9uc2USSwoKVXBkYXRlQ2FzZRIdLmFtZWxpc28udjEuVXBkYXRlQ2FzZVJlcXVlc3QaHi5hbWVsaXNvLnYxLlVwZGF0ZUNhc2VSZXNwb25zZRJLCgpEZWxldGVDYXNlEh0uYW1lbGlzby52MS5EZWxldGVDYXNlUmVxdWVzdBoeLmFtZWxpc28udjEuRGVsZXRlQ2FzZVJlc3BvbnNlEksKCkxpc3RTdWl0ZXMSHS5hbWVsaXNvLnYxLkxpc3RTdWl0ZXNSZXF1ZXN0Gh4uYW1lbGlzby52MS5MaXN0U3VpdGVzUmVzcG9uc2USRQoIR2V0U3VpdGUSGy5hbWVsaXNvLnYxLkdldFN1aXRlUmVxdWVzdBocLmFtZWxpc28udjEuR2V0U3VpdGVSZXNwb25zZRJOCgtDcmVhdGVTdWl0ZRIeLmFtZWxpc28udjEuQ3JlYXRlU3VpdGVSZXF1ZXN0Gh8uYW1lbGlzby52MS5DcmVhdGVTdWl0ZVJlc3BvbnNlEk4KC1VwZGF0ZVN1aXRlEh4uYW1lbGlzby52MS5VcGRhdGVTdWl0ZVJlcXVlc3QaHy5hbWVsaXNvLnYxLlVwZGF0ZVN1aXRlUmVzcG9uc2USTgoLRGVsZXRlU3VpdGUSHi5hbWVsaXNvLnYxLkRlbGV0ZVN1aXRlUmVxdWVzdBofLmFtZWxpc28udjEuRGVsZXRlU3VpdGVSZXNwb25zZRJFCghMaXN0UnVucxIbLmFtZWxpc28udjEuTGlzdFJ1bnNSZXF1ZXN0GhwuYW1lbGlzby52MS5MaXN0UnVuc1Jlc3BvbnNlEj8KBkdldFJ1bhIZLmFtZWxpc28udjEuR2V0UnVuUmVxdWVzdBoaLmFtZWxpc28udjEuR2V0UnVuUmVzcG9uc2USSAoJQ3JlYXRlUnVuEhwuYW1lbGlzby52MS5DcmVhdGVSdW5SZXF1ZXN0Gh0uYW1lbGlzby52MS5DcmVhdGVSdW5SZXNwb25zZRJRCgxSZWNvcmRSZXN1bHQSHy5hbWVsaXNvLnYxLlJlY29yZFJlc3VsdFJlcXVlc3QaIC5hbWVsaXNvLnYxLlJlY29yZFJlc3VsdFJlc3BvbnNlEmAKEUJ1bGtSZWNvcmRSZXN1bHRzEiQuYW1lbGlzby52MS5CdWxrUmVjb3JkUmVzdWx0c1JlcXVlc3QaJS5hbWVsaXNvLnYxLkJ1bGtSZWNvcmRSZXN1bHRzUmVzcG9uc2USTgoLRmluYWxpemVSdW4SHi5hbWVsaXNvLnYxLkZpbmFsaXplUnVuUmVxdWVzdBofLmFtZWxpc28udjEuRmluYWxpemVSdW5SZXNwb25zZRJICglEZWxldGVSdW4SHC5hbWVsaXNvLnYxLkRlbGV0ZVJ1blJlcXVlc3QaHS5hbWVsaXNvLnYxLkRlbGV0ZVJ1blJlc3BvbnNlEloKD0dldFBlbmRpbmdDYXNlcxIiLmFtZWxpc28udjEuR2V0UGVuZGluZ0Nhc2VzUmVxdWVzdBojLmFtZWxpc28udjEuR2V0UGVuZGluZ0Nhc2VzUmVzcG9uc2USSAoJVXBkYXRlUnVuEhwuYW1lbGlzby52MS5VcGRhdGVSdW5SZXF1ZXN0Gh0uYW1lbGlzby52MS5VcGRhdGVSdW5SZXNwb25zZRJgChFHZXRDb3ZlcmFnZVJlcG9ydBIkLmFtZWxpc28udjEuR2V0Q292ZXJhZ2VSZXBvcnRSZXF1ZXN0GiUuYW1lbGlzby52MS5HZXRDb3ZlcmFnZVJlcG9ydFJlc3BvbnNlEl0KEEdldEFmZmVjdGVkQ2FzZXMSIy5hbWVsaXNvLnYxLkdldEFmZmVjdGVkQ2FzZXNSZXF1ZXN0GiQuYW1lbGlzby52MS5HZXRBZmZlY3RlZENhc2VzUmVzcG9uc2USVAoNR2V0UmVwb1N0YXR1cxIgLmFtZWxpc28udjEuR2V0UmVwb1N0YXR1c1JlcXVlc3QaIS5hbWVsaXNvLnYxLkdldFJlcG9TdGF0dXNSZXNwb25zZRJmChNHZXRHaXRIdWJJbnN0YWxsVXJsEiYuYW1lbGlzby52MS5HZXRHaXRIdWJJbnN0YWxsVXJsUmVxdWVzdBonLmFtZWxpc28udjEuR2V0R2l0SHViSW5zdGFsbFVybFJlc3BvbnNlEmkKFEhhbmRsZUdpdEh1YkNhbGxiYWNrEicuYW1lbGlzby52MS5IYW5kbGVHaXRIdWJDYWxsYmFja1JlcXVlc3QaKC5hbWVsaXNvLnYxLkhhbmRsZUdpdEh1YkNhbGxiYWNrUmVzcG9uc2USXQoQTGlzdFJlcG9zaXRvcmllcxIjLmFtZWxpc28udjEuTGlzdFJlcG9zaXRvcmllc1JlcXVlc3QaJC5hbWVsaXNvLnYxLkxpc3RSZXBvc2l0b3JpZXNSZXNwb25zZRJXCg5TeW5jUmVwb3NpdG9yeRIhLmFtZWxpc28udjEuU3luY1JlcG9zaXRvcnlSZXF1ZXN0GiIuYW1lbGlzby52MS5TeW5jUmVwb3NpdG9yeVJlc3BvbnNlEl0KEFJlbW92ZVJlcG9zaXRvcnkSIy5hbWVsaXNvLnYxLlJlbW92ZVJlcG9zaXRvcnlSZXF1ZXN0GiQuYW1lbGlzby52MS5SZW1vdmVSZXBvc2l0b3J5UmVzcG9uc2VCMFouZ2l0aHViLmNvbS90dXBlMTIzMzQvYW1lbGlzby9nZW5lcmF0ZWQ7YW1lbGlzb2IGcHJvdG8z", [file_ameliso_v1_types]);
+export const file_ameliso_v1_service =
+  /*@__PURE__*/
+  fileDesc(
+    "ChhhbWVsaXNvL3YxL3NlcnZpY2UucHJvdG8SCmFtZWxpc28udjEidwoQTGlzdENhc2VzUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEgwKBHRhZ3MYAiADKAkSJgoIcHJpb3JpdHkYAyABKA4yFC5hbWVsaXNvLnYxLlByaW9yaXR5Eg0KBXF1ZXJ5GAQgASgJEg0KBXN1aXRlGAUgASgJIjQKEUxpc3RDYXNlc1Jlc3BvbnNlEh8KBWNhc2VzGAEgAygLMhAuYW1lbGlzby52MS5DYXNlIjQKDkdldENhc2VSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSEQoJY2FzZV9wYXRoGAIgASgJIj8KD0dldENhc2VSZXNwb25zZRIeCgRjYXNlGAEgASgLMhAuYW1lbGlzby52MS5DYXNlEgwKBGJvZHkYAiABKAkinwEKEUNyZWF0ZUNhc2VSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSEQoJY2FzZV9wYXRoGAIgASgJEg0KBXRpdGxlGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEgwKBHRhZ3MYBSADKAkSJgoIcHJpb3JpdHkYBiABKA4yFC5hbWVsaXNvLnYxLlByaW9yaXR5EgwKBGJvZHkYByABKAkiRwoSQ3JlYXRlQ2FzZVJlc3BvbnNlEh4KBGNhc2UYASABKAsyEC5hbWVsaXNvLnYxLkNhc2USEQoJZmlsZV9wYXRoGAIgASgJIooBCg1CdWxrQ2FzZUVudHJ5EhEKCWNhc2VfcGF0aBgBIAEoCRINCgV0aXRsZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIMCgR0YWdzGAQgAygJEiYKCHByaW9yaXR5GAUgASgOMhQuYW1lbGlzby52MS5Qcmlvcml0eRIMCgRib2R5GAYgASgJIlMKFkJ1bGtDcmVhdGVDYXNlc1JlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIoCgVjYXNlcxgCIAMoCzIZLmFtZWxpc28udjEuQnVsa0Nhc2VFbnRyeSI6ChdCdWxrQ3JlYXRlQ2FzZXNSZXNwb25zZRIfCgVjYXNlcxgBIAMoCzIQLmFtZWxpc28udjEuQ2FzZSKxAQoRVXBkYXRlQ2FzZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIRCgljYXNlX3BhdGgYAiABKAkSDQoFdGl0bGUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSDAoEdGFncxgFIAMoCRImCghwcmlvcml0eRgGIAEoDjIULmFtZWxpc28udjEuUHJpb3JpdHkSDAoEYm9keRgHIAEoCRIQCghuZXdfcGF0aBgIIAEoCSI0ChJVcGRhdGVDYXNlUmVzcG9uc2USHgoEY2FzZRgBIAEoCzIQLmFtZWxpc28udjEuQ2FzZSI3ChFEZWxldGVDYXNlUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEhEKCWNhc2VfcGF0aBgCIAEoCSInChJEZWxldGVDYXNlUmVzcG9uc2USEQoJZmlsZV9wYXRoGAEgASgJIiQKEUxpc3RTdWl0ZXNSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkiNwoSTGlzdFN1aXRlc1Jlc3BvbnNlEiEKBnN1aXRlcxgBIAMoCzIRLmFtZWxpc28udjEuU3VpdGUiMAoPR2V0U3VpdGVSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDAoEc2x1ZxgCIAEoCSI0ChBHZXRTdWl0ZVJlc3BvbnNlEiAKBXN1aXRlGAEgASgLMhEuYW1lbGlzby52MS5TdWl0ZSJlChJDcmVhdGVTdWl0ZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSDQoFY2FzZXMYBSADKAkiSgoTQ3JlYXRlU3VpdGVSZXNwb25zZRIgCgVzdWl0ZRgBIAEoCzIRLmFtZWxpc28udjEuU3VpdGUSEQoJZmlsZV9wYXRoGAIgASgJIo4BChJVcGRhdGVTdWl0ZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSDQoFY2FzZXMYBSADKAkSFQoNcmVwbGFjZV9jYXNlcxgGIAEoCBIQCghuZXdfc2x1ZxgHIAEoCSI3ChNVcGRhdGVTdWl0ZVJlc3BvbnNlEiAKBXN1aXRlGAEgASgLMhEuYW1lbGlzby52MS5TdWl0ZSIzChJEZWxldGVTdWl0ZVJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIMCgRzbHVnGAIgASgJIigKE0RlbGV0ZVN1aXRlUmVzcG9uc2USEQoJZmlsZV9wYXRoGAEgASgJIkkKD0xpc3RSdW5zUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEiUKBnN0YXR1cxgCIAEoDjIVLmFtZWxpc28udjEuUnVuU3RhdHVzIjUKEExpc3RSdW5zUmVzcG9uc2USIQoEcnVucxgBIAMoCzITLmFtZWxpc28udjEuUnVuTWV0YSIwCg1HZXRSdW5SZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDgoGcnVuX2lkGAIgASgJIi4KDkdldFJ1blJlc3BvbnNlEhwKA3J1bhgBIAEoCzIPLmFtZWxpc28udjEuUnVuIogBChBDcmVhdGVSdW5SZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDAoEc2x1ZxgCIAEoCRIOCgZ0ZXN0ZXIYAyABKAkSEwoLZW52aXJvbm1lbnQYBCABKAkSDQoFc3VpdGUYBSABKAkSDQoFY2FzZXMYBiADKAkSEgoKY29tbWl0X3NoYRgHIAEoCSJHChFDcmVhdGVSdW5SZXNwb25zZRIgCgNydW4YASABKAsyEy5hbWVsaXNvLnYxLlJ1bk1ldGESEAoIZGlyX3BhdGgYAiABKAkiggEKE1JlY29yZFJlc3VsdFJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIOCgZydW5faWQYAiABKAkSEQoJY2FzZV9wYXRoGAMgASgJEigKBnN0YXR1cxgEIAEoDjIYLmFtZWxpc28udjEuUmVzdWx0U3RhdHVzEg0KBW5vdGVzGAUgASgJIm0KFFJlY29yZFJlc3VsdFJlc3BvbnNlEiYKBnJlc3VsdBgBIAEoCzIWLmFtZWxpc28udjEuQ2FzZVJlc3VsdBIVCg1wZW5kaW5nX2NvdW50GAIgASgFEhYKDnRvdGFsX2luX3Njb3BlGAMgASgFIl0KD0J1bGtSZXN1bHRFbnRyeRIRCgljYXNlX3BhdGgYASABKAkSKAoGc3RhdHVzGAIgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMSDQoFbm90ZXMYAyABKAkiaQoYQnVsa1JlY29yZFJlc3VsdHNSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDgoGcnVuX2lkGAIgASgJEiwKB3Jlc3VsdHMYAyADKAsyGy5hbWVsaXNvLnYxLkJ1bGtSZXN1bHRFbnRyeSJzChlCdWxrUmVjb3JkUmVzdWx0c1Jlc3BvbnNlEicKB3Jlc3VsdHMYASADKAsyFi5hbWVsaXNvLnYxLkNhc2VSZXN1bHQSFQoNcGVuZGluZ19jb3VudBgCIAEoBRIWCg50b3RhbF9pbl9zY29wZRgDIAEoBSJcChJGaW5hbGl6ZVJ1blJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIOCgZydW5faWQYAiABKAkSJQoGc3RhdHVzGAMgASgOMhUuYW1lbGlzby52MS5SdW5TdGF0dXMiNwoTRmluYWxpemVSdW5SZXNwb25zZRIgCgNydW4YASABKAsyEy5hbWVsaXNvLnYxLlJ1bk1ldGEiMwoQRGVsZXRlUnVuUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJEg4KBnJ1bl9pZBgCIAEoCSIlChFEZWxldGVSdW5SZXNwb25zZRIQCghkaXJfcGF0aBgBIAEoCSJoChZHZXRQZW5kaW5nQ2FzZXNSZXF1ZXN0Eg8KB3JlcG9faWQYASABKAkSDgoGcnVuX2lkGAIgASgJEi0KD3ByaW9yaXR5X2ZpbHRlchgDIAEoDjIULmFtZWxpc28udjEuUHJpb3JpdHkibQoMUGVuZGluZ0VudHJ5Eh4KBGNhc2UYASABKAsyEC5hbWVsaXNvLnYxLkNhc2USDAoEYm9keRgCIAEoCRIvCg1sYXRlc3Rfc3RhdHVzGAMgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMiqQEKF0dldFBlbmRpbmdDYXNlc1Jlc3BvbnNlEh8KBWNhc2VzGAEgAygLMhAuYW1lbGlzby52MS5DYXNlEhYKDnRvdGFsX2luX3Njb3BlGAIgASgFEioKB2VudHJpZXMYAyADKAsyGS5hbWVsaXNvLnYxLkNvdmVyYWdlRW50cnkSKQoHcGVuZGluZxgEIAMoCzIYLmFtZWxpc28udjEuUGVuZGluZ0VudHJ5IkUKEFVwZGF0ZVJ1blJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIOCgZydW5faWQYAiABKAkSEAoIbmV3X3NsdWcYAyABKAkiSwoRVXBkYXRlUnVuUmVzcG9uc2USIAoDcnVuGAEgASgLMhMuYW1lbGlzby52MS5SdW5NZXRhEhQKDG5ld19kaXJfcGF0aBgCIAEoCSJcChhHZXRDb3ZlcmFnZVJlcG9ydFJlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIvCg1zdGF0dXNfZmlsdGVyGAIgASgOMhguYW1lbGlzby52MS5SZXN1bHRTdGF0dXMiWgoZR2V0Q292ZXJhZ2VSZXBvcnRSZXNwb25zZRIqCgdlbnRyaWVzGAEgAygLMhkuYW1lbGlzby52MS5Db3ZlcmFnZUVudHJ5EhEKCXJ1bl9jb3VudBgCIAEoBSKDAQoXR2V0QWZmZWN0ZWRDYXNlc1JlcXVlc3QSDwoHcmVwb19pZBgBIAEoCRIRCglzaW5jZV9yZWYYAiABKAkSFQoNY2hhbmdlZF9maWxlcxgDIAMoCRItCg9wcmlvcml0eV9maWx0ZXIYBCABKA4yFC5hbWVsaXNvLnYxLlByaW9yaXR5IlMKGEdldEFmZmVjdGVkQ2FzZXNSZXNwb25zZRInCgVjYXNlcxgBIAMoCzIYLmFtZWxpc28udjEuQWZmZWN0ZWRDYXNlEg4KBnJlYXNvbhgCIAEoCSInChRHZXRSZXBvU3RhdHVzUmVxdWVzdBIPCgdyZXBvX2lkGAEgASgJIpEBCg9BY3RpdmVSdW5TdGF0dXMSDgoGcnVuX2lkGAEgASgJEg4KBnRlc3RlchgCIAEoCRINCgVzdWl0ZRgDIAEoCRIMCgRkYXRlGAQgASgJEhUKDXBlbmRpbmdfY2FzZXMYBSABKAUSFgoOdG90YWxfaW5fc2NvcGUYBiABKAUSEgoKY29tbWl0X3NoYRgHIAEoCSLJAgoVR2V0UmVwb1N0YXR1c1Jlc3BvbnNlEhMKC3RvdGFsX2Nhc2VzGAEgASgFEhIKCmhpZ2hfY2FzZXMYAiABKAUSFAoMbWVkaXVtX2Nhc2VzGAMgASgFEhEKCWxvd19jYXNlcxgEIAEoBRIOCgZwYXNzZWQYBSABKAUSDgoGZmFpbGVkGAYgASgFEg8KB2Jsb2NrZWQYByABKAUSDwoHc2tpcHBlZBgIIAEoBRIRCgluZXZlcl9ydW4YCSABKAUSEwoLc3VpdGVfY291bnQYCiABKAUSEQoJcnVuX2NvdW50GAsgASgFEjAKC2FjdGl2ZV9ydW5zGAwgAygLMhsuYW1lbGlzby52MS5BY3RpdmVSdW5TdGF0dXMSLwoSbGFzdF9jb21wbGV0ZWRfcnVuGA0gASgLMhMuYW1lbGlzby52MS5SdW5NZXRhIhwKGkdldEdpdEh1Ykluc3RhbGxVcmxSZXF1ZXN0Ij4KG0dldEdpdEh1Ykluc3RhbGxVcmxSZXNwb25zZRILCgN1cmwYASABKAkSEgoKY29uZmlndXJlZBgCIAEoCCI2ChtIYW5kbGVHaXRIdWJDYWxsYmFja1JlcXVlc3QSFwoPaW5zdGFsbGF0aW9uX2lkGAEgASgJIkwKHEhhbmRsZUdpdEh1YkNhbGxiYWNrUmVzcG9uc2USLAoMcmVwb3NpdG9yaWVzGAEgAygLMhYuYW1lbGlzby52MS5SZXBvc2l0b3J5IhkKF0xpc3RSZXBvc2l0b3JpZXNSZXF1ZXN0IkgKGExpc3RSZXBvc2l0b3JpZXNSZXNwb25zZRIsCgxyZXBvc2l0b3JpZXMYASADKAsyFi5hbWVsaXNvLnYxLlJlcG9zaXRvcnkiIwoVU3luY1JlcG9zaXRvcnlSZXF1ZXN0EgoKAmlkGAEgASgJIkQKFlN5bmNSZXBvc2l0b3J5UmVzcG9uc2USKgoKcmVwb3NpdG9yeRgBIAEoCzIWLmFtZWxpc28udjEuUmVwb3NpdG9yeSIlChdSZW1vdmVSZXBvc2l0b3J5UmVxdWVzdBIKCgJpZBgBIAEoCSIaChhSZW1vdmVSZXBvc2l0b3J5UmVzcG9uc2UyrRIKDkFtZWxpc29TZXJ2aWNlEkgKCUxpc3RDYXNlcxIcLmFtZWxpc28udjEuTGlzdENhc2VzUmVxdWVzdBodLmFtZWxpc28udjEuTGlzdENhc2VzUmVzcG9uc2USQgoHR2V0Q2FzZRIaLmFtZWxpc28udjEuR2V0Q2FzZVJlcXVlc3QaGy5hbWVsaXNvLnYxLkdldENhc2VSZXNwb25zZRJLCgpDcmVhdGVDYXNlEh0uYW1lbGlzby52MS5DcmVhdGVDYXNlUmVxdWVzdBoeLmFtZWxpc28udjEuQ3JlYXRlQ2FzZVJlc3BvbnNlEloKD0J1bGtDcmVhdGVDYXNlcxIiLmFtZWxpc28udjEuQnVsa0NyZWF0ZUNhc2VzUmVxdWVzdBojLmFtZWxpc28udjEuQnVsa0NyZWF0ZUNhc2VzUmVzcG9uc2USSwoKVXBkYXRlQ2FzZRIdLmFtZWxpc28udjEuVXBkYXRlQ2FzZVJlcXVlc3QaHi5hbWVsaXNvLnYxLlVwZGF0ZUNhc2VSZXNwb25zZRJLCgpEZWxldGVDYXNlEh0uYW1lbGlzby52MS5EZWxldGVDYXNlUmVxdWVzdBoeLmFtZWxpc28udjEuRGVsZXRlQ2FzZVJlc3BvbnNlEksKCkxpc3RTdWl0ZXMSHS5hbWVsaXNvLnYxLkxpc3RTdWl0ZXNSZXF1ZXN0Gh4uYW1lbGlzby52MS5MaXN0U3VpdGVzUmVzcG9uc2USRQoIR2V0U3VpdGUSGy5hbWVsaXNvLnYxLkdldFN1aXRlUmVxdWVzdBocLmFtZWxpc28udjEuR2V0U3VpdGVSZXNwb25zZRJOCgtDcmVhdGVTdWl0ZRIeLmFtZWxpc28udjEuQ3JlYXRlU3VpdGVSZXF1ZXN0Gh8uYW1lbGlzby52MS5DcmVhdGVTdWl0ZVJlc3BvbnNlEk4KC1VwZGF0ZVN1aXRlEh4uYW1lbGlzby52MS5VcGRhdGVTdWl0ZVJlcXVlc3QaHy5hbWVsaXNvLnYxLlVwZGF0ZVN1aXRlUmVzcG9uc2USTgoLRGVsZXRlU3VpdGUSHi5hbWVsaXNvLnYxLkRlbGV0ZVN1aXRlUmVxdWVzdBofLmFtZWxpc28udjEuRGVsZXRlU3VpdGVSZXNwb25zZRJFCghMaXN0UnVucxIbLmFtZWxpc28udjEuTGlzdFJ1bnNSZXF1ZXN0GhwuYW1lbGlzby52MS5MaXN0UnVuc1Jlc3BvbnNlEj8KBkdldFJ1bhIZLmFtZWxpc28udjEuR2V0UnVuUmVxdWVzdBoaLmFtZWxpc28udjEuR2V0UnVuUmVzcG9uc2USSAoJQ3JlYXRlUnVuEhwuYW1lbGlzby52MS5DcmVhdGVSdW5SZXF1ZXN0Gh0uYW1lbGlzby52MS5DcmVhdGVSdW5SZXNwb25zZRJRCgxSZWNvcmRSZXN1bHQSHy5hbWVsaXNvLnYxLlJlY29yZFJlc3VsdFJlcXVlc3QaIC5hbWVsaXNvLnYxLlJlY29yZFJlc3VsdFJlc3BvbnNlEmAKEUJ1bGtSZWNvcmRSZXN1bHRzEiQuYW1lbGlzby52MS5CdWxrUmVjb3JkUmVzdWx0c1JlcXVlc3QaJS5hbWVsaXNvLnYxLkJ1bGtSZWNvcmRSZXN1bHRzUmVzcG9uc2USTgoLRmluYWxpemVSdW4SHi5hbWVsaXNvLnYxLkZpbmFsaXplUnVuUmVxdWVzdBofLmFtZWxpc28udjEuRmluYWxpemVSdW5SZXNwb25zZRJICglEZWxldGVSdW4SHC5hbWVsaXNvLnYxLkRlbGV0ZVJ1blJlcXVlc3QaHS5hbWVsaXNvLnYxLkRlbGV0ZVJ1blJlc3BvbnNlEloKD0dldFBlbmRpbmdDYXNlcxIiLmFtZWxpc28udjEuR2V0UGVuZGluZ0Nhc2VzUmVxdWVzdBojLmFtZWxpc28udjEuR2V0UGVuZGluZ0Nhc2VzUmVzcG9uc2USSAoJVXBkYXRlUnVuEhwuYW1lbGlzby52MS5VcGRhdGVSdW5SZXF1ZXN0Gh0uYW1lbGlzby52MS5VcGRhdGVSdW5SZXNwb25zZRJgChFHZXRDb3ZlcmFnZVJlcG9ydBIkLmFtZWxpc28udjEuR2V0Q292ZXJhZ2VSZXBvcnRSZXF1ZXN0GiUuYW1lbGlzby52MS5HZXRDb3ZlcmFnZVJlcG9ydFJlc3BvbnNlEl0KEEdldEFmZmVjdGVkQ2FzZXMSIy5hbWVsaXNvLnYxLkdldEFmZmVjdGVkQ2FzZXNSZXF1ZXN0GiQuYW1lbGlzby52MS5HZXRBZmZlY3RlZENhc2VzUmVzcG9uc2USVAoNR2V0UmVwb1N0YXR1cxIgLmFtZWxpc28udjEuR2V0UmVwb1N0YXR1c1JlcXVlc3QaIS5hbWVsaXNvLnYxLkdldFJlcG9TdGF0dXNSZXNwb25zZRJmChNHZXRHaXRIdWJJbnN0YWxsVXJsEiYuYW1lbGlzby52MS5HZXRHaXRIdWJJbnN0YWxsVXJsUmVxdWVzdBonLmFtZWxpc28udjEuR2V0R2l0SHViSW5zdGFsbFVybFJlc3BvbnNlEmkKFEhhbmRsZUdpdEh1YkNhbGxiYWNrEicuYW1lbGlzby52MS5IYW5kbGVHaXRIdWJDYWxsYmFja1JlcXVlc3QaKC5hbWVsaXNvLnYxLkhhbmRsZUdpdEh1YkNhbGxiYWNrUmVzcG9uc2USXQoQTGlzdFJlcG9zaXRvcmllcxIjLmFtZWxpc28udjEuTGlzdFJlcG9zaXRvcmllc1JlcXVlc3QaJC5hbWVsaXNvLnYxLkxpc3RSZXBvc2l0b3JpZXNSZXNwb25zZRJXCg5TeW5jUmVwb3NpdG9yeRIhLmFtZWxpc28udjEuU3luY1JlcG9zaXRvcnlSZXF1ZXN0GiIuYW1lbGlzby52MS5TeW5jUmVwb3NpdG9yeVJlc3BvbnNlEl0KEFJlbW92ZVJlcG9zaXRvcnkSIy5hbWVsaXNvLnYxLlJlbW92ZVJlcG9zaXRvcnlSZXF1ZXN0GiQuYW1lbGlzby52MS5SZW1vdmVSZXBvc2l0b3J5UmVzcG9uc2VCMFouZ2l0aHViLmNvbS90dXBlMTIzMzQvYW1lbGlzby9nZW5lcmF0ZWQ7YW1lbGlzb2IGcHJvdG8z",
+    [file_ameliso_v1_types]
+  );
 
 /**
  * Describes the message ameliso.v1.ListCasesRequest.
  * Use `create(ListCasesRequestSchema)` to create a new message.
  */
-export const ListCasesRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 0);
+export const ListCasesRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 0);
 
 /**
  * Describes the message ameliso.v1.ListCasesResponse.
  * Use `create(ListCasesResponseSchema)` to create a new message.
  */
-export const ListCasesResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 1);
+export const ListCasesResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 1);
 
 /**
  * Describes the message ameliso.v1.GetCaseRequest.
  * Use `create(GetCaseRequestSchema)` to create a new message.
  */
-export const GetCaseRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 2);
+export const GetCaseRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 2);
 
 /**
  * Describes the message ameliso.v1.GetCaseResponse.
  * Use `create(GetCaseResponseSchema)` to create a new message.
  */
-export const GetCaseResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 3);
+export const GetCaseResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 3);
 
 /**
  * Describes the message ameliso.v1.CreateCaseRequest.
  * Use `create(CreateCaseRequestSchema)` to create a new message.
  */
-export const CreateCaseRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 4);
+export const CreateCaseRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 4);
 
 /**
  * Describes the message ameliso.v1.CreateCaseResponse.
  * Use `create(CreateCaseResponseSchema)` to create a new message.
  */
-export const CreateCaseResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 5);
+export const CreateCaseResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 5);
 
 /**
  * Describes the message ameliso.v1.BulkCaseEntry.
  * Use `create(BulkCaseEntrySchema)` to create a new message.
  */
-export const BulkCaseEntrySchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 6);
+export const BulkCaseEntrySchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 6);
 
 /**
  * Describes the message ameliso.v1.BulkCreateCasesRequest.
  * Use `create(BulkCreateCasesRequestSchema)` to create a new message.
  */
-export const BulkCreateCasesRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 7);
+export const BulkCreateCasesRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 7);
 
 /**
  * Describes the message ameliso.v1.BulkCreateCasesResponse.
  * Use `create(BulkCreateCasesResponseSchema)` to create a new message.
  */
-export const BulkCreateCasesResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 8);
+export const BulkCreateCasesResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 8);
 
 /**
  * Describes the message ameliso.v1.UpdateCaseRequest.
  * Use `create(UpdateCaseRequestSchema)` to create a new message.
  */
-export const UpdateCaseRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 9);
+export const UpdateCaseRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 9);
 
 /**
  * Describes the message ameliso.v1.UpdateCaseResponse.
  * Use `create(UpdateCaseResponseSchema)` to create a new message.
  */
-export const UpdateCaseResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 10);
+export const UpdateCaseResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 10);
 
 /**
  * Describes the message ameliso.v1.DeleteCaseRequest.
  * Use `create(DeleteCaseRequestSchema)` to create a new message.
  */
-export const DeleteCaseRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 11);
+export const DeleteCaseRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 11);
 
 /**
  * Describes the message ameliso.v1.DeleteCaseResponse.
  * Use `create(DeleteCaseResponseSchema)` to create a new message.
  */
-export const DeleteCaseResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 12);
+export const DeleteCaseResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 12);
 
 /**
  * Describes the message ameliso.v1.ListSuitesRequest.
  * Use `create(ListSuitesRequestSchema)` to create a new message.
  */
-export const ListSuitesRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 13);
+export const ListSuitesRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 13);
 
 /**
  * Describes the message ameliso.v1.ListSuitesResponse.
  * Use `create(ListSuitesResponseSchema)` to create a new message.
  */
-export const ListSuitesResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 14);
+export const ListSuitesResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 14);
 
 /**
  * Describes the message ameliso.v1.GetSuiteRequest.
  * Use `create(GetSuiteRequestSchema)` to create a new message.
  */
-export const GetSuiteRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 15);
+export const GetSuiteRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 15);
 
 /**
  * Describes the message ameliso.v1.GetSuiteResponse.
  * Use `create(GetSuiteResponseSchema)` to create a new message.
  */
-export const GetSuiteResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 16);
+export const GetSuiteResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 16);
 
 /**
  * Describes the message ameliso.v1.CreateSuiteRequest.
  * Use `create(CreateSuiteRequestSchema)` to create a new message.
  */
-export const CreateSuiteRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 17);
+export const CreateSuiteRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 17);
 
 /**
  * Describes the message ameliso.v1.CreateSuiteResponse.
  * Use `create(CreateSuiteResponseSchema)` to create a new message.
  */
-export const CreateSuiteResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 18);
+export const CreateSuiteResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 18);
 
 /**
  * Describes the message ameliso.v1.UpdateSuiteRequest.
  * Use `create(UpdateSuiteRequestSchema)` to create a new message.
  */
-export const UpdateSuiteRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 19);
+export const UpdateSuiteRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 19);
 
 /**
  * Describes the message ameliso.v1.UpdateSuiteResponse.
  * Use `create(UpdateSuiteResponseSchema)` to create a new message.
  */
-export const UpdateSuiteResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 20);
+export const UpdateSuiteResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 20);
 
 /**
  * Describes the message ameliso.v1.DeleteSuiteRequest.
  * Use `create(DeleteSuiteRequestSchema)` to create a new message.
  */
-export const DeleteSuiteRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 21);
+export const DeleteSuiteRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 21);
 
 /**
  * Describes the message ameliso.v1.DeleteSuiteResponse.
  * Use `create(DeleteSuiteResponseSchema)` to create a new message.
  */
-export const DeleteSuiteResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 22);
+export const DeleteSuiteResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 22);
 
 /**
  * Describes the message ameliso.v1.ListRunsRequest.
  * Use `create(ListRunsRequestSchema)` to create a new message.
  */
-export const ListRunsRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 23);
+export const ListRunsRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 23);
 
 /**
  * Describes the message ameliso.v1.ListRunsResponse.
  * Use `create(ListRunsResponseSchema)` to create a new message.
  */
-export const ListRunsResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 24);
+export const ListRunsResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 24);
 
 /**
  * Describes the message ameliso.v1.GetRunRequest.
  * Use `create(GetRunRequestSchema)` to create a new message.
  */
-export const GetRunRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 25);
+export const GetRunRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 25);
 
 /**
  * Describes the message ameliso.v1.GetRunResponse.
  * Use `create(GetRunResponseSchema)` to create a new message.
  */
-export const GetRunResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 26);
+export const GetRunResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 26);
 
 /**
  * Describes the message ameliso.v1.CreateRunRequest.
  * Use `create(CreateRunRequestSchema)` to create a new message.
  */
-export const CreateRunRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 27);
+export const CreateRunRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 27);
 
 /**
  * Describes the message ameliso.v1.CreateRunResponse.
  * Use `create(CreateRunResponseSchema)` to create a new message.
  */
-export const CreateRunResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 28);
+export const CreateRunResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 28);
 
 /**
  * Describes the message ameliso.v1.RecordResultRequest.
  * Use `create(RecordResultRequestSchema)` to create a new message.
  */
-export const RecordResultRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 29);
+export const RecordResultRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 29);
 
 /**
  * Describes the message ameliso.v1.RecordResultResponse.
  * Use `create(RecordResultResponseSchema)` to create a new message.
  */
-export const RecordResultResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 30);
+export const RecordResultResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 30);
 
 /**
  * Describes the message ameliso.v1.BulkResultEntry.
  * Use `create(BulkResultEntrySchema)` to create a new message.
  */
-export const BulkResultEntrySchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 31);
+export const BulkResultEntrySchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 31);
 
 /**
  * Describes the message ameliso.v1.BulkRecordResultsRequest.
  * Use `create(BulkRecordResultsRequestSchema)` to create a new message.
  */
-export const BulkRecordResultsRequestSchema = /*@__PURE__*/
+export const BulkRecordResultsRequestSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 32);
 
 /**
  * Describes the message ameliso.v1.BulkRecordResultsResponse.
  * Use `create(BulkRecordResultsResponseSchema)` to create a new message.
  */
-export const BulkRecordResultsResponseSchema = /*@__PURE__*/
+export const BulkRecordResultsResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 33);
 
 /**
  * Describes the message ameliso.v1.FinalizeRunRequest.
  * Use `create(FinalizeRunRequestSchema)` to create a new message.
  */
-export const FinalizeRunRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 34);
+export const FinalizeRunRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 34);
 
 /**
  * Describes the message ameliso.v1.FinalizeRunResponse.
  * Use `create(FinalizeRunResponseSchema)` to create a new message.
  */
-export const FinalizeRunResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 35);
+export const FinalizeRunResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 35);
 
 /**
  * Describes the message ameliso.v1.DeleteRunRequest.
  * Use `create(DeleteRunRequestSchema)` to create a new message.
  */
-export const DeleteRunRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 36);
+export const DeleteRunRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 36);
 
 /**
  * Describes the message ameliso.v1.DeleteRunResponse.
  * Use `create(DeleteRunResponseSchema)` to create a new message.
  */
-export const DeleteRunResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 37);
+export const DeleteRunResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 37);
 
 /**
  * Describes the message ameliso.v1.GetPendingCasesRequest.
  * Use `create(GetPendingCasesRequestSchema)` to create a new message.
  */
-export const GetPendingCasesRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 38);
+export const GetPendingCasesRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 38);
 
 /**
  * Describes the message ameliso.v1.PendingEntry.
  * Use `create(PendingEntrySchema)` to create a new message.
  */
-export const PendingEntrySchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 39);
+export const PendingEntrySchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 39);
 
 /**
  * Describes the message ameliso.v1.GetPendingCasesResponse.
  * Use `create(GetPendingCasesResponseSchema)` to create a new message.
  */
-export const GetPendingCasesResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 40);
+export const GetPendingCasesResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 40);
 
 /**
  * Describes the message ameliso.v1.UpdateRunRequest.
  * Use `create(UpdateRunRequestSchema)` to create a new message.
  */
-export const UpdateRunRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 41);
+export const UpdateRunRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 41);
 
 /**
  * Describes the message ameliso.v1.UpdateRunResponse.
  * Use `create(UpdateRunResponseSchema)` to create a new message.
  */
-export const UpdateRunResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 42);
+export const UpdateRunResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 42);
 
 /**
  * Describes the message ameliso.v1.GetCoverageReportRequest.
  * Use `create(GetCoverageReportRequestSchema)` to create a new message.
  */
-export const GetCoverageReportRequestSchema = /*@__PURE__*/
+export const GetCoverageReportRequestSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 43);
 
 /**
  * Describes the message ameliso.v1.GetCoverageReportResponse.
  * Use `create(GetCoverageReportResponseSchema)` to create a new message.
  */
-export const GetCoverageReportResponseSchema = /*@__PURE__*/
+export const GetCoverageReportResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 44);
 
 /**
  * Describes the message ameliso.v1.GetAffectedCasesRequest.
  * Use `create(GetAffectedCasesRequestSchema)` to create a new message.
  */
-export const GetAffectedCasesRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 45);
+export const GetAffectedCasesRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 45);
 
 /**
  * Describes the message ameliso.v1.GetAffectedCasesResponse.
  * Use `create(GetAffectedCasesResponseSchema)` to create a new message.
  */
-export const GetAffectedCasesResponseSchema = /*@__PURE__*/
+export const GetAffectedCasesResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 46);
 
 /**
  * Describes the message ameliso.v1.GetRepoStatusRequest.
  * Use `create(GetRepoStatusRequestSchema)` to create a new message.
  */
-export const GetRepoStatusRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 47);
+export const GetRepoStatusRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 47);
 
 /**
  * Describes the message ameliso.v1.ActiveRunStatus.
  * Use `create(ActiveRunStatusSchema)` to create a new message.
  */
-export const ActiveRunStatusSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 48);
+export const ActiveRunStatusSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 48);
 
 /**
  * Describes the message ameliso.v1.GetRepoStatusResponse.
  * Use `create(GetRepoStatusResponseSchema)` to create a new message.
  */
-export const GetRepoStatusResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 49);
+export const GetRepoStatusResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 49);
 
 /**
  * Describes the message ameliso.v1.GetGitHubInstallUrlRequest.
  * Use `create(GetGitHubInstallUrlRequestSchema)` to create a new message.
  */
-export const GetGitHubInstallUrlRequestSchema = /*@__PURE__*/
+export const GetGitHubInstallUrlRequestSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 50);
 
 /**
  * Describes the message ameliso.v1.GetGitHubInstallUrlResponse.
  * Use `create(GetGitHubInstallUrlResponseSchema)` to create a new message.
  */
-export const GetGitHubInstallUrlResponseSchema = /*@__PURE__*/
+export const GetGitHubInstallUrlResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 51);
 
 /**
  * Describes the message ameliso.v1.HandleGitHubCallbackRequest.
  * Use `create(HandleGitHubCallbackRequestSchema)` to create a new message.
  */
-export const HandleGitHubCallbackRequestSchema = /*@__PURE__*/
+export const HandleGitHubCallbackRequestSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 52);
 
 /**
  * Describes the message ameliso.v1.HandleGitHubCallbackResponse.
  * Use `create(HandleGitHubCallbackResponseSchema)` to create a new message.
  */
-export const HandleGitHubCallbackResponseSchema = /*@__PURE__*/
+export const HandleGitHubCallbackResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 53);
 
 /**
  * Describes the message ameliso.v1.ListRepositoriesRequest.
  * Use `create(ListRepositoriesRequestSchema)` to create a new message.
  */
-export const ListRepositoriesRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 54);
+export const ListRepositoriesRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 54);
 
 /**
  * Describes the message ameliso.v1.ListRepositoriesResponse.
  * Use `create(ListRepositoriesResponseSchema)` to create a new message.
  */
-export const ListRepositoriesResponseSchema = /*@__PURE__*/
+export const ListRepositoriesResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 55);
 
 /**
  * Describes the message ameliso.v1.SyncRepositoryRequest.
  * Use `create(SyncRepositoryRequestSchema)` to create a new message.
  */
-export const SyncRepositoryRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 56);
+export const SyncRepositoryRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 56);
 
 /**
  * Describes the message ameliso.v1.SyncRepositoryResponse.
  * Use `create(SyncRepositoryResponseSchema)` to create a new message.
  */
-export const SyncRepositoryResponseSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 57);
+export const SyncRepositoryResponseSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 57);
 
 /**
  * Describes the message ameliso.v1.RemoveRepositoryRequest.
  * Use `create(RemoveRepositoryRequestSchema)` to create a new message.
  */
-export const RemoveRepositoryRequestSchema = /*@__PURE__*/
-  messageDesc(file_ameliso_v1_service, 58);
+export const RemoveRepositoryRequestSchema = /*@__PURE__*/ messageDesc(file_ameliso_v1_service, 58);
 
 /**
  * Describes the message ameliso.v1.RemoveRepositoryResponse.
  * Use `create(RemoveRepositoryResponseSchema)` to create a new message.
  */
-export const RemoveRepositoryResponseSchema = /*@__PURE__*/
+export const RemoveRepositoryResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_ameliso_v1_service, 59);
 
 /**
@@ -448,6 +414,4 @@ export const RemoveRepositoryResponseSchema = /*@__PURE__*/
  *
  * @generated from service ameliso.v1.AmelisoService
  */
-export const AmelisoService = /*@__PURE__*/
-  serviceDesc(file_ameliso_v1_service, 0);
-
+export const AmelisoService = /*@__PURE__*/ serviceDesc(file_ameliso_v1_service, 0);
