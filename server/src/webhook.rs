@@ -245,8 +245,8 @@ mod tests {
 
     #[test]
     fn is_case_file_matches() {
-        assert!(is_case_file("cases/auth/login.md"));
-        assert!(is_case_file("cases/smoke.md"));
+        assert!(is_case_file(".ameliso/cases/auth/login.md"));
+        assert!(is_case_file(".ameliso/cases/smoke.md"));
     }
 
     #[test]
@@ -266,26 +266,26 @@ mod tests {
 
     #[test]
     fn collect_case_changes_added_case_goes_to_upsert() {
-        let commits = vec![commit(&["cases/auth/login.md"], &[], &[])];
+        let commits = vec![commit(&[".ameliso/cases/auth/login.md"], &[], &[])];
         let (upsert, remove) = collect_case_changes(&commits);
-        assert!(upsert.contains("cases/auth/login.md"));
+        assert!(upsert.contains(".ameliso/cases/auth/login.md"));
         assert!(remove.is_empty());
     }
 
     #[test]
     fn collect_case_changes_modified_case_goes_to_upsert() {
-        let commits = vec![commit(&[], &["cases/auth/login.md"], &[])];
+        let commits = vec![commit(&[], &[".ameliso/cases/auth/login.md"], &[])];
         let (upsert, remove) = collect_case_changes(&commits);
-        assert!(upsert.contains("cases/auth/login.md"));
+        assert!(upsert.contains(".ameliso/cases/auth/login.md"));
         assert!(remove.is_empty());
     }
 
     #[test]
     fn collect_case_changes_removed_case_goes_to_remove() {
-        let commits = vec![commit(&[], &[], &["cases/auth/login.md"])];
+        let commits = vec![commit(&[], &[], &[".ameliso/cases/auth/login.md"])];
         let (upsert, remove) = collect_case_changes(&commits);
         assert!(upsert.is_empty());
-        assert!(remove.contains("cases/auth/login.md"));
+        assert!(remove.contains(".ameliso/cases/auth/login.md"));
     }
 
     #[test]
@@ -299,12 +299,12 @@ mod tests {
     #[test]
     fn collect_case_changes_add_then_remove_lands_in_remove_only() {
         let commits = vec![
-            commit(&["cases/auth/login.md"], &[], &[]),
-            commit(&[], &[], &["cases/auth/login.md"]),
+            commit(&[".ameliso/cases/auth/login.md"], &[], &[]),
+            commit(&[], &[], &[".ameliso/cases/auth/login.md"]),
         ];
         let (upsert, remove) = collect_case_changes(&commits);
-        assert!(!upsert.contains("cases/auth/login.md"));
-        assert!(remove.contains("cases/auth/login.md"));
+        assert!(!upsert.contains(".ameliso/cases/auth/login.md"));
+        assert!(remove.contains(".ameliso/cases/auth/login.md"));
     }
 
     #[test]
@@ -364,7 +364,7 @@ mod tests {
         });
         let headers = HeaderMap::new();
         let body = Bytes::from(
-            r#"{"commits":[{"added":[],"modified":[],"removed":["cases/auth/login.md"]}],"repository":{"full_name":"owner/repo"}}"#,
+            r#"{"commits":[{"added":[],"modified":[],"removed":[".ameliso/cases/auth/login.md"]}],"repository":{"full_name":"owner/repo"}}"#,
         );
         let resp = github_push(State(state), headers, body)
             .await
@@ -380,7 +380,7 @@ mod tests {
         });
         let headers = HeaderMap::new();
         let body = Bytes::from(
-            r#"{"commits":[{"added":["cases/auth/login.md"],"modified":[],"removed":[]}],"repository":{"full_name":"owner/repo"}}"#,
+            r#"{"commits":[{"added":[".ameliso/cases/auth/login.md"],"modified":[],"removed":[]}],"repository":{"full_name":"owner/repo"}}"#,
         );
         let resp = github_push(State(state), headers, body)
             .await
@@ -415,12 +415,12 @@ mod tests {
     #[test]
     fn collect_case_changes_remove_then_add_same_file_lands_in_upsert_only() {
         let commits = vec![
-            commit(&[], &[], &["cases/auth/login.md"]),
-            commit(&["cases/auth/login.md"], &[], &[]),
+            commit(&[], &[], &[".ameliso/cases/auth/login.md"]),
+            commit(&[".ameliso/cases/auth/login.md"], &[], &[]),
         ];
         let (upsert, remove) = collect_case_changes(&commits);
-        assert!(upsert.contains("cases/auth/login.md"));
-        assert!(!remove.contains("cases/auth/login.md"));
+        assert!(upsert.contains(".ameliso/cases/auth/login.md"));
+        assert!(!remove.contains(".ameliso/cases/auth/login.md"));
     }
 
     #[test]

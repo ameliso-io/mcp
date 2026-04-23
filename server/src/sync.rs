@@ -394,7 +394,7 @@ mod tests {
         c.description = "Verifies: the #tag flow".to_owned();
         let md = case_to_markdown(&c);
         // Must roundtrip correctly despite special characters.
-        let parsed = parse_case_markdown("cases/auth/login.md", &md).unwrap();
+        let parsed = parse_case_markdown(".ameliso/cases/auth/login.md", &md).unwrap();
         assert_eq!(parsed.title, "Login: {flow} [test]");
         assert_eq!(parsed.description, "Verifies: the #tag flow");
     }
@@ -418,7 +418,7 @@ mod tests {
     fn parse_case_markdown_roundtrips() {
         let case = sample_case();
         let md = case_to_markdown(&case);
-        let parsed = parse_case_markdown("cases/auth/login.md", &md).unwrap();
+        let parsed = parse_case_markdown(".ameliso/cases/auth/login.md", &md).unwrap();
         assert_eq!(parsed.case_path, "auth/login");
         assert_eq!(parsed.title, "User Login");
         assert_eq!(parsed.description, "Verify login");
@@ -432,7 +432,7 @@ mod tests {
         let mut case = sample_case();
         case.tags = vec![];
         let md = case_to_markdown(&case);
-        let parsed = parse_case_markdown("cases/auth/login.md", &md).unwrap();
+        let parsed = parse_case_markdown(".ameliso/cases/auth/login.md", &md).unwrap();
         assert!(parsed.tags.is_empty());
     }
 
@@ -444,13 +444,15 @@ mod tests {
 
     #[test]
     fn parse_case_markdown_missing_open_delimiter_errors() {
-        let err = parse_case_markdown("cases/a/b.md", "title: T\n---\n\nbody").unwrap_err();
+        let err =
+            parse_case_markdown(".ameliso/cases/a/b.md", "title: T\n---\n\nbody").unwrap_err();
         assert!(err.to_string().contains("opening"));
     }
 
     #[test]
     fn parse_case_markdown_missing_close_delimiter_errors() {
-        let err = parse_case_markdown("cases/a/b.md", "---\ntitle: T\n\nbody").unwrap_err();
+        let err =
+            parse_case_markdown(".ameliso/cases/a/b.md", "---\ntitle: T\n\nbody").unwrap_err();
         assert!(err.to_string().contains("closing"));
     }
 
@@ -459,7 +461,7 @@ mod tests {
         let case = sample_case();
         let md = case_to_markdown(&case);
         let b64 = BASE64.encode(md.as_bytes());
-        let parsed = parse_case_from_base64("cases/auth/login.md", &b64).unwrap();
+        let parsed = parse_case_from_base64(".ameliso/cases/auth/login.md", &b64).unwrap();
         assert_eq!(parsed.case_path, "auth/login");
         assert_eq!(parsed.title, "User Login");
     }
@@ -467,20 +469,21 @@ mod tests {
     #[test]
     fn parse_case_markdown_missing_priority_defaults_to_medium() {
         let content = "---\ntitle: No Priority Case\n---\n\nbody";
-        let parsed = parse_case_markdown("cases/auth/login.md", content).unwrap();
+        let parsed = parse_case_markdown(".ameliso/cases/auth/login.md", content).unwrap();
         assert_eq!(parsed.priority, "medium");
     }
 
     #[test]
     fn parse_case_markdown_invalid_yaml_returns_error() {
         let content = "---\ntitle: [unclosed bracket\n---\n\nbody";
-        let err = parse_case_markdown("cases/auth/login.md", content).unwrap_err();
+        let err = parse_case_markdown(".ameliso/cases/auth/login.md", content).unwrap_err();
         assert!(err.to_string().contains("invalid front matter YAML"));
     }
 
     #[test]
     fn parse_case_from_base64_invalid_base64_returns_error() {
-        let err = parse_case_from_base64("cases/auth/login.md", "not!!valid%%base64").unwrap_err();
+        let err = parse_case_from_base64(".ameliso/cases/auth/login.md", "not!!valid%%base64")
+            .unwrap_err();
         assert!(err.to_string().contains("base64 decode failed"));
     }
 
@@ -488,14 +491,15 @@ mod tests {
     fn parse_case_from_base64_invalid_utf8_returns_error() {
         // Valid base64 encoding of invalid UTF-8 bytes.
         let invalid_utf8 = BASE64.encode([0xFF, 0xFE]);
-        let err = parse_case_from_base64("cases/auth/login.md", &invalid_utf8).unwrap_err();
+        let err =
+            parse_case_from_base64(".ameliso/cases/auth/login.md", &invalid_utf8).unwrap_err();
         assert!(err.to_string().contains("not valid UTF-8"));
     }
 
     #[test]
     fn parse_case_markdown_strips_leading_whitespace_before_delimiter() {
         let content = "\n\n  \n---\ntitle: Trimmed\n---\n\nbody text";
-        let parsed = parse_case_markdown("cases/a/b.md", content).unwrap();
+        let parsed = parse_case_markdown(".ameliso/cases/a/b.md", content).unwrap();
         assert_eq!(parsed.title, "Trimmed");
         assert_eq!(parsed.body, "body text");
     }
@@ -503,7 +507,7 @@ mod tests {
     #[test]
     fn parse_case_markdown_strips_leading_newlines_from_body() {
         let content = "---\ntitle: Body Test\n---\n\n\n\nbody starts here";
-        let parsed = parse_case_markdown("cases/a/b.md", content).unwrap();
+        let parsed = parse_case_markdown(".ameliso/cases/a/b.md", content).unwrap();
         assert_eq!(parsed.body, "body starts here");
     }
 
@@ -519,7 +523,7 @@ mod tests {
             .map(|c| std::str::from_utf8(c).unwrap())
             .collect::<Vec<_>>()
             .join("\n");
-        let parsed = parse_case_from_base64("cases/auth/login.md", &b64_wrapped).unwrap();
+        let parsed = parse_case_from_base64(".ameliso/cases/auth/login.md", &b64_wrapped).unwrap();
         assert_eq!(parsed.title, "User Login");
         assert_eq!(parsed.case_path, "auth/login");
     }

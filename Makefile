@@ -49,7 +49,7 @@ db-down:
 # --- Git hooks (called by Husky) ---
 
 check-file-size:
-	@LIMIT=2000; FAILED=0; \
+	@LIMIT=1500; FAILED=0; \
 	for file in $$(find . -name '*.rs' -not -path './target/*' -not -path './.claude/*'); do \
 		lines=$$(wc -l < "$$file"); \
 		if [ "$$lines" -gt "$$LIMIT" ]; then \
