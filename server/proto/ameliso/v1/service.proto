@@ -14,15 +14,20 @@ option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
 //   Step 1 — CreateRun(commit_sha=<HEAD>, use_last_run=true)
 //     Auto-scopes to cases affected since the last completed run.
 //     On the first ever run (no prior run) all cases are included.
-//     Response includes: pending (Case.body + latest_status), total_repo_cases,
-//     uncovered_files (source files with no test case — create new cases for these).
+//     Response: pending (Case.body + latest_status), total_repo_cases,
+//     uncovered_files (source files with no test case).
+//
+//   Optional Step 1b — if uncovered_files is non-empty:
+//     BulkCreateCases(cases=[...], run_id=run.id)
+//     Creates cases for coverage gaps AND adds them to the current run's scope.
+//     Response: file_paths (for git add), pending (updated with new cases).
 //
 //   Step 2 — BulkRecordResults — record all results in one call.
-//     Response includes: pending (remaining cases), pending_count, total_in_scope.
+//     Response: pending (remaining cases), pending_count, total_in_scope.
 //
 //   Step 3 — FinalizeRun(status=UNSPECIFIED)
 //     Auto-detects ABORTED if any FAILED result, else COMPLETED.
-//     Response includes: run (RunMeta with counts), results (all CaseResult records).
+//     Response: run (RunMeta with counts), results (all CaseResult records).
 //
 // Repeat from step 1 on the next commit.
 //
@@ -31,7 +36,7 @@ option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
 //   ListRuns      — RunMeta.passed/failed/blocked/skipped/total counts per run
 //   RecordResult  — pending field (remaining cases after this result)
 //   GetRepoStatus — last_completed_run (RunMeta with counts)
-//   UpdateRun     — optional commit_sha/tester/environment patches alongside slug rename
+//   UpdateRun     — add_cases to extend run scope; commit_sha/tester/environment patches
 //   GetAffectedCases — cases (body + latest_status) + uncovered_files (coverage gaps)
 //
 // For richer context before running (stats, active runs), call GetRepoStatus first.
