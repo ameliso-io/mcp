@@ -84,6 +84,10 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    sqlx::query("ALTER TABLE runs ADD COLUMN IF NOT EXISTS commit_sha TEXT NOT NULL DEFAULT ''")
+        .execute(pool)
+        .await?;
+
     Ok(())
 }
 
