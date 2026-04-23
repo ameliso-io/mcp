@@ -38,7 +38,9 @@
       "mcp__centy__centy_v1_CentyDaemon_ListProjects",
       "Bash(npx vitest *)",
       "Bash(make dev *)",
-      "mcp__centy__centy_v1_CentyDaemon_UpdateItem"
+      "mcp__centy__centy_v1_CentyDaemon_UpdateItem",
+      "Bash(npx eslint *)",
+      "mcp__centy__centy_v1_CentyDaemon_SoftDeleteItem"
     ]
   }
 }
