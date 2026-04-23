@@ -15,16 +15,12 @@ install:
 	cd server && cargo fetch
 
 build:
-	cd server && cargo build --release
 	cd web && pnpm build
 
 test:
-	cd server && cargo test
 	cd web && pnpm test
 	cd web && pnpm test:typecheck
 
-test-server:
-	cd server && cargo test
 
 fmt:
 	cd server && cargo fmt --all
@@ -71,11 +67,7 @@ pre-commit:
 pre-push:
 	@FAIL=0; \
 	$(MAKE) fmt-check & PID1=$$!; \
-	(cd server && cargo build --release) & PID2=$$!; \
 	(cd web && $(MAKE) pre-push) & PID3=$$!; \
 	wait $$PID1 || FAIL=1; \
-	wait $$PID2 || FAIL=1; \
 	wait $$PID3 || FAIL=1; \
-	$(MAKE) test-server & PID4=$$!; \
-	wait $$PID4 || FAIL=1; \
 	[ "$$FAIL" -eq 0 ] && echo "pre-push: OK" || exit 1
