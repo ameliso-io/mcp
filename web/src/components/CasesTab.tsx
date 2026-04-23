@@ -18,6 +18,7 @@ import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useAbortController } from "@/hooks/useAbortController";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
   ssr: false,
@@ -121,6 +122,14 @@ export default function CasesTab({
 
   // Expanded case body view
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
+  const expandedPathRef = useRef(expandedPath);
+  useEffect(() => {
+    expandedPathRef.current = expandedPath;
+  }, [expandedPath]);
+  const onExpandedPathChangeRef = useRef(onExpandedPathChange);
+  useEffect(() => {
+    onExpandedPathChangeRef.current = onExpandedPathChange;
+  });
   const [expandedBody, setExpandedBody] = useState<string>("");
 
   // Edit case form
@@ -164,7 +173,10 @@ export default function CasesTab({
       if (expandingRef.current === path) {
         setError(errorMessage(e));
         setExpandedPath(null);
-        onExpandedPathChange?.(null);
+        onExpandedPathChangeRef.current?.(null);
+        setExpandedBody("");
+        expandingRef.current = null;
+        return;
       }
     } finally {
       if (expandingRef.current === path) setBodyLoading(false);
@@ -205,13 +217,10 @@ export default function CasesTab({
     });
   }, [debouncedSearch, priorityFilter, tagFilter, suiteFilter, sortBy]);
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -235,9 +244,7 @@ export default function CasesTab({
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
+  }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter, nextAbort]);
 
   useEffect(() => {
     void load();
@@ -258,8 +265,7 @@ export default function CasesTab({
     if (!cases.some((c) => c.path === initialExpandedPath)) return;
     consumedExpandedRef.current = true;
     void toggleExpand(initialExpandedPath);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cases, initialExpandedPath]);
+  }, [cases, initialExpandedPath, toggleExpand]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

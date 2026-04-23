@@ -2,12 +2,15 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import styles from "./RepositoriesTab.module.css";
+import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
   installationId?: string | undefined;
@@ -25,26 +28,29 @@ export default function RepositoriesTab({
   onSearchChange,
 }: Props) {
   const [repos, setRepos] = useState<Repository[]>([]);
+  const deferredRepos = useDeferredValue(repos);
+  const isRepoListStale = repos !== deferredRepos;
   const [installUrl, setInstallUrl] = useState<string>("");
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch ?? "");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
 
   const prevFilterCountRef = useRef<number | null>(null);
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const onSearchChangeRef = useRef(onSearchChange);
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  });
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    /* v8 ignore next — abort guard */
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -64,31 +70,37 @@ export default function RepositoriesTab({
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, []);
+  }, [nextAbort]);
 
   const handleRefreshAll = useCallback(async () => {
     setRefreshing(true);
     setError(null);
     try {
       const installationIds = [...new Set(repos.map((r) => r.installationId).filter(Boolean))];
-      const results = await Promise.all(
+      const settled = await Promise.allSettled(
         installationIds.map((installationId) => client.handleGitHubCallback({ installationId }))
       );
-      for (const res of results) {
-        setRepos((prev) => {
-          const ids = new Set(res.repositories.map((r) => r.id));
-          return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
-        });
+      for (const result of settled) {
+        if (result.status === "fulfilled") {
+          setRepos((prev) => {
+            const ids = new Set(result.value.repositories.map((r) => r.id));
+            return [...prev.filter((r) => !ids.has(r.id)), ...result.value.repositories];
+          });
+        }
       }
-      announce("Repositories refreshed");
+      const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      if (failures.length > 0) {
+        setError(errorMessage(failures.at(0)?.reason));
+      } else {
+        announce("Repositories refreshed");
+      }
+      /* v8 ignore next 3 — Promise.allSettled never rejects; guard for unexpected throws */
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setRefreshing(false);
     }
   }, [repos, announce]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   // Handle GitHub OAuth callback params passed from the page client
   useEffect(() => {
@@ -149,11 +161,11 @@ export default function RepositoriesTab({
   const filteredRepos = useMemo(
     () =>
       q
-        ? repos.filter(
+        ? deferredRepos.filter(
             (r) => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q)
           )
-        : repos,
-    [repos, q]
+        : deferredRepos,
+    [deferredRepos, q]
   );
 
   useEffect(() => {
@@ -228,7 +240,6 @@ export default function RepositoriesTab({
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              onSearchChange?.(e.target.value);
             }}
             className={styles.searchInput}
             autoComplete="off"
@@ -288,14 +299,14 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      {!loading && repos.length > 0 && filteredRepos.length === 0 && (
+      {!loading && deferredRepos.length > 0 && filteredRepos.length === 0 && (
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
             type="button"
             onClick={() => {
               setSearch("");
-              onSearchChange?.("");
+              onSearchChangeRef.current?.("");
             }}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >

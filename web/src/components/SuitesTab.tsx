@@ -1,13 +1,15 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import styles from "./SuitesTab.module.css";
+import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
   repoId: string;
@@ -18,6 +20,8 @@ interface Props {
 
 export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
+  const deferredSuites = useDeferredValue(suites);
+  const isSuitesStale = suites !== deferredSuites;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -30,6 +34,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
+  const expandedRef = useRef(expanded);
+  useEffect(() => {
+    expandedRef.current = expanded;
+  }, [expanded]);
   const initialExpandedRef = useRef<string | null>(initialExpanded ?? null);
   const onExpandedChangeRef = useRef(onExpandedChange);
   useEffect(() => {
@@ -54,7 +62,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
   const toggleExpand = useCallback(
     async (slug: string) => {
-      if (expanded === slug) {
+      if (expandedRef.current === slug) {
         setExpanded(null);
         setExpandedCases([]);
         expandingRef.current = null;
@@ -75,7 +83,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         if (expandingRef.current === slug) setExpandedCasesLoading(false);
       }
     },
-    [expanded, repoId]
+    [repoId]
   );
 
   function startEdit(suite: Suite) {
@@ -89,13 +97,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     });
   }
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -110,9 +115,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [repoId]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
+  }, [repoId, nextAbort]);
 
   useEffect(() => {
     void load();
@@ -388,7 +391,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         </div>
       )}
 
-      {loading && (
+      {loading && suites.length === 0 && (
         <div className={styles.loadingMsg} role="status">
           Loading…
         </div>

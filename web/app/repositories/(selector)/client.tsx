@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, Suspense, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import LoadingSkeleton from "./loading";
 import RepositoriesTab from "@/components/RepositoriesTab";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { useRouteReplace } from "@/hooks/useRouteReplace";
 
 function RepositoriesInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const replace = useRouteReplace("/repositories");
 
   const installationId = searchParams.get("installation_id") ?? undefined;
   const setupAction = searchParams.get("setup_action") ?? undefined;
@@ -16,29 +16,23 @@ function RepositoriesInner() {
 
   const handleSearchChange = useCallback(
     (q: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (q) {
-        params.set("q", q);
-      } else {
-        params.delete("q");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
+      replace((params) => {
+        if (q) {
+          params.set("q", q);
+        } else {
+          params.delete("q");
+        }
       });
     },
-    [router, searchParams]
+    [replace]
   );
 
   const handleInstallationHandled = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("installation_id");
-    params.delete("setup_action");
-    const qs = params.toString();
-    startTransition(() => {
-      router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
+    replace((params) => {
+      params.delete("installation_id");
+      params.delete("setup_action");
     });
-  }, [router, searchParams]);
+  }, [replace]);
 
   return (
     <RepositoriesTab
@@ -53,7 +47,7 @@ function RepositoriesInner() {
 
 export default function RepositoriesPageClient() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <RepositoriesInner />
     </Suspense>
   );

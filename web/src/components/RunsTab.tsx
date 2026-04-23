@@ -18,6 +18,8 @@ import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useInterval } from "@/hooks/useInterval";
+import { usePageVisible } from "@/hooks/usePageVisible";
+import { useAbortController } from "@/hooks/useAbortController";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 
@@ -81,6 +83,8 @@ export default function RunsTab({
   onResultStatusFilterChange,
 }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
+  const deferredRuns = useDeferredValue(runs);
+  const isRunListStale = runs !== deferredRuns;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<RunStatus>(
@@ -101,6 +105,14 @@ export default function RunsTab({
 
   // Selected run for recording results or viewing results
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const selectedRunIdRef = useRef(selectedRunId);
+  useEffect(() => {
+    selectedRunIdRef.current = selectedRunId;
+  }, [selectedRunId]);
+  const onSelectedRunIdChangeRef = useRef(onSelectedRunIdChange);
+  useEffect(() => {
+    onSelectedRunIdChangeRef.current = onSelectedRunIdChange;
+  });
   const [pendingCases, setPendingCases] = useState<Case[]>([]);
   const [totalInScope, setTotalInScope] = useState(0);
   const [loadingPending, setLoadingPending] = useState(false);
@@ -134,6 +146,46 @@ export default function RunsTab({
   const prevRunFilterCountRef = useRef<number | null>(null);
   const [filterPending, startFilterTransition] = useTransition();
 
+  const selectRun = useCallback(
+    async (runId: string, status: RunStatus) => {
+      if (selectedRunIdRef.current === runId) {
+        setSelectedRunId(null);
+        onSelectedRunIdChangeRef.current?.(null);
+        setPendingCases([]);
+        setRecordedResults([]);
+        setResultStatusFilter(null);
+        setRecordState(null);
+        return;
+      }
+      setSelectedRunId(runId);
+      onSelectedRunIdChangeRef.current?.(runId);
+      setLoadingPending(true);
+      setPendingCases([]);
+      setRecordedResults([]);
+      setResultStatusFilter(null);
+      setRecordState(null);
+      try {
+        if (status === RunStatus.IN_PROGRESS) {
+          const res = await client.getPendingCases({ repoId, runId });
+          setPendingCases(res.cases);
+          setTotalInScope(res.totalInScope);
+        } else {
+          const [runRes, casesRes] = await Promise.all([
+            client.getRun({ repoId, runId }),
+            client.listCases({ repoId }),
+          ]);
+          setRecordedResults(runRes.run?.results ?? []);
+          setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
+        }
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setLoadingPending(false);
+      }
+    },
+    [repoId]
+  );
+
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   const selectingRef = useRef<string | null>(null);
@@ -153,8 +205,7 @@ export default function RunsTab({
     consumedSelectedRef.current = true;
     const run = runs.find((r) => r.id === initialSelectedRunId);
     if (run) void selectRun(run.id, run.status);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runs, initialSelectedRunId]);
+  }, [runs, initialSelectedRunId, selectRun]);
 
   const consumedResultFilterRef = useRef(false);
   useEffect(() => {
@@ -168,9 +219,10 @@ export default function RunsTab({
     setResultStatusFilter(initialResultStatusFilter);
   }, [recordedResults, initialResultStatusFilter]);
 
-  // Auto-refresh pending cases every 30s when viewing an in-progress run
+  // Auto-refresh pending cases every 30s when viewing an in-progress run — paused when tab is hidden
   const selectedRun = runs.find((r) => r.id === selectedRunId);
   const isSelectedInProgress = selectedRun?.status === RunStatus.IN_PROGRESS && !!selectedRunId;
+  const pageVisible = usePageVisible();
   useInterval(
     async () => {
       /* v8 ignore next 2 — guard for stale interval after deselect */
@@ -184,16 +236,13 @@ export default function RunsTab({
         setPollFailCount((n) => n + 1);
       }
     },
-    isSelectedInProgress ? 30_000 : null
+    isSelectedInProgress && pageVisible ? 30_000 : null
   );
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -208,9 +257,7 @@ export default function RunsTab({
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [repoId, statusFilter]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
+  }, [repoId, statusFilter, nextAbort]);
 
   useEffect(() => {
     void load();
@@ -450,12 +497,13 @@ export default function RunsTab({
     [recordedResults]
   );
 
+  const deferredResultStatusFilter = useDeferredValue(resultStatusFilter);
   const filteredResults = useMemo(
     () =>
-      resultStatusFilter !== null
-        ? recordedResults.filter((r) => r.status === resultStatusFilter)
+      deferredResultStatusFilter !== null
+        ? recordedResults.filter((r) => r.status === deferredResultStatusFilter)
         : recordedResults,
-    [recordedResults, resultStatusFilter]
+    [recordedResults, deferredResultStatusFilter]
   );
   const deferredFilteredResults = useDeferredValue(filteredResults);
   const isResultsStale = filteredResults !== deferredFilteredResults;
@@ -689,7 +737,7 @@ export default function RunsTab({
         </div>
       )}
 
-      {loading && (
+      {loading && runs.length === 0 && (
         <div className={styles.loadingMsg} role="status">
           Loading…
         </div>

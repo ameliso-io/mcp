@@ -136,6 +136,12 @@
   padding: 40px;
 }
 
+.panelStale {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

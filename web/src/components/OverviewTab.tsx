@@ -1,9 +1,10 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import styles from "./OverviewTab.module.css";
+import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { AffectedCase, CoverageEntry } from "@/gen/ameliso/v1/types_pb";
@@ -11,6 +12,8 @@ import type { ActiveRunStatus } from "@/gen/ameliso/v1/service_pb";
 import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useInterval } from "@/hooks/useInterval";
+import { usePageVisible } from "@/hooks/usePageVisible";
+import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
   repoId: string;
@@ -62,6 +65,8 @@ export default function OverviewTab({
   onCoverageFilterChange,
 }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
+  const deferredEntries = useDeferredValue(entries);
+  const isEntriesStale = entries !== deferredEntries;
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,15 +84,12 @@ export default function OverviewTab({
   const [affectedError, setAffectedError] = useState<string | null>(null);
   const [announcement, announce] = useAnnounce();
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
   const filterMountedRef = useRef(false);
 
   const load = useCallback(
     async (silent = false) => {
-      loadAbortRef.current?.abort();
-      const ctrl = new AbortController();
-      loadAbortRef.current = ctrl;
-      const { signal } = ctrl;
+      const signal = nextAbort();
       setLoading(true);
       setError(null);
       try {
@@ -111,10 +113,8 @@ export default function OverviewTab({
         if (!signal.aborted) setLoading(false);
       }
     },
-    [repoId, announce, coverageFilter]
+    [repoId, announce, coverageFilter, nextAbort]
   );
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (!filterMountedRef.current) {
@@ -128,8 +128,9 @@ export default function OverviewTab({
     void load();
   }, [load]);
 
-  // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
-  useInterval(() => load(true), activeRuns.length > 0 ? 30_000 : null);
+  const pageVisible = usePageVisible();
+  // Auto-refresh every 30s while there are active runs — paused when tab is hidden
+  useInterval(() => load(true), activeRuns.length > 0 && pageVisible ? 30_000 : null);
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
@@ -243,14 +244,17 @@ export default function OverviewTab({
         </div>
       )}
 
-      {loading && (
+      {loading && entries.length === 0 && (
         <div className={styles.loadingMsg} role="status">
           Loading…
         </div>
       )}
 
-      {!loading && entries.length > 0 && (
-        <>
+      {entries.length > 0 && (
+        <div
+          className={loading || isEntriesStale ? styles.panelStale : undefined}
+          aria-busy={loading || isEntriesStale}
+        >
           <dl className={styles.statsGrid}>
             {[
               { label: "Total Cases", value: statCases, status: null },
@@ -408,7 +412,7 @@ export default function OverviewTab({
               ))}
             </ul>
           </div>
-        </>
+        </div>
       )}
 
       {!loading && !error && entries.length === 0 && (

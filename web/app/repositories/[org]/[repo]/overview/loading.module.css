@@ -1,0 +1,31 @@
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--color-card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+.coverageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}

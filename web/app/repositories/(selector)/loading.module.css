@@ -1,0 +1,31 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.card {
+  background: var(--color-card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  margin-bottom: 8px;
+}
+
+.cardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cardActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}

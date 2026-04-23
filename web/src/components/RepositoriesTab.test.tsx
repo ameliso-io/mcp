@@ -556,7 +556,7 @@ describe("RepositoriesTab", () => {
     expect(screen.getByPlaceholderText("Search repositories…")).toHaveValue("alpha");
   });
 
-  it("calls onSearchChange when search input changes", async () => {
+  it("calls onSearchChange when search input changes (debounced)", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
@@ -564,7 +564,7 @@ describe("RepositoriesTab", () => {
     render(<RepositoriesTab onSearchChange={onSearchChange} />);
     await waitFor(() => screen.getByPlaceholderText("Search repositories…"));
     await userEvent.type(screen.getByPlaceholderText("Search repositories…"), "x");
-    expect(onSearchChange).toHaveBeenCalledWith("x");
+    await waitFor(() => expect(onSearchChange).toHaveBeenCalledWith("x"), { timeout: 500 });
   });
 
   it("calls onSearchChange with empty string when Clear search is clicked", async () => {
