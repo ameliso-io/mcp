@@ -127,6 +127,12 @@
 .repoName {
   font-weight: 700;
   font-size: 15px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.repoName:hover {
+  text-decoration: underline;
 }
 
 .badge {

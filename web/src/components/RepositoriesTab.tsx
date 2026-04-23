@@ -299,7 +299,12 @@ export default function RepositoriesTab({
               <div className={styles.repoRow}>
                 <div className={styles.repoInfo}>
                   <div className={styles.repoNameRow}>
-                    <span className={styles.repoName}>{repo.fullName}</span>
+                    <Link
+                      href={`/repositories/${repo.id}/overview` as Route}
+                      className={styles.repoName}
+                    >
+                      {repo.fullName}
+                    </Link>
                   </div>
                   <div className={styles.repoUrl}>
                     <a

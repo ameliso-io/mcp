@@ -125,9 +125,7 @@ describe("RepositoriesTab", () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(
-      <RepositoriesTab installationId="inst-42" setupAction="install" />
-    );
+    render(<RepositoriesTab installationId="inst-42" setupAction="install" />);
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith(
         { installationId: "inst-42" },
@@ -159,9 +157,7 @@ describe("RepositoriesTab", () => {
     vi.mocked(client.handleGitHubCallback).mockResolvedValue({
       repositories: [makeRepo()],
     } as never);
-    render(
-      <RepositoriesTab installationId="inst-99" setupAction="update" />
-    );
+    render(<RepositoriesTab installationId="inst-99" setupAction="update" />);
     await waitFor(() =>
       expect(client.handleGitHubCallback).toHaveBeenCalledWith(
         { installationId: "inst-99" },
@@ -171,9 +167,7 @@ describe("RepositoriesTab", () => {
   });
 
   it("does not call handleGitHubCallback when setup_action=request_install", async () => {
-    render(
-      <RepositoriesTab installationId="inst-bad" setupAction="request_install" />
-    );
+    render(<RepositoriesTab installationId="inst-bad" setupAction="request_install" />);
     await waitFor(() => screen.getByText("No repositories connected"));
     expect(client.handleGitHubCallback).not.toHaveBeenCalled();
   });
@@ -443,16 +437,12 @@ describe("RepositoriesTab", () => {
 
   it("shows error when initial GitHub callback fails via installationId prop", async () => {
     vi.mocked(client.handleGitHubCallback).mockRejectedValue(new Error("callback failed"));
-    render(
-      <RepositoriesTab installationId="inst-err" setupAction="install" />
-    );
+    render(<RepositoriesTab installationId="inst-err" setupAction="install" />);
     await waitFor(() => expect(screen.getByText("callback failed")).toBeInTheDocument());
   });
 
   it("does not call handleGitHubCallback when setupAction is an unknown value", async () => {
-    render(
-      <RepositoriesTab installationId="inst-xyz" setupAction="delete" />
-    );
+    render(<RepositoriesTab installationId="inst-xyz" setupAction="delete" />);
     await waitFor(() => expect(client.listRepositories).toHaveBeenCalled());
     expect(client.handleGitHubCallback).not.toHaveBeenCalled();
   });
@@ -597,5 +587,13 @@ describe("RepositoriesTab", () => {
     // Both repos should remain visible after refresh
     expect(screen.getByText("org/alpha")).toBeInTheDocument();
     expect(screen.getByText("org/beta")).toBeInTheDocument();
+  });
+
+  it("repo name is a link to the repository overview", async () => {
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
+    render(<RepositoriesTab />);
+    await waitFor(() => screen.getByText("owner/repo"));
+    const nameLink = screen.getByRole("link", { name: "owner/repo" });
+    expect(nameLink).toHaveAttribute("href", "/repositories/owner/repo/overview");
   });
 });
