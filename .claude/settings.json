@@ -45,7 +45,8 @@
       "Bash(pnpm vitest *)",
       "Bash(wait)",
       "mcp__centy__centy_v1_CentyDaemon_GetItem",
-      "Bash(awk *)"
+      "Bash(awk *)",
+      "Bash(make check-file-size *)"
     ]
   }
 }
