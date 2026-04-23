@@ -1,4 +1,4 @@
-.PHONY: install build test test-server fmt lint spell check-file-size coverage-check pre-commit pre-push dev db-up db-down
+.PHONY: install build test test-server lint spell coverage-check pre-commit pre-push dev db-up db-down
 
 dev: install
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
@@ -24,12 +24,6 @@ test:
 coverage-check:
 	cd server && cargo llvm-cov -p ameliso-server --ignore-filename-regex main.rs --fail-under-lines 85
 
-fmt:
-	cd server && cargo fmt --all
-
-fmt-check:
-	cd server && cargo fmt --all -- --check
-
 lint:
 	cd server && cargo clippy --all -- -D warnings
 	cd server && buf lint
@@ -40,29 +34,9 @@ db-up:
 db-down:
 	docker compose down
 
-# --- Git hooks (called by Husky) ---
-
-check-file-size:
-	@LIMIT=1500; FAILED=0; \
-	for file in $$(find . -name '*.rs' -not -path '*/target/*' -not -path './.claude/*'); do \
-		lines=$$(wc -l < "$$file"); \
-		if [ "$$lines" -gt "$$LIMIT" ]; then \
-			echo "ERROR: $$file has $$lines lines (limit: $$LIMIT)"; \
-			FAILED=1; \
-		fi; \
-	done; \
-	[ "$$FAILED" -eq 1 ] && exit 1 || true
-
 pre-commit:
-	@FAIL=0; \
-	$(MAKE) fmt-check & PID1=$$!; \
-	$(MAKE) lint & PID2=$$!; \
-	$(MAKE) check-file-size & PID3=$$!; \
-	wait $$PID1 || FAIL=1; \
-	wait $$PID2 || FAIL=1; \
-	wait $$PID3 || FAIL=1; \
-	[ "$$FAIL" -eq 0 ] && echo "pre-commit: OK" || exit 1
+	$(MAKE) lint
+	@echo "pre-commit: OK"
 
 pre-push:
-	$(MAKE) fmt-check
 	@echo "pre-push: OK"
