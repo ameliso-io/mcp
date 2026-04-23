@@ -36,7 +36,7 @@ function RepositoriesInner() {
     params.delete("setup_action");
     const qs = params.toString();
     startTransition(() => {
-      router.replace(qs ? `/repositories?${qs}` : "/repositories");
+      router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
     });
   }, [router, searchParams]);
 
