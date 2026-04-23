@@ -9,6 +9,7 @@ import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 interface Props {
   installationId?: string | undefined;
@@ -34,12 +35,25 @@ export default function RepositoriesTab({
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch ?? "");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
 
   const prevFilterCountRef = useRef<number | null>(null);
+  const onSearchChangeRef = useRef(onSearchChange);
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  });
+  const searchCallbackMountedRef = useRef(false);
+  useEffect(() => {
+    if (!searchCallbackMountedRef.current) {
+      searchCallbackMountedRef.current = true;
+      return;
+    }
+    onSearchChangeRef.current?.(debouncedSearch);
+  }, [debouncedSearch]);
 
   const loadAbortRef = useRef<AbortController | null>(null);
 
@@ -240,7 +254,6 @@ export default function RepositoriesTab({
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              onSearchChange?.(e.target.value);
             }}
             className={styles.searchInput}
           />
@@ -250,7 +263,14 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
+      {error && (
+        <InlineError
+          error={error}
+          onDismiss={() => {
+            setError(null);
+          }}
+        />
+      )}
 
       {loading && (
         <div className={styles.loadingMsg} role="status">
@@ -280,7 +300,7 @@ export default function RepositoriesTab({
             type="button"
             onClick={() => {
               setSearch("");
-              onSearchChange?.("");
+              onSearchChangeRef.current?.("");
             }}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >
