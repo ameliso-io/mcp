@@ -670,6 +670,9 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
   repoId: string;
 
   /**
+   * Human-readable slug appended to the date prefix to form run_id (e.g. "smoke").
+   * When empty, the server auto-generates a unique slug from the current timestamp.
+   *
    * @generated from field: string slug = 2;
    */
   slug: string;
@@ -725,6 +728,14 @@ export declare type CreateRunResponse = Message<"ameliso.v1.CreateRunResponse"> 
    * @generated from field: string dir_path = 2;
    */
   dirPath: string;
+
+  /**
+   * Pending cases at run creation time — same as GetPendingCases.pending.
+   * Lets agents start executing immediately without a separate GetPendingCases call.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
+   */
+  pending: PendingEntry[];
 };
 
 /**

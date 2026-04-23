@@ -241,6 +241,9 @@ message CreateRunRequest {
 message CreateRunResponse {
   RunMeta run = 1;
   string dir_path = 2;
+  // Pending cases at run creation time — same as GetPendingCases.pending.
+  // Lets agents start executing immediately without a separate GetPendingCases call.
+  repeated PendingEntry pending = 3;
 }
 
 message RecordResultRequest {

@@ -755,9 +755,30 @@ impl AmelisoService for AmelisoServer {
         .await
         .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
+        let (pending_cases, _) =
+            repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
+                .await
+                .unwrap_or_default();
+        let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
+            .await
+            .unwrap_or_default();
+        let pending_entries = pending_cases
+            .iter()
+            .map(|c| pb::PendingEntry {
+                case: Some(case_to_pb(c)),
+                body: c.body.clone(),
+                latest_status: result_status_to_i32(
+                    statuses
+                        .get(c.case_path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                ),
+            })
+            .collect();
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
+            pending: pending_entries,
         }))
     }
 
