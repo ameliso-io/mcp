@@ -1,6 +1,6 @@
 .PHONY: install build test fmt lint check-file-size pre-commit pre-push dev db-up db-down
 
-dev: install build
+dev: install
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
 	docker compose up -d --wait && \
 	until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 0.5; done && \
