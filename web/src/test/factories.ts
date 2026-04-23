@@ -27,6 +27,7 @@ import {
   GetPendingCasesResponseSchema,
   GetRunResponseSchema,
   HandleGitHubCallbackResponseSchema,
+  ActiveRunStatusSchema,
   ListCasesResponseSchema,
   ListRepositoriesResponseSchema,
   ListRunsResponseSchema,

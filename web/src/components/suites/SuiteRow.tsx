@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import styles from "../SuitesTab.module.css";
 import { useSuitesTabContext } from "./SuitesTabContext";
@@ -37,7 +38,7 @@ export default function SuiteRow({ suite }: Props) {
           </span>
         </button>
         <Link
-          href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}`}
+          href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route}
           aria-label={`Run ${suite.slug}`}
           className={styles.btnGreenSm}
         >

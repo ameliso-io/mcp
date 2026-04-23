@@ -83,8 +83,6 @@ export default function RunsTab({
   onResultStatusFilterChange,
 }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
-  const deferredRuns = useDeferredValue(runs);
-  const isRunListStale = runs !== deferredRuns;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<RunStatus>(

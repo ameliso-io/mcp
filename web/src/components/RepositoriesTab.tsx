@@ -8,7 +8,6 @@ import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
@@ -28,14 +27,12 @@ export default function RepositoriesTab({
 }: Props) {
   const [repos, setRepos] = useState<Repository[]>([]);
   const deferredRepos = useDeferredValue(repos);
-  const isRepoListStale = repos !== deferredRepos;
   const [installUrl, setInstallUrl] = useState<string>("");
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch ?? "");
-  const debouncedSearch = useDebouncedValue(search, 300);
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();

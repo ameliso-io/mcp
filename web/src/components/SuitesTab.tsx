@@ -1,10 +1,9 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useRef, useDeferredValue } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import styles from "./SuitesTab.module.css";
-import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
@@ -20,8 +19,6 @@ interface Props {
 
 export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
-  const deferredSuites = useDeferredValue(suites);
-  const isSuitesStale = suites !== deferredSuites;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
