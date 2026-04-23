@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribe(callback: () => void) {
+  document.addEventListener("visibilitychange", callback);
+  return () => {
+    document.removeEventListener("visibilitychange", callback);
+  };
+}
+
+function getSnapshot() {
+  return !document.hidden;
+}
+
+function getServerSnapshot() {
+  return true;
+}
 
 export function usePageVisible(): boolean {
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    setVisible(!document.hidden);
-    function handleChange() {
-      setVisible(!document.hidden);
-    }
-    document.addEventListener("visibilitychange", handleChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleChange);
-    };
-  }, []);
-
-  return visible;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
