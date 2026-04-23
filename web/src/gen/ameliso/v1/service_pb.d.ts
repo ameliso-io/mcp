@@ -886,6 +886,14 @@ export declare type CreateRunResponse = Message<"ameliso.v1.CreateRunResponse"> 
    * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
    */
   pending: PendingEntry[];
+
+  /**
+   * Total cases in the repo (not just this run's scope). Lets agents compute
+   * what fraction of the suite is being covered without a separate GetRepoStatus call.
+   *
+   * @generated from field: int32 total_repo_cases = 4;
+   */
+  totalRepoCases: number;
 };
 
 /**

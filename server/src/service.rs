@@ -1090,12 +1090,23 @@ impl AmelisoService for AmelisoServer {
         .await
         .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
-        let (pending_cases, _) = repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
-            .await
-            .unwrap_or_default();
-        let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
-            .await
-            .unwrap_or_default();
+        let ((pending_cases, _), statuses, all_cases) = tokio::join!(
+            async {
+                repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::get_latest_statuses(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::list_cases(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+        );
         let pending_entries = pending_cases
             .iter()
             .map(|c| pb::PendingEntry {
@@ -1113,6 +1124,7 @@ impl AmelisoService for AmelisoServer {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
             pending: pending_entries,
+            total_repo_cases: i32::try_from(all_cases.len()).unwrap_or(i32::MAX),
         }))
     }
 
@@ -1306,7 +1318,8 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("run_id is required"));
         }
         let has_slug = !req.new_slug.is_empty();
-        let has_meta = req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
+        let has_meta =
+            req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
         if !has_slug && !has_meta {
             return Err(invalid(
                 "at least one of new_slug, commit_sha, tester, or environment is required",
@@ -1859,7 +1872,12 @@ impl AmelisoService for AmelisoServer {
             .fetch_one(pool)
             .await
             .unwrap_or((0, 0, 0, 0));
-            let (p, f, b, s) = (counts.0 as i32, counts.1 as i32, counts.2 as i32, counts.3 as i32);
+            let (p, f, b, s) = (
+                counts.0 as i32,
+                counts.1 as i32,
+                counts.2 as i32,
+                counts.3 as i32,
+            );
             Some(run_meta_with_counts_to_pb(row, p, f, b, s, p + f + b + s))
         } else {
             None

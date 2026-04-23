@@ -290,6 +290,9 @@ message CreateRunResponse {
   // Pending cases at run creation time — same as GetPendingCases.pending.
   // Lets agents start executing immediately without a separate GetPendingCases call.
   repeated PendingEntry pending = 3;
+  // Total cases in the repo (not just this run's scope). Lets agents compute
+  // what fraction of the suite is being covered without a separate GetRepoStatus call.
+  int32 total_repo_cases = 4;
 }
 
 message RecordResultRequest {
