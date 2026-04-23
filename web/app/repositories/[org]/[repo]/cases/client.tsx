@@ -2,10 +2,11 @@
 
 import type { Route } from "next";
 import { useCallback, Suspense, useTransition } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
+import { useRepoParams } from "@/hooks/useRepoParams";
 
 const PRIORITY_SLUG: Record<string, Priority> = {
   low: Priority.LOW,
@@ -20,9 +21,7 @@ const SLUG_BY_PRIORITY: Record<number, string> = {
 };
 
 function CasesInner() {
-  const { org, repo } = useParams<{ org: string; repo: string }>();
-  const repoId = `${org}/${repo}`;
-  const basePath = `/repositories/${org}/${repo}`;
+  const { repoId, basePath } = useRepoParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();

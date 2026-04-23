@@ -2,14 +2,13 @@
 
 import type { Route } from "next";
 import { useCallback, Suspense, useTransition } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import SuitesTab from "@/components/SuitesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useRepoParams } from "@/hooks/useRepoParams";
 
 function SuitesInner() {
-  const { org, repo } = useParams<{ org: string; repo: string }>();
-  const repoId = `${org}/${repo}`;
-  const basePath = `/repositories/${org}/${repo}`;
+  const { repoId, basePath } = useRepoParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();

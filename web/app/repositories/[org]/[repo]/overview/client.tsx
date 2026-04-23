@@ -2,10 +2,11 @@
 
 import type { Route } from "next";
 import { Suspense, useCallback, useTransition } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import OverviewTab from "@/components/OverviewTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
+import { useRepoParams } from "@/hooks/useRepoParams";
 
 const STATUS_SLUG: Record<string, ResultStatus> = {
   passed: ResultStatus.PASSED,
@@ -24,9 +25,7 @@ const SLUG_BY_STATUS: Record<number, string> = {
 };
 
 function OverviewInner() {
-  const { org, repo } = useParams<{ org: string; repo: string }>();
-  const repoId = `${org}/${repo}`;
-  const basePath = `/repositories/${org}/${repo}`;
+  const { repoId, basePath } = useRepoParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();

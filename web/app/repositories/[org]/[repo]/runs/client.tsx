@@ -1,11 +1,12 @@
 "use client";
 
 import type { Route } from "next";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, Suspense, useTransition } from "react";
 import RunsTab from "@/components/RunsTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { RunStatus } from "@/gen/ameliso/v1/types_pb";
+import { useRepoParams } from "@/hooks/useRepoParams";
 
 const STATUS_SLUG: Record<string, RunStatus> = {
   "in-progress": RunStatus.IN_PROGRESS,
@@ -20,9 +21,7 @@ const SLUG_BY_STATUS: Record<number, string> = {
 };
 
 function RunsInner() {
-  const { org, repo } = useParams<{ org: string; repo: string }>();
-  const repoId = `${org}/${repo}`;
-  const basePath = `/repositories/${org}/${repo}`;
+  const { repoId, basePath } = useRepoParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
