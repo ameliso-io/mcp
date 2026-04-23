@@ -719,6 +719,15 @@
   background: var(--color-surface);
 }
 
+.runCommitSha {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--color-subtle);
+  background: var(--color-surface);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
 .searchWrapper {
   position: relative;
   margin-bottom: 12px;

@@ -220,6 +220,9 @@ message CreateRunRequest {
   // Optional inline case list — when set, the run is scoped to these cases without
   // requiring a pre-existing suite. Mutually exclusive with `suite`.
   repeated string cases = 6;
+  // Optional git commit SHA (HEAD at run creation time). Stored in RunMeta so agents
+  // can later pass it as `since_ref` in GetAffectedCases.
+  string commit_sha = 7;
 }
 
 message CreateRunResponse {

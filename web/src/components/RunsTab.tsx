@@ -68,6 +68,7 @@ export default function RunsTab({
   const [newEnv, setNewEnv] = useState("");
   const [newSuite, setNewSuite] = useState("");
   const [newCases, setNewCases] = useState("");
+  const [newCommitSha, setNewCommitSha] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
@@ -177,6 +178,7 @@ export default function RunsTab({
               .map((c) => c.trim())
               .filter(Boolean)
           : [],
+        commitSha: newCommitSha,
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
@@ -185,6 +187,7 @@ export default function RunsTab({
       setNewEnv("");
       setNewSuite("");
       setNewCases("");
+      setNewCommitSha("");
       announce("Run created");
       await load();
       // Auto-expand the newly created run
@@ -522,6 +525,20 @@ export default function RunsTab({
                 />
               </label>
             </div>
+            <div>
+              <label className={styles.label}>
+                Commit SHA (optional)
+                <input
+                  value={newCommitSha}
+                  onChange={(e) => {
+                    setNewCommitSha(e.target.value);
+                  }}
+                  maxLength={40}
+                  className={styles.input}
+                  placeholder="HEAD commit SHA"
+                />
+              </label>
+            </div>
             <div className={styles.fullCol}>
               <button type="submit" disabled={creating} className={styles.btnGreen}>
                 {creating ? "Creating…" : "Create Run"}
@@ -609,6 +626,11 @@ export default function RunsTab({
                   {run.suite && <span className={styles.suiteBadge}>{run.suite}</span>}
                   {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                   {run.environment && <span className={styles.runEnv}>{run.environment}</span>}
+                  {run.commitSha && (
+                    <code className={styles.runCommitSha} title={run.commitSha}>
+                      {run.commitSha.slice(0, 7)}
+                    </code>
+                  )}
                   <time className={styles.runDate} dateTime={run.date}>
                     {run.date}
                   </time>

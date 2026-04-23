@@ -114,6 +114,7 @@ fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
         status: run_status_to_i32(&r.status),
         environment: r.environment.clone().unwrap_or_default(),
         suite: r.suite.clone().unwrap_or_default(),
+        commit_sha: r.commit_sha.clone(),
     }
 }
 
@@ -733,6 +734,7 @@ impl AmelisoService for AmelisoServer {
             req.tester
         };
         let inline_cases = req.cases;
+        let commit_sha = req.commit_sha;
         let meta = repo::create_run(
             &self.pool,
             &req.repo_id,
@@ -741,6 +743,7 @@ impl AmelisoService for AmelisoServer {
             env,
             suite,
             inline_cases,
+            commit_sha,
         )
         .await
         .map_err(repo_err)?;
@@ -3574,6 +3577,7 @@ mod tests {
             status: "in-progress".to_owned(),
             environment: Some("staging".to_owned()),
             suite: Some("smoke".to_owned()),
+            commit_sha: "abc123".to_owned(),
         };
         let pb = run_meta_to_pb(&r);
         assert_eq!(pb.id, "2026-01-01-smoke");
@@ -3581,6 +3585,7 @@ mod tests {
         assert_eq!(pb.status, pb::RunStatus::InProgress as i32);
         assert_eq!(pb.environment, "staging");
         assert_eq!(pb.suite, "smoke");
+        assert_eq!(pb.commit_sha, "abc123");
     }
 
     #[test]
@@ -3592,10 +3597,12 @@ mod tests {
             status: "completed".to_owned(),
             environment: None,
             suite: None,
+            commit_sha: String::new(),
         };
         let pb = run_meta_to_pb(&r);
         assert_eq!(pb.environment, "");
         assert_eq!(pb.suite, "");
+        assert_eq!(pb.commit_sha, "");
     }
 
     #[test]

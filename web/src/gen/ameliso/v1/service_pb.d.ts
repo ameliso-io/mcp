@@ -708,6 +708,14 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
    * @generated from field: repeated string cases = 6;
    */
   cases: string[];
+
+  /**
+   * Optional git commit SHA (HEAD at run creation time). Stored in RunMeta so agents
+   * can later pass it as `since_ref` in GetAffectedCases.
+   *
+   * @generated from field: string commit_sha = 7;
+   */
+  commitSha: string;
 };
 
 /**

@@ -1278,6 +1278,29 @@ describe("RunsTab", () => {
     expect(screen.getByText("staging")).toBeInTheDocument();
   });
 
+  it("shows abbreviated commit SHA when run has commitSha", async () => {
+    const runWithSha = makeRunMeta({ commitSha: "abc1234567890" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [runWithSha] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => expect(screen.getByText("abc1234")).toBeInTheDocument());
+  });
+
+  it("fills commit SHA field in create form and passes it to createRun", async () => {
+    render(<RunsTab repoId="owner/repo" />);
+    await userEvent.click(screen.getByText("+ New Run"));
+    await userEvent.type(screen.getByRole("textbox", { name: "Slug" }), "sprint-1");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Commit SHA (optional)" }),
+      "deadbeef"
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
+    await waitFor(() =>
+      expect(client.createRun).toHaveBeenCalledWith(
+        expect.objectContaining({ commitSha: "deadbeef" })
+      )
+    );
+  });
+
   it("does not show Record button for completed run", async () => {
     const completedRun = { ...mockRun, status: RunStatus.COMPLETED } as unknown as RunMeta;
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);

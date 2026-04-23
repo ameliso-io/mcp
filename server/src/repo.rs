@@ -54,6 +54,7 @@ pub struct RunRow {
     pub status: String,
     pub environment: Option<String>,
     pub suite: Option<String>,
+    pub commit_sha: String,
 }
 
 #[derive(Debug)]
@@ -640,7 +641,7 @@ pub async fn delete_suite(pool: &PgPool, repo_id: &str, slug: &str) -> RResult<(
 
 pub async fn list_runs(pool: &PgPool, repo_id: &str) -> RResult<Vec<RunRow>> {
     sqlx::query_as::<_, RunRow>(
-        "SELECT run_id, date, tester, status, environment, suite
+        "SELECT run_id, date, tester, status, environment, suite, commit_sha
          FROM runs WHERE repo_id=$1 ORDER BY date DESC, run_id DESC",
     )
     .bind(repo_id)
@@ -652,7 +653,7 @@ pub async fn list_runs(pool: &PgPool, repo_id: &str) -> RResult<Vec<RunRow>> {
 pub async fn get_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<LoadedRun> {
     validate_slug_path(run_id, "run")?;
     let meta = sqlx::query_as::<_, RunRow>(
-        "SELECT run_id, date, tester, status, environment, suite
+        "SELECT run_id, date, tester, status, environment, suite, commit_sha
          FROM runs WHERE repo_id=$1 AND run_id=$2",
     )
     .bind(repo_id)
@@ -674,6 +675,7 @@ pub async fn get_run(pool: &PgPool, repo_id: &str, run_id: &str) -> RResult<Load
     Ok(LoadedRun { meta, results })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_run(
     pool: &PgPool,
     repo_id: &str,
@@ -682,6 +684,7 @@ pub async fn create_run(
     environment: Option<String>,
     suite: Option<String>,
     inline_cases: Vec<String>,
+    commit_sha: String,
 ) -> RResult<RunRow> {
     validate_slug_path(slug, "run slug")?;
     for case_path in &inline_cases {
@@ -716,8 +719,8 @@ pub async fn create_run(
 
     let mut tx = pool.begin().await.map_err(map_db)?;
     let rows = sqlx::query(
-        "INSERT INTO runs (repo_id, run_id, date, tester, status, environment, suite)
-         VALUES ($1, $2, $3, $4, 'in-progress', $5, $6)
+        "INSERT INTO runs (repo_id, run_id, date, tester, status, environment, suite, commit_sha)
+         VALUES ($1, $2, $3, $4, 'in-progress', $5, $6, $7)
          ON CONFLICT DO NOTHING",
     )
     .bind(repo_id)
@@ -726,6 +729,7 @@ pub async fn create_run(
     .bind(tester)
     .bind(&environment)
     .bind(&suite)
+    .bind(&commit_sha)
     .execute(&mut *tx)
     .await
     .map_err(map_db)?
@@ -757,6 +761,7 @@ pub async fn create_run(
         status: "in-progress".to_owned(),
         environment,
         suite,
+        commit_sha,
     })
 }
 
@@ -1658,6 +1663,7 @@ mod tests {
             None,
             None,
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1675,6 +1681,7 @@ mod tests {
             None,
             Some("bad suite!".to_owned()),
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1693,6 +1700,7 @@ mod tests {
             None,
             Some("".to_owned()),
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1731,6 +1739,7 @@ mod tests {
             None,
             None,
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1749,6 +1758,7 @@ mod tests {
             None,
             Some("regression".to_owned()),
             vec![],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1766,6 +1776,7 @@ mod tests {
             None,
             None,
             vec!["auth/login".to_owned()],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1782,6 +1793,7 @@ mod tests {
             None,
             None,
             vec!["../traversal".to_owned()],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -1799,6 +1811,7 @@ mod tests {
             None,
             Some("regression".to_owned()),
             vec!["auth/login".to_owned()],
+            String::new(),
         )
         .await
         .unwrap_err();
@@ -2193,9 +2206,18 @@ mod tests {
     #[ignore = "requires DATABASE_URL with a running PostgreSQL instance"]
     async fn create_and_finalize_run(pool: PgPool) {
         let repo = "test-repo";
-        let run = create_run(&pool, repo, "sprint-1", "alice", None, None, vec![])
-            .await
-            .unwrap();
+        let run = create_run(
+            &pool,
+            repo,
+            "sprint-1",
+            "alice",
+            None,
+            None,
+            vec![],
+            String::new(),
+        )
+        .await
+        .unwrap();
         assert_eq!(run.status, "in-progress");
 
         let finalized = finalize_run(&pool, repo, &run.run_id, "completed")

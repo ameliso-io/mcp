@@ -120,6 +120,15 @@ export declare type RunMeta = Message<"ameliso.v1.RunMeta"> & {
    * @generated from field: string suite = 6;
    */
   suite: string;
+
+  /**
+   * Optional git commit SHA recorded at run creation time.
+   * Agents can use this as `since_ref` in GetAffectedCases to find
+   * tests affected since this run's baseline commit.
+   *
+   * @generated from field: string commit_sha = 7;
+   */
+  commitSha: string;
 };
 
 /**
