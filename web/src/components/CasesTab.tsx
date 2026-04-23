@@ -76,7 +76,6 @@ export default function CasesTab({
   const [, startSortTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
-  const expandingRef = useRef<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filterAnnouncement, announceFilter] = useAnnounce();
@@ -101,7 +100,6 @@ export default function CasesTab({
   // Expanded case body view
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
   const [expandedBody, setExpandedBody] = useState<string>("");
-  const [bodyLoading, setBodyLoading] = useState(false);
 
   // Edit case form
   const [editingPath, setEditingPath] = useState<string | null>(null);
@@ -113,49 +111,25 @@ export default function CasesTab({
   const [editNewPath, setEditNewPath] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function fetchBody(casePath: string): Promise<string> {
-    const res = await client.getCase({ repoId, casePath });
-    return res.body;
-  }
-
-  async function toggleExpand(casePath: string) {
-    if (expandedPath === casePath) {
+  function toggleExpand(c: Case) {
+    if (expandedPath === c.path) {
       setExpandedPath(null);
       setExpandedBody("");
-      expandingRef.current = null;
       return;
     }
-    setExpandedPath(casePath);
-    setExpandedBody("");
-    expandingRef.current = casePath;
-    setBodyLoading(true);
-    try {
-      const body = await fetchBody(casePath);
-      if (expandingRef.current === casePath) setExpandedBody(body);
-    } catch (e) {
-      if (expandingRef.current === casePath) {
-        setError(errorMessage(e));
-        setExpandedPath(null);
-      }
-    } finally {
-      if (expandingRef.current === casePath) setBodyLoading(false);
-    }
+    setExpandedPath(c.path);
+    setExpandedBody(c.body);
   }
 
-  async function startEdit(c: Case) {
+  function startEdit(c: Case) {
     lastFocusRef.current = document.activeElement as HTMLElement;
     setEditingPath(c.path);
     setEditTitle(c.title);
     setEditDesc(c.description);
     setEditPriority(stringToPriority(c.priority));
     setEditTags(c.tags.join(", "));
-    setEditBody("");
+    setEditBody(c.body);
     setEditNewPath("");
-    try {
-      setEditBody(await fetchBody(c.path));
-    } catch {
-      // body stays empty; server will preserve existing body on update
-    }
   }
 
   useEffect(() => {
@@ -689,7 +663,7 @@ export default function CasesTab({
                     <button
                       type="button"
                       className={styles.caseExpandBtn}
-                      onClick={() => toggleExpand(c.path)}
+                      onClick={() => { toggleExpand(c); }}
                       aria-expanded={expandedPath === c.path}
                     >
                       <span
@@ -718,7 +692,7 @@ export default function CasesTab({
                     </button>
                     <button
                       type="button"
-                      onClick={() => startEdit(c)}
+                      onClick={() => { startEdit(c); }}
                       aria-label={`Edit ${c.path}`}
                       className={styles.btnOutlineSm}
                     >
@@ -766,11 +740,7 @@ export default function CasesTab({
 
               {expandedPath === c.path && editingPath !== c.path && (
                 <div className={styles.expandedPanel}>
-                  {bodyLoading ? (
-                    <p className={styles.expandedLoading} role="status">
-                      Loading…
-                    </p>
-                  ) : expandedBody ? (
+                  {expandedBody ? (
                     <MarkdownBody body={expandedBody} />
                   ) : (
                     <p className={styles.noBody}>No body.</p>

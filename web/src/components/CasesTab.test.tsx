@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import CasesTab from "./CasesTab";
@@ -14,6 +14,7 @@ const mockCase = makeCase({
   tags: ["auth", "smoke"],
   createdAt: "2026-01-01",
   updatedAt: "2026-01-01",
+  body: "## Steps\n\n1. Go to /login",
 });
 
 beforeEach(() => {
@@ -217,19 +218,12 @@ describe("CasesTab", () => {
   });
 
   it("shows no-body placeholder when body is empty", async () => {
-    vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: "" } as never);
+    const emptyBodyCase = makeCase({ body: "" });
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [emptyBodyCase] } as never);
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
-    await waitFor(() => expect(screen.getByText("No body.")).toBeInTheDocument());
-  });
-
-  it("shows error when getCase fails on expand", async () => {
-    vi.mocked(client.getCase).mockRejectedValue(new Error("case fetch error"));
-    render(<CasesTab repoId="owner/repo" />);
-    await waitFor(() => screen.getByText("User Login"));
-    await userEvent.click(screen.getByText("User Login"));
-    await waitFor(() => expect(screen.getByText("case fetch error")).toBeInTheDocument());
+    expect(screen.getByText("No body.")).toBeInTheDocument();
   });
 
   it("shows error when createCase fails", async () => {
@@ -245,8 +239,7 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.getByText("create case error")).toBeInTheDocument());
   });
 
-  it("handles fetchBody failure silently in edit form", async () => {
-    vi.mocked(client.getCase).mockRejectedValue(new Error("body unavailable"));
+  it("opens edit form pre-filled with case body", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -255,6 +248,10 @@ describe("CasesTab", () => {
         "User Login"
       );
     });
+    const bodyTextarea = screen
+      .getAllByRole("textbox")
+      .find((i) => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement;
+    expect(bodyTextarea.value).toBe("## Steps\n\n1. Go to /login");
   });
 
   it("calls updateCase with parsed tags when tags field is filled", async () => {
@@ -636,8 +633,9 @@ describe("CasesTab", () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     const caseRow = screen.getByRole("button", { name: /User Login/ });
-    await userEvent.type(caseRow, "{Enter}");
-    await waitFor(() => expect(client.getCase).toHaveBeenCalled());
+    caseRow.focus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(caseRow).toHaveAttribute("aria-expanded", "true"));
   });
 
   it("expands case on Space key", async () => {
@@ -646,7 +644,7 @@ describe("CasesTab", () => {
     const caseRow = screen.getByRole("button", { name: /User Login/ });
     caseRow.focus();
     await userEvent.keyboard(" ");
-    await waitFor(() => expect(client.getCase).toHaveBeenCalled());
+    await waitFor(() => expect(caseRow).toHaveAttribute("aria-expanded", "true"));
   });
 
   it("shows loading state while fetching cases", async () => {
@@ -696,31 +694,21 @@ describe("CasesTab", () => {
     await waitFor(() => expect(screen.getByDisplayValue("Medium")).toBeInTheDocument());
   });
 
-  it("discards stale getCase response when a second expand fires before first resolves", async () => {
-    const secondCase = makeCase({ path: "auth/logout", title: "User Logout", priority: "low" });
-    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
-
-    let resolveFirst!: (v: unknown) => void;
-    const firstPromise = new Promise((res) => {
-      resolveFirst = res;
+  it("shows second case body when expanding a second case without a first case expanded", async () => {
+    const secondCase = makeCase({
+      path: "auth/logout",
+      title: "User Logout",
+      priority: "low",
+      body: "second body",
     });
-    vi.mocked(client.getCase)
-      .mockImplementationOnce(() => firstPromise as never)
-      .mockResolvedValue({ case: secondCase, body: "second body" } as never);
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [mockCase, secondCase] } as never);
 
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
 
-    await userEvent.click(screen.getByRole("button", { name: /User Login/ }));
     await userEvent.click(screen.getByRole("button", { name: /User Logout/ }));
-    await waitFor(() => expect(screen.queryByText("second body")).toBeInTheDocument());
-
-    // resolve stale first fetch — should not overwrite second body
-    await act(async () => {
-      resolveFirst({ case: mockCase, body: "first body" });
-    });
-    expect(screen.queryByText("first body")).not.toBeInTheDocument();
     expect(screen.getByText("second body")).toBeInTheDocument();
+    expect(screen.queryByText(/Go to \/login/)).not.toBeInTheDocument();
   });
 
   it("shows case tags as chips in case card list view", async () => {
@@ -730,19 +718,12 @@ describe("CasesTab", () => {
     expect(screen.getAllByText("smoke").length).toBeGreaterThan(0);
   });
 
-  it('shows "Loading…" while case body is loading on expand', async () => {
-    let resolve: (v: unknown) => void;
-    vi.mocked(client.getCase).mockReturnValue(
-      new Promise((res) => {
-        resolve = res;
-      }) as never
-    );
+  it("shows body immediately on expand (no loading state)", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
     await userEvent.click(screen.getByText("User Login"));
-    expect(screen.getByText("Loading…")).toBeInTheDocument();
-    resolve!({ case: mockCase, body: "" });
-    await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
+    expect(screen.getByText(/Go to \/login/)).toBeInTheDocument();
+    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
   });
 
   it('shows "Creating…" on Create button while case creation is in progress', async () => {
@@ -903,8 +884,7 @@ describe("CasesTab", () => {
     expect(body.indexOf("Apple Case")).toBeLessThan(body.indexOf("Zebra Case"));
   });
 
-  it("opens edit form with empty body when fetchBody throws during startEdit", async () => {
-    vi.mocked(client.getCase).mockRejectedValue(new Error("fetch failed"));
+  it("opens edit form with body from case object", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("Edit"));
     await userEvent.click(screen.getByText("Edit"));
@@ -912,7 +892,7 @@ describe("CasesTab", () => {
     const bodyTextarea = screen
       .getAllByRole("textbox")
       .find((i) => (i as HTMLTextAreaElement).rows === 8) as HTMLTextAreaElement;
-    expect(bodyTextarea.value).toBe("");
+    expect(bodyTextarea.value).toBe("## Steps\n\n1. Go to /login");
   });
 
   it("does not call createCase when create form submitted with empty path", async () => {
