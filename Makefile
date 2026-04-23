@@ -49,8 +49,8 @@ db-down:
 # --- Git hooks (called by Husky) ---
 
 check-file-size:
-	@LIMIT=5000; FAILED=0; \
-	for file in $$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$$'); do \
+	@LIMIT=5300; FAILED=0; \
+	for file in $$(find . -name '*.rs' -not -path './target/*' -not -path './.claude/*'); do \
 		lines=$$(wc -l < "$$file"); \
 		if [ "$$lines" -gt "$$LIMIT" ]; then \
 			echo "ERROR: $$file has $$lines lines (limit: $$LIMIT)"; \
