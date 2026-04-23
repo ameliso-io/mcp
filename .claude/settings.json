@@ -70,7 +70,10 @@
       "Bash(pnpm tsc *)",
       "Bash(xargs cat *)",
       "Bash(git show *)",
-      "mcp__playwright__browser_click"
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_evaluate"
     ]
   }
 }
