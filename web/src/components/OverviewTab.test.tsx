@@ -844,4 +844,41 @@ describe("OverviewTab", () => {
       )
     );
   });
+
+  it("clicking a stat card filters coverage by that status", async () => {
+    const onCoverageFilterChange = vi.fn();
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onCoverageFilterChange={onCoverageFilterChange}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Filter by Passed" }));
+    expect(onCoverageFilterChange).toHaveBeenCalledWith(ResultStatus.PASSED);
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ statusFilter: ResultStatus.PASSED }),
+        expect.anything()
+      )
+    );
+  });
+
+  it("clicking active stat card clears coverage filter", async () => {
+    const onCoverageFilterChange = vi.fn();
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onCoverageFilterChange={onCoverageFilterChange}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Filter by Passed" }));
+    // Wait for re-fetch after filter change, then click again to toggle off
+    await waitFor(() => screen.getByRole("button", { name: "Filter by Passed" }));
+    await userEvent.click(screen.getByRole("button", { name: "Filter by Passed" }));
+    expect(onCoverageFilterChange).toHaveBeenLastCalledWith(ResultStatus.UNSPECIFIED);
+  });
 });

@@ -221,17 +221,39 @@ export default function OverviewTab({
         <>
           <dl className={styles.statsGrid}>
             {[
-              { label: "Total Cases", value: statCases },
-              { label: "Passed", value: statPassed },
-              { label: "Failed", value: statFailed },
-              { label: "Blocked", value: statBlocked },
-              { label: "Skipped", value: statSkipped },
-              { label: "Never Run", value: statNever },
+              { label: "Total Cases", value: statCases, status: null },
+              { label: "Passed", value: statPassed, status: ResultStatus.PASSED },
+              { label: "Failed", value: statFailed, status: ResultStatus.FAILED },
+              { label: "Blocked", value: statBlocked, status: ResultStatus.BLOCKED },
+              { label: "Skipped", value: statSkipped, status: ResultStatus.SKIPPED },
+              { label: "Never Run", value: statNever, status: ResultStatus.NEVER },
             ].map((stat) => (
-              <div key={stat.label} className={styles.statCard}>
+              <div
+                key={stat.label}
+                className={`${styles.statCard}${stat.status !== null && coverageFilter === stat.status ? ` ${styles.statCardActive}` : ""}`}
+              >
                 <dt className={styles.label}>{stat.label}</dt>
                 <dd className={styles.statValue} data-stat={stat.label}>
-                  {stat.value}
+                  {stat.status !== null ? (
+                    <button
+                      type="button"
+                      className={styles.statBtn}
+                      aria-label={`Filter by ${stat.label}`}
+                      aria-pressed={coverageFilter === stat.status}
+                      onClick={() => {
+                        const next =
+                          coverageFilter === stat.status
+                            ? ResultStatus.UNSPECIFIED
+                            : stat.status;
+                        setCoverageFilter(next);
+                        onCoverageFilterChange?.(next);
+                      }}
+                    >
+                      {stat.value}
+                    </button>
+                  ) : (
+                    stat.value
+                  )}
                 </dd>
               </div>
             ))}
@@ -261,7 +283,9 @@ export default function OverviewTab({
                       </Link>
                       {run.suite && (
                         <Link
-                          href={`${basePath}/suites?expanded=${encodeURIComponent(run.suite)}` as Route}
+                          href={
+                            `${basePath}/suites?expanded=${encodeURIComponent(run.suite)}` as Route
+                          }
                           className={styles.runSuiteBadge}
                         >
                           {run.suite}
