@@ -418,7 +418,15 @@ export default function OverviewTab({
                         <span className="sr-only">{ac.case.priority} priority</span>
                       </>
                     )}
-                    <span className={styles.affectedPath}>{ac.case?.path}</span>
+                    <Link
+                      href={
+                        /* v8 ignore next */
+                        `${basePath}/cases?case=${encodeURIComponent(ac.case?.path ?? "")}` as Route
+                      }
+                      className={styles.affectedPath}
+                    >
+                      {ac.case?.path}
+                    </Link>
                     <span className={styles.affectedTitle}>{ac.case?.title}</span>
                     <span className={styles.affectedReason}>{ac.reason}</span>
                   </li>

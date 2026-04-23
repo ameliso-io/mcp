@@ -783,6 +783,26 @@ describe("OverviewTab", () => {
     expect(onCoverageFilterChange).toHaveBeenCalledWith(ResultStatus.PASSED);
   });
 
+  it("affected case path is a link to the cases tab", async () => {
+    const affectedCase = makeAffectedCase({
+      case: { path: "auth/report", title: "Auth Report", priority: "high" },
+      reason: "modified",
+    });
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [affectedCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("auth/report")).toBeInTheDocument());
+    const link = screen.getByRole("link", { name: "auth/report" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/cases?case=${encodeURIComponent("auth/report")}`
+    );
+  });
+
   it("resets coverage filter to All statuses when repoId changes", async () => {
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />

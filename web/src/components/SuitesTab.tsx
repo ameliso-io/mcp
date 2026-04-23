@@ -497,7 +497,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                               aria-hidden="true"
                             />
                             <span className="sr-only">{c.priority} priority</span>
-                            <span className={styles.casePath}>{c.path}</span>
+                            <Link
+                              href={
+                                `${basePath}/cases?case=${encodeURIComponent(c.path)}` as Route
+                              }
+                              className={styles.casePath}
+                            >
+                              {c.path}
+                            </Link>
                             <span className={styles.caseTitle}>{c.title}</span>
                             {c.tags.map((t) => (
                               <span key={t} className={styles.tag}>
@@ -511,7 +518,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       <ul className={styles.caseList} role="list">
                         {suite.cases.map((casePath) => (
                           <li key={casePath} className={styles.casePathOnly}>
-                            {casePath}
+                            <Link
+                              href={
+                                `${basePath}/cases?case=${encodeURIComponent(casePath)}` as Route
+                              }
+                              className={styles.casePathOnlyLink}
+                            >
+                              {casePath}
+                            </Link>
                           </li>
                         ))}
                       </ul>

@@ -394,6 +394,12 @@
   flex: 1;
   font-size: 14px;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.affectedPath:hover {
+  text-decoration: underline;
 }
 
 .affectedTitle {

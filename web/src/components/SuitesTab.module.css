@@ -1,4 +1,3 @@
-
 .header {
   display: flex;
   justify-content: space-between;
@@ -252,6 +251,11 @@
   font-family: monospace;
   color: var(--color-muted);
   flex-shrink: 0;
+  text-decoration: none;
+}
+
+.casePath:hover {
+  text-decoration: underline;
 }
 
 .caseTitle {
@@ -276,6 +280,16 @@
   font-size: 14px;
   font-family: monospace;
   color: var(--color-ink-hover);
+}
+
+.casePathOnlyLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.casePathOnlyLink:hover {
+  text-decoration: underline;
 }
 
 .noCase {
