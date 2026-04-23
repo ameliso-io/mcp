@@ -10,3 +10,4 @@ node_modules/
 # Tools
 .playwright-mcp/
 web/coverage/
+target/

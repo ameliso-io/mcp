@@ -46,7 +46,11 @@
       "Bash(wait)",
       "mcp__centy__centy_v1_CentyDaemon_GetItem",
       "Bash(awk *)",
-      "Bash(make check-file-size *)"
+      "Bash(make check-file-size *)",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(jobs -l)"
     ]
   }
 }
