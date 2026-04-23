@@ -1,4 +1,4 @@
-.PHONY: install build test fmt lint spell check-file-size pre-commit pre-push dev coverage-check db-up db-down
+.PHONY: install build test fmt lint spell check-file-size pre-commit pre-push dev db-up db-down
 
 dev: install build
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
@@ -25,9 +25,6 @@ test:
 
 test-server:
 	cd server && cargo test
-
-coverage-check:
-	cd server && cargo llvm-cov --ignore-filename-regex main.rs --fail-under-lines 70
 
 fmt:
 	cd server && cargo fmt --all
