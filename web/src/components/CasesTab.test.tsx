@@ -952,4 +952,43 @@ describe("CasesTab", () => {
       )
     );
   });
+
+  it("auto-expands case matching initialExpandedPath when cases load", async () => {
+    render(<CasesTab repoId="owner/repo" initialExpandedPath={mockCase.path} />);
+    await waitFor(() => expect(screen.getByText(/Go to \/login/)).toBeInTheDocument());
+  });
+
+  it("does not expand when initialExpandedPath does not match any case", async () => {
+    render(<CasesTab repoId="owner/repo" initialExpandedPath="nonexistent/path" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.queryByText(/Go to \/login/)).not.toBeInTheDocument();
+  });
+
+  it("calls onExpandedPathChange with path when case expanded", async () => {
+    const onExpandedPathChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onExpandedPathChange={onExpandedPathChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(onExpandedPathChange).toHaveBeenCalledWith(mockCase.path));
+  });
+
+  it("calls onExpandedPathChange with null when case collapsed", async () => {
+    const onExpandedPathChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onExpandedPathChange={onExpandedPathChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => screen.getByText(/Go to \/login/));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(onExpandedPathChange).toHaveBeenLastCalledWith(null));
+  });
+
+  it("calls onExpandedPathChange with null when getCase fails on expand", async () => {
+    vi.mocked(client.getCase).mockRejectedValue(new Error("case fetch error"));
+    const onExpandedPathChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onExpandedPathChange={onExpandedPathChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(screen.getByText("case fetch error")).toBeInTheDocument());
+    expect(onExpandedPathChange).toHaveBeenLastCalledWith(null);
+  });
 });

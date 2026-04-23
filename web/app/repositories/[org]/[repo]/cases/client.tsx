@@ -33,6 +33,7 @@ function CasesInner() {
   const initialSuiteFilter = searchParams.get("suite") ?? "";
   const rawSort = searchParams.get("sort");
   const initialSortBy: "path" | "priority" = rawSort === "path" ? "path" : "priority";
+  const initialExpandedPath = searchParams.get("case") ?? undefined;
 
   const handleFiltersChange = useCallback(
     (filters: {
@@ -77,6 +78,22 @@ function CasesInner() {
     [router, searchParams, basePath]
   );
 
+  const handleExpandedPathChange = useCallback(
+    (path: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (path) {
+        params.set("case", path);
+      } else {
+        params.delete("case");
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route);
+      });
+    },
+    [router, searchParams, basePath]
+  );
+
   return (
     <CasesTab
       repoId={repoId}
@@ -86,6 +103,8 @@ function CasesInner() {
       initialSuiteFilter={initialSuiteFilter}
       initialSortBy={initialSortBy}
       onFiltersChange={handleFiltersChange}
+      initialExpandedPath={initialExpandedPath}
+      onExpandedPathChange={handleExpandedPathChange}
     />
   );
 }

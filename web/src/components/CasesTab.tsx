@@ -36,6 +36,8 @@ interface Props {
   initialSuiteFilter?: string | undefined;
   initialSortBy?: "path" | "priority" | undefined;
   onFiltersChange?: ((filters: FilterState) => void) | undefined;
+  initialExpandedPath?: string | undefined;
+  onExpandedPathChange?: ((path: string | null) => void) | undefined;
 }
 
 function stringToPriority(p: string): Priority {
@@ -72,6 +74,8 @@ export default function CasesTab({
   initialSuiteFilter,
   initialSortBy,
   onFiltersChange,
+  initialExpandedPath,
+  onExpandedPathChange,
 }: Props) {
   const [cases, setCases] = useState<Case[]>([]);
   const deferredCases = useDeferredValue(cases);
@@ -135,11 +139,13 @@ export default function CasesTab({
   async function toggleExpand(casePath: string) {
     if (expandedPath === casePath) {
       setExpandedPath(null);
+      onExpandedPathChange?.(null);
       setExpandedBody("");
       expandingRef.current = null;
       return;
     }
     setExpandedPath(casePath);
+    onExpandedPathChange?.(casePath);
     setExpandedBody("");
     expandingRef.current = casePath;
     setBodyLoading(true);
@@ -150,6 +156,7 @@ export default function CasesTab({
       if (expandingRef.current === casePath) {
         setError(errorMessage(e));
         setExpandedPath(null);
+        onExpandedPathChange?.(null);
       }
     } finally {
       if (expandingRef.current === casePath) setBodyLoading(false);
@@ -236,6 +243,15 @@ export default function CasesTab({
     }
     prevCountRef.current = count;
   }, [deferredCases.length, loading, announceFilter]);
+
+  const consumedExpandedRef = useRef(false);
+  useEffect(() => {
+    if (!initialExpandedPath || consumedExpandedRef.current || cases.length === 0) return;
+    if (!cases.some((c) => c.path === initialExpandedPath)) return;
+    consumedExpandedRef.current = true;
+    void toggleExpand(initialExpandedPath);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cases, initialExpandedPath]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
