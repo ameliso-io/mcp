@@ -226,6 +226,15 @@ export declare type BulkCreateCasesRequest = Message<"ameliso.v1.BulkCreateCases
    * @generated from field: repeated ameliso.v1.BulkCaseEntry cases = 2;
    */
   cases: BulkCaseEntry[];
+
+  /**
+   * Optional run_id — when set, created cases are added to this run's inline scope.
+   * Useful for adding newly-discovered cases (from uncovered_files) to an in-progress run
+   * without a separate UpdateRun(add_cases=...) call.
+   *
+   * @generated from field: string run_id = 3;
+   */
+  runId: string;
 };
 
 /**
@@ -250,6 +259,14 @@ export declare type BulkCreateCasesResponse = Message<"ameliso.v1.BulkCreateCase
    * @generated from field: repeated string file_paths = 2;
    */
   filePaths: string[];
+
+  /**
+   * Updated pending entries for the run, when run_id was set in the request.
+   * Avoids a separate GetPendingCases call after adding the new cases to the run.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
+   */
+  pending: PendingEntry[];
 };
 
 /**

@@ -134,6 +134,10 @@ message BulkCaseEntry {
 message BulkCreateCasesRequest {
   string repo_id = 1;
   repeated BulkCaseEntry cases = 2;
+  // Optional run_id — when set, created cases are added to this run's inline scope.
+  // Useful for adding newly-discovered cases (from uncovered_files) to an in-progress run
+  // without a separate UpdateRun(add_cases=...) call.
+  string run_id = 3;
 }
 
 message BulkCreateCasesResponse {
@@ -141,6 +145,9 @@ message BulkCreateCasesResponse {
   // File paths for the created cases (e.g. "cases/auth/login.md").
   // Agents can pass these directly to git add without constructing paths manually.
   repeated string file_paths = 2;
+  // Updated pending entries for the run, when run_id was set in the request.
+  // Avoids a separate GetPendingCases call after adding the new cases to the run.
+  repeated PendingEntry pending = 3;
 }
 
 message UpdateCaseRequest {

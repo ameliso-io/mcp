@@ -497,8 +497,10 @@ impl AmelisoService for AmelisoServer {
         if req.cases.is_empty() {
             return Err(invalid("cases list must not be empty"));
         }
+        let has_run_id = !req.run_id.is_empty();
         let mut created: Vec<pb::Case> = Vec::with_capacity(req.cases.len());
         let mut file_paths: Vec<String> = Vec::with_capacity(req.cases.len());
+        let mut new_case_paths: Vec<String> = Vec::with_capacity(req.cases.len());
         for entry in &req.cases {
             if entry.case_path.is_empty() {
                 return Err(invalid("each entry must have a case_path"));
@@ -545,11 +547,33 @@ impl AmelisoService for AmelisoServer {
                 });
             }
             file_paths.push(format!("cases/{}.md", entry.case_path));
+            new_case_paths.push(entry.case_path.clone());
             created.push(case_to_pb(&case));
         }
+        let pending = if has_run_id {
+            repo::add_cases_to_run(&self.pool, &req.repo_id, &req.run_id, &new_case_paths)
+                .await
+                .map_err(repo_err)?;
+            let ((pending_cases, _), statuses) = tokio::join!(
+                async {
+                    repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                        .await
+                        .unwrap_or_default()
+                },
+                async {
+                    repo::get_latest_statuses(&self.pool, &req.repo_id)
+                        .await
+                        .unwrap_or_default()
+                },
+            );
+            build_pending_entries(&pending_cases, &statuses)
+        } else {
+            vec![]
+        };
         Ok(Response::new(pb::BulkCreateCasesResponse {
             cases: created,
             file_paths,
+            pending,
         }))
     }
 
@@ -1928,8 +1952,7 @@ impl AmelisoService for AmelisoServer {
             runs.iter().filter(|r| r.status == "in-progress").collect();
 
         // Fetch pending counts for all active runs in parallel.
-        let mut join_set: tokio::task::JoinSet<(String, i32, i32)> =
-            tokio::task::JoinSet::new();
+        let mut join_set: tokio::task::JoinSet<(String, i32, i32)> = tokio::task::JoinSet::new();
         for run_meta in &active_runs_meta {
             let pool = pool.clone();
             let repo_id = repo_id.clone();
@@ -1955,10 +1978,8 @@ impl AmelisoService for AmelisoServer {
         let active_runs: Vec<pb::ActiveRunStatus> = active_runs_meta
             .iter()
             .map(|run_meta| {
-                let (pending, total_in_scope) = pending_map
-                    .get(&run_meta.run_id)
-                    .copied()
-                    .unwrap_or((0, 0));
+                let (pending, total_in_scope) =
+                    pending_map.get(&run_meta.run_id).copied().unwrap_or((0, 0));
                 pb::ActiveRunStatus {
                     run_id: run_meta.run_id.clone(),
                     tester: run_meta.tester.clone(),
@@ -2447,6 +2468,7 @@ mod tests {
                     title: "Login".to_owned(),
                     ..Default::default()
                 }],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2461,6 +2483,7 @@ mod tests {
             .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 cases: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2479,6 +2502,7 @@ mod tests {
                     title: "Login".to_owned(),
                     ..Default::default()
                 }],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2497,6 +2521,7 @@ mod tests {
                     title: "".to_owned(),
                     ..Default::default()
                 }],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2523,6 +2548,7 @@ mod tests {
                         ..Default::default()
                     },
                 ],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
