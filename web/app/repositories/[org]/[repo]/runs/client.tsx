@@ -50,7 +50,9 @@ function RunsInner() {
     params.delete("suite");
     const qs = params.toString();
     startTransition(() => {
-      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
+        scroll: false,
+      });
     });
   }, [router, searchParams, basePath]);
 
@@ -65,7 +67,9 @@ function RunsInner() {
       }
       const qs = params.toString();
       startTransition(() => {
-        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
+          scroll: false,
+        });
       });
     },
     [router, searchParams, basePath]
@@ -82,7 +86,9 @@ function RunsInner() {
       params.delete("result");
       const qs = params.toString();
       startTransition(() => {
-        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
+          scroll: false,
+        });
       });
     },
     [router, searchParams, basePath]
@@ -99,7 +105,9 @@ function RunsInner() {
       }
       const qs = params.toString();
       startTransition(() => {
-        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
+          scroll: false,
+        });
       });
     },
     [router, searchParams, basePath]

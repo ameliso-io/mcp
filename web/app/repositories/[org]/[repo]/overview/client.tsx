@@ -44,7 +44,9 @@ function OverviewInner() {
       }
       const qs = params.toString();
       startTransition(() => {
-        router.replace((qs ? `${basePath}/overview?${qs}` : `${basePath}/overview`) as Route);
+        router.replace((qs ? `${basePath}/overview?${qs}` : `${basePath}/overview`) as Route, {
+          scroll: false,
+        });
       });
     },
     [router, searchParams, basePath]
