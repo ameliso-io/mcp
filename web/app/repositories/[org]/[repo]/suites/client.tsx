@@ -4,13 +4,13 @@ import type { Route } from "next";
 import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SuitesTab from "@/components/SuitesTab";
-import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useRepoParams } from "@/hooks/useRepoParams";
 
 function SuitesInner() {
+  const { repoId, basePath } = useRepoParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { repoId, basePath } = useRepoParams();
   const [, startTransition] = useTransition();
 
   const initialExpanded = searchParams.get("expanded") ?? undefined;
@@ -30,7 +30,7 @@ function SuitesInner() {
         });
       });
     },
-    [router, searchParams, basePath, startTransition]
+    [router, searchParams, basePath]
   );
 
   return (

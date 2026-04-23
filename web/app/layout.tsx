@@ -1,15 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-  // Enables size-adjust on fallbacks to minimize CLS during font swap
-  fallback: ["system-ui", "sans-serif"],
-});
+import { inter } from "@/lib/fonts";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,7 +32,7 @@ export const metadata: Metadata = {
     locale: "en_US",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: {
       default: "Ameliso",
       template: "%s | Ameliso",

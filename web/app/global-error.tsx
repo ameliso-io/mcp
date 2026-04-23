@@ -1,15 +1,7 @@
 "use client";
 
-import { Inter } from "next/font/google";
-import "./globals.css";
 import styles from "./app.module.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-  fallback: ["system-ui", "sans-serif"],
-});
+import { inter } from "@/lib/fonts";
 
 export default function GlobalError({
   error,
@@ -19,7 +11,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={inter.variable}>
       <body>
         <div className={`${styles.centered} ${styles.fullPage}`} role="alert">
           <h2 className={styles.heading}>Something went wrong</h2>

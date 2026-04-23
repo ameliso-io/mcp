@@ -64,6 +64,7 @@ describe("SuitesTab", () => {
     expect(screen.getByText(/Repositories tab/i)).toBeInTheDocument();
   });
 
+
   it("shows suites after load", async () => {
     render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("Smoke Tests")).toBeInTheDocument());
@@ -668,6 +669,25 @@ describe("SuitesTab", () => {
     expect(onExpandedChange).toHaveBeenCalledWith("smoke");
   });
 
+  it("calls onExpandedChange(null) when expanded suite is deleted", async () => {
+    const onExpandedChange = vi.fn();
+    render(
+      <SuitesTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onExpandedChange={onExpandedChange}
+      />
+    );
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
+    await waitFor(() => expect(client.deleteSuite).toHaveBeenCalled());
+    expect(onExpandedChange).toHaveBeenLastCalledWith(null);
+  });
+
   it("calls onExpandedChange with null when suite collapsed", async () => {
     const onExpandedChange = vi.fn();
     render(
@@ -705,6 +725,31 @@ describe("SuitesTab", () => {
     );
     await waitFor(() => expect(screen.getByText("Smoke Tests")).toBeInTheDocument());
     expect(screen.queryByText("User Login")).not.toBeInTheDocument();
+  });
+
+  it("expanded case path is a link to the cases tab", async () => {
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const link = screen.getByRole("link", { name: "auth/login" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/cases?case=${encodeURIComponent("auth/login")}`
+    );
+  });
+
+  it("fallback case path (no listCases data) is a link to the cases tab", async () => {
+    vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
+    render(<SuitesTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const link = screen.getByRole("link", { name: "auth/login" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/cases?case=${encodeURIComponent("auth/login")}`
+    );
   });
 
   it("calls updateSuite with newSlug when rename slug field is filled", async () => {

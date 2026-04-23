@@ -17,6 +17,7 @@ import { errorMessage } from "@/errorMessage";
 import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
   ssr: false,
@@ -28,6 +29,7 @@ interface FilterState {
   search: string;
   priority: Priority;
   tag: string;
+  suite: string;
   sort: "path" | "priority";
 }
 
@@ -36,8 +38,11 @@ interface Props {
   initialSearch?: string | undefined;
   initialPriorityFilter?: Priority | undefined;
   initialTagFilter?: string | undefined;
+  initialSuiteFilter?: string | undefined;
   initialSortBy?: "path" | "priority" | undefined;
-  onFiltersChange?: (filters: FilterState) => void;
+  onFiltersChange?: ((filters: FilterState) => void) | undefined;
+  initialExpandedPath?: string | undefined;
+  onExpandedPathChange?: ((path: string | null) => void) | undefined;
 }
 
 function stringToPriority(p: string): Priority {
@@ -71,27 +76,27 @@ export default function CasesTab({
   initialSearch,
   initialPriorityFilter,
   initialTagFilter,
+  initialSuiteFilter,
   initialSortBy,
   onFiltersChange,
+  initialExpandedPath,
+  onExpandedPathChange,
 }: Props) {
   const [cases, setCases] = useState<Case[]>([]);
   const deferredCases = useDeferredValue(cases);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch ?? "");
-  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? "");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [priorityFilter, setPriorityFilter] = useState<Priority>(
     initialPriorityFilter ?? Priority.UNSPECIFIED
   );
   const [tagFilter, setTagFilter] = useState(initialTagFilter ?? "");
-  const [suiteFilter, setSuiteFilter] = useState("");
+  const [suiteFilter, setSuiteFilter] = useState(initialSuiteFilter ?? "");
   const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const expandingRef = useRef<string | null>(null);
-  const editingBodyRef = useRef<string | null>(null);
-  const loadIdRef = useRef(0);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filterAnnouncement, announceFilter] = useAnnounce();
@@ -105,12 +110,14 @@ export default function CasesTab({
 
   // Create case form
   const [showCreate, setShowCreate] = useState(false);
-  const [newPath, setNewPath] = useState("");
-  const [newTitle, setNewTitle] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newPriority, setNewPriority] = useState<Priority>(Priority.MEDIUM);
-  const [newTags, setNewTags] = useState("");
-  const [newBody, setNewBody] = useState("");
+  const [createForm, setCreateForm] = useState({
+    path: "",
+    title: "",
+    desc: "",
+    priority: Priority.MEDIUM,
+    tags: "",
+    body: "",
+  });
   const [creating, setCreating] = useState(false);
 
   // Expanded case body view
@@ -119,13 +126,15 @@ export default function CasesTab({
   const [bodyLoading, setBodyLoading] = useState(false);
 
   // Edit case form
-  const [editingPath, setEditingPath] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editPriority, setEditPriority] = useState<Priority>(Priority.MEDIUM);
-  const [editTags, setEditTags] = useState("");
-  const [editBody, setEditBody] = useState("");
-  const [editNewPath, setEditNewPath] = useState("");
+  const [editState, setEditState] = useState<{
+    path: string;
+    title: string;
+    desc: string;
+    priority: Priority;
+    tags: string;
+    body: string;
+    newPath: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function fetchBody(casePath: string): Promise<string> {
@@ -136,11 +145,13 @@ export default function CasesTab({
   async function toggleExpand(casePath: string) {
     if (expandedPath === casePath) {
       setExpandedPath(null);
+      onExpandedPathChange?.(null);
       setExpandedBody("");
       expandingRef.current = null;
       return;
     }
     setExpandedPath(casePath);
+    onExpandedPathChange?.(casePath);
     setExpandedBody("");
     expandingRef.current = casePath;
     setBodyLoading(true);
@@ -151,6 +162,7 @@ export default function CasesTab({
       if (expandingRef.current === casePath) {
         setError(errorMessage(e));
         setExpandedPath(null);
+        onExpandedPathChange?.(null);
       }
     } finally {
       if (expandingRef.current === casePath) setBodyLoading(false);
@@ -159,32 +171,23 @@ export default function CasesTab({
 
   async function startEdit(c: Case) {
     lastFocusRef.current = document.activeElement as HTMLElement;
-    setEditingPath(c.path);
-    setEditTitle(c.title);
-    setEditDesc(c.description);
-    setEditPriority(stringToPriority(c.priority));
-    setEditTags(c.tags.join(", "));
-    setEditBody("");
-    setEditNewPath("");
-    editingBodyRef.current = c.path;
+    setEditState({
+      path: c.path,
+      title: c.title,
+      desc: c.description,
+      priority: stringToPriority(c.priority),
+      tags: c.tags.join(", "),
+      body: "",
+      newPath: "",
+    });
     try {
+      setEditState((s) => s && { ...s, body: "" });
       const body = await fetchBody(c.path);
-      /* v8 ignore next 1 — race guard, covered by stale startEdit test */
-      if (editingBodyRef.current === c.path) setEditBody(body);
+      setEditState((s) => s && { ...s, body });
     } catch {
       // body stays empty; server will preserve existing body on update
     }
   }
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [search]);
 
   useEffect(() => {
     if (!filtersInitializedRef.current) {
@@ -195,35 +198,44 @@ export default function CasesTab({
       search: debouncedSearch,
       priority: priorityFilter,
       tag: tagFilter,
+      suite: suiteFilter,
       sort: sortBy,
     });
-  }, [debouncedSearch, priorityFilter, tagFilter, sortBy]);
+  }, [debouncedSearch, priorityFilter, tagFilter, suiteFilter, sortBy]);
+
+  const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
-    if (!repoId) return;
-    const id = ++loadIdRef.current;
+    loadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setLoading(true);
     setError(null);
     try {
-      const res = await client.listCases({
-        repoId,
-        query: debouncedSearch,
-        priority: priorityFilter,
-        tags: tagFilter ? [tagFilter] : [],
-        suite: suiteFilter,
-      });
-      /* v8 ignore next 1 — race guard, covered by stale listCases test */
-      if (id !== loadIdRef.current) return;
+      const res = await client.listCases(
+        {
+          repoId,
+          query: debouncedSearch,
+          priority: priorityFilter,
+          tags: tagFilter ? [tagFilter] : [],
+          suite: suiteFilter,
+        },
+        { signal }
+      );
+      /* v8 ignore next 2 — abort guard */
+      if (signal.aborted) return;
       setCases(res.cases);
     } catch (e) {
-      /* v8 ignore next 1 — race guard */
-      if (id !== loadIdRef.current) return;
+      /* v8 ignore next 2 — abort guard */
+      if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
-      /* v8 ignore next 1 — race guard */
-      if (id === loadIdRef.current) setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter]);
+
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     void load();
@@ -238,34 +250,45 @@ export default function CasesTab({
     prevCountRef.current = count;
   }, [deferredCases.length, loading, announceFilter]);
 
+  const consumedExpandedRef = useRef(false);
+  useEffect(() => {
+    if (!initialExpandedPath || consumedExpandedRef.current || cases.length === 0) return;
+    if (!cases.some((c) => c.path === initialExpandedPath)) return;
+    consumedExpandedRef.current = true;
+    void toggleExpand(initialExpandedPath);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cases, initialExpandedPath]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     /* v8 ignore next 2 — required fields prevent submission when blank */
-    if (!repoId || !newPath || !newTitle) return;
+    if (!repoId || !createForm.path || !createForm.title) return;
     setCreating(true);
     try {
       await client.createCase({
         repoId,
-        casePath: newPath,
-        title: newTitle,
-        description: newDesc,
-        priority: newPriority,
-        tags: newTags
-          ? newTags
+        casePath: createForm.path,
+        title: createForm.title,
+        description: createForm.desc,
+        priority: createForm.priority,
+        tags: createForm.tags
+          ? createForm.tags
               .split(",")
               .map((t) => t.trim())
               .filter(Boolean)
           : [],
-        body: newBody,
+        body: createForm.body,
       });
       setShowCreate(false);
       lastFocusRef.current?.focus();
-      setNewPath("");
-      setNewTitle("");
-      setNewDesc("");
-      setNewTags("");
-      setNewBody("");
-      setNewPriority(Priority.MEDIUM);
+      setCreateForm({
+        path: "",
+        title: "",
+        desc: "",
+        priority: Priority.MEDIUM,
+        tags: "",
+        body: "",
+      });
       announceAction("Case created");
       await load();
     } catch (e) {
@@ -293,26 +316,26 @@ export default function CasesTab({
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
-    /* v8 ignore next 2 — form only renders when editingPath is set */
-    if (!editingPath) return;
+    /* v8 ignore next 2 — form only renders when editState is set */
+    if (!editState) return;
     setSaving(true);
     try {
       await client.updateCase({
         repoId,
-        casePath: editingPath,
-        title: editTitle,
-        description: editDesc,
-        priority: editPriority,
-        tags: editTags
-          ? editTags
+        casePath: editState.path,
+        title: editState.title,
+        description: editState.desc,
+        priority: editState.priority,
+        tags: editState.tags
+          ? editState.tags
               .split(",")
               .map((t) => t.trim())
               .filter(Boolean)
           : [],
-        body: editBody,
-        newPath: editNewPath,
+        body: editState.body,
+        newPath: editState.newPath,
       });
-      setEditingPath(null);
+      setEditState(null);
       lastFocusRef.current?.focus();
       announceAction("Case updated");
       await load();
@@ -340,14 +363,6 @@ export default function CasesTab({
     () => Array.from(new Set(deferredCases.flatMap((c) => c.tags))),
     [deferredCases]
   );
-
-  if (!repoId) {
-    return (
-      <div className={styles.noRepo}>
-        Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
-      </div>
-    );
-  }
 
   const isStale = cases !== deferredCases;
 
@@ -391,9 +406,9 @@ export default function CasesTab({
               <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Path (e.g. auth/login)
                 <input
-                  value={newPath}
+                  value={createForm.path}
                   onChange={(e) => {
-                    setNewPath(e.target.value);
+                    setCreateForm((f) => ({ ...f, path: e.target.value }));
                   }}
                   required
                   pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
@@ -410,9 +425,9 @@ export default function CasesTab({
               <label className={`${styles.label} ${styles.requiredLabel}`}>
                 Title
                 <input
-                  value={newTitle}
+                  value={createForm.title}
                   onChange={(e) => {
-                    setNewTitle(e.target.value);
+                    setCreateForm((f) => ({ ...f, title: e.target.value }));
                   }}
                   required
                   maxLength={255}
@@ -424,9 +439,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Description
                 <textarea
-                  value={newDesc}
+                  value={createForm.desc}
                   onChange={(e) => {
-                    setNewDesc(e.target.value);
+                    setCreateForm((f) => ({ ...f, desc: e.target.value }));
                   }}
                   rows={3}
                   maxLength={1000}
@@ -438,9 +453,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Priority
                 <select
-                  value={newPriority}
+                  value={createForm.priority}
                   onChange={(e) => {
-                    setNewPriority(Number(e.target.value));
+                    setCreateForm((f) => ({ ...f, priority: Number(e.target.value) }));
                   }}
                   className={styles.input}
                 >
@@ -454,9 +469,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Tags (comma-separated)
                 <input
-                  value={newTags}
+                  value={createForm.tags}
                   onChange={(e) => {
-                    setNewTags(e.target.value);
+                    setCreateForm((f) => ({ ...f, tags: e.target.value }));
                   }}
                   className={styles.input}
                 />
@@ -466,9 +481,9 @@ export default function CasesTab({
               <label className={styles.label}>
                 Steps / Body (Markdown)
                 <textarea
-                  value={newBody}
+                  value={createForm.body}
                   onChange={(e) => {
-                    setNewBody(e.target.value);
+                    setCreateForm((f) => ({ ...f, body: e.target.value }));
                   }}
                   placeholder={"## Steps\n\n1. \n\n## Expected Result\n\n"}
                   rows={6}
@@ -606,19 +621,19 @@ export default function CasesTab({
           <li key={c.path}>
             <div
               className={
-                expandedPath === c.path || editingPath === c.path
+                expandedPath === c.path || editState?.path === c.path
                   ? styles.caseCardOpen
                   : styles.caseCard
               }
             >
-              {editingPath === c.path ? (
+              {editState?.path === c.path ? (
                 <form
                   aria-label={`Edit case ${c.path}`}
                   onSubmit={handleUpdate}
                   onKeyDown={(e) => {
                     if (e.key !== "Escape") return;
                     e.preventDefault();
-                    setEditingPath(null);
+                    setEditState(null);
                     lastFocusRef.current?.focus();
                   }}
                   className={styles.formGridSm}
@@ -628,9 +643,9 @@ export default function CasesTab({
                       Title
                       <input
                         autoFocus
-                        value={editTitle}
+                        value={editState.title}
                         onChange={(e) => {
-                          setEditTitle(e.target.value);
+                          setEditState((s) => s && { ...s, title: e.target.value });
                         }}
                         required
                         maxLength={255}
@@ -642,9 +657,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Priority
                       <select
-                        value={editPriority}
+                        value={editState.priority}
                         onChange={(e) => {
-                          setEditPriority(Number(e.target.value));
+                          setEditState((s) => s && { ...s, priority: Number(e.target.value) });
                         }}
                         className={styles.input}
                       >
@@ -658,9 +673,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Description
                       <textarea
-                        value={editDesc}
+                        value={editState.desc}
                         onChange={(e) => {
-                          setEditDesc(e.target.value);
+                          setEditState((s) => s && { ...s, desc: e.target.value });
                         }}
                         rows={3}
                         maxLength={1000}
@@ -672,9 +687,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Tags (comma-separated)
                       <input
-                        value={editTags}
+                        value={editState.tags}
                         onChange={(e) => {
-                          setEditTags(e.target.value);
+                          setEditState((s) => s && { ...s, tags: e.target.value });
                         }}
                         className={styles.input}
                       />
@@ -684,9 +699,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Steps / Body (Markdown)
                       <textarea
-                        value={editBody}
+                        value={editState.body}
                         onChange={(e) => {
-                          setEditBody(e.target.value);
+                          setEditState((s) => s && { ...s, body: e.target.value });
                         }}
                         rows={8}
                         className={styles.textarea}
@@ -697,9 +712,9 @@ export default function CasesTab({
                     <label className={styles.labelSm}>
                       Rename path (optional)
                       <input
-                        value={editNewPath}
+                        value={editState.newPath}
                         onChange={(e) => {
-                          setEditNewPath(e.target.value);
+                          setEditState((s) => s && { ...s, newPath: e.target.value });
                         }}
                         pattern="[a-z0-9_-]+(/[a-z0-9_-]+)*"
                         title="Lowercase letters (a-z), digits, hyphens, underscores; segments separated by / (e.g. auth/login)"
@@ -716,7 +731,7 @@ export default function CasesTab({
                     <button
                       type="button"
                       onClick={() => {
-                        setEditingPath(null);
+                        setEditState(null);
                         lastFocusRef.current?.focus();
                       }}
                       className={styles.btnCancelSm}
@@ -805,7 +820,7 @@ export default function CasesTab({
               )}
             </div>
 
-            {expandedPath === c.path && editingPath !== c.path && (
+            {expandedPath === c.path && editState?.path !== c.path && (
               <div className={styles.expandedPanel} aria-busy={bodyLoading}>
                 {bodyLoading ? (
                   <p className={styles.expandedLoading} role="status">

@@ -45,6 +45,10 @@
   color: var(--color-nav-active-text);
 }
 
+.navLinkLabel {
+  transition: opacity 0.15s;
+}
+
 .navLinkLabel[data-pending="true"] {
   opacity: 0.6;
 }

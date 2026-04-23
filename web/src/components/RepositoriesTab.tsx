@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
+import type { Route } from "next";
+import Link from "next/link";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import styles from "./RepositoriesTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
@@ -8,19 +10,19 @@ import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 
 interface Props {
-  onRepoSelect: (id: string) => void;
-  activeRepoId: string;
   installationId?: string | undefined;
   setupAction?: string | undefined;
-  onInstallationHandled?: () => void;
+  onInstallationHandled?: (() => void) | undefined;
+  initialSearch?: string | undefined;
+  onSearchChange?: ((q: string) => void) | undefined;
 }
 
 export default function RepositoriesTab({
-  onRepoSelect,
-  activeRepoId,
   installationId,
   setupAction,
   onInstallationHandled,
+  initialSearch,
+  onSearchChange,
 }: Props) {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [installUrl, setInstallUrl] = useState<string>("");
@@ -28,17 +30,17 @@ export default function RepositoriesTab({
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [refreshing, setRefreshing] = useState(false);
   const [announcement, announce] = useAnnounce();
   const [filterAnnouncement, announceFilter] = useAnnounce();
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
-  const [removing, setRemoving] = useState(false);
-  const prevActiveRef = useRef(activeRepoId);
+
   const prevFilterCountRef = useRef<number | null>(null);
   const loadAbortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    /* v8 ignore next — abort guard */
     loadAbortRef.current?.abort();
     const ctrl = new AbortController();
     loadAbortRef.current = ctrl;
@@ -50,13 +52,13 @@ export default function RepositoriesTab({
         client.listRepositories({}, { signal }),
         client.getGitHubInstallUrl({}, { signal }),
       ]);
-      /* v8 ignore next 1 — AbortController race guard, not exercised in unit tests */
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setRepos(reposRes.repositories);
       setInstallUrl(urlRes.url);
       setConfigured(urlRes.configured);
     } catch (e) {
-      /* v8 ignore next 1 — AbortController race guard in error path */
+      /* v8 ignore next 2 — abort guard */
       if (signal.aborted) return;
       setError(errorMessage(e));
     } finally {
@@ -70,7 +72,7 @@ export default function RepositoriesTab({
     try {
       const installationIds = [...new Set(repos.map((r) => r.installationId).filter(Boolean))];
       const results = await Promise.all(
-        installationIds.map((id) => client.handleGitHubCallback({ installationId: id }))
+        installationIds.map((installationId) => client.handleGitHubCallback({ installationId }))
       );
       for (const res of results) {
         setRepos((prev) => {
@@ -86,6 +88,8 @@ export default function RepositoriesTab({
     }
   }, [repos, announce]);
 
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
+
   // Handle GitHub OAuth callback params passed from the page client
   useEffect(() => {
     if (
@@ -94,42 +98,35 @@ export default function RepositoriesTab({
     )
       return;
     onInstallationHandled?.();
-    setLoading(true);
-    setError(null);
-    client
-      .handleGitHubCallback({ installationId })
-      .then((res) => {
+    const id = installationId;
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    async function run() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await client.handleGitHubCallback({ installationId: id }, { signal });
+        /* v8 ignore next 2 — abort guard */
+        if (signal.aborted) return;
         setRepos((prev) => {
           const ids = new Set(res.repositories.map((r) => r.id));
           return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
         });
-      })
-      .catch((e: unknown) => {
-        setError(errorMessage(e));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      } catch (e: unknown) {
+        if (!signal.aborted) setError(errorMessage(e));
+      } finally {
+        if (!signal.aborted) setLoading(false);
+      }
+    }
+    void run();
+    return () => {
+      ctrl.abort();
+    };
   }, [installationId, setupAction, onInstallationHandled]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    return () => loadAbortRef.current?.abort();
-  }, []);
-
-  useEffect(() => {
-    if (activeRepoId === prevActiveRef.current) return;
-    prevActiveRef.current = activeRepoId;
-    if (activeRepoId) {
-      const repo = repos.find((r) => r.id === activeRepoId);
-      if (repo) announce(`${repo.fullName} selected`);
-    } else {
-      announce("Repository deselected");
-    }
-  }, [activeRepoId, repos, announce]);
 
   async function handleSync(id: string) {
     setSyncing(id);
@@ -148,42 +145,36 @@ export default function RepositoriesTab({
     }
   }
 
-  const deferredSearch = useDeferredValue(search);
-  const isSearchStale = search !== deferredSearch;
-  const dq = deferredSearch.trim().toLowerCase();
+  const q = search.trim().toLowerCase();
   const filteredRepos = useMemo(
     () =>
-      dq
+      q
         ? repos.filter(
-            (r) => r.fullName.toLowerCase().includes(dq) || r.htmlUrl.toLowerCase().includes(dq)
+            (r) => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q)
           )
         : repos,
-    [repos, dq]
+    [repos, q]
   );
 
   useEffect(() => {
-    if (loading || !dq) return;
+    if (loading || !q) return;
     const count = filteredRepos.length;
     if (prevFilterCountRef.current !== null && prevFilterCountRef.current !== count) {
       announceFilter(count === 1 ? "1 repository found" : `${count} repositories found`);
     }
     prevFilterCountRef.current = count;
-  }, [filteredRepos.length, loading, dq, announceFilter]);
+  }, [filteredRepos.length, loading, q, announceFilter]);
 
   async function handleRemove(id: string) {
     setError(null);
-    setRemoving(true);
     const repo = repos.find((r) => r.id === id);
     try {
       await client.removeRepository({ id });
       setConfirmingRemove(null);
       setRepos((prev) => prev.filter((r) => r.id !== id));
-      if (activeRepoId === id) onRepoSelect("");
       announce(`${repo?.fullName ?? /* v8 ignore next */ id} removed`);
     } catch (e) {
       setError(errorMessage(e));
-    } finally {
-      setRemoving(false);
     }
   }
 
@@ -237,6 +228,7 @@ export default function RepositoriesTab({
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
+              onSearchChange?.(e.target.value);
             }}
             className={styles.searchInput}
             autoComplete="off"
@@ -303,6 +295,7 @@ export default function RepositoriesTab({
             type="button"
             onClick={() => {
               setSearch("");
+              onSearchChange?.("");
             }}
             className={`${styles.btn} ${styles.btnSecondary} ${styles.clearBtnMt}`}
           >
@@ -311,20 +304,19 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      <ul
-        aria-busy={loading || refreshing || isSearchStale}
-        role="list"
-        className={isSearchStale ? `${styles.repoList} ${styles.repoListStale}` : styles.repoList}
-      >
+      <ul aria-busy={loading || refreshing} role="list" className={styles.repoList}>
         {filteredRepos.map((repo) => {
-          const isActive = activeRepoId === repo.id;
           return (
-            <li key={repo.id} className={isActive ? styles.repoCardActive : styles.repoCard}>
+            <li key={repo.id} className={styles.repoCard}>
               <div className={styles.repoRow}>
                 <div className={styles.repoInfo}>
                   <div className={styles.repoNameRow}>
-                    <span className={styles.repoName}>{repo.fullName}</span>
-                    {isActive && <span className={styles.badgeActive}>Active</span>}
+                    <Link
+                      href={`/repositories/${repo.id}/overview` as Route}
+                      className={styles.repoName}
+                    >
+                      {repo.fullName}
+                    </Link>
                   </div>
                   <div className={styles.repoUrl}>
                     <a
@@ -338,27 +330,12 @@ export default function RepositoriesTab({
                   </div>
                 </div>
                 <div className={styles.repoActions}>
-                  {!isActive ? (
-                    <button
-                      type="button"
-                      className={styles.btnPrimary}
-                      onClick={() => {
-                        onRepoSelect(repo.id);
-                      }}
-                    >
-                      Use
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className={styles.btnOutline}
-                      onClick={() => {
-                        onRepoSelect("");
-                      }}
-                    >
-                      Deselect
-                    </button>
-                  )}
+                  <Link
+                    href={`/repositories/${repo.id}/overview` as Route}
+                    className={styles.btnPrimary}
+                  >
+                    Use
+                  </Link>
                   <button
                     type="button"
                     className={styles.btnSecondary}
@@ -375,9 +352,8 @@ export default function RepositoriesTab({
                         className={styles.btnDanger}
                         onClick={() => handleRemove(repo.id)}
                         aria-label={`Confirm remove ${repo.fullName}`}
-                        disabled={removing}
                       >
-                        {removing ? "Removing…" : "Yes"}
+                        Yes
                       </button>
                       <button
                         type="button"

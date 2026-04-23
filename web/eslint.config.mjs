@@ -43,8 +43,6 @@ const config = [
   { ignores: ["src/gen/**", "coverage/**"] },
   ...agentConfig,
   ...nextOnly,
-
-  // --- Global overrides (apply to all files) ---
   {
     rules: {
       // False positive: useEffect(() => { load() }, [load]) is idiomatic
@@ -67,13 +65,12 @@ const config = [
       "max-lines": "off",
       "max-lines-per-function": "off",
 
-      // attributes: false — async onClick handlers are fine in React
+      // Async JSX event handlers (onClick, onSubmit, etc.) are idiomatic React
       "@typescript-eslint/no-misused-promises": [
         "error",
         { checksVoidReturn: { attributes: false } },
       ],
       "@typescript-eslint/no-floating-promises": "error",
-
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       "early-return/prefer-early-return": "error",
       "@typescript-eslint/no-unnecessary-condition": "error",
@@ -83,13 +80,13 @@ const config = [
       "security/detect-object-injection": "off",
     },
   },
-
-  // --- Test file overrides (applied AFTER globals, so they win) ---
   // Test files are excluded from tsconfig.json. Disable type-aware linting for them.
+  // These must come AFTER all global rules so per-file overrides win.
   ...tseslint.config({
     files: TEST_FILES,
     extends: [tseslint.configs.disableTypeChecked],
   }),
+  // Test-file-specific overrides for non-type-aware rules
   {
     files: TEST_FILES,
     rules: {
@@ -99,9 +96,6 @@ const config = [
       "@typescript-eslint/no-empty-function": "off",
       // Tests use literal error messages to verify error handling logic
       "error/no-literal-error-message": "off",
-      // Type-aware rules require tsconfig wiring not set up for test files
-      "@typescript-eslint/no-misused-promises": "off",
-      "@typescript-eslint/no-floating-promises": "off",
     },
   },
 ];

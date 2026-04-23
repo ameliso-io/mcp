@@ -77,6 +77,7 @@
   border-radius: 4px;
 }
 
+
 .errorDismiss {
   background: none;
   border: none;
@@ -86,6 +87,12 @@
   line-height: 1;
   padding: 0;
   flex-shrink: 0;
+}
+
+.errorRetry {
+  composes: errorDismiss;
+  font-size: 13px;
+  text-decoration: underline;
 }
 
 .inlineError {
@@ -142,6 +149,11 @@
   margin-bottom: 0;
 }
 
+.statCardActive {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .statValue {
   margin: 0;
   font-size: 32px;
@@ -156,6 +168,21 @@
 }
 .statValue[data-stat="Never Run"] {
   color: var(--color-subtle);
+}
+
+.statBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+
+.statBtn:hover {
+  opacity: 0.8;
 }
 
 .activeRunsCard {
@@ -226,6 +253,12 @@
   font-size: 14px;
   flex: 1;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.runId:hover {
+  text-decoration: underline;
 }
 
 .runSuiteBadge {
@@ -235,6 +268,11 @@
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.runSuiteBadge:hover {
+  text-decoration: underline;
 }
 
 .runTester {
@@ -327,6 +365,12 @@
   flex: 1;
   font-size: 14px;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.coveragePath:hover {
+  text-decoration: underline;
 }
 
 .coverageTitle {
@@ -413,6 +457,12 @@
   flex: 1;
   font-size: 14px;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.affectedPath:hover {
+  text-decoration: underline;
 }
 
 .affectedTitle {

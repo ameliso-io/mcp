@@ -54,11 +54,6 @@ beforeEach(() => {
 });
 
 describe("OverviewTab", () => {
-  it("shows helpful empty state when no repo selected", () => {
-    render(<OverviewTab repoId="" basePath="" />);
-    expect(screen.getByText(/No repository selected/i)).toBeInTheDocument();
-  });
-
   it("loads and displays stat counts", async () => {
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("2")).toBeInTheDocument());
@@ -169,6 +164,26 @@ describe("OverviewTab", () => {
     await waitFor(() => screen.getByText("Check Diff"));
     await userEvent.click(screen.getByText("Check Diff"));
     await waitFor(() => expect(screen.getByText("modified")).toBeInTheDocument());
+  });
+
+  it("active run ID is a link to that specific run on the runs tab", async () => {
+    const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("run-xyz"));
+    expect(screen.getByRole("link", { name: "run-xyz" })).toHaveAttribute(
+      "href",
+      "/repositories/owner/repo/runs?run=run-xyz"
+    );
+  });
+
+  it("coverage row path is a link to that case on the cases tab", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("auth/login"));
+    expect(screen.getByRole("link", { name: "auth/login" })).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/cases?case=${encodeURIComponent("auth/login")}`
+    );
   });
 
   it("renders Go to Runs link pointing to /runs", async () => {
@@ -359,7 +374,8 @@ describe("OverviewTab", () => {
     });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenCalledWith(
-        expect.objectContaining({ repoId: "owner/new-repo" })
+        expect.objectContaining({ repoId: "owner/new-repo" }),
+        expect.anything()
       )
     );
   });
@@ -634,6 +650,23 @@ describe("OverviewTab", () => {
     expect(screen.queryByTitle("")).not.toBeInTheDocument();
   });
 
+  it("active run suite badge is a link to the suites tab with that suite expanded", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-suite-link",
+      tester: "carol",
+      suite: "e2e",
+      date: "2026-02-01",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("e2e"));
+    const suiteLink = screen.getByRole("link", { name: "e2e" });
+    expect(suiteLink).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/suites?expanded=${encodeURIComponent("e2e")}`
+    );
+  });
+
   it("polling timer callback triggers reload when active runs present", async () => {
     const activeRun = makeRunMeta({
       id: "run-timer",
@@ -829,7 +862,8 @@ describe("OverviewTab", () => {
     fireEvent.change(select, { target: { value: String(ResultStatus.FAILED) } });
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenLastCalledWith(
-        expect.objectContaining({ statusFilter: ResultStatus.FAILED })
+        expect.objectContaining({ statusFilter: ResultStatus.FAILED }),
+        expect.anything()
       )
     );
   });
@@ -875,6 +909,55 @@ describe("OverviewTab", () => {
     );
   });
 
+  it("initializes coverage filter select from initialCoverageFilter prop", async () => {
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialCoverageFilter={ResultStatus.FAILED}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    expect(screen.getByRole("combobox", { name: "Filter coverage by status" })).toHaveValue(
+      String(ResultStatus.FAILED)
+    );
+  });
+
+  it("calls onCoverageFilterChange when filter select changes", async () => {
+    const onCoverageFilterChange = vi.fn();
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onCoverageFilterChange={onCoverageFilterChange}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    const select = screen.getByRole("combobox", { name: "Filter coverage by status" });
+    fireEvent.change(select, { target: { value: String(ResultStatus.PASSED) } });
+    expect(onCoverageFilterChange).toHaveBeenCalledWith(ResultStatus.PASSED);
+  });
+
+  it("affected case path is a link to the cases tab", async () => {
+    const affectedCase = makeAffectedCase({
+      case: { path: "auth/report", title: "Auth Report", priority: "high" },
+      reason: "modified",
+    });
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [affectedCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("auth/report")).toBeInTheDocument());
+    const link = screen.getByRole("link", { name: "auth/report" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/cases?case=${encodeURIComponent("auth/report")}`
+    );
+  });
+
   it("resets coverage filter to All statuses when repoId changes", async () => {
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
@@ -894,7 +977,8 @@ describe("OverviewTab", () => {
     // Reload should use UNSPECIFIED filter for the new repo
     await waitFor(() =>
       expect(client.getCoverageReport).toHaveBeenLastCalledWith(
-        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED })
+        expect.objectContaining({ repoId: "other/repo", statusFilter: ResultStatus.UNSPECIFIED }),
+        expect.anything()
       )
     );
   });
@@ -934,5 +1018,42 @@ describe("OverviewTab", () => {
 
     expect(screen.queryByText("auth/login")).not.toBeInTheDocument();
     expect(screen.getByText("new/feature")).toBeInTheDocument();
+  });
+
+  it("clicking a stat card filters coverage by that status", async () => {
+    const onCoverageFilterChange = vi.fn();
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onCoverageFilterChange={onCoverageFilterChange}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Filter by Passed" }));
+    expect(onCoverageFilterChange).toHaveBeenCalledWith(ResultStatus.PASSED);
+    await waitFor(() =>
+      expect(client.getCoverageReport).toHaveBeenLastCalledWith(
+        expect.objectContaining({ statusFilter: ResultStatus.PASSED }),
+        expect.anything()
+      )
+    );
+  });
+
+  it("clicking active stat card clears coverage filter", async () => {
+    const onCoverageFilterChange = vi.fn();
+    render(
+      <OverviewTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onCoverageFilterChange={onCoverageFilterChange}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Filter by Passed" }));
+    // Wait for re-fetch after filter change, then click again to toggle off
+    await waitFor(() => screen.getByRole("button", { name: "Filter by Passed" }));
+    await userEvent.click(screen.getByRole("button", { name: "Filter by Passed" }));
+    expect(onCoverageFilterChange).toHaveBeenLastCalledWith(ResultStatus.UNSPECIFIED);
   });
 });

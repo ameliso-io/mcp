@@ -1,6 +1,5 @@
 "use client";
 
-import type { Route } from "next";
 import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RepositoriesTab from "@/components/RepositoriesTab";
@@ -13,17 +12,22 @@ function RepositoriesInner() {
 
   const installationId = searchParams.get("installation_id") ?? undefined;
   const setupAction = searchParams.get("setup_action") ?? undefined;
+  const initialSearch = searchParams.get("q") ?? "";
 
-  const handleRepoSelect = useCallback(
-    (id: string) => {
-      const slashIdx = id.indexOf("/");
-      const org = id.slice(0, slashIdx);
-      const repo = id.slice(slashIdx + 1);
+  const handleSearchChange = useCallback(
+    (q: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) {
+        params.set("q", q);
+      } else {
+        params.delete("q");
+      }
+      const qs = params.toString();
       startTransition(() => {
-        router.push(`/repositories/${org}/${repo}/overview` as Route);
+        router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
       });
     },
-    [router, startTransition]
+    [router, searchParams]
   );
 
   const handleInstallationHandled = useCallback(() => {
@@ -34,15 +38,15 @@ function RepositoriesInner() {
     startTransition(() => {
       router.replace(qs ? `/repositories?${qs}` : "/repositories", { scroll: false });
     });
-  }, [router, searchParams, startTransition]);
+  }, [router, searchParams]);
 
   return (
     <RepositoriesTab
-      activeRepoId=""
-      onRepoSelect={handleRepoSelect}
       installationId={installationId}
       setupAction={setupAction}
       onInstallationHandled={handleInstallationHandled}
+      initialSearch={initialSearch}
+      onSearchChange={handleSearchChange}
     />
   );
 }

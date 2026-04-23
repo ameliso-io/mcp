@@ -33,11 +33,6 @@ beforeEach(() => {
 });
 
 describe("CasesTab", () => {
-  it("renders empty state when no repo path", () => {
-    render(<CasesTab repoId="" />);
-    expect(screen.getByText(/Repositories tab/i)).toBeInTheDocument();
-  });
-
   it("shows cases after load", async () => {
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => expect(screen.getByText("User Login")).toBeInTheDocument());
@@ -248,7 +243,8 @@ describe("CasesTab", () => {
     await userEvent.selectOptions(prioritySelect, "High");
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(
-        expect.objectContaining({ priority: expect.any(Number) })
+        expect.objectContaining({ priority: expect.any(Number) }),
+        expect.anything()
       )
     );
   });
@@ -392,7 +388,10 @@ describe("CasesTab", () => {
     const tagSelect = screen.getByDisplayValue("All tags");
     await userEvent.selectOptions(tagSelect, "smoke");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ["smoke"] }),
+        expect.anything()
+      )
     );
   });
 
@@ -404,7 +403,10 @@ describe("CasesTab", () => {
     }) as HTMLInputElement;
     await userEvent.type(suiteInput, "smoke");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ suite: "smoke" }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ suite: "smoke" }),
+        expect.anything()
+      )
     );
   });
 
@@ -432,10 +434,22 @@ describe("CasesTab", () => {
     );
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(
-        expect.objectContaining({ query: "login", priority: Priority.HIGH })
+        expect.objectContaining({ query: "login", priority: Priority.HIGH }),
+        expect.anything()
       )
     );
     expect(screen.getByDisplayValue("Sort: Path")).toBeInTheDocument();
+  });
+
+  it("initializes suite filter input from initialSuiteFilter prop", async () => {
+    render(<CasesTab repoId="owner/repo" initialSuiteFilter="smoke" />);
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ suite: "smoke" }),
+        expect.anything()
+      )
+    );
+    expect(screen.getByRole("searchbox", { name: "Filter by suite slug" })).toHaveValue("smoke");
   });
 
   it("calls createCase with parsed tags when tags field is filled", async () => {
@@ -933,12 +947,16 @@ describe("CasesTab", () => {
     await userEvent.selectOptions(prioritySelect, "High");
     await waitFor(() =>
       expect(client.listCases).toHaveBeenCalledWith(
-        expect.objectContaining({ priority: expect.any(Number) })
+        expect.objectContaining({ priority: expect.any(Number) }),
+        expect.anything()
       )
     );
     await userEvent.selectOptions(prioritySelect, "All priorities");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ priority: 0 }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: 0 }),
+        expect.anything()
+      )
     );
   });
 
@@ -950,11 +968,17 @@ describe("CasesTab", () => {
     const tagSelect = screen.getByDisplayValue("All tags");
     await userEvent.selectOptions(tagSelect, "smoke");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: ["smoke"] }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: ["smoke"] }),
+        expect.anything()
+      )
     );
     await userEvent.selectOptions(tagSelect, "");
     await waitFor(() =>
-      expect(client.listCases).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: [] }),
+        expect.anything()
+      )
     );
   });
 
@@ -1070,5 +1094,44 @@ describe("CasesTab", () => {
         expect.objectContaining({ newPath: "auth/sign-in" })
       )
     );
+  });
+
+  it("auto-expands case matching initialExpandedPath when cases load", async () => {
+    render(<CasesTab repoId="owner/repo" initialExpandedPath={mockCase.path} />);
+    await waitFor(() => expect(screen.getByText(/Go to \/login/)).toBeInTheDocument());
+  });
+
+  it("does not expand when initialExpandedPath does not match any case", async () => {
+    render(<CasesTab repoId="owner/repo" initialExpandedPath="nonexistent/path" />);
+    await waitFor(() => screen.getByText("User Login"));
+    expect(screen.queryByText(/Go to \/login/)).not.toBeInTheDocument();
+  });
+
+  it("calls onExpandedPathChange with path when case expanded", async () => {
+    const onExpandedPathChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onExpandedPathChange={onExpandedPathChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(onExpandedPathChange).toHaveBeenCalledWith(mockCase.path));
+  });
+
+  it("calls onExpandedPathChange with null when case collapsed", async () => {
+    const onExpandedPathChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onExpandedPathChange={onExpandedPathChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => screen.getByText(/Go to \/login/));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(onExpandedPathChange).toHaveBeenLastCalledWith(null));
+  });
+
+  it("calls onExpandedPathChange with null when getCase fails on expand", async () => {
+    vi.mocked(client.getCase).mockRejectedValue(new Error("case fetch error"));
+    const onExpandedPathChange = vi.fn();
+    render(<CasesTab repoId="owner/repo" onExpandedPathChange={onExpandedPathChange} />);
+    await waitFor(() => screen.getByText("User Login"));
+    await userEvent.click(screen.getByText("User Login"));
+    await waitFor(() => expect(screen.getByText("case fetch error")).toBeInTheDocument());
+    expect(onExpandedPathChange).toHaveBeenLastCalledWith(null);
   });
 });

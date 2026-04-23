@@ -4,9 +4,9 @@ import type { Route } from "next";
 import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
-import { useRepoParams } from "@/hooks/useRepoParams";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
+import { useRepoParams } from "@/hooks/useRepoParams";
 
 const PRIORITY_SLUG: Record<string, Priority> = {
   low: Priority.LOW,
@@ -21,20 +21,28 @@ const SLUG_BY_PRIORITY: Record<number, string> = {
 };
 
 function CasesInner() {
+  const { repoId, basePath } = useRepoParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { repoId, basePath } = useRepoParams();
   const [, startTransition] = useTransition();
 
   const initialSearch = searchParams.get("q") ?? "";
   const initialPriorityFilter =
     PRIORITY_SLUG[searchParams.get("priority") ?? ""] ?? Priority.UNSPECIFIED;
   const initialTagFilter = searchParams.get("tag") ?? "";
+  const initialSuiteFilter = searchParams.get("suite") ?? "";
   const rawSort = searchParams.get("sort");
   const initialSortBy: "path" | "priority" = rawSort === "path" ? "path" : "priority";
+  const initialExpandedPath = searchParams.get("case") ?? undefined;
 
   const handleFiltersChange = useCallback(
-    (filters: { search: string; priority: Priority; tag: string; sort: "path" | "priority" }) => {
+    (filters: {
+      search: string;
+      priority: Priority;
+      tag: string;
+      suite: string;
+      sort: "path" | "priority";
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (filters.search) {
         params.set("q", filters.search);
@@ -52,6 +60,11 @@ function CasesInner() {
       } else {
         params.delete("tag");
       }
+      if (filters.suite) {
+        params.set("suite", filters.suite);
+      } else {
+        params.delete("suite");
+      }
       if (filters.sort !== "priority") {
         params.set("sort", filters.sort);
       } else {
@@ -64,7 +77,25 @@ function CasesInner() {
         });
       });
     },
-    [router, searchParams, basePath, startTransition]
+    [router, searchParams, basePath]
+  );
+
+  const handleExpandedPathChange = useCallback(
+    (path: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (path) {
+        params.set("case", path);
+      } else {
+        params.delete("case");
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route, {
+          scroll: false,
+        });
+      });
+    },
+    [router, searchParams, basePath]
   );
 
   return (
@@ -73,8 +104,11 @@ function CasesInner() {
       initialSearch={initialSearch}
       initialPriorityFilter={initialPriorityFilter}
       initialTagFilter={initialTagFilter}
+      initialSuiteFilter={initialSuiteFilter}
       initialSortBy={initialSortBy}
       onFiltersChange={handleFiltersChange}
+      initialExpandedPath={initialExpandedPath}
+      onExpandedPathChange={handleExpandedPathChange}
     />
   );
 }

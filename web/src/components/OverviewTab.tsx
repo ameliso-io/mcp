@@ -9,11 +9,16 @@ import { errorMessage } from "@/errorMessage";
 import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/types_pb";
 import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useInterval } from "@/hooks/useInterval";
 
 interface Props {
   repoId: string;
-  basePath?: string;
+  basePath: string;
+  initialCoverageFilter?: ResultStatus | undefined;
+  onCoverageFilterChange?: ((s: ResultStatus) => void) | undefined;
 }
+
+const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 function statusSortOrder(s: ResultStatus): number {
   switch (s) {
@@ -49,7 +54,12 @@ function statusLabel(s: ResultStatus): string {
   }
 }
 
-export default function OverviewTab({ repoId, basePath = `/repositories/${repoId}` }: Props) {
+export default function OverviewTab({
+  repoId,
+  basePath,
+  initialCoverageFilter,
+  onCoverageFilterChange,
+}: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -60,7 +70,9 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
     Map<string, { pendingCases: number; totalInScope: number }>
   >(new Map());
 
-  const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
+  const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(
+    initialCoverageFilter ?? ResultStatus.UNSPECIFIED
+  );
 
   const [sinceRef, setSinceRef] = useState("");
   const [changedFilesText, setChangedFilesText] = useState("");
@@ -69,24 +81,24 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
   const [affectedError, setAffectedError] = useState<string | null>(null);
   const [announcement, announce] = useAnnounce();
 
-  const loadIdRef = useRef(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loadAbortRef = useRef<AbortController | null>(null);
+  const filterMountedRef = useRef(false);
 
   const load = useCallback(
-    async (path: string, silent = false) => {
-      /* v8 ignore next 2 — useEffect guards !path before calling load */
-      if (!path) return;
-      const id = ++loadIdRef.current;
+    async (silent = false) => {
+      loadAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      loadAbortRef.current = ctrl;
+      const { signal } = ctrl;
       setLoading(true);
       setError(null);
       try {
         const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
-          client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }),
-          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
-          client.getRepoStatus({ repoId: path }),
+          client.getCoverageReport({ repoId, statusFilter: coverageFilter }, { signal }),
+          client.listRuns({ repoId, status: RunStatus.IN_PROGRESS }, { signal }),
+          client.getRepoStatus({ repoId }, { signal }),
         ]);
-        /* v8 ignore next 1 — race guard, covered by stale load test */
-        if (id !== loadIdRef.current) return;
+        if (signal.aborted) return;
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
         setActiveRuns(activeRunsRes.runs);
@@ -103,42 +115,35 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
         }
       } catch (e) {
-        /* v8 ignore next 1 — race guard */
-        if (id !== loadIdRef.current) return;
+        /* v8 ignore next 2 — abort guard */
+        if (signal.aborted) return;
         setError(errorMessage(e));
       } finally {
-        /* v8 ignore next 1 — race guard */
-        if (id === loadIdRef.current) setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
-    [announce, coverageFilter]
+    [repoId, announce, coverageFilter]
   );
 
+  useEffect(() => () => loadAbortRef.current?.abort(), []);
+
   useEffect(() => {
+    if (!filterMountedRef.current) {
+      filterMountedRef.current = true;
+      return;
+    }
     setCoverageFilter(ResultStatus.UNSPECIFIED);
   }, [repoId]);
 
   useEffect(() => {
-    if (repoId) {
-      void load(repoId);
-    }
-  }, [repoId, load]);
+    void load();
+  }, [load]);
 
   // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
-  useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (repoId && activeRuns.length > 0) {
-      pollRef.current = setInterval(() => void load(repoId, true), 30_000);
-    }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [repoId, activeRuns.length, load]);
+  useInterval(() => load(true), activeRuns.length > 0 ? 30_000 : null);
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
-    /* v8 ignore next 2 — component returns early rendering when repoId is empty */
-    if (!repoId) return;
     setAffectedLoading(true);
     setAffectedError(null);
     try {
@@ -184,21 +189,20 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
             const sA = statusOrder[a.latestStatus] ?? 5;
             const sB = statusOrder[b.latestStatus] ?? 5;
             if (sA !== sB) return sA - sB;
-            const priorityOrder = { high: 0, medium: 1, low: 2 } as Record<string, number>;
             return (
-              (priorityOrder[a.case?.priority ?? ""] ?? 3) -
-              (priorityOrder[b.case?.priority ?? ""] ?? 3)
+              (PRIORITY_ORDER[a.case?.priority ?? ""] ?? 3) -
+              (PRIORITY_ORDER[b.case?.priority ?? ""] ?? 3)
             );
           }),
     [affected]
   );
 
   const { statCases, statPassed, statFailed, statBlocked, statSkipped, statNever } = useMemo(() => {
-    let passed = 0;
-    let failed = 0;
-    let blocked = 0;
-    let skipped = 0;
-    let never = 0;
+    let passed = 0,
+      failed = 0,
+      blocked = 0,
+      skipped = 0,
+      never = 0;
     for (const e of entries) {
       if (e.latestStatus === ResultStatus.PASSED) passed++;
       else if (e.latestStatus === ResultStatus.FAILED) failed++;
@@ -230,7 +234,7 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
             <button
               type="button"
               onClick={() => {
-                void load(repoId);
+                void load();
               }}
               className={styles.errorRetry}
             >
@@ -250,15 +254,6 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
         </div>
       )}
 
-      {!repoId && !loading && (
-        <div className={styles.emptyCard}>
-          <p className={styles.emptyTitle}>No repository selected</p>
-          <p className={styles.emptyDesc}>
-            Go to the Repositories tab and click &ldquo;Use&rdquo; to select a repository.
-          </p>
-        </div>
-      )}
-
       {loading && (
         <div className={styles.loadingMsg} role="status">
           Loading…
@@ -269,17 +264,39 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
         <>
           <dl className={styles.statsGrid}>
             {[
-              { key: "Total Cases", label: "Total Cases", value: statCases },
-              { key: "Passed", label: "Passed", value: statPassed },
-              { key: "Failed", label: "Failed", value: statFailed },
-              { key: "Blocked", label: "Blocked cases", value: statBlocked },
-              { key: "Skipped", label: "Skipped cases", value: statSkipped },
-              { key: "Never Run", label: "Never Run", value: statNever },
+              { label: "Total Cases", value: statCases, status: null },
+              { label: "Passed", value: statPassed, status: ResultStatus.PASSED },
+              { label: "Failed", value: statFailed, status: ResultStatus.FAILED },
+              { label: "Blocked", value: statBlocked, status: ResultStatus.BLOCKED },
+              { label: "Skipped", value: statSkipped, status: ResultStatus.SKIPPED },
+              { label: "Never Run", value: statNever, status: ResultStatus.NEVER },
             ].map((stat) => (
-              <div key={stat.key} className={styles.statCard}>
+              <div
+                key={stat.label}
+                className={`${styles.statCard}${stat.status !== null && coverageFilter === stat.status ? ` ${styles.statCardActive}` : ""}`}
+              >
                 <dt className={styles.label}>{stat.label}</dt>
-                <dd className={styles.statValue} data-stat={stat.key}>
-                  {stat.value}
+                <dd className={styles.statValue} data-stat={stat.label}>
+                  {stat.status !== null ? (
+                    <button
+                      type="button"
+                      className={styles.statBtn}
+                      aria-label={`Filter by ${stat.label}`}
+                      aria-pressed={coverageFilter === stat.status}
+                      onClick={() => {
+                        const next =
+                          coverageFilter === stat.status
+                            ? ResultStatus.UNSPECIFIED
+                            : stat.status;
+                        setCoverageFilter(next);
+                        onCoverageFilterChange?.(next);
+                      }}
+                    >
+                      {stat.value}
+                    </button>
+                  ) : (
+                    stat.value
+                  )}
                 </dd>
               </div>
             ))}
@@ -301,8 +318,22 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                   const status = activeRunsStatus.get(run.id);
                   return (
                     <li key={run.id} className={styles.runRow}>
-                      <span className={styles.runId}>{run.id}</span>
-                      {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
+                      <Link
+                        href={`${basePath}/runs?run=${run.id}` as Route}
+                        className={styles.runId}
+                      >
+                        {run.id}
+                      </Link>
+                      {run.suite && (
+                        <Link
+                          href={
+                            `${basePath}/suites?expanded=${encodeURIComponent(run.suite)}` as Route
+                          }
+                          className={styles.runSuiteBadge}
+                        >
+                          {run.suite}
+                        </Link>
+                      )}
                       {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                       <time className={styles.runDate} dateTime={run.date}>
                         {run.date}
@@ -354,7 +385,9 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                 aria-label="Filter coverage by status"
                 value={coverageFilter}
                 onChange={(e) => {
-                  setCoverageFilter(Number(e.target.value));
+                  const next = Number(e.target.value);
+                  setCoverageFilter(next);
+                  onCoverageFilterChange?.(next);
                 }}
                 className={styles.filterSelect}
               >
@@ -374,7 +407,15 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                     aria-hidden="true"
                     data-status={ResultStatus[entry.latestStatus]}
                   />
-                  <span className={styles.coveragePath}>{entry.case?.path}</span>
+                  <Link
+                    href={
+                      /* v8 ignore next */
+                      `${basePath}/cases?case=${encodeURIComponent(entry.case?.path ?? "")}` as Route
+                    }
+                    className={styles.coveragePath}
+                  >
+                    {entry.case?.path}
+                  </Link>
                   <span className={styles.coverageTitle}>{entry.case?.title}</span>
                   {entry.lastRunDate && (
                     <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
@@ -394,96 +435,102 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
         </>
       )}
 
-      {!loading && !error && repoId && entries.length === 0 && (
+      {!loading && !error && entries.length === 0 && (
         <div className={styles.emptyCard}>No cases found in this repository.</div>
       )}
 
-      {repoId && (
-        <div className={styles.card} aria-busy={affectedLoading}>
-          <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
-          <form
-            aria-label="Check affected cases by git diff"
-            onSubmit={handleAffected}
-            className={styles.affectedForm}
-          >
-            <div className={styles.affectedFormRow}>
-              <input
-                type="text"
-                aria-label="Git ref to compare from (leave empty to use last run commit)"
-                value={sinceRef}
-                onChange={(e) => {
-                  setSinceRef(e.target.value);
-                }}
-                placeholder="Since ref (default: last run commit)"
-                className={styles.repoInput}
-              />
-              <button type="submit" disabled={affectedLoading} className={styles.btn}>
-                {affectedLoading ? "Checking…" : "Check Diff"}
-              </button>
-            </div>
-            <textarea
-              aria-label="Paste git diff --name-only output (overrides ref above)"
-              value={changedFilesText}
+      <div className={styles.card} aria-busy={affectedLoading}>
+        <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
+        <form
+          aria-label="Check affected cases by git diff"
+          onSubmit={handleAffected}
+          className={styles.affectedForm}
+        >
+          <div className={styles.affectedFormRow}>
+            <input
+              type="text"
+              aria-label="Git ref to compare from (leave empty to use last run commit)"
+              value={sinceRef}
               onChange={(e) => {
-                setChangedFilesText(e.target.value);
+                setSinceRef(e.target.value);
               }}
-              rows={3}
-              placeholder={"Or paste git diff --name-only output here…"}
-              className={styles.changedFilesInput}
+              placeholder="Since ref (default: last run commit)"
+              className={styles.repoInput}
             />
-          </form>
-          {affectedError && (
-            <div className={styles.inlineError} role="alert">
-              <span>{affectedError}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setAffectedError(null);
-                }}
-                className={styles.inlineErrorDismiss}
-                aria-label="Dismiss"
-              >
-                ×
-              </button>
-            </div>
-          )}
-          {sortedAffected !== null &&
-            (sortedAffected.length === 0 ? (
-              <p className={styles.noAffected}>No cases affected by this diff.</p>
-            ) : (
-              <ul className={styles.affectedList} role="list">
-                {sortedAffected.map((ac, idx) => (
-                  <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
-                    {ac.case?.priority && (
-                      <>
-                        <span
-                          className={styles.priorityDot}
-                          data-priority={ac.case.priority}
-                          aria-hidden="true"
-                        />
-                        <span className="sr-only">{ac.case.priority} priority</span>
-                      </>
-                    )}
-                    <span
-                      className={styles.statusDot}
-                      aria-hidden="true"
-                      data-status={ResultStatus[ac.latestStatus]}
-                    />
-                    <span className={styles.affectedPath}>{ac.case?.path}</span>
-                    <span className={styles.affectedTitle}>{ac.case?.title}</span>
-                    <span
-                      className={styles.coverageStatus}
-                      data-status={ResultStatus[ac.latestStatus]}
-                    >
-                      {statusLabel(ac.latestStatus)}
-                    </span>
-                    <span className={styles.affectedReason}>{ac.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            ))}
-        </div>
-      )}
+            <button type="submit" disabled={affectedLoading} className={styles.btn}>
+              {affectedLoading ? "Checking…" : "Check Diff"}
+            </button>
+          </div>
+          <textarea
+            aria-label="Paste git diff --name-only output (overrides ref above)"
+            value={changedFilesText}
+            onChange={(e) => {
+              setChangedFilesText(e.target.value);
+            }}
+            rows={3}
+            placeholder={"Or paste git diff --name-only output here…"}
+            className={styles.changedFilesInput}
+          />
+        </form>
+        {affectedError && (
+          <div className={styles.inlineError} role="alert">
+            <span>{affectedError}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setAffectedError(null);
+              }}
+              className={styles.inlineErrorDismiss}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {sortedAffected !== null &&
+          (sortedAffected.length === 0 ? (
+            <p className={styles.noAffected}>No cases affected by this diff.</p>
+          ) : (
+            <ul className={styles.affectedList} role="list">
+              {sortedAffected.map((ac, idx) => (
+                <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
+                  {ac.case?.priority && (
+                    <>
+                      <span
+                        className={styles.priorityDot}
+                        data-priority={ac.case.priority}
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">{ac.case.priority} priority</span>
+                    </>
+                  )}
+                  <span
+                    className={styles.statusDot}
+                    aria-hidden="true"
+                    data-status={ResultStatus[ac.latestStatus]}
+                  />
+                  <Link
+                    href={
+                      /* v8 ignore next */
+                      `${basePath}/cases?case=${encodeURIComponent(ac.case?.path ?? "")}` as Route
+                    }
+                    className={styles.affectedPath}
+                  >
+                    {ac.case?.path}
+                  </Link>
+                  <span className={styles.affectedTitle}>{ac.case?.title}</span>
+                  <span
+                    className={styles.coverageStatus}
+                    data-status={ResultStatus[ac.latestStatus]}
+                  >
+                    {statusLabel(ac.latestStatus)}
+                  </span>
+                  <span className={styles.affectedReason}>{ac.reason}</span>
+                </li>
+              ))}
+            </ul>
+          ))}
+      </div>
     </div>
   );
 }
