@@ -74,7 +74,8 @@
     "upserts",
     "notvalidhex",
     "esbuild",
-    "unrs"
+    "unrs",
+    "itest"
   ],
   "flagWords": []
 }
