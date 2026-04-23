@@ -20,6 +20,8 @@ interface Props {
   onStatusFilterChange?: ((s: RunStatus) => void) | undefined;
   initialSelectedRunId?: string | undefined;
   onSelectedRunIdChange?: ((id: string | null) => void) | undefined;
+  initialResultStatusFilter?: ResultStatus | null | undefined;
+  onResultStatusFilterChange?: ((s: ResultStatus | null) => void) | undefined;
 }
 
 function statusLabel(s: ResultStatus): string {
@@ -58,6 +60,8 @@ export default function RunsTab({
   onStatusFilterChange,
   initialSelectedRunId,
   onSelectedRunIdChange,
+  initialResultStatusFilter,
+  onResultStatusFilterChange,
 }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,7 +82,7 @@ export default function RunsTab({
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(initialSelectedRunId ?? null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [pendingCases, setPendingCases] = useState<Case[]>([]);
   const [totalInScope, setTotalInScope] = useState(0);
   const [loadingPending, setLoadingPending] = useState(false);
@@ -125,6 +129,13 @@ export default function RunsTab({
     if (run) void selectRun(run.id, run.status);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runs, initialSelectedRunId]);
+
+  const consumedResultFilterRef = useRef(false);
+  useEffect(() => {
+    if (initialResultStatusFilter == null || consumedResultFilterRef.current || recordedResults.length === 0) return;
+    consumedResultFilterRef.current = true;
+    setResultStatusFilter(initialResultStatusFilter);
+  }, [recordedResults, initialResultStatusFilter]);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
   const selectedRun = runs.find((r) => r.id === selectedRunId);
@@ -704,9 +715,9 @@ export default function RunsTab({
                               key={s.label}
                               type="button"
                               onClick={() => {
-                                setResultStatusFilter((rsf) =>
-                                  rsf === s.status ? null : s.status
-                                );
+                                const next = resultStatusFilter === s.status ? null : s.status;
+                                setResultStatusFilter(next);
+                                onResultStatusFilterChange?.(next);
                               }}
                               aria-pressed={resultStatusFilter === s.status}
                               className={`${styles.resultFilterBtn}${resultStatusFilter === s.status ? ` ${styles.resultFilterBtnActive}` : ""}`}
@@ -720,6 +731,7 @@ export default function RunsTab({
                             type="button"
                             onClick={() => {
                               setResultStatusFilter(null);
+                              onResultStatusFilterChange?.(null);
                             }}
                             className={styles.showAllBtn}
                           >

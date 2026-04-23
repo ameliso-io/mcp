@@ -1521,9 +1521,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
     await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
     await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" })
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" }));
     await waitFor(() => expect(onSelectedRunIdChange).toHaveBeenLastCalledWith(null));
   });
 
@@ -1545,6 +1543,112 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
     expect(onSelectedRunIdChange).toHaveBeenCalledWith(mockRun.id);
+  });
+
+  it("restores resultStatusFilter from initialResultStatusFilter after run data loads", async () => {
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
+    const mockResult = makeCaseResult();
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [mockResult] },
+    } as never);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        initialSelectedRunId={completedRun.id}
+        initialResultStatusFilter={ResultStatus.PASSED}
+      />
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /1 Passed/ })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+    );
+    expect(screen.getByText("Show all")).toBeInTheDocument();
+  });
+
+  it("calls onResultStatusFilterChange when result filter button clicked", async () => {
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
+    const mockResult = makeCaseResult();
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [mockResult] },
+    } as never);
+    const onResultStatusFilterChange = vi.fn();
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        onResultStatusFilterChange={onResultStatusFilterChange}
+      />
+    );
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("1 Passed"));
+    await userEvent.click(screen.getByText("1 Passed"));
+    expect(onResultStatusFilterChange).toHaveBeenCalledWith(ResultStatus.PASSED);
+  });
+
+  it("calls onResultStatusFilterChange(null) when Show all clicked", async () => {
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
+    const mockResult = makeCaseResult();
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [mockResult] },
+    } as never);
+    const onResultStatusFilterChange = vi.fn();
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        onResultStatusFilterChange={onResultStatusFilterChange}
+      />
+    );
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("1 Passed"));
+    await userEvent.click(screen.getByText("1 Passed"));
+    await waitFor(() => screen.getByText("Show all"));
+    await userEvent.click(screen.getByText("Show all"));
+    expect(onResultStatusFilterChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("calls onResultStatusFilterChange(null) when result filter toggled off by clicking same button", async () => {
+    const completedRun = makeRunMeta({
+      tester: "alice",
+      environment: "staging",
+      status: RunStatus.COMPLETED,
+    });
+    const mockResult = makeCaseResult();
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [completedRun] } as never);
+    vi.mocked(client.getRun).mockResolvedValue({
+      run: { meta: completedRun, results: [mockResult] },
+    } as never);
+    const onResultStatusFilterChange = vi.fn();
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        onResultStatusFilterChange={onResultStatusFilterChange}
+      />
+    );
+    await waitFor(() => screen.getByText("2026-01-01-smoke"));
+    await userEvent.click(screen.getByText("2026-01-01-smoke"));
+    await waitFor(() => screen.getByText("1 Passed"));
+    await userEvent.click(screen.getByText("1 Passed"));
+    await waitFor(() => screen.getByText("Show all"));
+    await userEvent.click(screen.getByText("1 Passed"));
+    expect(onResultStatusFilterChange).toHaveBeenLastCalledWith(null);
   });
 
   it("calls onSelectedRunIdChange with null when run is deselected", async () => {
