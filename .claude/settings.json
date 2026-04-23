@@ -40,7 +40,10 @@
       "Bash(make dev *)",
       "mcp__centy__centy_v1_CentyDaemon_UpdateItem",
       "Bash(npx eslint *)",
-      "mcp__centy__centy_v1_CentyDaemon_SoftDeleteItem"
+      "mcp__centy__centy_v1_CentyDaemon_SoftDeleteItem",
+      "Bash(pnpm test *)",
+      "Bash(pnpm vitest *)",
+      "Bash(wait)"
     ]
   }
 }
