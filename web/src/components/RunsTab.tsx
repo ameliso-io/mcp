@@ -98,6 +98,9 @@ export default function RunsTab({
   const [renamingRunId, setRenamingRunId] = useState<string | null>(null);
   const [renameNewSlug, setRenameNewSlug] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [runSearch, setRunSearch] = useState("");
+  const [filterAnnouncement, announceFilter] = useAnnounce();
+  const prevRunFilterCountRef = useRef<number | null>(null);
   const [actionAnnouncement, announce] = useAnnounce();
 
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -362,6 +365,27 @@ export default function RunsTab({
     }
   }
 
+  const rq = runSearch.trim().toLowerCase();
+  const filteredRuns = rq
+    ? runs.filter(
+        (r) =>
+          r.id === selectedRunId ||
+          r.id.toLowerCase().includes(rq) ||
+          r.tester.toLowerCase().includes(rq) ||
+          r.suite.toLowerCase().includes(rq) ||
+          r.environment.toLowerCase().includes(rq)
+      )
+    : runs;
+
+  useEffect(() => {
+    if (loading || !rq) return;
+    const count = filteredRuns.length;
+    if (prevRunFilterCountRef.current !== null && prevRunFilterCountRef.current !== count) {
+      announceFilter(count === 1 ? "1 run found" : `${count} runs found`);
+    }
+    prevRunFilterCountRef.current = count;
+  }, [filteredRuns.length, loading, rq, announceFilter]);
+
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
@@ -370,6 +394,9 @@ export default function RunsTab({
     <div>
       <div role="status" aria-live="polite" className="sr-only">
         {actionAnnouncement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
       </div>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -531,6 +558,24 @@ export default function RunsTab({
         </div>
       )}
 
+      {runs.length > 0 && (
+        <div className={styles.searchWrapper}>
+          <input
+            type="search"
+            aria-label="Search runs"
+            placeholder="Search runs…"
+            value={runSearch}
+            onChange={(e) => {
+              setRunSearch(e.target.value);
+            }}
+            className={styles.searchInput}
+          />
+          <span className={styles.searchIcon} aria-hidden="true">
+            ⌕
+          </span>
+        </div>
+      )}
+
       {loading && (
         <div className={styles.loadingMsg} role="status">
           Loading…
@@ -541,8 +586,12 @@ export default function RunsTab({
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
+      {!loading && rq && filteredRuns.length === 0 && runs.length > 0 && (
+        <div className={styles.emptyCard}>No runs match &ldquo;{runSearch}&rdquo;.</div>
+      )}
+
       <ul className={styles.list} aria-busy={loading} role="list">
-        {runs.map((run) => (
+        {filteredRuns.map((run) => (
           <li key={run.id}>
             <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>

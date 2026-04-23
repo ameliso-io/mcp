@@ -1555,4 +1555,116 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.getByText("rename failed")).toBeInTheDocument());
   });
+
+  it("shows search input when runs exist", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+  });
+
+  it("does not show search input when no runs", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByText("No runs found."));
+    expect(screen.queryByRole("searchbox", { name: "Search runs" })).not.toBeInTheDocument();
+  });
+
+  it("filters runs by tester", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-smoke", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "alice");
+    expect(screen.getByText("2026-01-01-smoke")).toBeInTheDocument();
+    expect(screen.queryByText("2026-01-02-smoke")).not.toBeInTheDocument();
+  });
+
+  it("filters runs by run ID", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-regression", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "regression");
+    expect(screen.queryByText("2026-01-01-smoke")).not.toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-regression")).toBeInTheDocument();
+  });
+
+  it("filters runs by suite", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", suite: "smoke", tester: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", suite: "regression", tester: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "regress");
+    expect(screen.queryByText("2026-01-01-smoke")).not.toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-reg")).toBeInTheDocument();
+  });
+
+  it("shows no-match empty state when filter matches nothing", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "xyz-not-found");
+    expect(screen.getByText(/No runs match/)).toBeInTheDocument();
+  });
+
+  it("keeps selected run visible even when it does not match filter", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 0 } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.click(screen.getByRole("button", { name: "In Progress run 2026-01-01-smoke" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "bob");
+    expect(screen.getByText("2026-01-01-smoke")).toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-reg")).toBeInTheDocument();
+  });
+
+  it("whitespace-only search shows all runs", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    await waitFor(() => screen.getByRole("searchbox", { name: "Search runs" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search runs" }), "   ");
+    expect(screen.getByText("2026-01-01-smoke")).toBeInTheDocument();
+    expect(screen.getByText("2026-01-02-reg")).toBeInTheDocument();
+  });
+
+  it("announces singular run found", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    const searchBox = await screen.findByRole("searchbox", { name: "Search runs" });
+    // "2026-01-0" matches both runs → sets prevCount=2; "2026-01-01" matches only run1 → announces "1 run found"
+    await userEvent.type(searchBox, "2026-01-01");
+    await waitFor(() => {
+      const live = document.querySelectorAll('[role="status"]');
+      expect(Array.from(live).some((el) => el.textContent === "1 run found")).toBe(true);
+    });
+  });
+
+  it("announces plural runs found when count changes", async () => {
+    const run1 = makeRunMeta({ id: "2026-01-01-smoke", tester: "alice", suite: "" });
+    const run2 = makeRunMeta({ id: "2026-01-02-reg", tester: "bob", suite: "" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [run1, run2] } as never);
+    render(<RunsTab repoId="owner/repo" />);
+    const searchBox = await screen.findByRole("searchbox", { name: "Search runs" });
+    // narrow to 1 first (sets prevCount=1 after going through 2→1), then widen to 2
+    await userEvent.type(searchBox, "2026-01-01");
+    await waitFor(() => {
+      const live = document.querySelectorAll('[role="status"]');
+      expect(Array.from(live).some((el) => el.textContent === "1 run found")).toBe(true);
+    });
+    await userEvent.clear(searchBox);
+    await userEvent.type(searchBox, "0");
+    await waitFor(() => {
+      const live = document.querySelectorAll('[role="status"]');
+      expect(Array.from(live).some((el) => el.textContent === "2 runs found")).toBe(true);
+    });
+  });
 });
