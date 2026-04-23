@@ -43,7 +43,8 @@
       "mcp__centy__centy_v1_CentyDaemon_SoftDeleteItem",
       "Bash(pnpm test *)",
       "Bash(pnpm vitest *)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "mcp__centy__centy_v1_CentyDaemon_GetItem"
     ]
   }
 }

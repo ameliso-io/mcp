@@ -50,11 +50,11 @@ beforeEach(() => {
     })
   );
   vi.mocked(client.createSuite).mockResolvedValue(
-    makeCreateSuiteResponse({ suite: mockSuite, filePath: "suites/smoke.yaml" })
+    makeCreateSuiteResponse({ suite: mockSuite, filePath: ".ameliso/suites/smoke.yaml" })
   );
   vi.mocked(client.updateSuite).mockResolvedValue(makeUpdateSuiteResponse({ suite: mockSuite }));
   vi.mocked(client.deleteSuite).mockResolvedValue(
-    makeDeleteSuiteResponse({ filePath: "suites/smoke.yaml" })
+    makeDeleteSuiteResponse({ filePath: ".ameliso/suites/smoke.yaml" })
   );
 });
 
@@ -432,7 +432,7 @@ describe("SuitesTab", () => {
     await userEvent.type(inputs[1]!, "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
-    resolve(makeCreateSuiteResponse({ suite: mockSuite, filePath: "suites/regression.yaml" }));
+    resolve(makeCreateSuiteResponse({ suite: mockSuite, filePath: ".ameliso/suites/regression.yaml" }));
   });
 
   it('shows "No suites found." when suites list is empty', async () => {

@@ -81,7 +81,7 @@ describe("CasesTab", () => {
 
   it("calls createCase on form submit", async () => {
     vi.mocked(client.createCase).mockResolvedValue(
-      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/login.md" })
+      makeCreateCaseResponse({ case: mockCase, filePath: ".ameliso/cases/auth/login.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
@@ -101,7 +101,7 @@ describe("CasesTab", () => {
   it("adds new case to list from createCase response without re-fetching when no filters active", async () => {
     const newCase = makeCase({ path: "auth/signup", title: "User Signup", priority: "low" });
     vi.mocked(client.createCase).mockResolvedValue(
-      makeCreateCaseResponse({ case: newCase, filePath: "cases/auth/signup.md" })
+      makeCreateCaseResponse({ case: newCase, filePath: ".ameliso/cases/auth/signup.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -133,7 +133,7 @@ describe("CasesTab", () => {
 
   it("calls deleteCase when delete confirmed", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue(
-      makeDeleteCaseResponse({ filePath: "cases/auth/login.md" })
+      makeDeleteCaseResponse({ filePath: ".ameliso/cases/auth/login.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -148,7 +148,7 @@ describe("CasesTab", () => {
 
   it("removes case from list after deleteCase without re-fetching", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue(
-      makeDeleteCaseResponse({ filePath: "cases/auth/login.md" })
+      makeDeleteCaseResponse({ filePath: ".ameliso/cases/auth/login.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -361,7 +361,7 @@ describe("CasesTab", () => {
 
   it("collapses expanded case when it is deleted", async () => {
     vi.mocked(client.deleteCase).mockResolvedValue(
-      makeDeleteCaseResponse({ filePath: "cases/auth/login.md" })
+      makeDeleteCaseResponse({ filePath: ".ameliso/cases/auth/login.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("User Login"));
@@ -450,7 +450,7 @@ describe("CasesTab", () => {
 
   it("calls createCase with parsed tags when tags field is filled", async () => {
     vi.mocked(client.createCase).mockResolvedValue(
-      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+      makeCreateCaseResponse({ case: mockCase, filePath: ".ameliso/cases/auth/new.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
@@ -568,7 +568,7 @@ describe("CasesTab", () => {
 
   it("fills description and body textarea in create form", async () => {
     vi.mocked(client.createCase).mockResolvedValue(
-      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+      makeCreateCaseResponse({ case: mockCase, filePath: ".ameliso/cases/auth/new.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
@@ -592,7 +592,7 @@ describe("CasesTab", () => {
 
   it("changes priority select in create form", async () => {
     vi.mocked(client.createCase).mockResolvedValue(
-      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+      makeCreateCaseResponse({ case: mockCase, filePath: ".ameliso/cases/auth/new.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
@@ -750,7 +750,7 @@ describe("CasesTab", () => {
 
   it("resets priority to Medium after creating a case with High priority", async () => {
     vi.mocked(client.createCase).mockResolvedValue(
-      makeCreateCaseResponse({ case: mockCase, filePath: "cases/auth/new.md" })
+      makeCreateCaseResponse({ case: mockCase, filePath: ".ameliso/cases/auth/new.md" })
     );
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));
@@ -838,7 +838,7 @@ describe("CasesTab", () => {
     await userEvent.type(inputs[1]!, "New Title");
     await userEvent.click(screen.getByText("Create"));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
-    resolve!({ case: mockCase, filePath: "cases/auth/new.md" });
+    resolve!({ case: mockCase, filePath: ".ameliso/cases/auth/new.md" });
     await waitFor(() => expect(screen.queryByText("Creating…")).not.toBeInTheDocument());
   });
 
@@ -939,7 +939,7 @@ describe("CasesTab", () => {
   it("filters whitespace-only and empty entries from tags on create", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,
-      filePath: "cases/auth/new.md",
+      filePath: ".ameliso/cases/auth/new.md",
     } as never);
     render(<CasesTab repoId="owner/repo" />);
     await userEvent.click(screen.getByText("+ New Case"));

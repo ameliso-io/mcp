@@ -51,7 +51,7 @@ struct Repo {
 
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn is_case_file(path: &str) -> bool {
-    path.starts_with("cases/") && path.ends_with(".md")
+    path.starts_with(".ameliso/cases/") && path.ends_with(".md")
 }
 
 fn collect_case_changes(
@@ -129,7 +129,7 @@ pub async fn github_push(
 
     for file_path in &remove {
         let case_path = file_path
-            .strip_prefix("cases/")
+            .strip_prefix(".ameliso/cases/")
             .and_then(|p| p.strip_suffix(".md"))
             .expect("remove set only contains is_case_file paths");
         if let Err(e) = crate::repo::delete_case_if_exists(&state.pool, &repo_id, case_path).await {

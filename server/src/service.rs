@@ -479,7 +479,7 @@ impl AmelisoService for AmelisoServer {
                 }
             });
         }
-        let file_path = format!("cases/{}.md", req.case_path);
+        let file_path = format!(".ameliso/cases/{}.md", req.case_path);
         Ok(Response::new(pb::CreateCaseResponse {
             case: Some(case_to_pb(&case)),
             file_path,
@@ -546,7 +546,7 @@ impl AmelisoService for AmelisoServer {
                     }
                 });
             }
-            file_paths.push(format!("cases/{}.md", entry.case_path));
+            file_paths.push(format!(".ameliso/cases/{}.md", entry.case_path));
             new_case_paths.push(entry.case_path.clone());
             created.push(case_to_pb(&case));
         }
@@ -765,7 +765,7 @@ impl AmelisoService for AmelisoServer {
             });
         }
         Ok(Response::new(pb::DeleteCaseResponse {
-            file_path: format!("cases/{}.md", req.case_path),
+            file_path: format!(".ameliso/cases/{}.md", req.case_path),
         }))
     }
 
@@ -804,7 +804,7 @@ impl AmelisoService for AmelisoServer {
                     }
                 });
             }
-            file_paths.push(format!("cases/{path}.md"));
+            file_paths.push(format!(".ameliso/cases/{path}.md"));
         }
         Ok(Response::new(pb::BulkDeleteCasesResponse { file_paths }))
     }
@@ -891,7 +891,7 @@ impl AmelisoService for AmelisoServer {
         }
         Ok(Response::new(pb::CreateSuiteResponse {
             suite: Some(suite_to_pb(&suite)),
-            file_path: format!("suites/{}.yaml", req.slug),
+            file_path: format!(".ameliso/suites/{}.yaml", req.slug),
         }))
     }
 
@@ -992,7 +992,7 @@ impl AmelisoService for AmelisoServer {
             });
         }
         Ok(Response::new(pb::DeleteSuiteResponse {
-            file_path: format!("suites/{}.yaml", req.slug),
+            file_path: format!(".ameliso/suites/{}.yaml", req.slug),
         }))
     }
 
@@ -1205,7 +1205,7 @@ impl AmelisoService for AmelisoServer {
                 }
             });
         }
-        let dir_path = format!("runs/{}", meta.run_id);
+        let dir_path = format!(".ameliso/runs/{}", meta.run_id);
         let ((pending_cases, _), statuses, all_cases) = tokio::join!(
             async {
                 repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
@@ -1488,7 +1488,7 @@ impl AmelisoService for AmelisoServer {
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
-        let dir_path = format!("runs/{}", req.run_id);
+        let dir_path = format!(".ameliso/runs/{}", req.run_id);
         let result_paths: Vec<String> = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map(|r| r.results.into_iter().map(|res| res.case_path).collect())
@@ -1613,7 +1613,7 @@ impl AmelisoService for AmelisoServer {
                 }
             });
         }
-        let new_dir_path = format!("runs/{}", run.run_id);
+        let new_dir_path = format!(".ameliso/runs/{}", run.run_id);
         let pending = if has_add_cases {
             let ((pending_cases, _), statuses) = tokio::join!(
                 async {

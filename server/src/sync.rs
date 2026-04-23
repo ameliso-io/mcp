@@ -67,9 +67,9 @@ fn default_priority() -> String {
 
 pub fn parse_case_markdown(file_path: &str, content: &str) -> Result<ParsedCase> {
     let case_path = file_path
-        .strip_prefix("cases/")
+        .strip_prefix(".ameliso/cases/")
         .and_then(|p| p.strip_suffix(".md"))
-        .with_context(|| format!("file path must start with cases/ and end with .md: {file_path}"))?
+        .with_context(|| format!("file path must start with .ameliso/cases/ and end with .md: {file_path}"))?
         .to_owned();
 
     let text = content.trim_start();
@@ -121,7 +121,7 @@ async fn get_token_and_parts(pool: &PgPool, repo_id: &str) -> Result<(String, St
 
 pub async fn push_case(pool: &PgPool, repo_id: &str, case: &LoadedCase) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let file_path = format!("cases/{}.md", case.case_path);
+    let file_path = format!(".ameliso/cases/{}.md", case.case_path);
     let markdown = case_to_markdown(case);
     let content_b64 = BASE64.encode(markdown.as_bytes());
     let existing = crate::github::get_file(&owner, &repo_name, &file_path, &token).await?;
@@ -159,7 +159,7 @@ pub async fn push_case(pool: &PgPool, repo_id: &str, case: &LoadedCase) -> Resul
 
 pub async fn delete_case_file(pool: &PgPool, repo_id: &str, case_path: &str) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let file_path = format!("cases/{case_path}.md");
+    let file_path = format!(".ameliso/cases/{case_path}.md");
     let existing = crate::github::get_file(&owner, &repo_name, &file_path, &token).await?;
     let Some((_, sha)) = existing else {
         return Ok(());
@@ -277,7 +277,7 @@ async fn delete_file_if_exists(
 
 pub async fn push_suite(pool: &PgPool, repo_id: &str, suite: &SuiteRow) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let file_path = format!("suites/{}.yaml", suite.slug);
+    let file_path = format!(".ameliso/suites/{}.yaml", suite.slug);
     let content = suite_to_yaml(suite);
     let content_b64 = BASE64.encode(content.as_bytes());
     let message = format!("chore(suites): upsert {}", suite.slug);
@@ -294,14 +294,14 @@ pub async fn push_suite(pool: &PgPool, repo_id: &str, suite: &SuiteRow) -> Resul
 
 pub async fn delete_suite_file(pool: &PgPool, repo_id: &str, slug: &str) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let file_path = format!("suites/{slug}.yaml");
+    let file_path = format!(".ameliso/suites/{slug}.yaml");
     let message = format!("chore(suites): delete {slug}");
     delete_file_if_exists(&owner, &repo_name, &file_path, &message, &token).await
 }
 
 pub async fn push_run_meta(pool: &PgPool, repo_id: &str, run: &RunRow) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let file_path = format!("runs/{}/run.yaml", run.run_id);
+    let file_path = format!(".ameliso/runs/{}/run.yaml", run.run_id);
     let content = run_to_yaml(run);
     let content_b64 = BASE64.encode(content.as_bytes());
     let message = format!("chore(runs): upsert {}", run.run_id);
@@ -323,7 +323,7 @@ pub async fn push_result(
     result: &LoadedResult,
 ) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let file_path = format!("runs/{}/results/{}.md", run_id, result.case_path);
+    let file_path = format!(".ameliso/runs/{}/results/{}.md", run_id, result.case_path);
     let content = result_to_markdown(result);
     let content_b64 = BASE64.encode(content.as_bytes());
     let message = format!("chore(runs): record result {}/{}", run_id, result.case_path);
@@ -345,11 +345,11 @@ pub async fn delete_run_files(
     result_case_paths: &[String],
 ) -> Result<()> {
     let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
-    let run_yaml = format!("runs/{run_id}/run.yaml");
+    let run_yaml = format!(".ameliso/runs/{run_id}/run.yaml");
     let message = format!("chore(runs): delete {run_id}");
     delete_file_if_exists(&owner, &repo_name, &run_yaml, &message, &token).await?;
     for case_path in result_case_paths {
-        let result_file = format!("runs/{run_id}/results/{case_path}.md");
+        let result_file = format!(".ameliso/runs/{run_id}/results/{case_path}.md");
         delete_file_if_exists(&owner, &repo_name, &result_file, &message, &token).await?;
     }
     Ok(())

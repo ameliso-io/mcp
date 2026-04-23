@@ -265,7 +265,7 @@ export declare type BulkCreateCasesResponse = Message<"ameliso.v1.BulkCreateCase
   cases: Case[];
 
   /**
-   * File paths for the created cases (e.g. "cases/auth/login.md").
+   * File paths for the created cases (e.g. ".ameliso/cases/auth/login.md").
    * Agents can pass these directly to git add without constructing paths manually.
    *
    * @generated from field: repeated string file_paths = 2;

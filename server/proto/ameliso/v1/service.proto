@@ -147,7 +147,7 @@ message BulkCreateCasesRequest {
 
 message BulkCreateCasesResponse {
   repeated Case cases = 1;
-  // File paths for the created cases (e.g. "cases/auth/login.md").
+  // File paths for the created cases (e.g. ".ameliso/cases/auth/login.md").
   // Agents can pass these directly to git add without constructing paths manually.
   repeated string file_paths = 2;
   // Updated pending entries for the run, when run_id was set in the request.

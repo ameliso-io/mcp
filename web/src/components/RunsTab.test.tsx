@@ -57,7 +57,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse());
   vi.mocked(client.createRun).mockResolvedValue(
-    makeCreateRunResponse({ run: mockRun, dirPath: "runs/2026-01-01-smoke" })
+    makeCreateRunResponse({ run: mockRun, dirPath: ".ameliso/runs/2026-01-01-smoke" })
   );
   vi.mocked(client.getPendingCases).mockResolvedValue(
     makeGetPendingCasesResponse({
@@ -74,7 +74,7 @@ beforeEach(() => {
     makeFinalizeRunResponse({ run: makeRunMeta({ ...mockRun, status: RunStatus.COMPLETED }) })
   );
   vi.mocked(client.deleteRun).mockResolvedValue(
-    makeDeleteRunResponse({ dirPath: "runs/2026-01-01-smoke" })
+    makeDeleteRunResponse({ dirPath: ".ameliso/runs/2026-01-01-smoke" })
   );
 });
 
@@ -1374,7 +1374,7 @@ describe("RunsTab", () => {
     await userEvent.type(screen.getAllByRole("textbox")[0]!, "2026-01-15-smoke");
     await userEvent.click(screen.getByRole("button", { name: "Create Run" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
-    resolve!({ run: mockRun, dirPath: "runs/2026-01-01-smoke" });
+    resolve!({ run: mockRun, dirPath: ".ameliso/runs/2026-01-01-smoke" });
     await waitFor(() => expect(screen.queryByText("Creating…")).not.toBeInTheDocument());
   });
 
@@ -1702,7 +1702,7 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.updateRun).mockResolvedValue({
       run: { ...mockRun, id: "2026-01-01-smoke-v2" },
-      newDirPath: "runs/2026-01-01-smoke-v2",
+      newDirPath: ".ameliso/runs/2026-01-01-smoke-v2",
     } as never);
     render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
@@ -1747,7 +1747,7 @@ describe("RunsTab", () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.updateRun).mockResolvedValue({
       run: renamedRun,
-      newDirPath: "runs/2026-01-01-smoke-v2",
+      newDirPath: ".ameliso/runs/2026-01-01-smoke-v2",
     } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByRole("button", { name: "Rename 2026-01-01-smoke" }));
