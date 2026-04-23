@@ -312,7 +312,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         </div>
       )}
 
-      {loading && (
+      {loading && suites.length === 0 && (
         <div className={styles.loadingMsg} role="status">
           Loading…
         </div>
@@ -322,7 +322,11 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
-      <ul className={styles.list} aria-busy={loading} role="list">
+      <ul
+        className={loading && suites.length > 0 ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading}
+        role="list"
+      >
         {suites.map((suite) => (
           <li key={suite.slug}>
             {editState?.slug === suite.slug ? (
