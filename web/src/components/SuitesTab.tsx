@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import styles from "./SuitesTab.module.css";
 import { client } from "@/client";
@@ -18,6 +18,8 @@ interface Props {
 
 export default function SuitesTab({ repoId, basePath, initialExpanded, onExpandedChange }: Props) {
   const [suites, setSuites] = useState<Suite[]>([]);
+  const deferredSuites = useDeferredValue(suites);
+  const isSuitesStale = suites !== deferredSuites;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -324,12 +326,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
 
       <ul
         className={
-          loading && suites.length > 0 ? `${styles.list} ${styles.listStale}` : styles.list
+          (loading && suites.length > 0) || isSuitesStale
+            ? `${styles.list} ${styles.listStale}`
+            : styles.list
         }
-        aria-busy={loading}
+        aria-busy={loading || isSuitesStale}
         role="list"
       >
-        {suites.map((suite) => (
+        {deferredSuites.map((suite) => (
           <li key={suite.slug}>
             {editState?.slug === suite.slug ? (
               <div className={styles.card}>
