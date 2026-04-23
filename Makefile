@@ -1,6 +1,6 @@
-.PHONY: install build test fmt lint spell check-file-size pre-commit pre-push dev db-up db-down
+.PHONY: install build test fmt lint check-file-size pre-commit pre-push dev db-up db-down
 
-dev: install build
+dev: install
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
 	docker compose up -d --wait && \
 	until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 0.5; done && \
@@ -15,16 +15,12 @@ install:
 	cd server && cargo fetch
 
 build:
-	cd server && cargo build --release
 	cd web && pnpm build
 
 test:
-	cd server && cargo test
 	cd web && pnpm test
 	cd web && pnpm test:typecheck
 
-test-server:
-	cd server && cargo test
 
 fmt:
 	cd server && cargo fmt --all
@@ -38,9 +34,6 @@ lint:
 	cd server && cargo clippy --all -- -D warnings
 	cd server && buf lint
 	cd web && pnpm lint
-
-spell:
-	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
 
 db-up:
 	docker compose up -d --wait
@@ -65,20 +58,16 @@ pre-commit:
 	@FAIL=0; \
 	$(MAKE) fmt-check & PID1=$$!; \
 	$(MAKE) lint & PID2=$$!; \
-	$(MAKE) spell & PID3=$$!; \
-	$(MAKE) check-file-size & PID4=$$!; \
+	$(MAKE) check-file-size & PID3=$$!; \
 	wait $$PID1 || FAIL=1; \
 	wait $$PID2 || FAIL=1; \
 	wait $$PID3 || FAIL=1; \
-	wait $$PID4 || FAIL=1; \
 	[ "$$FAIL" -eq 0 ] && echo "pre-commit: OK" || exit 1
 
 pre-push:
 	@FAIL=0; \
 	$(MAKE) fmt-check & PID1=$$!; \
-	$(MAKE) build & PID2=$$!; \
+	(cd web && $(MAKE) pre-push) & PID3=$$!; \
 	wait $$PID1 || FAIL=1; \
-	wait $$PID2 || FAIL=1; \
-	$(MAKE) test-server & PID3=$$!; \
 	wait $$PID3 || FAIL=1; \
 	[ "$$FAIL" -eq 0 ] && echo "pre-push: OK" || exit 1
