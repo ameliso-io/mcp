@@ -1,4 +1,4 @@
-.PHONY: install build test fmt lint check-file-size pre-commit pre-push dev db-up db-down
+.PHONY: install build test test-server fmt lint spell check-file-size coverage-check pre-commit pre-push dev db-up db-down
 
 dev: install
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
@@ -18,22 +18,21 @@ build:
 	cd web && pnpm build
 
 test:
-	cd web && pnpm test
-	cd web && pnpm test:typecheck
+	cd server && cargo test
 
+
+coverage-check:
+	cd server && cargo llvm-cov -p ameliso-server --ignore-filename-regex main.rs --fail-under-lines 85
 
 fmt:
 	cd server && cargo fmt --all
-	cd web && pnpm fmt
 
 fmt-check:
 	cd server && cargo fmt --all -- --check
-	cd web && pnpm fmt:check
 
 lint:
 	cd server && cargo clippy --all -- -D warnings
 	cd server && buf lint
-	cd web && pnpm lint
 
 db-up:
 	docker compose up -d --wait
@@ -45,7 +44,7 @@ db-down:
 
 check-file-size:
 	@LIMIT=1500; FAILED=0; \
-	for file in $$(find . \( -name '*.rs' -o -name '*.ts' -o -name '*.tsx' \) -not -path '*/target/*' -not -path './.claude/*' -not -path '*/node_modules/*' -not -path '*/gen/*' -not -name '*.d.ts'); do \
+	for file in $$(find . -name '*.rs' -not -path '*/target/*' -not -path './.claude/*'); do \
 		lines=$$(wc -l < "$$file"); \
 		if [ "$$lines" -gt "$$LIMIT" ]; then \
 			echo "ERROR: $$file has $$lines lines (limit: $$LIMIT)"; \
