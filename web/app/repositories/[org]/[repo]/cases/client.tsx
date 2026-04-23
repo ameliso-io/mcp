@@ -2,8 +2,8 @@
 
 import { useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import LoadingSkeleton from "./loading";
 import CasesTab from "@/components/CasesTab";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useRepoParams } from "@/hooks/useRepoParams";
 import { useRouteReplace } from "@/hooks/useRouteReplace";
@@ -104,7 +104,7 @@ function CasesInner() {
 
 export default function CasesPageClient() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <CasesInner />
     </Suspense>
   );

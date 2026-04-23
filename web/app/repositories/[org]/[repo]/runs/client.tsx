@@ -2,8 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, Suspense } from "react";
+import LoadingSkeleton from "./loading";
 import RunsTab from "@/components/RunsTab";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { useRepoParams } from "@/hooks/useRepoParams";
 import { useRouteReplace } from "@/hooks/useRouteReplace";
@@ -111,7 +111,7 @@ function RunsInner() {
 
 export default function RunsPageClient() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <RunsInner />
     </Suspense>
   );

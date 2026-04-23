@@ -2,8 +2,8 @@
 
 import { useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import LoadingSkeleton from "./loading";
 import SuitesTab from "@/components/SuitesTab";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { useRepoParams } from "@/hooks/useRepoParams";
 import { useRouteReplace } from "@/hooks/useRouteReplace";
 
@@ -39,7 +39,7 @@ function SuitesInner() {
 
 export default function SuitesPageClient() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <SuitesInner />
     </Suspense>
   );

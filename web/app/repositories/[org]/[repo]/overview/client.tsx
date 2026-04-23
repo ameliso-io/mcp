@@ -2,8 +2,8 @@
 
 import { Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import LoadingSkeleton from "./loading";
 import OverviewTab from "@/components/OverviewTab";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { useRepoParams } from "@/hooks/useRepoParams";
 import { useRouteReplace } from "@/hooks/useRouteReplace";
@@ -58,7 +58,7 @@ function OverviewInner() {
 
 export default function OverviewPageClient() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <OverviewInner />
     </Suspense>
   );

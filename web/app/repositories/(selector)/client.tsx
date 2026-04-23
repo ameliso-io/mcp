@@ -2,8 +2,8 @@
 
 import { useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import LoadingSkeleton from "./loading";
 import RepositoriesTab from "@/components/RepositoriesTab";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { useRouteReplace } from "@/hooks/useRouteReplace";
 
 function RepositoriesInner() {
@@ -47,7 +47,7 @@ function RepositoriesInner() {
 
 export default function RepositoriesPageClient() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <RepositoriesInner />
     </Suspense>
   );
