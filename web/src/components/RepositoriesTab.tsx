@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import styles from "./RepositoriesTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
@@ -25,6 +25,8 @@ export default function RepositoriesTab({
   onSearchChange,
 }: Props) {
   const [repos, setRepos] = useState<Repository[]>([]);
+  const deferredRepos = useDeferredValue(repos);
+  const isRepoListStale = repos !== deferredRepos;
   const [installUrl, setInstallUrl] = useState<string>("");
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -150,11 +152,11 @@ export default function RepositoriesTab({
   const filteredRepos = useMemo(
     () =>
       q
-        ? repos.filter(
+        ? deferredRepos.filter(
             (r) => r.fullName.toLowerCase().includes(q) || r.htmlUrl.toLowerCase().includes(q)
           )
-        : repos,
-    [repos, q]
+        : deferredRepos,
+    [deferredRepos, q]
   );
 
   useEffect(() => {
@@ -276,7 +278,7 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      {!loading && repos.length > 0 && filteredRepos.length === 0 && (
+      {!loading && deferredRepos.length > 0 && filteredRepos.length === 0 && (
         <div className={styles.emptyCard}>
           <p className={styles.emptyTitle}>No results for &quot;{search}&quot;</p>
           <button
@@ -293,10 +295,12 @@ export default function RepositoriesTab({
       )}
 
       <ul
-        aria-busy={loading || refreshing}
+        aria-busy={loading || refreshing || isRepoListStale}
         role="list"
         className={
-          refreshing ? `${styles.repoList} ${styles.repoListStale}` : styles.repoList
+          refreshing || isRepoListStale
+            ? `${styles.repoList} ${styles.repoListStale}`
+            : styles.repoList
         }
       >
         {filteredRepos.map((repo) => {
