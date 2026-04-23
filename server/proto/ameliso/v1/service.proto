@@ -387,6 +387,9 @@ message GetRepoStatusResponse {
   int32 suite_count = 10;
   int32 run_count = 11;
   repeated ActiveRunStatus active_runs = 12;
+  // Most recently completed run — commit_sha can be passed as since_ref to GetAffectedCases
+  // without a separate ListRuns call.
+  RunMeta last_completed_run = 13;
 }
 
 // --- GitHub App ---

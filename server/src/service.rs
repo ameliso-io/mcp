@@ -1320,6 +1320,12 @@ impl AmelisoService for AmelisoServer {
             });
         }
 
+        let last_completed_run = runs
+            .iter()
+            .filter(|r| r.status == "completed")
+            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
+            .map(run_meta_to_pb);
+
         Ok(Response::new(pb::GetRepoStatusResponse {
             total_cases,
             high_cases,
@@ -1333,6 +1339,7 @@ impl AmelisoService for AmelisoServer {
             suite_count: i32::try_from(suites.len()).unwrap_or(i32::MAX),
             run_count: i32::try_from(runs.len()).unwrap_or(i32::MAX),
             active_runs,
+            last_completed_run,
         }))
     }
 
