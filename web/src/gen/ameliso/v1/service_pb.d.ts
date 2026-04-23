@@ -965,6 +965,14 @@ export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCases
    * @generated from field: string run_id = 2;
    */
   runId: string;
+
+  /**
+   * When set (non-UNSPECIFIED), only return pending cases at this priority level.
+   * Useful for agents that want to tackle high-priority cases first.
+   *
+   * @generated from field: ameliso.v1.Priority priority_filter = 3;
+   */
+  priorityFilter: Priority;
 };
 
 /**
@@ -1469,6 +1477,17 @@ export declare const RemoveRepositoryResponseSchema: GenMessage<RemoveRepository
 /**
  * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
+ *
+ * Recommended agent workflow:
+ *   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
+ *      including body and latest_status; sort by failed/never first.
+ *   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
+ *   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
+ *   4. RecordResult per case — response.pending_count tells you how many remain.
+ *   5. FinalizeRun — mark run complete/aborted.
+ *   6. Loop from step 1 with new commit_sha.
+ *
+ *   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
  *
  * @generated from service ameliso.v1.AmelisoService
  */

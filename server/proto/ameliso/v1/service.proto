@@ -8,6 +8,17 @@ option go_package = "github.com/tupe12334/ameliso/generated;ameliso";
 
 // AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
 // All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
+//
+// Recommended agent workflow:
+//   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
+//      including body and latest_status; sort by failed/never first.
+//   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
+//   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
+//   4. RecordResult per case — response.pending_count tells you how many remain.
+//   5. FinalizeRun — mark run complete/aborted.
+//   6. Loop from step 1 with new commit_sha.
+//
+//   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
 service AmelisoService {
   // --- Cases ---
   rpc ListCases(ListCasesRequest) returns (ListCasesResponse);
@@ -284,6 +295,9 @@ message DeleteRunResponse {
 message GetPendingCasesRequest {
   string repo_id = 1;
   string run_id = 2;
+  // When set (non-UNSPECIFIED), only return pending cases at this priority level.
+  // Useful for agents that want to tackle high-priority cases first.
+  Priority priority_filter = 3;
 }
 
 // A pending test case with status and body — for agent-friendly GetPendingCases.

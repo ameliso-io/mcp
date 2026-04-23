@@ -934,9 +934,12 @@ impl AmelisoService for AmelisoServer {
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
-        let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+        let (mut pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
+        if let Some(pri) = priority_from_i32(req.priority_filter) {
+            pending.retain(|c| c.priority.eq_ignore_ascii_case(pri));
+        }
         let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
             .await
             .unwrap_or_default();
@@ -2095,6 +2098,7 @@ mod tests {
             .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
                 repo_id: "".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2109,6 +2113,7 @@ mod tests {
             .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -3076,6 +3081,22 @@ mod tests {
             .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_pending_cases_with_priority_filter_passes_validation() {
+        // Priority filter set to HIGH passes validation → DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .get_pending_cases(Request::new(pb::GetPendingCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                priority_filter: pb::Priority::High as i32,
             }))
             .await
             .unwrap_err();
