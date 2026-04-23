@@ -1027,6 +1027,30 @@ pub async fn patch_run_meta(
     get_run(pool, repo_id, run_id).await.map(|r| r.meta)
 }
 
+/// Insert `case_paths` into the run's inline scope (ON CONFLICT DO NOTHING).
+/// Only valid for inline-scoped runs; silently ignored for suite/all-cases runs.
+pub async fn add_cases_to_run(
+    pool: &PgPool,
+    repo_id: &str,
+    run_id: &str,
+    case_paths: &[String],
+) -> RResult<()> {
+    validate_slug_path(run_id, "run")?;
+    for case_path in case_paths {
+        validate_slug_path(case_path, "case")?;
+        sqlx::query(
+            "INSERT INTO run_cases (repo_id, run_id, case_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        )
+        .bind(repo_id)
+        .bind(run_id)
+        .bind(case_path)
+        .execute(pool)
+        .await
+        .map_err(map_db)?;
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Pending cases
 // ---------------------------------------------------------------------------

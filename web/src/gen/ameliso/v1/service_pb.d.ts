@@ -238,6 +238,15 @@ export declare type BulkCreateCasesRequest = Message<"ameliso.v1.BulkCreateCases
    * @generated from field: repeated ameliso.v1.BulkCaseEntry cases = 2;
    */
   cases: BulkCaseEntry[];
+
+  /**
+   * Optional run_id — when set, created cases are added to this run's inline scope.
+   * Useful for adding newly-discovered cases (from uncovered_files) to an in-progress run
+   * without a separate UpdateRun(add_cases=...) call.
+   *
+   * @generated from field: string run_id = 3;
+   */
+  runId: string;
 };
 
 /**
@@ -254,6 +263,22 @@ export declare type BulkCreateCasesResponse = Message<"ameliso.v1.BulkCreateCase
    * @generated from field: repeated ameliso.v1.Case cases = 1;
    */
   cases: Case[];
+
+  /**
+   * File paths for the created cases (e.g. "cases/auth/login.md").
+   * Agents can pass these directly to git add without constructing paths manually.
+   *
+   * @generated from field: repeated string file_paths = 2;
+   */
+  filePaths: string[];
+
+  /**
+   * Updated pending entries for the run, when run_id was set in the request.
+   * Avoids a separate GetPendingCases call after adding the new cases to the run.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
+   */
+  pending: PendingEntry[];
 };
 
 /**
@@ -1307,6 +1332,16 @@ export declare type UpdateRunRequest = Message<"ameliso.v1.UpdateRunRequest"> & 
    * @generated from field: optional string environment = 6;
    */
   environment?: string;
+
+  /**
+   * Extend the run's inline case scope with these additional case paths.
+   * Only valid for inline-scoped runs (created with use_last_run, since_ref, changed_files, or cases).
+   * Idempotent — already-included case paths are ignored.
+   * Use this after BulkCreateCases to add newly-created cases to an in-progress run.
+   *
+   * @generated from field: repeated string add_cases = 7;
+   */
+  addCases: string[];
 };
 
 /**
@@ -1328,6 +1363,14 @@ export declare type UpdateRunResponse = Message<"ameliso.v1.UpdateRunResponse"> 
    * @generated from field: string new_dir_path = 2;
    */
   newDirPath: string;
+
+  /**
+   * Updated pending cases after any add_cases — avoids a separate GetPendingCases call.
+   * Populated only when add_cases is non-empty.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
+   */
+  pending: PendingEntry[];
 };
 
 /**
@@ -1756,13 +1799,30 @@ export declare const RemoveRepositoryResponseSchema: GenMessage<RemoveRepository
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
  * Recommended agent workflow (minimum 3 RPCs):
- *   1. CreateRun(commit_sha=<HEAD>, use_last_run=true) — auto-scopes to cases affected since the
- *      last completed run, returns pending with body + latest_status; no GetRepoStatus needed.
- *      On the first ever run (no prior run) all cases are included.
- *   2. BulkRecordResults — record all results in one call; pending_count tells you how many remain.
- *   3. FinalizeRun(status=UNSPECIFIED) — auto-detects ABORTED if any FAILED result, else COMPLETED.
+ *
+ *   Step 1 — CreateRun(commit_sha=<HEAD>, use_last_run=true)
+ *     Auto-scopes to cases affected since the last completed run.
+ *     On the first ever run (no prior run) all cases are included.
+ *     Response includes: pending (Case.body + latest_status), total_repo_cases,
+ *     uncovered_files (source files with no test case — create new cases for these).
+ *
+ *   Step 2 — BulkRecordResults — record all results in one call.
+ *     Response includes: pending (remaining cases), pending_count, total_in_scope.
+ *
+ *   Step 3 — FinalizeRun(status=UNSPECIFIED)
+ *     Auto-detects ABORTED if any FAILED result, else COMPLETED.
+ *     Response includes: run (RunMeta with counts), results (all CaseResult records).
  *
  * Repeat from step 1 on the next commit.
+ *
+ * Additional zero-extra-RPC data available in responses:
+ *   GetRun        — cases field (Case list with body; no separate ListCases call needed)
+ *   ListRuns      — RunMeta.passed/failed/blocked/skipped/total counts per run
+ *   RecordResult  — pending field (remaining cases after this result)
+ *   GetRepoStatus — last_completed_run (RunMeta with counts)
+ *   UpdateRun     — optional commit_sha/tester/environment patches alongside slug rename
+ *   GetAffectedCases — cases (body + latest_status) + uncovered_files (coverage gaps)
+ *
  * For richer context before running (stats, active runs), call GetRepoStatus first.
  * For a read-only preview of affected cases, call GetAffectedCases instead of CreateRun.
  *

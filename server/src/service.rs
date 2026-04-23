@@ -497,7 +497,10 @@ impl AmelisoService for AmelisoServer {
         if req.cases.is_empty() {
             return Err(invalid("cases list must not be empty"));
         }
+        let has_run_id = !req.run_id.is_empty();
         let mut created: Vec<pb::Case> = Vec::with_capacity(req.cases.len());
+        let mut file_paths: Vec<String> = Vec::with_capacity(req.cases.len());
+        let mut new_case_paths: Vec<String> = Vec::with_capacity(req.cases.len());
         for entry in &req.cases {
             if entry.case_path.is_empty() {
                 return Err(invalid("each entry must have a case_path"));
@@ -543,10 +546,34 @@ impl AmelisoService for AmelisoServer {
                     }
                 });
             }
+            file_paths.push(format!("cases/{}.md", entry.case_path));
+            new_case_paths.push(entry.case_path.clone());
             created.push(case_to_pb(&case));
         }
+        let pending = if has_run_id {
+            repo::add_cases_to_run(&self.pool, &req.repo_id, &req.run_id, &new_case_paths)
+                .await
+                .map_err(repo_err)?;
+            let ((pending_cases, _), statuses) = tokio::join!(
+                async {
+                    repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                        .await
+                        .unwrap_or_default()
+                },
+                async {
+                    repo::get_latest_statuses(&self.pool, &req.repo_id)
+                        .await
+                        .unwrap_or_default()
+                },
+            );
+            build_pending_entries(&pending_cases, &statuses)
+        } else {
+            vec![]
+        };
         Ok(Response::new(pb::BulkCreateCasesResponse {
             cases: created,
+            file_paths,
+            pending,
         }))
     }
 
@@ -1380,10 +1407,14 @@ impl AmelisoService for AmelisoServer {
         let has_slug = !req.new_slug.is_empty();
         let has_meta =
             req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
-        if !has_slug && !has_meta {
+        let has_add_cases = !req.add_cases.is_empty();
+        if !has_slug && !has_meta && !has_add_cases {
             return Err(invalid(
-                "at least one of new_slug, commit_sha, tester, or environment is required",
+                "at least one of new_slug, commit_sha, tester, environment, or add_cases is required",
             ));
+        }
+        for cp in &req.add_cases {
+            check_max_len("add_cases case_path", cp, 200)?;
         }
         // Apply metadata patch first (before rename changes run_id).
         if has_meta {
@@ -1398,6 +1429,11 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
         }
+        if has_add_cases {
+            repo::add_cases_to_run(&self.pool, &req.repo_id, &req.run_id, &req.add_cases)
+                .await
+                .map_err(repo_err)?;
+        }
         let run = if has_slug {
             repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
                 .await
@@ -1409,9 +1445,27 @@ impl AmelisoService for AmelisoServer {
                 .meta
         };
         let new_dir_path = format!("runs/{}", run.run_id);
+        let pending = if has_add_cases {
+            let ((pending_cases, _), statuses) = tokio::join!(
+                async {
+                    repo::get_pending_cases(&self.pool, &req.repo_id, &run.run_id)
+                        .await
+                        .unwrap_or_default()
+                },
+                async {
+                    repo::get_latest_statuses(&self.pool, &req.repo_id)
+                        .await
+                        .unwrap_or_default()
+                },
+            );
+            build_pending_entries(&pending_cases, &statuses)
+        } else {
+            vec![]
+        };
         Ok(Response::new(pb::UpdateRunResponse {
             run: Some(run_meta_to_pb(&run)),
             new_dir_path,
+            pending,
         }))
     }
 
@@ -1897,27 +1951,47 @@ impl AmelisoService for AmelisoServer {
         let active_runs_meta: Vec<&RunRow> =
             runs.iter().filter(|r| r.status == "in-progress").collect();
 
-        let mut active_runs: Vec<pb::ActiveRunStatus> = Vec::new();
+        // Fetch pending counts for all active runs in parallel.
+        let mut join_set: tokio::task::JoinSet<(String, i32, i32)> = tokio::task::JoinSet::new();
         for run_meta in &active_runs_meta {
-            let (pending, total_in_scope) =
-                match repo::get_pending_cases(pool, &repo_id, &run_meta.run_id).await {
+            let pool = pool.clone();
+            let repo_id = repo_id.clone();
+            let run_id = run_meta.run_id.clone();
+            join_set.spawn(async move {
+                match repo::get_pending_cases(&pool, &repo_id, &run_id).await {
                     Ok((cases, total)) => (
+                        run_id,
                         i32::try_from(cases.len()).unwrap_or(i32::MAX),
                         i32::try_from(total).unwrap_or(i32::MAX),
                     ),
-                    Err(_) => (0, 0),
-                };
-            active_runs.push(pb::ActiveRunStatus {
-                run_id: run_meta.run_id.clone(),
-                tester: run_meta.tester.clone(),
-                suite: run_meta.suite.clone().unwrap_or_default(),
-                date: run_meta.date.clone(),
-                pending_cases: pending,
-                total_in_scope,
-                commit_sha: run_meta.commit_sha.clone(),
-                environment: run_meta.environment.clone().unwrap_or_default(),
+                    Err(_) => (run_id, 0, 0),
+                }
             });
         }
+        let mut pending_map: std::collections::HashMap<String, (i32, i32)> =
+            std::collections::HashMap::new();
+        while let Some(res) = join_set.join_next().await {
+            if let Ok((run_id, pending, total)) = res {
+                pending_map.insert(run_id, (pending, total));
+            }
+        }
+        let active_runs: Vec<pb::ActiveRunStatus> = active_runs_meta
+            .iter()
+            .map(|run_meta| {
+                let (pending, total_in_scope) =
+                    pending_map.get(&run_meta.run_id).copied().unwrap_or((0, 0));
+                pb::ActiveRunStatus {
+                    run_id: run_meta.run_id.clone(),
+                    tester: run_meta.tester.clone(),
+                    suite: run_meta.suite.clone().unwrap_or_default(),
+                    date: run_meta.date.clone(),
+                    pending_cases: pending,
+                    total_in_scope,
+                    commit_sha: run_meta.commit_sha.clone(),
+                    environment: run_meta.environment.clone().unwrap_or_default(),
+                }
+            })
+            .collect();
 
         let last_completed_run_row = runs
             .iter()
@@ -2394,6 +2468,7 @@ mod tests {
                     title: "Login".to_owned(),
                     ..Default::default()
                 }],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2408,6 +2483,7 @@ mod tests {
             .bulk_create_cases(Request::new(pb::BulkCreateCasesRequest {
                 repo_id: "owner/repo".to_owned(),
                 cases: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2426,6 +2502,7 @@ mod tests {
                     title: "Login".to_owned(),
                     ..Default::default()
                 }],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2444,6 +2521,7 @@ mod tests {
                     title: "".to_owned(),
                     ..Default::default()
                 }],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -2470,6 +2548,7 @@ mod tests {
                         ..Default::default()
                     },
                 ],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -5279,10 +5358,7 @@ mod tests {
             .update_run(Request::new(pb::UpdateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
-                new_slug: "".to_owned(),
-                commit_sha: None,
-                tester: None,
-                environment: None,
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -5312,14 +5388,43 @@ mod tests {
             .update_run(Request::new(pb::UpdateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
-                new_slug: "".to_owned(),
                 commit_sha: Some("abc1234".to_owned()),
-                tester: None,
-                environment: None,
+                ..Default::default()
             }))
             .await
             .unwrap_err();
         // Reaches the DB (not InvalidArgument); fails with NotFound since the run doesn't exist.
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_add_cases_only_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                add_cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        // Passes validation; hits DB and fails with NotFound.
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_add_cases_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                add_cases: vec!["".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
     }
 }
