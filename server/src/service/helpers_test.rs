@@ -1,20 +1,10 @@
 use anyhow::anyhow;
-use tonic::Request;
 
 use crate::repo::RepoError;
 
 use crate::proto::ameliso_v1 as pb;
-use crate::service::AmelisoServer;
 
-use super::AmelisoService;
 use super::*;
-
-fn server() -> AmelisoServer {
-    let pool = sqlx::postgres::PgPoolOptions::new()
-        .connect_lazy("postgres://user:pass@localhost/db_does_not_exist")
-        .expect("lazy pool creation should not fail");
-    AmelisoServer { pool }
-}
 
 #[test]
 fn invalid_helper_returns_invalid_argument_status() {
