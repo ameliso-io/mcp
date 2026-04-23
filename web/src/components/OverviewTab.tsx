@@ -211,14 +211,14 @@ export default function OverviewTab({
         </div>
       )}
 
-      {loading && (
+      {loading && entries.length === 0 && (
         <div className={styles.loadingMsg} role="status">
           Loading…
         </div>
       )}
 
-      {!loading && entries.length > 0 && (
-        <>
+      {entries.length > 0 && (
+        <div className={loading ? styles.panelStale : undefined} aria-busy={loading}>
           <dl className={styles.statsGrid}>
             {[
               { label: "Total Cases", value: statCases, status: null },
@@ -381,7 +381,7 @@ export default function OverviewTab({
               ))}
             </ul>
           </div>
-        </>
+        </div>
       )}
 
       {!loading && !error && entries.length === 0 && (
