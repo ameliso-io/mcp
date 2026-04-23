@@ -34,10 +34,9 @@ describe("useRouteReplace", () => {
         params.set("status", "completed");
       });
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith(
-      "/repos/r/runs?status=completed",
-      { scroll: false }
-    );
+    expect(mockRouter.replace).toHaveBeenCalledWith("/repos/r/runs?status=completed", {
+      scroll: false,
+    });
   });
 
   it("preserves existing params and applies mutation", () => {
@@ -48,10 +47,9 @@ describe("useRouteReplace", () => {
         params.set("status", "completed");
       });
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith(
-      "/repos/r/runs?run=abc&status=completed",
-      { scroll: false }
-    );
+    expect(mockRouter.replace).toHaveBeenCalledWith("/repos/r/runs?run=abc&status=completed", {
+      scroll: false,
+    });
   });
 
   it("deletes params via mutation", () => {
@@ -62,10 +60,7 @@ describe("useRouteReplace", () => {
         params.delete("status");
       });
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith(
-      "/repos/r/runs?run=abc",
-      { scroll: false }
-    );
+    expect(mockRouter.replace).toHaveBeenCalledWith("/repos/r/runs?run=abc", { scroll: false });
   });
 
   it("calls router.replace without ? when all params deleted", () => {
@@ -86,9 +81,8 @@ describe("useRouteReplace", () => {
         params.set("filter", "passed");
       });
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith(
-      "/repos/r/overview?filter=passed",
-      { scroll: false }
-    );
+    expect(mockRouter.replace).toHaveBeenCalledWith("/repos/r/overview?filter=passed", {
+      scroll: false,
+    });
   });
 });

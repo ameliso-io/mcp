@@ -14,7 +14,14 @@ export default function Loading() {
   return (
     <div role="status" aria-label="Loading cases">
       <span className="sr-only">Loading…</span>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
         <Skeleton width={100} height={28} />
         <Skeleton width={100} height={32} borderRadius={6} />
       </div>

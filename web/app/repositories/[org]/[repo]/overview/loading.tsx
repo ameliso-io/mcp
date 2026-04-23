@@ -23,7 +23,14 @@ export default function Loading() {
     <div role="status" aria-label="Loading overview">
       <span className="sr-only">Loading…</span>
       <Skeleton width={130} height={28} style={{ marginBottom: 20 }} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <div key={i} style={card}>
             <Skeleton width={80} height={12} style={{ marginBottom: 8 }} />
@@ -32,7 +39,14 @@ export default function Loading() {
         ))}
       </div>
       <div style={card}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
           <Skeleton width={160} height={14} />
           <Skeleton width={100} height={28} borderRadius={6} />
         </div>
