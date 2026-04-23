@@ -158,7 +158,6 @@
   flex-shrink: 0;
 }
 
-
 .loadingMsg {
   text-align: center;
   color: var(--color-muted);

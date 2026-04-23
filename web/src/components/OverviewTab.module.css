@@ -88,7 +88,6 @@
   flex-shrink: 0;
 }
 
-
 .inlineError {
   color: var(--color-danger-text);
   font-size: 13px;
