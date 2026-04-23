@@ -292,7 +292,13 @@ export default function RepositoriesTab({
         </div>
       )}
 
-      <ul aria-busy={loading} role="list" className={styles.repoList}>
+      <ul
+        aria-busy={loading || refreshing}
+        role="list"
+        className={
+          refreshing ? `${styles.repoList} ${styles.repoListStale}` : styles.repoList
+        }
+      >
         {filteredRepos.map((repo) => {
           return (
             <li key={repo.id} className={styles.repoCard}>
