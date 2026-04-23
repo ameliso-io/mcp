@@ -566,7 +566,7 @@ export default function RunsTab({
         </div>
       )}
 
-      {loading && (
+      {loading && runs.length === 0 && (
         <div className={styles.loadingMsg} role="status">
           Loading…
         </div>
@@ -576,7 +576,11 @@ export default function RunsTab({
         <div className={styles.emptyCard}>No runs found.</div>
       )}
 
-      <ul className={styles.list} aria-busy={loading} role="list">
+      <ul
+        className={loading && runs.length > 0 ? `${styles.list} ${styles.listStale}` : styles.list}
+        aria-busy={loading}
+        role="list"
+      >
         {runs.map((run) => (
           <li key={run.id}>
             <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
