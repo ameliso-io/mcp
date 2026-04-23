@@ -3,7 +3,7 @@
 dev: install build
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
 	docker compose up -d --wait && \
-	(cargo run -p ameliso-server; kill 0) & \
+	(cd server && cargo run; kill 0) & \
 	(cd web && pnpm dev; kill 0) & \
 	wait
 
@@ -11,31 +11,31 @@ install:
 	git submodule update --init --recursive
 	pnpm install
 	cd web && pnpm install
-	cargo fetch
+	cd server && cargo fetch
 
 build:
-	cargo build --release
+	cd server && cargo build --release
 	cd web && pnpm build
 
 test:
-	cargo test
+	cd server && cargo test
 	cd web && pnpm test
 	cd web && pnpm test:typecheck
 
 coverage-check:
-	cargo llvm-cov -p ameliso-server --ignore-filename-regex main.rs --fail-under-lines 85
+	cd server && cargo llvm-cov --ignore-filename-regex main.rs --fail-under-lines 85
 	cd web && pnpm test:coverage
 
 fmt:
-	cargo fmt --all
+	cd server && cargo fmt --all
 	cd web && pnpm fmt
 
 fmt-check:
-	cargo fmt --all -- --check
+	cd server && cargo fmt --all -- --check
 	cd web && pnpm fmt:check
 
 lint:
-	cargo clippy --all -- -D warnings
+	cd server && cargo clippy --all -- -D warnings
 	cd server && buf lint
 	cd web && pnpm lint
 
