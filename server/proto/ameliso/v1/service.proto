@@ -421,11 +421,19 @@ message UpdateRunRequest {
   optional string commit_sha = 4;
   optional string tester = 5;
   optional string environment = 6;
+  // Extend the run's inline case scope with these additional case paths.
+  // Only valid for inline-scoped runs (created with use_last_run, since_ref, changed_files, or cases).
+  // Idempotent — already-included case paths are ignored.
+  // Use this after BulkCreateCases to add newly-created cases to an in-progress run.
+  repeated string add_cases = 7;
 }
 
 message UpdateRunResponse {
   RunMeta run = 1;
   string new_dir_path = 2;
+  // Updated pending cases after any add_cases — avoids a separate GetPendingCases call.
+  // Populated only when add_cases is non-empty.
+  repeated PendingEntry pending = 3;
 }
 
 // --- Reports ---

@@ -1303,6 +1303,16 @@ export declare type UpdateRunRequest = Message<"ameliso.v1.UpdateRunRequest"> & 
    * @generated from field: optional string environment = 6;
    */
   environment?: string;
+
+  /**
+   * Extend the run's inline case scope with these additional case paths.
+   * Only valid for inline-scoped runs (created with use_last_run, since_ref, changed_files, or cases).
+   * Idempotent — already-included case paths are ignored.
+   * Use this after BulkCreateCases to add newly-created cases to an in-progress run.
+   *
+   * @generated from field: repeated string add_cases = 7;
+   */
+  addCases: string[];
 };
 
 /**
@@ -1324,6 +1334,14 @@ export declare type UpdateRunResponse = Message<"ameliso.v1.UpdateRunResponse"> 
    * @generated from field: string new_dir_path = 2;
    */
   newDirPath: string;
+
+  /**
+   * Updated pending cases after any add_cases — avoids a separate GetPendingCases call.
+   * Populated only when add_cases is non-empty.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
+   */
+  pending: PendingEntry[];
 };
 
 /**

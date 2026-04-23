@@ -1383,10 +1383,14 @@ impl AmelisoService for AmelisoServer {
         let has_slug = !req.new_slug.is_empty();
         let has_meta =
             req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
-        if !has_slug && !has_meta {
+        let has_add_cases = !req.add_cases.is_empty();
+        if !has_slug && !has_meta && !has_add_cases {
             return Err(invalid(
-                "at least one of new_slug, commit_sha, tester, or environment is required",
+                "at least one of new_slug, commit_sha, tester, environment, or add_cases is required",
             ));
+        }
+        for cp in &req.add_cases {
+            check_max_len("add_cases case_path", cp, 200)?;
         }
         // Apply metadata patch first (before rename changes run_id).
         if has_meta {
@@ -1401,6 +1405,11 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
         }
+        if has_add_cases {
+            repo::add_cases_to_run(&self.pool, &req.repo_id, &req.run_id, &req.add_cases)
+                .await
+                .map_err(repo_err)?;
+        }
         let run = if has_slug {
             repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
                 .await
@@ -1412,9 +1421,27 @@ impl AmelisoService for AmelisoServer {
                 .meta
         };
         let new_dir_path = format!("runs/{}", run.run_id);
+        let pending = if has_add_cases {
+            let ((pending_cases, _), statuses) = tokio::join!(
+                async {
+                    repo::get_pending_cases(&self.pool, &req.repo_id, &run.run_id)
+                        .await
+                        .unwrap_or_default()
+                },
+                async {
+                    repo::get_latest_statuses(&self.pool, &req.repo_id)
+                        .await
+                        .unwrap_or_default()
+                },
+            );
+            build_pending_entries(&pending_cases, &statuses)
+        } else {
+            vec![]
+        };
         Ok(Response::new(pb::UpdateRunResponse {
             run: Some(run_meta_to_pb(&run)),
             new_dir_path,
+            pending,
         }))
     }
 
@@ -5282,10 +5309,7 @@ mod tests {
             .update_run(Request::new(pb::UpdateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
-                new_slug: "".to_owned(),
-                commit_sha: None,
-                tester: None,
-                environment: None,
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -5315,14 +5339,43 @@ mod tests {
             .update_run(Request::new(pb::UpdateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
-                new_slug: "".to_owned(),
                 commit_sha: Some("abc1234".to_owned()),
-                tester: None,
-                environment: None,
+                ..Default::default()
             }))
             .await
             .unwrap_err();
         // Reaches the DB (not InvalidArgument); fails with NotFound since the run doesn't exist.
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_add_cases_only_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                add_cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        // Passes validation; hits DB and fails with NotFound.
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_add_cases_rejects_empty_case_path() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                add_cases: vec!["".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
     }
 }
