@@ -931,9 +931,24 @@ impl AmelisoService for AmelisoServer {
         let (pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
+        let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
+            .await
+            .unwrap_or_default();
+        let entries = pending
+            .iter()
+            .map(|c| pb::CoverageEntry {
+                latest_status: result_status_to_i32(
+                    statuses.get(&c.case_path).map(String::as_str).unwrap_or("never"),
+                ),
+                last_run_id: String::new(),
+                last_run_date: String::new(),
+                case: Some(case_to_pb(c)),
+            })
+            .collect();
         Ok(Response::new(pb::GetPendingCasesResponse {
             cases: pending.iter().map(case_to_pb).collect(),
             total_in_scope: i32::try_from(total).unwrap_or(i32::MAX),
+            entries,
         }))
     }
 

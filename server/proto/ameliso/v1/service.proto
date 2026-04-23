@@ -287,6 +287,9 @@ message GetPendingCasesRequest {
 message GetPendingCasesResponse {
   repeated Case cases = 1;
   int32 total_in_scope = 2;
+  // Same cases as `cases` but with latest coverage status included — lets
+  // agents prioritize failed/never-run cases without a separate coverage call.
+  repeated CoverageEntry entries = 3;
 }
 
 message UpdateRunRequest {

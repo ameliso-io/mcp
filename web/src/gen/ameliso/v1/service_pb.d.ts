@@ -976,6 +976,14 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
    * @generated from field: int32 total_in_scope = 2;
    */
   totalInScope: number;
+
+  /**
+   * Same cases as `cases` but with latest coverage status included — lets
+   * agents prioritize failed/never-run cases without a separate coverage call.
+   *
+   * @generated from field: repeated ameliso.v1.CoverageEntry entries = 3;
+   */
+  entries: CoverageEntry[];
 };
 
 /**
