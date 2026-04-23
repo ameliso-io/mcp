@@ -125,6 +125,14 @@ export default function CasesTab({
 
   // Expanded case body view
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
+  const expandedPathRef = useRef(expandedPath);
+  useEffect(() => {
+    expandedPathRef.current = expandedPath;
+  }, [expandedPath]);
+  const onExpandedPathChangeRef = useRef(onExpandedPathChange);
+  useEffect(() => {
+    onExpandedPathChangeRef.current = onExpandedPathChange;
+  });
   const [expandedBody, setExpandedBody] = useState<string>("");
   const [bodyLoading, setBodyLoading] = useState(false);
 
@@ -145,32 +153,35 @@ export default function CasesTab({
     return res.body;
   }
 
-  async function toggleExpand(casePath: string) {
-    if (expandedPath === casePath) {
-      setExpandedPath(null);
-      onExpandedPathChange?.(null);
-      setExpandedBody("");
-      expandingRef.current = null;
-      return;
-    }
-    setExpandedPath(casePath);
-    onExpandedPathChange?.(casePath);
-    setExpandedBody("");
-    expandingRef.current = casePath;
-    setBodyLoading(true);
-    try {
-      const body = await fetchBody(casePath);
-      if (expandingRef.current === casePath) setExpandedBody(body);
-    } catch (e) {
-      if (expandingRef.current === casePath) {
-        setError(errorMessage(e));
+  const toggleExpand = useCallback(
+    async (casePath: string) => {
+      if (expandedPathRef.current === casePath) {
         setExpandedPath(null);
-        onExpandedPathChange?.(null);
+        onExpandedPathChangeRef.current?.(null);
+        setExpandedBody("");
+        expandingRef.current = null;
+        return;
       }
-    } finally {
-      if (expandingRef.current === casePath) setBodyLoading(false);
-    }
-  }
+      setExpandedPath(casePath);
+      onExpandedPathChangeRef.current?.(casePath);
+      setExpandedBody("");
+      expandingRef.current = casePath;
+      setBodyLoading(true);
+      try {
+        const res = await client.getCase({ repoId, casePath });
+        if (expandingRef.current === casePath) setExpandedBody(res.body);
+      } catch (e) {
+        if (expandingRef.current === casePath) {
+          setError(errorMessage(e));
+          setExpandedPath(null);
+          onExpandedPathChangeRef.current?.(null);
+        }
+      } finally {
+        if (expandingRef.current === casePath) setBodyLoading(false);
+      }
+    },
+    [repoId]
+  );
 
   async function startEdit(c: Case) {
     lastFocusRef.current = document.activeElement as HTMLElement;
@@ -254,8 +265,7 @@ export default function CasesTab({
     if (!cases.some((c) => c.path === initialExpandedPath)) return;
     consumedExpandedRef.current = true;
     void toggleExpand(initialExpandedPath);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cases, initialExpandedPath]);
+  }, [cases, initialExpandedPath, toggleExpand]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
