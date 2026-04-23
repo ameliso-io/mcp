@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
@@ -410,13 +410,15 @@ export default function RunsTab({
     return { passed, failed, blocked, skipped };
   }, [recordedResults]);
 
+  const deferredResultStatusFilter = useDeferredValue(resultStatusFilter);
   const filteredResults = useMemo(
     () =>
-      resultStatusFilter !== null
-        ? recordedResults.filter((r) => r.status === resultStatusFilter)
+      deferredResultStatusFilter !== null
+        ? recordedResults.filter((r) => r.status === deferredResultStatusFilter)
         : recordedResults,
-    [recordedResults, resultStatusFilter]
+    [recordedResults, deferredResultStatusFilter]
   );
+  const isResultStale = deferredResultStatusFilter !== resultStatusFilter;
 
   return (
     <div>
@@ -763,7 +765,15 @@ export default function RunsTab({
                     {recordedResults.length === 0 ? (
                       <p className={styles.noResults}>No results recorded.</p>
                     ) : (
-                      <ul className={styles.resultList} role="list">
+                      <ul
+                        className={
+                          isResultStale
+                            ? `${styles.resultList} ${styles.resultListStale}`
+                            : styles.resultList
+                        }
+                        aria-busy={isResultStale}
+                        role="list"
+                      >
                         {filteredResults.map((r) => (
                           <li key={r.casePath} className={styles.resultRow}>
                             <span
