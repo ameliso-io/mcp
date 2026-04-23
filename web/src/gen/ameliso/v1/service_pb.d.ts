@@ -767,6 +767,14 @@ export declare type GetRunResponse = Message<"ameliso.v1.GetRunResponse"> & {
    * @generated from field: ameliso.v1.Run run = 1;
    */
   run?: Run;
+
+  /**
+   * In-scope cases for this run — same set as GetPendingCases returns for a pending run.
+   * Populated so callers can avoid a separate ListCases call.
+   *
+   * @generated from field: repeated ameliso.v1.Case cases = 2;
+   */
+  cases: Case[];
 };
 
 /**

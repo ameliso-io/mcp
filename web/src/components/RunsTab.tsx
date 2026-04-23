@@ -223,12 +223,9 @@ export default function RunsTab({
         setPendingCases(res.pending.flatMap((e) => (e.case ? [e.case] : [])));
         setTotalInScope(res.totalInScope);
       } else {
-        const [runRes, casesRes] = await Promise.all([
-          client.getRun({ repoId, runId }),
-          client.listCases({ repoId }),
-        ]);
+        const runRes = await client.getRun({ repoId, runId });
         setRecordedResults(runRes.run?.results ?? []);
-        setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
+        setCaseTitleMap(new Map(runRes.cases.map((c) => [c.path, c])));
       }
     } catch (e) {
       setError(errorMessage(e));

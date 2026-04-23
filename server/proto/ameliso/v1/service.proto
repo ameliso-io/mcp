@@ -251,6 +251,9 @@ message GetRunRequest {
 
 message GetRunResponse {
   Run run = 1;
+  // In-scope cases for this run — same set as GetPendingCases returns for a pending run.
+  // Populated so callers can avoid a separate ListCases call.
+  repeated Case cases = 2;
 }
 
 message CreateRunRequest {
