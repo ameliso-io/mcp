@@ -75,7 +75,8 @@
     "notvalidhex",
     "esbuild",
     "unrs",
-    "itest"
+    "itest",
+    "Testmo"
   ],
   "flagWords": []
 }
