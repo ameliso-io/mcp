@@ -285,9 +285,7 @@ export default function OverviewTab({
                       aria-pressed={coverageFilter === stat.status}
                       onClick={() => {
                         const next =
-                          coverageFilter === stat.status
-                            ? ResultStatus.UNSPECIFIED
-                            : stat.status;
+                          coverageFilter === stat.status ? ResultStatus.UNSPECIFIED : stat.status;
                         setCoverageFilter(next);
                         onCoverageFilterChange?.(next);
                       }}
