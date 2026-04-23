@@ -174,7 +174,7 @@ export default function RunsTab({
           ]);
           /* v8 ignore next 1 — race guard */
           if (selectingRef.current !== runId) return;
-          setPendingCases(pendingRes.cases);
+          setPendingCases(pendingRes.pending.flatMap((e) => (e.case ? [e.case] : [])));
           setTotalInScope(pendingRes.totalInScope);
           setRecordedResults(runRes.run?.results ?? /* v8 ignore next */ []);
           setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
@@ -242,7 +242,7 @@ export default function RunsTab({
       if (!selectedRunId) return;
       try {
         const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-        setPendingCases(res.cases);
+        setPendingCases(res.pending.flatMap((e) => (e.case ? [e.case] : [])));
         setTotalInScope(res.totalInScope);
         setPollFailCount(0);
       } catch {

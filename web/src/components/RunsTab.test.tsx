@@ -60,7 +60,10 @@ beforeEach(() => {
     makeCreateRunResponse({ run: mockRun, dirPath: "runs/2026-01-01-smoke" })
   );
   vi.mocked(client.getPendingCases).mockResolvedValue(
-    makeGetPendingCasesResponse({ cases: [mockCase], totalInScope: 1 })
+    makeGetPendingCasesResponse({
+      pending: [{ case: mockCase, latestStatus: 0, body: "" }],
+      totalInScope: 1,
+    })
   );
   vi.mocked(client.listCases).mockResolvedValue(makeListCasesResponse());
   vi.mocked(client.getCase).mockResolvedValue(
@@ -978,7 +981,12 @@ describe("RunsTab", () => {
   it("polling timer callback silently ignores errors", async () => {
     vi.mocked(client.listRuns).mockResolvedValue(makeListRunsResponse({ runs: [mockRun] }));
     vi.mocked(client.getPendingCases)
-      .mockResolvedValueOnce(makeGetPendingCasesResponse({ cases: [mockCase], totalInScope: 1 }))
+      .mockResolvedValueOnce(
+        makeGetPendingCasesResponse({
+          pending: [{ case: mockCase, latestStatus: 0, body: "" }],
+          totalInScope: 1,
+        })
+      )
       .mockRejectedValueOnce(new Error("poll error"));
     let capturedCallback: (() => Promise<void>) | null = null;
     const spy = vi

@@ -25,7 +25,7 @@ export const client = {
   finalizeRun: vi.fn().mockResolvedValue({ run: undefined }),
   deleteRun: vi.fn().mockResolvedValue({ dirPath: "" }),
   updateRun: vi.fn().mockResolvedValue({ run: undefined, newDirPath: "" }),
-  getPendingCases: vi.fn().mockResolvedValue({ cases: [], totalInScope: 0 }),
+  getPendingCases: vi.fn().mockResolvedValue({ pending: [], totalInScope: 0 }),
   getCoverageReport: vi.fn().mockResolvedValue({ entries: [], runCount: 0 }),
   getRepoStatus: vi.fn().mockResolvedValue({ activeRuns: [] }),
   getAffectedCases: vi.fn().mockResolvedValue({ cases: [], reason: "" }),
