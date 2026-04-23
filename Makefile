@@ -49,7 +49,7 @@ db-down:
 # --- Git hooks (called by Husky) ---
 
 check-file-size:
-	@LIMIT=5000; FAILED=0; \
+	@LIMIT=4000; FAILED=0; \
 	for file in $$(find . -name '*.rs' -not -path './target/*' -not -path './.claude/*'); do \
 		lines=$$(wc -l < "$$file"); \
 		if [ "$$lines" -gt "$$LIMIT" ]; then \
@@ -59,8 +59,17 @@ check-file-size:
 	done; \
 	[ "$$FAILED" -eq 1 ] && exit 1 || true
 
-pre-commit: fmt-check lint spell check-file-size
-	@echo "pre-commit: OK"
+pre-commit:
+	@FAIL=0; \
+	$(MAKE) fmt-check & PID1=$$!; \
+	$(MAKE) lint & PID2=$$!; \
+	$(MAKE) spell & PID3=$$!; \
+	$(MAKE) check-file-size & PID4=$$!; \
+	wait $$PID1 || FAIL=1; \
+	wait $$PID2 || FAIL=1; \
+	wait $$PID3 || FAIL=1; \
+	wait $$PID4 || FAIL=1; \
+	[ "$$FAIL" -eq 0 ] && echo "pre-commit: OK" || exit 1
 
 pre-push: fmt-check build test coverage-check
 	@echo "pre-push: OK"
