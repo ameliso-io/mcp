@@ -432,7 +432,9 @@ describe("SuitesTab", () => {
     await userEvent.type(inputs[1]!, "Regression Tests");
     await userEvent.click(screen.getByRole("button", { name: "Create Suite" }));
     expect(screen.getByText("Creating…")).toBeInTheDocument();
-    resolve(makeCreateSuiteResponse({ suite: mockSuite, filePath: ".ameliso/suites/regression.yaml" }));
+    resolve(
+      makeCreateSuiteResponse({ suite: mockSuite, filePath: ".ameliso/suites/regression.yaml" })
+    );
   });
 
   it('shows "No suites found." when suites list is empty', async () => {

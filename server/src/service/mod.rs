@@ -4,12 +4,36 @@ use tonic::{Request, Response, Status};
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
 use crate::repo::{self, RepoError};
 
+mod bulk_create_cases;
+mod bulk_delete_cases;
+mod bulk_record_results;
+mod bulk_update_cases;
+mod create_case;
 mod create_run;
 mod create_suite;
 #[cfg(test)]
 mod create_suite_test;
+mod delete_case;
+mod delete_run;
+mod delete_suite;
+mod finalize_run;
 mod get_affected_cases;
+mod get_case;
+mod get_coverage_report;
+mod get_pending_cases;
 mod get_repo_status;
+mod get_run;
+mod get_suite;
+mod handle_git_hub_callback;
+mod list_cases;
+mod list_runs;
+mod list_suites;
+mod record_result;
+mod remove_repository;
+mod sync_repository;
+mod update_case;
+mod update_run;
+mod update_suite;
 
 /// Returns true when `text` contains `case_path` as whole path segments.
 /// Prevents `auth/log` from matching inside `auth/login`.
@@ -73,7 +97,7 @@ pub(super) fn invalid(msg: impl Into<String>) -> Status {
     Status::invalid_argument(msg.into())
 }
 
-fn clean_tags(tags: Vec<String>) -> Vec<String> {
+pub(super) fn clean_tags(tags: Vec<String>) -> Vec<String> {
     tags.into_iter()
         .filter_map(|t| {
             let s = t.trim().to_owned();
@@ -142,7 +166,7 @@ pub(super) fn run_meta_with_counts_to_pb(
     }
 }
 
-fn result_to_pb(r: &repo::LoadedResult) -> pb::CaseResult {
+pub(super) fn result_to_pb(r: &repo::LoadedResult) -> pb::CaseResult {
     pb::CaseResult {
         case_path: r.case_path.clone(),
         status: result_status_to_i32(&r.status),
@@ -192,7 +216,7 @@ pub(super) fn build_pending_entries(
         .collect()
 }
 
-fn stored_to_pb(r: &crate::repos_store::StoredRepo) -> pb::Repository {
+pub(super) fn stored_to_pb(r: &crate::repos_store::StoredRepo) -> pb::Repository {
     pb::Repository {
         id: r.id.clone(),
         name: r.name.clone(),
@@ -203,7 +227,7 @@ fn stored_to_pb(r: &crate::repos_store::StoredRepo) -> pb::Repository {
     }
 }
 
-fn run_status_to_i32(s: &str) -> i32 {
+pub(super) fn run_status_to_i32(s: &str) -> i32 {
     match s {
         "in-progress" => pb::RunStatus::InProgress as i32,
         "completed" => pb::RunStatus::Completed as i32,
@@ -223,7 +247,7 @@ pub(super) fn result_status_to_i32(s: &str) -> i32 {
     }
 }
 
-fn result_status_from_i32(n: i32) -> &'static str {
+pub(super) fn result_status_from_i32(n: i32) -> &'static str {
     match pb::ResultStatus::try_from(n).unwrap_or(pb::ResultStatus::Unspecified) {
         pb::ResultStatus::Passed => "passed",
         pb::ResultStatus::Failed => "failed",
@@ -234,7 +258,7 @@ fn result_status_from_i32(n: i32) -> &'static str {
     }
 }
 
-fn run_status_from_i32(n: i32) -> &'static str {
+pub(super) fn run_status_from_i32(n: i32) -> &'static str {
     match pb::RunStatus::try_from(n).unwrap_or(pb::RunStatus::Unspecified) {
         pb::RunStatus::InProgress => "in-progress",
         pb::RunStatus::Completed => "completed",
@@ -373,485 +397,70 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::ListCasesRequest>,
     ) -> Result<Response<pb::ListCasesResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        let mut cases = repo::list_cases(&self.pool, &req.repo_id)
-            .await
-            .map_err(repo_err)?;
-
-        if !req.tags.is_empty() {
-            cases.retain(|c| {
-                req.tags
-                    .iter()
-                    .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
-            });
-        }
-        if let Some(pri) = priority_from_i32(req.priority) {
-            cases.retain(|c| c.priority.eq_ignore_ascii_case(pri));
-        }
-        if !req.query.is_empty() {
-            let q = req.query.to_lowercase();
-            cases.retain(|c| {
-                c.title.to_lowercase().contains(&q)
-                    || c.description.to_lowercase().contains(&q)
-                    || c.body.to_lowercase().contains(&q)
-                    || c.case_path.to_lowercase().contains(&q)
-            });
-        }
-        if !req.suite.is_empty() {
-            match repo::get_suite(&self.pool, &req.repo_id, &req.suite).await {
-                Ok(suite) => {
-                    let suite_set: std::collections::HashSet<&str> =
-                        suite.cases.iter().map(String::as_str).collect();
-                    cases.retain(|c| suite_set.contains(c.case_path.as_str()));
-                }
-                Err(e) => return Err(repo_err(e)),
-            }
-        }
-
-        cases.sort_by(|a, b| {
-            priority_rank(&a.priority)
-                .cmp(&priority_rank(&b.priority))
-                .then_with(|| a.case_path.cmp(&b.case_path))
-        });
-
-        Ok(Response::new(pb::ListCasesResponse {
-            cases: cases.iter().map(case_to_pb).collect(),
-        }))
+        list_cases::handle(self, request).await
     }
 
     async fn get_case(
         &self,
         request: Request<pb::GetCaseRequest>,
     ) -> Result<Response<pb::GetCaseResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        let case = repo::get_case(&self.pool, &req.repo_id, &req.case_path)
-            .await
-            .map_err(repo_err)?;
-        let body = case.body.clone();
-        Ok(Response::new(pb::GetCaseResponse {
-            case: Some(case_to_pb(&case)),
-            body,
-        }))
+        get_case::handle(self, request).await
     }
 
     async fn create_case(
         &self,
         request: Request<pb::CreateCaseRequest>,
     ) -> Result<Response<pb::CreateCaseResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.case_path.is_empty() {
-            return Err(invalid("case_path is required"));
-        }
-        if req.title.is_empty() {
-            return Err(invalid("title is required"));
-        }
-        check_max_len("case_path", &req.case_path, 200)?;
-        check_max_len("title", &req.title, 255)?;
-        check_max_len("description", &req.description, 1000)?;
-        check_max_len("body", &req.body, 100_000)?;
-        let priority = priority_from_i32(req.priority).unwrap_or("medium");
-        let body = if req.body.is_empty() {
-            None
-        } else {
-            Some(req.body.as_str())
-        };
-        let case = repo::create_case(
-            &self.pool,
-            &req.repo_id,
-            &req.case_path,
-            &req.title,
-            &req.description,
-            clean_tags(req.tags),
-            priority,
-            body,
-        )
-        .await
-        .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let case_clone = case.clone();
-            tokio::spawn(async move {
-                if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for {}/{}: {e}",
-                        repo_id, case_clone.case_path
-                    );
-                }
-            });
-        }
-        let file_path = format!(".ameliso/cases/{}.md", req.case_path);
-        Ok(Response::new(pb::CreateCaseResponse {
-            case: Some(case_to_pb(&case)),
-            file_path,
-        }))
+        create_case::handle(self, request).await
     }
 
     async fn bulk_create_cases(
         &self,
         request: Request<pb::BulkCreateCasesRequest>,
     ) -> Result<Response<pb::BulkCreateCasesResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.cases.is_empty() {
-            return Err(invalid("cases list must not be empty"));
-        }
-        let has_run_id = !req.run_id.is_empty();
-        let mut created: Vec<pb::Case> = Vec::with_capacity(req.cases.len());
-        let mut file_paths: Vec<String> = Vec::with_capacity(req.cases.len());
-        let mut new_case_paths: Vec<String> = Vec::with_capacity(req.cases.len());
-        for entry in &req.cases {
-            if entry.case_path.is_empty() {
-                return Err(invalid("each entry must have a case_path"));
-            }
-            if entry.title.is_empty() {
-                return Err(invalid(format!(
-                    "entry '{}' must have a title",
-                    entry.case_path
-                )));
-            }
-            check_max_len("case_path", &entry.case_path, 200)?;
-            check_max_len("title", &entry.title, 255)?;
-            check_max_len("description", &entry.description, 1000)?;
-            check_max_len("body", &entry.body, 100_000)?;
-            let priority = priority_from_i32(entry.priority).unwrap_or("medium");
-            let body = if entry.body.is_empty() {
-                None
-            } else {
-                Some(entry.body.as_str())
-            };
-            let case = repo::create_case(
-                &self.pool,
-                &req.repo_id,
-                &entry.case_path,
-                &entry.title,
-                &entry.description,
-                clean_tags(entry.tags.clone()),
-                priority,
-                body,
-            )
-            .await
-            .map_err(repo_err)?;
-            {
-                let pool = self.pool.clone();
-                let repo_id = req.repo_id.clone();
-                let case_clone = case.clone();
-                tokio::spawn(async move {
-                    if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
-                        eprintln!(
-                            "warning: github sync failed for {}/{}: {e}",
-                            repo_id, case_clone.case_path
-                        );
-                    }
-                });
-            }
-            file_paths.push(format!(".ameliso/cases/{}.md", entry.case_path));
-            new_case_paths.push(entry.case_path.clone());
-            created.push(case_to_pb(&case));
-        }
-        let pending = if has_run_id {
-            repo::add_cases_to_run(&self.pool, &req.repo_id, &req.run_id, &new_case_paths)
-                .await
-                .map_err(repo_err)?;
-            let ((pending_cases, _), statuses) = tokio::join!(
-                async {
-                    repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                        .await
-                        .unwrap_or_default()
-                },
-                async {
-                    repo::get_latest_statuses(&self.pool, &req.repo_id)
-                        .await
-                        .unwrap_or_default()
-                },
-            );
-            build_pending_entries(&pending_cases, &statuses)
-        } else {
-            vec![]
-        };
-        Ok(Response::new(pb::BulkCreateCasesResponse {
-            cases: created,
-            file_paths,
-            pending,
-        }))
+        bulk_create_cases::handle(self, request).await
     }
 
     async fn update_case(
         &self,
         request: Request<pb::UpdateCaseRequest>,
     ) -> Result<Response<pb::UpdateCaseResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.case_path.is_empty() {
-            return Err(invalid("case_path is required"));
-        }
-        check_max_len("case_path", &req.case_path, 200)?;
-        check_max_len("new_path", &req.new_path, 200)?;
-        check_max_len("title", &req.title, 255)?;
-        check_max_len("description", &req.description, 1000)?;
-        check_max_len("body", &req.body, 100_000)?;
-        let priority = priority_from_i32(req.priority);
-        let title = if req.title.is_empty() {
-            None
-        } else {
-            Some(req.title.as_str())
-        };
-        let description = if req.description.is_empty() {
-            None
-        } else {
-            Some(req.description.as_str())
-        };
-        let tags = if req.tags.is_empty() {
-            None
-        } else {
-            let cleaned = clean_tags(req.tags);
-            if cleaned.is_empty() {
-                None
-            } else {
-                Some(cleaned)
-            }
-        };
-        let body = if req.body.is_empty() {
-            None
-        } else {
-            Some(req.body.as_str())
-        };
-        let new_path = if req.new_path.is_empty() {
-            None
-        } else {
-            Some(req.new_path.as_str())
-        };
-        let case = repo::update_case(
-            &self.pool,
-            &req.repo_id,
-            &req.case_path,
-            title,
-            description,
-            tags,
-            priority,
-            body,
-            new_path,
-        )
-        .await
-        .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let case_clone = case.clone();
-            tokio::spawn(async move {
-                if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for {}/{}: {e}",
-                        repo_id, case_clone.case_path
-                    );
-                }
-            });
-        }
-        Ok(Response::new(pb::UpdateCaseResponse {
-            case: Some(case_to_pb(&case)),
-        }))
+        update_case::handle(self, request).await
     }
 
     async fn bulk_update_cases(
         &self,
         request: Request<pb::BulkUpdateCasesRequest>,
     ) -> Result<Response<pb::BulkUpdateCasesResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.cases.is_empty() {
-            return Err(invalid("cases must not be empty"));
-        }
-        for entry in &req.cases {
-            if entry.case_path.is_empty() {
-                return Err(invalid("each entry must have a case_path"));
-            }
-            check_max_len("case_path", &entry.case_path, 200)?;
-            check_max_len("title", &entry.title, 255)?;
-            check_max_len("description", &entry.description, 1000)?;
-            check_max_len("body", &entry.body, 100_000)?;
-        }
-        let mut updated: Vec<pb::Case> = Vec::new();
-        for entry in &req.cases {
-            let priority = priority_from_i32(entry.priority);
-            let title = if entry.title.is_empty() {
-                None
-            } else {
-                Some(entry.title.as_str())
-            };
-            let description = if entry.description.is_empty() {
-                None
-            } else {
-                Some(entry.description.as_str())
-            };
-            let tags = if entry.tags.is_empty() {
-                None
-            } else {
-                let cleaned = clean_tags(entry.tags.clone());
-                if cleaned.is_empty() {
-                    None
-                } else {
-                    Some(cleaned)
-                }
-            };
-            let body = if entry.body.is_empty() {
-                None
-            } else {
-                Some(entry.body.as_str())
-            };
-            let case = repo::update_case(
-                &self.pool,
-                &req.repo_id,
-                &entry.case_path,
-                title,
-                description,
-                tags,
-                priority,
-                body,
-                None,
-            )
-            .await
-            .map_err(repo_err)?;
-            {
-                let pool = self.pool.clone();
-                let repo_id = req.repo_id.clone();
-                let case_clone = case.clone();
-                tokio::spawn(async move {
-                    if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
-                        eprintln!(
-                            "warning: github sync failed for {}/{}: {e}",
-                            repo_id, case_clone.case_path
-                        );
-                    }
-                });
-            }
-            updated.push(case_to_pb(&case));
-        }
-        Ok(Response::new(pb::BulkUpdateCasesResponse {
-            cases: updated,
-        }))
+        bulk_update_cases::handle(self, request).await
     }
 
     async fn delete_case(
         &self,
         request: Request<pb::DeleteCaseRequest>,
     ) -> Result<Response<pb::DeleteCaseResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.case_path.is_empty() {
-            return Err(invalid("case_path is required"));
-        }
-        repo::delete_case(&self.pool, &req.repo_id, &req.case_path)
-            .await
-            .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let case_path_clone = req.case_path.clone();
-            tokio::spawn(async move {
-                if let Err(e) =
-                    crate::sync::delete_case_file(&pool, &repo_id, &case_path_clone).await
-                {
-                    eprintln!(
-                        "warning: github delete sync failed for {repo_id}/{case_path_clone}: {e}"
-                    );
-                }
-            });
-        }
-        Ok(Response::new(pb::DeleteCaseResponse {
-            file_path: format!(".ameliso/cases/{}.md", req.case_path),
-        }))
+        delete_case::handle(self, request).await
     }
 
     async fn bulk_delete_cases(
         &self,
         request: Request<pb::BulkDeleteCasesRequest>,
     ) -> Result<Response<pb::BulkDeleteCasesResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.case_paths.is_empty() {
-            return Err(invalid("case_paths must not be empty"));
-        }
-        for path in &req.case_paths {
-            if path.is_empty() {
-                return Err(invalid("each case_path must be non-empty"));
-            }
-        }
-        let mut file_paths: Vec<String> = Vec::new();
-        for path in &req.case_paths {
-            repo::delete_case(&self.pool, &req.repo_id, path)
-                .await
-                .map_err(repo_err)?;
-            {
-                let pool = self.pool.clone();
-                let repo_id = req.repo_id.clone();
-                let path_clone = path.clone();
-                tokio::spawn(async move {
-                    if let Err(e) =
-                        crate::sync::delete_case_file(&pool, &repo_id, &path_clone).await
-                    {
-                        eprintln!(
-                            "warning: github delete sync failed for {repo_id}/{path_clone}: {e}"
-                        );
-                    }
-                });
-            }
-            file_paths.push(format!(".ameliso/cases/{path}.md"));
-        }
-        Ok(Response::new(pb::BulkDeleteCasesResponse { file_paths }))
+        bulk_delete_cases::handle(self, request).await
     }
 
     async fn list_suites(
         &self,
         request: Request<pb::ListSuitesRequest>,
     ) -> Result<Response<pb::ListSuitesResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        let suites = repo::list_suites(&self.pool, &req.repo_id)
-            .await
-            .map_err(repo_err)?;
-        Ok(Response::new(pb::ListSuitesResponse {
-            suites: suites.iter().map(suite_to_pb).collect(),
-        }))
+        list_suites::handle(self, request).await
     }
 
     async fn get_suite(
         &self,
         request: Request<pb::GetSuiteRequest>,
     ) -> Result<Response<pb::GetSuiteResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.slug.is_empty() {
-            return Err(invalid("slug is required"));
-        }
-        let suite = repo::get_suite(&self.pool, &req.repo_id, &req.slug)
-            .await
-            .map_err(repo_err)?;
-        Ok(Response::new(pb::GetSuiteResponse {
-            suite: Some(suite_to_pb(&suite)),
-        }))
+        get_suite::handle(self, request).await
     }
 
     async fn create_suite(
@@ -865,196 +474,28 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::UpdateSuiteRequest>,
     ) -> Result<Response<pb::UpdateSuiteResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.slug.is_empty() {
-            return Err(invalid("slug is required"));
-        }
-        check_max_len("slug", &req.slug, 100)?;
-        check_max_len("new_slug", &req.new_slug, 100)?;
-        check_max_len("name", &req.name, 255)?;
-        check_max_len("description", &req.description, 1000)?;
-        let name = if req.name.is_empty() {
-            None
-        } else {
-            Some(req.name.as_str())
-        };
-        let description = if req.description.is_empty() {
-            None
-        } else {
-            Some(Some(req.description.clone()))
-        };
-        let cases = if req.replace_cases || !req.cases.is_empty() {
-            Some(req.cases)
-        } else {
-            None
-        };
-        let new_slug = if req.new_slug.is_empty() {
-            None
-        } else {
-            Some(req.new_slug.as_str())
-        };
-        let old_slug = req.slug.clone();
-        let slug_changed = !req.new_slug.is_empty();
-        let suite = repo::update_suite(
-            &self.pool,
-            &req.repo_id,
-            &req.slug,
-            name,
-            description,
-            cases,
-            new_slug,
-        )
-        .await
-        .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let suite_clone = suite.clone();
-            tokio::spawn(async move {
-                if slug_changed {
-                    if let Err(e) = crate::sync::delete_suite_file(&pool, &repo_id, &old_slug).await
-                    {
-                        eprintln!("warning: github sync failed deleting suite {old_slug}: {e}");
-                    }
-                }
-                if let Err(e) = crate::sync::push_suite(&pool, &repo_id, &suite_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for suite {}: {e}",
-                        suite_clone.slug
-                    );
-                }
-            });
-        }
-        Ok(Response::new(pb::UpdateSuiteResponse {
-            suite: Some(suite_to_pb(&suite)),
-        }))
+        update_suite::handle(self, request).await
     }
 
     async fn delete_suite(
         &self,
         request: Request<pb::DeleteSuiteRequest>,
     ) -> Result<Response<pb::DeleteSuiteResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.slug.is_empty() {
-            return Err(invalid("slug is required"));
-        }
-        repo::delete_suite(&self.pool, &req.repo_id, &req.slug)
-            .await
-            .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let slug = req.slug.clone();
-            tokio::spawn(async move {
-                if let Err(e) = crate::sync::delete_suite_file(&pool, &repo_id, &slug).await {
-                    eprintln!("warning: github sync failed deleting suite {slug}: {e}");
-                }
-            });
-        }
-        Ok(Response::new(pb::DeleteSuiteResponse {
-            file_path: format!(".ameliso/suites/{}.yaml", req.slug),
-        }))
+        delete_suite::handle(self, request).await
     }
 
     async fn list_runs(
         &self,
         request: Request<pb::ListRunsRequest>,
     ) -> Result<Response<pb::ListRunsResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        let status_filter = req.status;
-        let runs = repo::list_runs(&self.pool, &req.repo_id)
-            .await
-            .map_err(repo_err)?;
-        // Fetch per-run result counts in one GROUP BY query.
-        let raw_counts: Vec<(String, i64, i64, i64, i64)> = sqlx::query_as(
-            "SELECT run_id,
-             COUNT(*) FILTER (WHERE status='passed'),
-             COUNT(*) FILTER (WHERE status='failed'),
-             COUNT(*) FILTER (WHERE status='blocked'),
-             COUNT(*) FILTER (WHERE status='skipped')
-             FROM results WHERE repo_id=$1 GROUP BY run_id",
-        )
-        .bind(&req.repo_id)
-        .fetch_all(&self.pool)
-        .await
-        .unwrap_or_default();
-        let counts_map: std::collections::HashMap<&str, (i32, i32, i32, i32, i32)> = raw_counts
-            .iter()
-            .map(|(id, p, f, b, s)| {
-                let (p, f, b, s) = (*p as i32, *f as i32, *b as i32, *s as i32);
-                (id.as_str(), (p, f, b, s, p + f + b + s))
-            })
-            .collect();
-        let pb_runs = runs
-            .iter()
-            .filter(|r| {
-                status_filter == pb::RunStatus::Unspecified as i32
-                    || run_status_to_i32(&r.status) == status_filter
-            })
-            .map(|r| {
-                let (p, f, b, s, t) = counts_map
-                    .get(r.run_id.as_str())
-                    .copied()
-                    .unwrap_or_default();
-                run_meta_with_counts_to_pb(r, p, f, b, s, t)
-            })
-            .collect();
-        Ok(Response::new(pb::ListRunsResponse { runs: pb_runs }))
+        list_runs::handle(self, request).await
     }
 
     async fn get_run(
         &self,
         request: Request<pb::GetRunRequest>,
     ) -> Result<Response<pb::GetRunResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-            .await
-            .map_err(repo_err)?;
-        let pb_run = pb::Run {
-            meta: Some(run_meta_to_pb(&run.meta)),
-            results: run.results.iter().map(result_to_pb).collect(),
-        };
-        // Return in-scope cases so callers skip a separate ListCases call.
-        let inline_paths: Vec<String> = sqlx::query_scalar(
-            "SELECT case_path FROM run_cases WHERE repo_id=$1 AND run_id=$2 ORDER BY case_path",
-        )
-        .bind(&req.repo_id)
-        .bind(&req.run_id)
-        .fetch_all(&self.pool)
-        .await
-        .unwrap_or_default();
-        let run_cases = if inline_paths.is_empty() {
-            repo::list_cases(&self.pool, &req.repo_id)
-                .await
-                .unwrap_or_default()
-        } else {
-            let path_set: std::collections::HashSet<String> = inline_paths.into_iter().collect();
-            repo::list_cases(&self.pool, &req.repo_id)
-                .await
-                .unwrap_or_default()
-                .into_iter()
-                .filter(|c| path_set.contains(&c.case_path))
-                .collect()
-        };
-        Ok(Response::new(pb::GetRunResponse {
-            run: Some(pb_run),
-            cases: run_cases.iter().map(case_to_pb).collect(),
-        }))
+        get_run::handle(self, request).await
     }
 
     async fn create_run(
@@ -1068,526 +509,49 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::RecordResultRequest>,
     ) -> Result<Response<pb::RecordResultResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        if req.case_path.is_empty() {
-            return Err(invalid("case_path is required"));
-        }
-        let status = result_status_from_i32(req.status);
-        if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
-            return Err(invalid(
-                "status must be one of: passed, failed, blocked, skipped",
-            ));
-        }
-        if matches!(status, "failed" | "blocked") && req.notes.trim().is_empty() {
-            return Err(invalid(
-                "notes are required when status is failed or blocked",
-            ));
-        }
-        check_max_len("notes", &req.notes, 2000)?;
-        let (result, _) = repo::record_result(
-            &self.pool,
-            &req.repo_id,
-            &req.run_id,
-            &req.case_path,
-            status,
-            &req.notes,
-        )
-        .await
-        .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let run_id = req.run_id.clone();
-            let result_clone = result.clone();
-            tokio::spawn(async move {
-                if let Err(e) =
-                    crate::sync::push_result(&pool, &repo_id, &run_id, &result_clone).await
-                {
-                    eprintln!(
-                        "warning: github sync failed for result {}/{}: {e}",
-                        run_id, result_clone.case_path
-                    );
-                }
-            });
-        }
-        let ((pending_cases, total_in_scope), statuses) = tokio::join!(
-            async {
-                repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                    .await
-                    .unwrap_or_default()
-            },
-            async {
-                repo::get_latest_statuses(&self.pool, &req.repo_id)
-                    .await
-                    .unwrap_or_default()
-            },
-        );
-        Ok(Response::new(pb::RecordResultResponse {
-            result: Some(result_to_pb(&result)),
-            pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
-            total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
-            pending: build_pending_entries(&pending_cases, &statuses),
-        }))
+        record_result::handle(self, request).await
     }
 
     async fn bulk_record_results(
         &self,
         request: Request<pb::BulkRecordResultsRequest>,
     ) -> Result<Response<pb::BulkRecordResultsResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        if req.results.is_empty() {
-            return Err(invalid("results must not be empty"));
-        }
-        // Validate all entries before touching the DB.
-        for entry in &req.results {
-            if entry.case_path.is_empty() {
-                return Err(invalid("each result must have a case_path"));
-            }
-            let status = result_status_from_i32(entry.status);
-            if !matches!(status, "passed" | "failed" | "blocked" | "skipped") {
-                return Err(invalid(
-                    "status must be one of: passed, failed, blocked, skipped",
-                ));
-            }
-            if matches!(status, "failed" | "blocked") && entry.notes.trim().is_empty() {
-                return Err(invalid(
-                    "notes are required when status is failed or blocked",
-                ));
-            }
-        }
-        let mut recorded: Vec<pb::CaseResult> = Vec::new();
-        for entry in &req.results {
-            let status = result_status_from_i32(entry.status);
-            let (result, _) = repo::record_result(
-                &self.pool,
-                &req.repo_id,
-                &req.run_id,
-                &entry.case_path,
-                status,
-                &entry.notes,
-            )
-            .await
-            .map_err(repo_err)?;
-            {
-                let pool = self.pool.clone();
-                let repo_id = req.repo_id.clone();
-                let run_id = req.run_id.clone();
-                let result_clone = result.clone();
-                tokio::spawn(async move {
-                    if let Err(e) =
-                        crate::sync::push_result(&pool, &repo_id, &run_id, &result_clone).await
-                    {
-                        eprintln!(
-                            "warning: github sync failed for result {}/{}: {e}",
-                            run_id, result_clone.case_path
-                        );
-                    }
-                });
-            }
-            recorded.push(result_to_pb(&result));
-        }
-        let ((pending_cases, total_in_scope), statuses) = tokio::join!(
-            async {
-                repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                    .await
-                    .unwrap_or_default()
-            },
-            async {
-                repo::get_latest_statuses(&self.pool, &req.repo_id)
-                    .await
-                    .unwrap_or_default()
-            },
-        );
-        Ok(Response::new(pb::BulkRecordResultsResponse {
-            results: recorded,
-            pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
-            total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
-            pending: build_pending_entries(&pending_cases, &statuses),
-        }))
+        bulk_record_results::handle(self, request).await
     }
 
     async fn finalize_run(
         &self,
         request: Request<pb::FinalizeRunRequest>,
     ) -> Result<Response<pb::FinalizeRunResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        let status = run_status_from_i32(req.status);
-        if status == "in-progress" {
-            return Err(invalid("status must be completed or aborted"));
-        }
-        // For UNSPECIFIED, fetch results to auto-detect status; reuse them for the response.
-        let pre_results = if matches!(status, "completed" | "aborted") {
-            None
-        } else {
-            let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map_err(repo_err)?;
-            Some(run.results)
-        };
-        let resolved_status = if matches!(status, "completed" | "aborted") {
-            status
-        } else {
-            if pre_results
-                .as_ref()
-                .is_some_and(|rs| rs.iter().any(|r| r.status == "failed"))
-            {
-                "aborted"
-            } else {
-                "completed"
-            }
-        };
-        let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, resolved_status)
-            .await
-            .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let run_clone = meta.clone();
-            tokio::spawn(async move {
-                if let Err(e) = crate::sync::push_run_meta(&pool, &repo_id, &run_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for run {}: {e}",
-                        run_clone.run_id
-                    );
-                }
-            });
-        }
-        // Get results: reuse pre-fetched ones (UNSPECIFIED path) or fetch now (explicit status).
-        let results = match pre_results {
-            Some(rs) => rs,
-            None => repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map(|r| r.results)
-                .unwrap_or_default(),
-        };
-        let (p, f, b, s) = results
-            .iter()
-            .fold((0i32, 0i32, 0i32, 0i32), |(p, f, b, s), r| {
-                match r.status.as_str() {
-                    "passed" => (p + 1, f, b, s),
-                    "failed" => (p, f + 1, b, s),
-                    "blocked" => (p, f, b + 1, s),
-                    "skipped" => (p, f, b, s + 1),
-                    _ => (p, f, b, s),
-                }
-            });
-        let pb_results: Vec<pb::CaseResult> = results
-            .into_iter()
-            .map(|r| pb::CaseResult {
-                case_path: r.case_path,
-                status: result_status_to_i32(&r.status),
-                notes: r.notes,
-            })
-            .collect();
-        Ok(Response::new(pb::FinalizeRunResponse {
-            run: Some(run_meta_with_counts_to_pb(&meta, p, f, b, s, p + f + b + s)),
-            results: pb_results,
-        }))
+        finalize_run::handle(self, request).await
     }
 
     async fn delete_run(
         &self,
         request: Request<pb::DeleteRunRequest>,
     ) -> Result<Response<pb::DeleteRunResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        let dir_path = format!(".ameliso/runs/{}", req.run_id);
-        let result_paths: Vec<String> = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-            .await
-            .map(|r| r.results.into_iter().map(|res| res.case_path).collect())
-            .unwrap_or_default();
-        repo::delete_run(&self.pool, &req.repo_id, &req.run_id)
-            .await
-            .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let run_id = req.run_id.clone();
-            tokio::spawn(async move {
-                if let Err(e) =
-                    crate::sync::delete_run_files(&pool, &repo_id, &run_id, &result_paths).await
-                {
-                    eprintln!("warning: github sync failed deleting run {run_id}: {e}");
-                }
-            });
-        }
-        Ok(Response::new(pb::DeleteRunResponse { dir_path }))
+        delete_run::handle(self, request).await
     }
 
     async fn update_run(
         &self,
         request: Request<pb::UpdateRunRequest>,
     ) -> Result<Response<pb::UpdateRunResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        let has_slug = !req.new_slug.is_empty();
-        let has_meta =
-            req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
-        let has_add_cases = !req.add_cases.is_empty();
-        if !has_slug && !has_meta && !has_add_cases {
-            return Err(invalid(
-                "at least one of new_slug, commit_sha, tester, environment, or add_cases is required",
-            ));
-        }
-        for cp in &req.add_cases {
-            check_max_len("add_cases case_path", cp, 200)?;
-        }
-        // Apply metadata patch first (before rename changes run_id).
-        if has_meta {
-            repo::patch_run_meta(
-                &self.pool,
-                &req.repo_id,
-                &req.run_id,
-                req.commit_sha.as_deref(),
-                req.tester.as_deref(),
-                req.environment.as_deref(),
-            )
-            .await
-            .map_err(repo_err)?;
-        }
-        if has_add_cases {
-            repo::add_cases_to_run(&self.pool, &req.repo_id, &req.run_id, &req.add_cases)
-                .await
-                .map_err(repo_err)?;
-        }
-        let old_run_id = req.run_id.clone();
-        let old_result_paths: Vec<String> = if has_slug {
-            repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map(|r| r.results.into_iter().map(|res| res.case_path).collect())
-                .unwrap_or_default()
-        } else {
-            vec![]
-        };
-        let run = if has_slug {
-            repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
-                .await
-                .map_err(repo_err)?
-        } else {
-            repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map_err(repo_err)?
-                .meta
-        };
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let run_clone = run.clone();
-            let renamed = has_slug;
-            tokio::spawn(async move {
-                if renamed {
-                    if let Err(e) = crate::sync::delete_run_files(
-                        &pool,
-                        &repo_id,
-                        &old_run_id,
-                        &old_result_paths,
-                    )
-                    .await
-                    {
-                        eprintln!("warning: github sync failed deleting old run {old_run_id}: {e}");
-                    }
-                    // Re-push all results under new run_id.
-                    let results = repo::get_run(&pool, &repo_id, &run_clone.run_id)
-                        .await
-                        .map(|r| r.results)
-                        .unwrap_or_default();
-                    for result in &results {
-                        if let Err(e) =
-                            crate::sync::push_result(&pool, &repo_id, &run_clone.run_id, result)
-                                .await
-                        {
-                            eprintln!(
-                                "warning: github sync failed pushing result {}/{}: {e}",
-                                run_clone.run_id, result.case_path
-                            );
-                        }
-                    }
-                }
-                if let Err(e) = crate::sync::push_run_meta(&pool, &repo_id, &run_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for run {}: {e}",
-                        run_clone.run_id
-                    );
-                }
-            });
-        }
-        let new_dir_path = format!(".ameliso/runs/{}", run.run_id);
-        let pending = if has_add_cases {
-            let ((pending_cases, _), statuses) = tokio::join!(
-                async {
-                    repo::get_pending_cases(&self.pool, &req.repo_id, &run.run_id)
-                        .await
-                        .unwrap_or_default()
-                },
-                async {
-                    repo::get_latest_statuses(&self.pool, &req.repo_id)
-                        .await
-                        .unwrap_or_default()
-                },
-            );
-            build_pending_entries(&pending_cases, &statuses)
-        } else {
-            vec![]
-        };
-        Ok(Response::new(pb::UpdateRunResponse {
-            run: Some(run_meta_to_pb(&run)),
-            new_dir_path,
-            pending,
-        }))
+        update_run::handle(self, request).await
     }
 
     async fn get_pending_cases(
         &self,
         request: Request<pb::GetPendingCasesRequest>,
     ) -> Result<Response<pb::GetPendingCasesResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.run_id.is_empty() {
-            return Err(invalid("run_id is required"));
-        }
-        let (mut pending, total) = repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-            .await
-            .map_err(repo_err)?;
-        if let Some(pri) = priority_from_i32(req.priority_filter) {
-            pending.retain(|c| c.priority.eq_ignore_ascii_case(pri));
-        }
-        let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
-            .await
-            .unwrap_or_default();
-        // Sort: failed/never first, then by case priority (high → low)
-        pending.sort_by(|a, b| {
-            let status_ord =
-                |path: &str| match statuses.get(path).map(String::as_str).unwrap_or("never") {
-                    "failed" => 0i32,
-                    "never" => 1,
-                    "blocked" => 2,
-                    "skipped" => 3,
-                    "passed" => 4,
-                    _ => 5,
-                };
-            status_ord(&a.case_path)
-                .cmp(&status_ord(&b.case_path))
-                .then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
-        });
-        let entries = pending
-            .iter()
-            .map(|c| pb::CoverageEntry {
-                latest_status: result_status_to_i32(
-                    statuses
-                        .get(&c.case_path)
-                        .map(String::as_str)
-                        .unwrap_or("never"),
-                ),
-                last_run_id: String::new(),
-                last_run_date: String::new(),
-                body: c.body.clone(),
-                case: Some(case_to_pb(c)),
-            })
-            .collect();
-        let pending_entries = pending
-            .iter()
-            .map(|c| pb::PendingEntry {
-                case: Some(case_to_pb(c)),
-                body: c.body.clone(),
-                latest_status: result_status_to_i32(
-                    statuses
-                        .get(&c.case_path)
-                        .map(String::as_str)
-                        .unwrap_or("never"),
-                ),
-            })
-            .collect();
-        Ok(Response::new(pb::GetPendingCasesResponse {
-            cases: pending.iter().map(case_to_pb).collect(),
-            total_in_scope: i32::try_from(total).unwrap_or(i32::MAX),
-            entries,
-            pending: pending_entries,
-        }))
+        get_pending_cases::handle(self, request).await
     }
 
     async fn get_coverage_report(
         &self,
         request: Request<pb::GetCoverageReportRequest>,
     ) -> Result<Response<pb::GetCoverageReportResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        let status_filter = req.status_filter;
-        let (entries, run_count) = repo::get_coverage_report(&self.pool, &req.repo_id)
-            .await
-            .map_err(repo_err)?;
-
-        let mut pb_entries: Vec<pb::CoverageEntry> = entries
-            .into_iter()
-            .filter_map(|row| {
-                let status_i32 = result_status_to_i32(&row.latest_status);
-                if status_filter != pb::ResultStatus::Unspecified as i32
-                    && status_i32 != status_filter
-                {
-                    return None;
-                }
-                let case = pb::Case {
-                    path: row.case_path,
-                    title: row.title,
-                    description: row.description,
-                    tags: row.tags,
-                    priority: row.priority,
-                    created_at: row.created_at,
-                    updated_at: row.updated_at,
-                    body: row.body.clone(),
-                };
-                Some(pb::CoverageEntry {
-                    case: Some(case),
-                    latest_status: status_i32,
-                    last_run_id: row.last_run_id,
-                    last_run_date: row.last_run_date,
-                    body: row.body,
-                })
-            })
-            .collect();
-        pb_entries.sort_by(|a, b| {
-            let sa = result_status_rank(result_status_from_i32(a.latest_status));
-            let sb = result_status_rank(result_status_from_i32(b.latest_status));
-            let pa = a.case.as_ref().map_or(3, |c| priority_rank(&c.priority));
-            let pb_rank = b.case.as_ref().map_or(3, |c| priority_rank(&c.priority));
-            sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
-        });
-
-        Ok(Response::new(pb::GetCoverageReportResponse {
-            entries: pb_entries,
-            run_count: i32::try_from(run_count).unwrap_or(i32::MAX),
-        }))
+        get_coverage_report::handle(self, request).await
     }
 
     async fn get_affected_cases(
@@ -1624,49 +588,7 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::HandleGitHubCallbackRequest>,
     ) -> Result<Response<pb::HandleGitHubCallbackResponse>, Status> {
-        let req = request.into_inner();
-        if req.installation_id.is_empty() {
-            return Err(invalid("installation_id is required"));
-        }
-
-        let cfg = crate::github::config().ok_or_else(|| {
-            Status::failed_precondition(
-                "GitHub App not configured (set GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY)",
-            )
-        })?;
-
-        let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let token = crate::github::get_installation_token(&req.installation_id, &jwt)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let gh_repos = crate::github::list_installation_repos(&token)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-        let mut result = Vec::new();
-
-        for gh_repo in &gh_repos {
-            let stored = crate::repos_store::StoredRepo {
-                id: gh_repo.full_name.clone(),
-                name: gh_repo.name.clone(),
-                full_name: gh_repo.full_name.clone(),
-                html_url: gh_repo.html_url.clone(),
-                installation_id: req.installation_id.clone(),
-                added_at: now.clone(),
-            };
-            crate::repos_store::add_or_update(&self.pool, &stored)
-                .await
-                .map_err(|e| Status::internal(e.to_string()))?;
-            result.push(stored_to_pb(&stored));
-        }
-
-        Ok(Response::new(pb::HandleGitHubCallbackResponse {
-            repositories: result,
-        }))
+        handle_git_hub_callback::handle(self, request).await
     }
 
     async fn list_repositories(
@@ -1686,58 +608,14 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::SyncRepositoryRequest>,
     ) -> Result<Response<pb::SyncRepositoryResponse>, Status> {
-        let req = request.into_inner();
-        if req.id.is_empty() {
-            return Err(invalid("id is required"));
-        }
-
-        let stored = crate::repos_store::get(&self.pool, &req.id)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?
-            .ok_or_else(|| Status::not_found(format!("repository {} not found", req.id)))?;
-
-        // Verify the repo still exists in GitHub and refresh metadata.
-        let cfg = crate::github::config()
-            .ok_or_else(|| Status::failed_precondition("GitHub App not configured"))?;
-        let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
-            .map_err(|e| Status::internal(e.to_string()))?;
-        let token = crate::github::get_installation_token(&stored.installation_id, &jwt)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let gh_repo = crate::github::get_repo(&stored.full_name, &token)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let updated = crate::repos_store::StoredRepo {
-            id: stored.id.clone(),
-            name: gh_repo.name,
-            full_name: gh_repo.full_name,
-            html_url: gh_repo.html_url,
-            installation_id: stored.installation_id.clone(),
-            added_at: stored.added_at.clone(),
-        };
-        crate::repos_store::add_or_update(&self.pool, &updated)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        Ok(Response::new(pb::SyncRepositoryResponse {
-            repository: Some(stored_to_pb(&updated)),
-        }))
+        sync_repository::handle(self, request).await
     }
 
     async fn remove_repository(
         &self,
         request: Request<pb::RemoveRepositoryRequest>,
     ) -> Result<Response<pb::RemoveRepositoryResponse>, Status> {
-        let req = request.into_inner();
-        if req.id.is_empty() {
-            return Err(invalid("id is required"));
-        }
-        crate::repos_store::remove(&self.pool, &req.id)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-        Ok(Response::new(pb::RemoveRepositoryResponse {}))
+        remove_repository::handle(self, request).await
     }
 }
 
