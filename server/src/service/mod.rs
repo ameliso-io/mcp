@@ -4,6 +4,10 @@ use tonic::{Request, Response, Status};
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
 use crate::repo::{self, RepoError, RunRow};
 
+mod create_suite;
+#[cfg(test)]
+mod create_suite_test;
+
 /// Returns true when `text` contains `case_path` as whole path segments.
 /// Prevents `auth/log` from matching inside `auth/login`.
 fn text_references_case(text: &str, case_path: &str) -> bool {
@@ -52,7 +56,7 @@ fn is_doc_file(path: &str) -> bool {
     doc_exts.contains(&ext.as_str()) || doc_filenames.contains(&filename)
 }
 
-fn repo_err(e: RepoError) -> Status {
+pub(super) fn repo_err(e: RepoError) -> Status {
     match e {
         RepoError::NotFound(msg) => Status::not_found(msg),
         RepoError::AlreadyExists(msg) => Status::already_exists(msg),
@@ -62,7 +66,7 @@ fn repo_err(e: RepoError) -> Status {
     }
 }
 
-fn invalid(msg: impl Into<String>) -> Status {
+pub(super) fn invalid(msg: impl Into<String>) -> Status {
     Status::invalid_argument(msg.into())
 }
 
@@ -80,7 +84,7 @@ fn clean_tags(tags: Vec<String>) -> Vec<String> {
 }
 
 #[allow(clippy::result_large_err)]
-fn check_max_len(field: &str, value: &str, max: usize) -> Result<(), Status> {
+pub(super) fn check_max_len(field: &str, value: &str, max: usize) -> Result<(), Status> {
     if value.len() > max {
         return Err(invalid(format!(
             "{field} must not exceed {max} characters (got {})",
@@ -143,7 +147,7 @@ fn result_to_pb(r: &repo::LoadedResult) -> pb::CaseResult {
     }
 }
 
-fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
+pub(super) fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
     pb::Suite {
         slug: s.slug.clone(),
         name: s.name.clone(),
@@ -848,51 +852,7 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::CreateSuiteRequest>,
     ) -> Result<Response<pb::CreateSuiteResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        if req.slug.is_empty() {
-            return Err(invalid("slug is required"));
-        }
-        if req.name.is_empty() {
-            return Err(invalid("name is required"));
-        }
-        check_max_len("slug", &req.slug, 100)?;
-        check_max_len("name", &req.name, 255)?;
-        check_max_len("description", &req.description, 1000)?;
-        let desc = if req.description.is_empty() {
-            None
-        } else {
-            Some(req.description.clone())
-        };
-        let suite = repo::create_suite(
-            &self.pool,
-            &req.repo_id,
-            &req.slug,
-            &req.name,
-            desc,
-            req.cases,
-        )
-        .await
-        .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let suite_clone = suite.clone();
-            tokio::spawn(async move {
-                if let Err(e) = crate::sync::push_suite(&pool, &repo_id, &suite_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for suite {}: {e}",
-                        suite_clone.slug
-                    );
-                }
-            });
-        }
-        Ok(Response::new(pb::CreateSuiteResponse {
-            suite: Some(suite_to_pb(&suite)),
-            file_path: format!(".ameliso/suites/{}.yaml", req.slug),
-        }))
+        create_suite::handle(self, request).await
     }
 
     async fn update_suite(
@@ -2906,22 +2866,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_suite_rejects_empty_repo_id() {
-        let s = server();
-        let err = s
-            .create_suite(Request::new(pb::CreateSuiteRequest {
-                repo_id: "".to_owned(),
-                slug: "smoke".to_owned(),
-                name: "Smoke".to_owned(),
-                ..Default::default()
-            }))
-            .await
-            .unwrap_err();
-        assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("repo_id is required"));
-    }
-
-    #[tokio::test]
     async fn delete_suite_rejects_empty_repo_id() {
         let s = server();
         let err = s
@@ -3391,22 +3335,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_suite_rejects_slug_too_long() {
-        let s = server();
-        let err = s
-            .create_suite(Request::new(pb::CreateSuiteRequest {
-                repo_id: "owner/repo".to_owned(),
-                slug: "x".repeat(101),
-                name: "Smoke".to_owned(),
-                ..Default::default()
-            }))
-            .await
-            .unwrap_err();
-        assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("slug must not exceed 100"));
-    }
-
-    #[tokio::test]
     async fn create_run_rejects_tester_too_long() {
         let s = server();
         let err = s
@@ -3487,40 +3415,6 @@ mod tests {
             .await
             .unwrap_err();
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
-    }
-
-    // ── create_suite validation ───────────────────────────────────────────────
-
-    #[tokio::test]
-    async fn create_suite_rejects_empty_slug() {
-        let s = server();
-        let err = s
-            .create_suite(Request::new(pb::CreateSuiteRequest {
-                repo_id: "owner/repo".to_owned(),
-                slug: "".to_owned(),
-                name: "Smoke".to_owned(),
-                ..Default::default()
-            }))
-            .await
-            .unwrap_err();
-        assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("slug is required"));
-    }
-
-    #[tokio::test]
-    async fn create_suite_rejects_empty_name() {
-        let s = server();
-        let err = s
-            .create_suite(Request::new(pb::CreateSuiteRequest {
-                repo_id: "owner/repo".to_owned(),
-                slug: "smoke".to_owned(),
-                name: "".to_owned(),
-                ..Default::default()
-            }))
-            .await
-            .unwrap_err();
-        assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("name is required"));
     }
 
     // ── create_run validation ─────────────────────────────────────────────────
@@ -4175,39 +4069,6 @@ mod tests {
             .get_suite(Request::new(pb::GetSuiteRequest {
                 repo_id: "owner/repo".to_owned(),
                 slug: "smoke".to_owned(),
-            }))
-            .await
-            .unwrap_err();
-        assert_ne!(err.code(), tonic::Code::InvalidArgument);
-    }
-
-    #[tokio::test]
-    async fn create_suite_minimal_passes_validation() {
-        // No description (empty → None), no cases — both take the None/empty branch.
-        let s = server();
-        let err = s
-            .create_suite(Request::new(pb::CreateSuiteRequest {
-                repo_id: "owner/repo".to_owned(),
-                slug: "smoke".to_owned(),
-                name: "Smoke".to_owned(),
-                ..Default::default()
-            }))
-            .await
-            .unwrap_err();
-        assert_ne!(err.code(), tonic::Code::InvalidArgument);
-    }
-
-    #[tokio::test]
-    async fn create_suite_with_description_passes_validation() {
-        // Non-empty description takes the Some(desc) branch — passes validation → DB error.
-        let s = server();
-        let err = s
-            .create_suite(Request::new(pb::CreateSuiteRequest {
-                repo_id: "owner/repo".to_owned(),
-                slug: "smoke".to_owned(),
-                name: "Smoke Suite".to_owned(),
-                description: "Covers the happy path".to_owned(),
-                cases: vec![],
             }))
             .await
             .unwrap_err();
