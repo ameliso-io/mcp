@@ -348,6 +348,9 @@ message FinalizeRunRequest {
 
 message FinalizeRunResponse {
   RunMeta run = 1;
+  // All results for the finalized run — avoids a separate GetRun call when agents
+  // need to inspect which cases failed or were blocked.
+  repeated CaseResult results = 2;
 }
 
 message DeleteRunRequest {

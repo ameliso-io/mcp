@@ -1105,6 +1105,14 @@ export declare type FinalizeRunResponse = Message<"ameliso.v1.FinalizeRunRespons
    * @generated from field: ameliso.v1.RunMeta run = 1;
    */
   run?: RunMeta;
+
+  /**
+   * All results for the finalized run — avoids a separate GetRun call when agents
+   * need to inspect which cases failed or were blocked.
+   *
+   * @generated from field: repeated ameliso.v1.CaseResult results = 2;
+   */
+  results: CaseResult[];
 };
 
 /**

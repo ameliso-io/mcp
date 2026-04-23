@@ -298,10 +298,7 @@ async fn resolve_affected_case_paths(
         if has_source_changes && affected_set.is_empty() {
             return Ok((known_paths, changed_files.to_vec()));
         }
-        return Ok((
-            affected_set.into_iter().collect(),
-            changed_files.to_vec(),
-        ));
+        return Ok((affected_set.into_iter().collect(), changed_files.to_vec()));
     }
 
     // GitHub compare path.
@@ -1294,14 +1291,22 @@ impl AmelisoService for AmelisoServer {
         if status == "in-progress" {
             return Err(invalid("status must be completed or aborted"));
         }
-        let resolved_status = if matches!(status, "completed" | "aborted") {
-            status
+        // For UNSPECIFIED, fetch results to auto-detect status; reuse them for the response.
+        let pre_results = if matches!(status, "completed" | "aborted") {
+            None
         } else {
-            // UNSPECIFIED: auto-detect from results — aborted if any failure, else completed.
             let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
                 .await
                 .map_err(repo_err)?;
-            if run.results.iter().any(|r| r.status == "failed") {
+            Some(run.results)
+        };
+        let resolved_status = if matches!(status, "completed" | "aborted") {
+            status
+        } else {
+            if pre_results
+                .as_ref()
+                .is_some_and(|rs| rs.iter().any(|r| r.status == "failed"))
+            {
                 "aborted"
             } else {
                 "completed"
@@ -1310,28 +1315,36 @@ impl AmelisoService for AmelisoServer {
         let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, resolved_status)
             .await
             .map_err(repo_err)?;
-        // Fetch result counts so agents can read outcomes without a separate GetRun.
-        let counts: (i64, i64, i64, i64) = sqlx::query_as(
-            "SELECT
-             COUNT(*) FILTER (WHERE status='passed'),
-             COUNT(*) FILTER (WHERE status='failed'),
-             COUNT(*) FILTER (WHERE status='blocked'),
-             COUNT(*) FILTER (WHERE status='skipped')
-             FROM results WHERE repo_id=$1 AND run_id=$2",
-        )
-        .bind(&req.repo_id)
-        .bind(&req.run_id)
-        .fetch_one(&self.pool)
-        .await
-        .unwrap_or((0, 0, 0, 0));
-        let (p, f, b, s) = (
-            counts.0 as i32,
-            counts.1 as i32,
-            counts.2 as i32,
-            counts.3 as i32,
-        );
+        // Get results: reuse pre-fetched ones (UNSPECIFIED path) or fetch now (explicit status).
+        let results = match pre_results {
+            Some(rs) => rs,
+            None => {
+                repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                    .await
+                    .map(|r| r.results)
+                    .unwrap_or_default()
+            }
+        };
+        let (p, f, b, s) = results.iter().fold((0i32, 0i32, 0i32, 0i32), |(p, f, b, s), r| {
+            match r.status.as_str() {
+                "passed" => (p + 1, f, b, s),
+                "failed" => (p, f + 1, b, s),
+                "blocked" => (p, f, b + 1, s),
+                "skipped" => (p, f, b, s + 1),
+                _ => (p, f, b, s),
+            }
+        });
+        let pb_results: Vec<pb::CaseResult> = results
+            .into_iter()
+            .map(|r| pb::CaseResult {
+                case_path: r.case_path,
+                status: result_status_to_i32(&r.status),
+                notes: r.notes,
+            })
+            .collect();
         Ok(Response::new(pb::FinalizeRunResponse {
             run: Some(run_meta_with_counts_to_pb(&meta, p, f, b, s, p + f + b + s)),
+            results: pb_results,
         }))
     }
 
