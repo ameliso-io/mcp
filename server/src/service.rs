@@ -983,6 +983,22 @@ impl AmelisoService for AmelisoServer {
         let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
             .await
             .unwrap_or_default();
+        // Sort: failed/never first, then by case priority (high → low)
+        pending.sort_by(|a, b| {
+            let status_ord = |path: &str| {
+                match statuses.get(path).map(String::as_str).unwrap_or("never") {
+                    "failed" => 0i32,
+                    "never" => 1,
+                    "blocked" => 2,
+                    "skipped" => 3,
+                    "passed" => 4,
+                    _ => 5,
+                }
+            };
+            status_ord(&a.case_path)
+                .cmp(&status_ord(&b.case_path))
+                .then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
+        });
         let entries = pending
             .iter()
             .map(|c| pb::CoverageEntry {
