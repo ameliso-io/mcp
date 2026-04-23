@@ -236,6 +236,11 @@
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.runSuiteBadge:hover {
+  text-decoration: underline;
 }
 
 .runTester {

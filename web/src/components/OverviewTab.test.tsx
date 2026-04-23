@@ -585,6 +585,23 @@ describe("OverviewTab", () => {
     expect(screen.getByText("2026-02-01")).toBeInTheDocument();
   });
 
+  it("active run suite badge is a link to the suites tab with that suite expanded", async () => {
+    const activeRun = makeRunMeta({
+      id: "run-suite-link",
+      tester: "carol",
+      suite: "e2e",
+      date: "2026-02-01",
+    });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("e2e"));
+    const suiteLink = screen.getByRole("link", { name: "e2e" });
+    expect(suiteLink).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/suites?expanded=${encodeURIComponent("e2e")}`
+    );
+  });
+
   it("polling timer callback triggers reload when active runs present", async () => {
     const activeRun = makeRunMeta({
       id: "run-timer",

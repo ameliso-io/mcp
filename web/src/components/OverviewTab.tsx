@@ -259,7 +259,14 @@ export default function OverviewTab({
                       >
                         {run.id}
                       </Link>
-                      {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
+                      {run.suite && (
+                        <Link
+                          href={`${basePath}/suites?expanded=${encodeURIComponent(run.suite)}` as Route}
+                          className={styles.runSuiteBadge}
+                        >
+                          {run.suite}
+                        </Link>
+                      )}
                       {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                       <time className={styles.runDate} dateTime={run.date}>
                         {run.date}
