@@ -96,7 +96,6 @@ export default function CasesTab({
   const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
   const lastFocusRef = useRef<HTMLElement | null>(null);
-  const expandingRef = useRef<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filterAnnouncement, announceFilter] = useAnnounce();
@@ -123,7 +122,6 @@ export default function CasesTab({
   // Expanded case body view
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
   const [expandedBody, setExpandedBody] = useState<string>("");
-  const [bodyLoading, setBodyLoading] = useState(false);
 
   // Edit case form
   const [editState, setEditState] = useState<{
@@ -136,36 +134,40 @@ export default function CasesTab({
     newPath: string;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [bodyLoading, setBodyLoading] = useState(false);
+  const expandingRef = useRef<string | null>(null);
 
-  async function fetchBody(casePath: string): Promise<string> {
-    const res = await client.getCase({ repoId, casePath });
-    return res.body;
-  }
+  const fetchBody = useCallback(
+    async (path: string): Promise<string> => {
+      const res = await client.getCase({ repoId, casePath: path });
+      return res.case?.body ?? res.body;
+    },
+    [repoId]
+  );
 
-  async function toggleExpand(casePath: string) {
-    if (expandedPath === casePath) {
+  async function toggleExpand(path: string) {
+    if (expandedPath === path) {
       setExpandedPath(null);
       onExpandedPathChange?.(null);
       setExpandedBody("");
-      expandingRef.current = null;
       return;
     }
-    setExpandedPath(casePath);
-    onExpandedPathChange?.(casePath);
+    setExpandedPath(path);
+    onExpandedPathChange?.(path);
     setExpandedBody("");
-    expandingRef.current = casePath;
+    expandingRef.current = path;
     setBodyLoading(true);
     try {
-      const body = await fetchBody(casePath);
-      if (expandingRef.current === casePath) setExpandedBody(body);
+      const body = await fetchBody(path);
+      if (expandingRef.current === path) setExpandedBody(body);
     } catch (e) {
-      if (expandingRef.current === casePath) {
+      if (expandingRef.current === path) {
         setError(errorMessage(e));
         setExpandedPath(null);
         onExpandedPathChange?.(null);
       }
     } finally {
-      if (expandingRef.current === casePath) setBodyLoading(false);
+      if (expandingRef.current === path) setBodyLoading(false);
     }
   }
 
@@ -745,7 +747,9 @@ export default function CasesTab({
                   <button
                     type="button"
                     className={styles.caseExpandBtn}
-                    onClick={() => toggleExpand(c.path)}
+                    onClick={() => {
+                      void toggleExpand(c.path);
+                    }}
                     aria-expanded={expandedPath === c.path}
                   >
                     <span
@@ -774,7 +778,9 @@ export default function CasesTab({
                   </button>
                   <button
                     type="button"
-                    onClick={() => startEdit(c)}
+                    onClick={() => {
+                      void startEdit(c);
+                    }}
                     aria-label={`Edit ${c.path}`}
                     className={styles.btnOutlineSm}
                   >

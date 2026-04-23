@@ -12,6 +12,9 @@ message Case {
   string priority = 5;
   string created_at = 6;
   string updated_at = 7;
+  // Markdown body — the actual test procedure/steps. Populated when the caller
+  // needs full case content (e.g. ListCases, GetCase, GetPendingCases).
+  string body = 8;
 }
 
 message Suite {
@@ -32,6 +35,13 @@ message RunMeta {
   // Agents can use this as `since_ref` in GetAffectedCases to find
   // tests affected since this run's baseline commit.
   string commit_sha = 7;
+  // Result counts — populated by ListRuns and FinalizeRun so agents can
+  // read pass/fail outcomes without a separate GetRun call.
+  int32 passed = 8;
+  int32 failed = 9;
+  int32 blocked = 10;
+  int32 skipped = 11;
+  int32 total = 12;
 }
 
 message CaseResult {
@@ -50,7 +60,7 @@ message CoverageEntry {
   ResultStatus latest_status = 2;
   string last_run_id = 3;
   string last_run_date = 4;
-  // Markdown body of the test case — populated in GetCoverageReport and GetPendingCases.
+  // Deprecated: use case.body instead (Case.body is now always populated).
   string body = 5;
 }
 
@@ -60,8 +70,7 @@ message AffectedCase {
   // Latest test result status for this case — lets agents prioritize
   // never-run or failed cases over recently-passed ones.
   ResultStatus latest_status = 3;
-  // Markdown body of the test case — the actual test procedure/steps.
-  // Included so agents can act without a separate GetCase call.
+  // Deprecated: use case.body instead (Case.body is now always populated).
   string body = 4;
 }
 

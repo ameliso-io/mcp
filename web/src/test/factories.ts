@@ -97,6 +97,20 @@ export function makeAffectedCase(init: MessageInitShape<typeof AffectedCaseSchem
   });
 }
 
+export function makeActiveRunStatus(init: MessageInitShape<typeof ActiveRunStatusSchema> = {}) {
+  return create(ActiveRunStatusSchema, {
+    runId: "run-abc",
+    tester: "",
+    suite: "",
+    date: "2026-01-01",
+    pendingCases: 0,
+    totalInScope: 0,
+    commitSha: "",
+    environment: "",
+    ...init,
+  });
+}
+
 export function makeRepository(init: MessageInitShape<typeof RepositorySchema> = {}) {
   return create(RepositorySchema, {
     id: "owner/repo",

@@ -48,6 +48,14 @@ export declare type Case = Message<"ameliso.v1.Case"> & {
    * @generated from field: string updated_at = 7;
    */
   updatedAt: string;
+
+  /**
+   * Markdown body — the actual test procedure/steps. Populated when the caller
+   * needs full case content (e.g. ListCases, GetCase, GetPendingCases).
+   *
+   * @generated from field: string body = 8;
+   */
+  body: string;
 };
 
 /**
@@ -129,6 +137,34 @@ export declare type RunMeta = Message<"ameliso.v1.RunMeta"> & {
    * @generated from field: string commit_sha = 7;
    */
   commitSha: string;
+
+  /**
+   * Result counts — populated by ListRuns and FinalizeRun so agents can
+   * read pass/fail outcomes without a separate GetRun call.
+   *
+   * @generated from field: int32 passed = 8;
+   */
+  passed: number;
+
+  /**
+   * @generated from field: int32 failed = 9;
+   */
+  failed: number;
+
+  /**
+   * @generated from field: int32 blocked = 10;
+   */
+  blocked: number;
+
+  /**
+   * @generated from field: int32 skipped = 11;
+   */
+  skipped: number;
+
+  /**
+   * @generated from field: int32 total = 12;
+   */
+  total: number;
 };
 
 /**
@@ -209,7 +245,7 @@ export declare type CoverageEntry = Message<"ameliso.v1.CoverageEntry"> & {
   lastRunDate: string;
 
   /**
-   * Markdown body of the test case — populated in GetCoverageReport and GetPendingCases.
+   * Deprecated: use case.body instead (Case.body is now always populated).
    *
    * @generated from field: string body = 5;
    */
@@ -245,8 +281,7 @@ export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
   latestStatus: ResultStatus;
 
   /**
-   * Markdown body of the test case — the actual test procedure/steps.
-   * Included so agents can act without a separate GetCase call.
+   * Deprecated: use case.body instead (Case.body is now always populated).
    *
    * @generated from field: string body = 4;
    */
@@ -409,3 +444,4 @@ export enum Priority {
  * Describes the enum ameliso.v1.Priority.
  */
 export declare const PrioritySchema: GenEnum<Priority>;
+

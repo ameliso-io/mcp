@@ -103,10 +103,22 @@ fn case_to_pb(c: &repo::LoadedCase) -> pb::Case {
         priority: c.priority.clone(),
         created_at: c.created_at.clone(),
         updated_at: c.updated_at.clone(),
+        body: c.body.clone(),
     }
 }
 
 fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
+    run_meta_with_counts_to_pb(r, 0, 0, 0, 0, 0)
+}
+
+fn run_meta_with_counts_to_pb(
+    r: &repo::RunRow,
+    passed: i32,
+    failed: i32,
+    blocked: i32,
+    skipped: i32,
+    total: i32,
+) -> pb::RunMeta {
     pb::RunMeta {
         id: r.run_id.clone(),
         date: r.date.clone(),
@@ -115,6 +127,11 @@ fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
         environment: r.environment.clone().unwrap_or_default(),
         suite: r.suite.clone().unwrap_or_default(),
         commit_sha: r.commit_sha.clone(),
+        passed,
+        failed,
+        blocked,
+        skipped,
+        total,
     }
 }
 
@@ -133,6 +150,36 @@ fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
         description: s.description.clone().unwrap_or_default(),
         cases: s.cases.clone(),
     }
+}
+
+/// Return source files (non-doc) from `files` that no known case path covers.
+fn find_uncovered_files<'a>(files: &'a [String], known_paths: &[String]) -> Vec<&'a str> {
+    files
+        .iter()
+        .filter(|f| !is_doc_file(f))
+        .filter(|f| !known_paths.iter().any(|p| text_references_case(f, p)))
+        .map(String::as_str)
+        .collect()
+}
+
+/// Build a `PendingEntry` list from pending cases + latest status map.
+fn build_pending_entries(
+    pending_cases: &[repo::LoadedCase],
+    statuses: &std::collections::HashMap<String, String>,
+) -> Vec<pb::PendingEntry> {
+    pending_cases
+        .iter()
+        .map(|c| pb::PendingEntry {
+            case: Some(case_to_pb(c)),
+            body: c.body.clone(),
+            latest_status: result_status_to_i32(
+                statuses
+                    .get(c.case_path.as_str())
+                    .map(String::as_str)
+                    .unwrap_or("never"),
+            ),
+        })
+        .collect()
 }
 
 fn stored_to_pb(r: &crate::repos_store::StoredRepo) -> pb::Repository {
@@ -202,6 +249,104 @@ fn priority_rank(p: &str) -> u8 {
         "low" => 2,
         _ => 3,
     }
+}
+
+fn result_status_rank(s: &str) -> u8 {
+    match s {
+        "failed" => 0,
+        "never" => 1,
+        "blocked" => 2,
+        "skipped" => 3,
+        "passed" => 4,
+        _ => 5,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: resolve affected case paths given since_ref or changed_files
+// ---------------------------------------------------------------------------
+
+// Returns the set of case paths affected by the given diff scope.
+// If both `since_ref` and `changed_files` are empty, returns all known case paths.
+// If `changed_files` is non-empty, matches them directly without GitHub.
+// If `since_ref` is non-empty, calls the GitHub compare API.
+/// Returns `(affected_case_paths, changed_files)`.
+/// `changed_files` is empty when there is no diff scope (all cases included).
+async fn resolve_affected_case_paths(
+    pool: &PgPool,
+    repo_id: &str,
+    since_ref: &str,
+    changed_files: &[String],
+) -> Result<(Vec<String>, Vec<String>), Status> {
+    let cases = repo::list_cases(pool, repo_id).await.map_err(repo_err)?;
+    let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+
+    if since_ref.is_empty() && changed_files.is_empty() {
+        return Ok((known_paths, vec![]));
+    }
+
+    if !changed_files.is_empty() {
+        let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for file in changed_files {
+            for path in &known_paths {
+                if text_references_case(file, path) {
+                    affected_set.insert(path.clone());
+                }
+            }
+        }
+        let has_source_changes = changed_files.iter().any(|f| !is_doc_file(f));
+        if has_source_changes && affected_set.is_empty() {
+            return Ok((known_paths, changed_files.to_vec()));
+        }
+        return Ok((affected_set.into_iter().collect(), changed_files.to_vec()));
+    }
+
+    // GitHub compare path.
+    let stored = crate::repos_store::get(pool, repo_id)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?
+        .ok_or_else(|| Status::not_found(format!("repository {repo_id} not found")))?;
+    let cfg = crate::github::config()
+        .ok_or_else(|| Status::failed_precondition("GitHub App not configured"))?;
+    let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
+        .map_err(|e| Status::internal(e.to_string()))?;
+    let token = crate::github::get_installation_token(&stored.installation_id, &jwt)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+    let parts: Vec<&str> = stored.full_name.splitn(2, '/').collect();
+    if parts.len() != 2 {
+        return Err(Status::internal("invalid full_name in stored repo"));
+    }
+    let (owner, repo_name) = (parts[0], parts[1]);
+    let compare = crate::github::compare(owner, repo_name, since_ref, &token)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+
+    let mut affected: Vec<String> = Vec::new();
+    let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let all_text = compare.commit_messages.join("\n");
+    for path in &known_paths {
+        if text_references_case(&all_text, path) && affected_set.insert(path.clone()) {
+            affected.push(path.clone());
+        }
+    }
+    for file in &compare.changed_files {
+        for path in &known_paths {
+            if text_references_case(file, path) && affected_set.insert(path.clone()) {
+                affected.push(path.clone());
+            }
+        }
+    }
+    let source_changed: Vec<&str> = compare
+        .changed_files
+        .iter()
+        .filter(|f| !is_doc_file(f))
+        .map(String::as_str)
+        .collect();
+    if !source_changed.is_empty() && affected.is_empty() {
+        affected = known_paths.clone();
+    }
+    Ok((affected, compare.changed_files))
 }
 
 // ---------------------------------------------------------------------------
@@ -483,6 +628,87 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn bulk_update_cases(
+        &self,
+        request: Request<pb::BulkUpdateCasesRequest>,
+    ) -> Result<Response<pb::BulkUpdateCasesResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.cases.is_empty() {
+            return Err(invalid("cases must not be empty"));
+        }
+        for entry in &req.cases {
+            if entry.case_path.is_empty() {
+                return Err(invalid("each entry must have a case_path"));
+            }
+            check_max_len("case_path", &entry.case_path, 200)?;
+            check_max_len("title", &entry.title, 255)?;
+            check_max_len("description", &entry.description, 1000)?;
+            check_max_len("body", &entry.body, 100_000)?;
+        }
+        let mut updated: Vec<pb::Case> = Vec::new();
+        for entry in &req.cases {
+            let priority = priority_from_i32(entry.priority);
+            let title = if entry.title.is_empty() {
+                None
+            } else {
+                Some(entry.title.as_str())
+            };
+            let description = if entry.description.is_empty() {
+                None
+            } else {
+                Some(entry.description.as_str())
+            };
+            let tags = if entry.tags.is_empty() {
+                None
+            } else {
+                let cleaned = clean_tags(entry.tags.clone());
+                if cleaned.is_empty() {
+                    None
+                } else {
+                    Some(cleaned)
+                }
+            };
+            let body = if entry.body.is_empty() {
+                None
+            } else {
+                Some(entry.body.as_str())
+            };
+            let case = repo::update_case(
+                &self.pool,
+                &req.repo_id,
+                &entry.case_path,
+                title,
+                description,
+                tags,
+                priority,
+                body,
+                None,
+            )
+            .await
+            .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let case_clone = case.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
+                        eprintln!(
+                            "warning: github sync failed for {}/{}: {e}",
+                            repo_id, case_clone.case_path
+                        );
+                    }
+                });
+            }
+            updated.push(case_to_pb(&case));
+        }
+        Ok(Response::new(pb::BulkUpdateCasesResponse {
+            cases: updated,
+        }))
+    }
+
     async fn delete_case(
         &self,
         request: Request<pb::DeleteCaseRequest>,
@@ -514,6 +740,46 @@ impl AmelisoService for AmelisoServer {
         Ok(Response::new(pb::DeleteCaseResponse {
             file_path: format!("cases/{}.md", req.case_path),
         }))
+    }
+
+    async fn bulk_delete_cases(
+        &self,
+        request: Request<pb::BulkDeleteCasesRequest>,
+    ) -> Result<Response<pb::BulkDeleteCasesResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.case_paths.is_empty() {
+            return Err(invalid("case_paths must not be empty"));
+        }
+        for path in &req.case_paths {
+            if path.is_empty() {
+                return Err(invalid("each case_path must be non-empty"));
+            }
+        }
+        let mut file_paths: Vec<String> = Vec::new();
+        for path in &req.case_paths {
+            repo::delete_case(&self.pool, &req.repo_id, path)
+                .await
+                .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let path_clone = path.clone();
+                tokio::spawn(async move {
+                    if let Err(e) =
+                        crate::sync::delete_case_file(&pool, &repo_id, &path_clone).await
+                    {
+                        eprintln!(
+                            "warning: github delete sync failed for {repo_id}/{path_clone}: {e}"
+                        );
+                    }
+                });
+            }
+            file_paths.push(format!("cases/{path}.md"));
+        }
+        Ok(Response::new(pb::BulkDeleteCasesResponse { file_paths }))
     }
 
     async fn list_suites(
@@ -671,13 +937,39 @@ impl AmelisoService for AmelisoServer {
         let runs = repo::list_runs(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
+        // Fetch per-run result counts in one GROUP BY query.
+        let raw_counts: Vec<(String, i64, i64, i64, i64)> = sqlx::query_as(
+            "SELECT run_id,
+             COUNT(*) FILTER (WHERE status='passed'),
+             COUNT(*) FILTER (WHERE status='failed'),
+             COUNT(*) FILTER (WHERE status='blocked'),
+             COUNT(*) FILTER (WHERE status='skipped')
+             FROM results WHERE repo_id=$1 GROUP BY run_id",
+        )
+        .bind(&req.repo_id)
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+        let counts_map: std::collections::HashMap<&str, (i32, i32, i32, i32, i32)> = raw_counts
+            .iter()
+            .map(|(id, p, f, b, s)| {
+                let (p, f, b, s) = (*p as i32, *f as i32, *b as i32, *s as i32);
+                (id.as_str(), (p, f, b, s, p + f + b + s))
+            })
+            .collect();
         let pb_runs = runs
             .iter()
             .filter(|r| {
                 status_filter == pb::RunStatus::Unspecified as i32
                     || run_status_to_i32(&r.status) == status_filter
             })
-            .map(run_meta_to_pb)
+            .map(|r| {
+                let (p, f, b, s, t) = counts_map
+                    .get(r.run_id.as_str())
+                    .copied()
+                    .unwrap_or_default();
+                run_meta_with_counts_to_pb(r, p, f, b, s, t)
+            })
             .collect();
         Ok(Response::new(pb::ListRunsResponse { runs: pb_runs }))
     }
@@ -700,7 +992,32 @@ impl AmelisoService for AmelisoServer {
             meta: Some(run_meta_to_pb(&run.meta)),
             results: run.results.iter().map(result_to_pb).collect(),
         };
-        Ok(Response::new(pb::GetRunResponse { run: Some(pb_run) }))
+        // Return in-scope cases so callers skip a separate ListCases call.
+        let inline_paths: Vec<String> = sqlx::query_scalar(
+            "SELECT case_path FROM run_cases WHERE repo_id=$1 AND run_id=$2 ORDER BY case_path",
+        )
+        .bind(&req.repo_id)
+        .bind(&req.run_id)
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+        let run_cases = if inline_paths.is_empty() {
+            repo::list_cases(&self.pool, &req.repo_id)
+                .await
+                .unwrap_or_default()
+        } else {
+            let path_set: std::collections::HashSet<String> = inline_paths.into_iter().collect();
+            repo::list_cases(&self.pool, &req.repo_id)
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|c| path_set.contains(&c.case_path))
+                .collect()
+        };
+        Ok(Response::new(pb::GetRunResponse {
+            run: Some(pb_run),
+            cases: run_cases.iter().map(case_to_pb).collect(),
+        }))
     }
 
     async fn create_run(
@@ -711,10 +1028,16 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
-        if req.slug.is_empty() {
-            return Err(invalid("slug is required"));
-        }
-        check_max_len("slug", &req.slug, 100)?;
+        let slug = if req.slug.is_empty() {
+            let micros = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros();
+            format!("run-{micros:x}")
+        } else {
+            req.slug.clone()
+        };
+        check_max_len("slug", &slug, 100)?;
         check_max_len("tester", &req.tester, 255)?;
         check_max_len("environment", &req.environment, 255)?;
         check_max_len("suite", &req.suite, 100)?;
@@ -733,12 +1056,63 @@ impl AmelisoService for AmelisoServer {
         } else {
             req.tester
         };
-        let inline_cases = req.cases;
+        let has_since_ref = !req.since_ref.is_empty();
+        let has_changed_files = !req.changed_files.is_empty();
+        let use_last_run = req.use_last_run;
+        if use_last_run && (has_since_ref || has_changed_files) {
+            return Err(invalid(
+                "use_last_run and since_ref/changed_files are mutually exclusive",
+            ));
+        }
+        if use_last_run && !req.cases.is_empty() {
+            return Err(invalid("use_last_run and cases are mutually exclusive"));
+        }
+        if use_last_run && suite.is_some() {
+            return Err(invalid("use_last_run and suite are mutually exclusive"));
+        }
+        if (has_since_ref || has_changed_files) && !req.cases.is_empty() {
+            return Err(invalid(
+                "since_ref/changed_files and cases are mutually exclusive",
+            ));
+        }
+        if (has_since_ref || has_changed_files) && suite.is_some() {
+            return Err(invalid(
+                "since_ref/changed_files and suite are mutually exclusive",
+            ));
+        }
+        let (inline_cases, diff_files) = if use_last_run {
+            let runs = repo::list_runs(&self.pool, &req.repo_id)
+                .await
+                .unwrap_or_default();
+            let last_sha = runs
+                .iter()
+                .filter(|r| r.status == "completed")
+                .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
+                .and_then(|r| {
+                    if r.commit_sha.is_empty() {
+                        None
+                    } else {
+                        Some(r.commit_sha.as_str())
+                    }
+                })
+                .unwrap_or("");
+            resolve_affected_case_paths(&self.pool, &req.repo_id, last_sha, &[]).await?
+        } else if has_since_ref || has_changed_files {
+            resolve_affected_case_paths(
+                &self.pool,
+                &req.repo_id,
+                &req.since_ref,
+                &req.changed_files,
+            )
+            .await?
+        } else {
+            (req.cases, vec![])
+        };
         let commit_sha = req.commit_sha;
         let meta = repo::create_run(
             &self.pool,
             &req.repo_id,
-            &req.slug,
+            &slug,
             &tester,
             env,
             suite,
@@ -748,9 +1122,35 @@ impl AmelisoService for AmelisoServer {
         .await
         .map_err(repo_err)?;
         let dir_path = format!("runs/{}", meta.run_id);
+        let ((pending_cases, _), statuses, all_cases) = tokio::join!(
+            async {
+                repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::get_latest_statuses(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::list_cases(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+        );
+        let all_known_paths: Vec<String> = all_cases.iter().map(|c| c.case_path.clone()).collect();
+        let uncovered_files: Vec<String> = find_uncovered_files(&diff_files, &all_known_paths)
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
+        let pending_entries = build_pending_entries(&pending_cases, &statuses);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
+            pending: pending_entries,
+            total_repo_cases: i32::try_from(all_cases.len()).unwrap_or(i32::MAX),
+            uncovered_files,
         }))
     }
 
@@ -790,14 +1190,23 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
-        let (pending_cases, total_in_scope) =
-            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map_err(repo_err)?;
+        let ((pending_cases, total_in_scope), statuses) = tokio::join!(
+            async {
+                repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::get_latest_statuses(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+        );
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
             pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
             total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
+            pending: build_pending_entries(&pending_cases, &statuses),
         }))
     }
 
@@ -847,14 +1256,23 @@ impl AmelisoService for AmelisoServer {
             .map_err(repo_err)?;
             recorded.push(result_to_pb(&result));
         }
-        let (pending_cases, total_in_scope) =
-            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map_err(repo_err)?;
+        let ((pending_cases, total_in_scope), statuses) = tokio::join!(
+            async {
+                repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::get_latest_statuses(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+        );
         Ok(Response::new(pb::BulkRecordResultsResponse {
             results: recorded,
             pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
             total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
+            pending: build_pending_entries(&pending_cases, &statuses),
         }))
     }
 
@@ -870,14 +1288,63 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("run_id is required"));
         }
         let status = run_status_from_i32(req.status);
-        if !matches!(status, "completed" | "aborted") {
+        if status == "in-progress" {
             return Err(invalid("status must be completed or aborted"));
         }
-        let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, status)
+        // For UNSPECIFIED, fetch results to auto-detect status; reuse them for the response.
+        let pre_results = if matches!(status, "completed" | "aborted") {
+            None
+        } else {
+            let run = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?;
+            Some(run.results)
+        };
+        let resolved_status = if matches!(status, "completed" | "aborted") {
+            status
+        } else {
+            if pre_results
+                .as_ref()
+                .is_some_and(|rs| rs.iter().any(|r| r.status == "failed"))
+            {
+                "aborted"
+            } else {
+                "completed"
+            }
+        };
+        let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, resolved_status)
             .await
             .map_err(repo_err)?;
+        // Get results: reuse pre-fetched ones (UNSPECIFIED path) or fetch now (explicit status).
+        let results = match pre_results {
+            Some(rs) => rs,
+            None => {
+                repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                    .await
+                    .map(|r| r.results)
+                    .unwrap_or_default()
+            }
+        };
+        let (p, f, b, s) = results.iter().fold((0i32, 0i32, 0i32, 0i32), |(p, f, b, s), r| {
+            match r.status.as_str() {
+                "passed" => (p + 1, f, b, s),
+                "failed" => (p, f + 1, b, s),
+                "blocked" => (p, f, b + 1, s),
+                "skipped" => (p, f, b, s + 1),
+                _ => (p, f, b, s),
+            }
+        });
+        let pb_results: Vec<pb::CaseResult> = results
+            .into_iter()
+            .map(|r| pb::CaseResult {
+                case_path: r.case_path,
+                status: result_status_to_i32(&r.status),
+                notes: r.notes,
+            })
+            .collect();
         Ok(Response::new(pb::FinalizeRunResponse {
-            run: Some(run_meta_to_pb(&meta)),
+            run: Some(run_meta_with_counts_to_pb(&meta, p, f, b, s, p + f + b + s)),
+            results: pb_results,
         }))
     }
 
@@ -910,12 +1377,37 @@ impl AmelisoService for AmelisoServer {
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
-        if req.new_slug.is_empty() {
-            return Err(invalid("new_slug is required"));
+        let has_slug = !req.new_slug.is_empty();
+        let has_meta =
+            req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
+        if !has_slug && !has_meta {
+            return Err(invalid(
+                "at least one of new_slug, commit_sha, tester, or environment is required",
+            ));
         }
-        let run = repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
+        // Apply metadata patch first (before rename changes run_id).
+        if has_meta {
+            repo::patch_run_meta(
+                &self.pool,
+                &req.repo_id,
+                &req.run_id,
+                req.commit_sha.as_deref(),
+                req.tester.as_deref(),
+                req.environment.as_deref(),
+            )
             .await
             .map_err(repo_err)?;
+        }
+        let run = if has_slug {
+            repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
+                .await
+                .map_err(repo_err)?
+        } else {
+            repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?
+                .meta
+        };
         let new_dir_path = format!("runs/{}", run.run_id);
         Ok(Response::new(pb::UpdateRunResponse {
             run: Some(run_meta_to_pb(&run)),
@@ -943,6 +1435,21 @@ impl AmelisoService for AmelisoServer {
         let statuses = repo::get_latest_statuses(&self.pool, &req.repo_id)
             .await
             .unwrap_or_default();
+        // Sort: failed/never first, then by case priority (high → low)
+        pending.sort_by(|a, b| {
+            let status_ord =
+                |path: &str| match statuses.get(path).map(String::as_str).unwrap_or("never") {
+                    "failed" => 0i32,
+                    "never" => 1,
+                    "blocked" => 2,
+                    "skipped" => 3,
+                    "passed" => 4,
+                    _ => 5,
+                };
+            status_ord(&a.case_path)
+                .cmp(&status_ord(&b.case_path))
+                .then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
+        });
         let entries = pending
             .iter()
             .map(|c| pb::CoverageEntry {
@@ -992,7 +1499,7 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
 
-        let pb_entries = entries
+        let mut pb_entries: Vec<pb::CoverageEntry> = entries
             .into_iter()
             .filter_map(|row| {
                 let status_i32 = result_status_to_i32(&row.latest_status);
@@ -1009,6 +1516,7 @@ impl AmelisoService for AmelisoServer {
                     priority: row.priority,
                     created_at: row.created_at,
                     updated_at: row.updated_at,
+                    body: row.body.clone(),
                 };
                 Some(pb::CoverageEntry {
                     case: Some(case),
@@ -1019,6 +1527,13 @@ impl AmelisoService for AmelisoServer {
                 })
             })
             .collect();
+        pb_entries.sort_by(|a, b| {
+            let sa = result_status_rank(result_status_from_i32(a.latest_status));
+            let sb = result_status_rank(result_status_from_i32(b.latest_status));
+            let pa = a.case.as_ref().map_or(3, |c| priority_rank(&c.priority));
+            let pb_rank = b.case.as_ref().map_or(3, |c| priority_rank(&c.priority));
+            sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
+        });
 
         Ok(Response::new(pb::GetCoverageReportResponse {
             entries: pb_entries,
@@ -1076,10 +1591,26 @@ impl AmelisoService for AmelisoServer {
                 }
             }
             let mut affected: Vec<String> = affected_set.into_iter().collect();
-            affected.sort_by_key(|p| {
-                case_map
-                    .get(p.as_str())
-                    .map_or(3, |c| priority_rank(&c.priority))
+            affected.sort_by(|a, b| {
+                let sa = result_status_rank(
+                    status_map
+                        .get(a.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                );
+                let sb = result_status_rank(
+                    status_map
+                        .get(b.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                );
+                let pa = case_map
+                    .get(a.as_str())
+                    .map_or(3, |c| priority_rank(&c.priority));
+                let pb_rank = case_map
+                    .get(b.as_str())
+                    .map_or(3, |c| priority_rank(&c.priority));
+                sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
             });
             let reason = if reasons.is_empty() {
                 "no relevant changes in provided file list".to_owned()
@@ -1091,6 +1622,15 @@ impl AmelisoService for AmelisoServer {
                     case_map
                         .get(path.as_str())
                         .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+                });
+            }
+            if !req.tags.is_empty() {
+                affected.retain(|path| {
+                    case_map.get(path.as_str()).is_some_and(|c| {
+                        req.tags
+                            .iter()
+                            .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                    })
                 });
             }
             let pb_cases = affected
@@ -1110,17 +1650,45 @@ impl AmelisoService for AmelisoServer {
                         .unwrap_or_default(),
                 })
                 .collect();
+            let uncovered = find_uncovered_files(&req.changed_files, &known_paths);
             return Ok(Response::new(pb::GetAffectedCasesResponse {
                 cases: pb_cases,
                 reason,
+                uncovered_files: uncovered.into_iter().map(str::to_owned).collect(),
             }));
         }
 
         if req.since_ref.is_empty() {
             let pri_filter = priority_from_i32(req.priority_filter);
-            let affected = cases
+            let mut affected: Vec<&repo::LoadedCase> = cases
                 .iter()
                 .filter(|c| pri_filter.is_none_or(|p| c.priority.eq_ignore_ascii_case(p)))
+                .filter(|c| {
+                    req.tags.is_empty()
+                        || req
+                            .tags
+                            .iter()
+                            .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                })
+                .collect();
+            affected.sort_by(|a, b| {
+                let sa = result_status_rank(
+                    status_map
+                        .get(a.case_path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                );
+                let sb = result_status_rank(
+                    status_map
+                        .get(b.case_path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                );
+                sa.cmp(&sb)
+                    .then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
+            });
+            let pb_cases = affected
+                .iter()
                 .map(|c| pb::AffectedCase {
                     case: Some(case_to_pb(c)),
                     reason: "no since_ref provided; all cases flagged".to_owned(),
@@ -1134,8 +1702,9 @@ impl AmelisoService for AmelisoServer {
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
-                cases: affected,
+                cases: pb_cases,
                 reason: "no since_ref provided; all cases flagged".to_owned(),
+                uncovered_files: vec![],
             }));
         }
 
@@ -1205,7 +1774,7 @@ impl AmelisoService for AmelisoServer {
                 source_changed.len(),
                 known_paths.len()
             ));
-            affected = known_paths;
+            affected = known_paths.clone();
         }
 
         let reason = if reasons.is_empty() {
@@ -1214,10 +1783,26 @@ impl AmelisoService for AmelisoServer {
             reasons.join("; ")
         };
 
-        affected.sort_by_key(|p| {
-            case_map
-                .get(p.as_str())
-                .map_or(3, |c| priority_rank(&c.priority))
+        affected.sort_by(|a, b| {
+            let sa = result_status_rank(
+                status_map
+                    .get(a.as_str())
+                    .map(String::as_str)
+                    .unwrap_or("never"),
+            );
+            let sb = result_status_rank(
+                status_map
+                    .get(b.as_str())
+                    .map(String::as_str)
+                    .unwrap_or("never"),
+            );
+            let pa = case_map
+                .get(a.as_str())
+                .map_or(3, |c| priority_rank(&c.priority));
+            let pb_rank = case_map
+                .get(b.as_str())
+                .map_or(3, |c| priority_rank(&c.priority));
+            sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
         });
 
         if let Some(pri) = priority_from_i32(req.priority_filter) {
@@ -1225,6 +1810,15 @@ impl AmelisoService for AmelisoServer {
                 case_map
                     .get(path.as_str())
                     .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+            });
+        }
+        if !req.tags.is_empty() {
+            affected.retain(|path| {
+                case_map.get(path.as_str()).is_some_and(|c| {
+                    req.tags
+                        .iter()
+                        .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
+                })
             });
         }
         let pb_cases = affected
@@ -1245,9 +1839,11 @@ impl AmelisoService for AmelisoServer {
             })
             .collect();
 
+        let uncovered = find_uncovered_files(&compare.changed_files, &known_paths);
         Ok(Response::new(pb::GetAffectedCasesResponse {
             cases: pb_cases,
             reason,
+            uncovered_files: uncovered.into_iter().map(str::to_owned).collect(),
         }))
     }
 
@@ -1319,14 +1915,38 @@ impl AmelisoService for AmelisoServer {
                 pending_cases: pending,
                 total_in_scope,
                 commit_sha: run_meta.commit_sha.clone(),
+                environment: run_meta.environment.clone().unwrap_or_default(),
             });
         }
 
-        let last_completed_run = runs
+        let last_completed_run_row = runs
             .iter()
             .filter(|r| r.status == "completed")
-            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
-            .map(run_meta_to_pb);
+            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)));
+        let last_completed_run = if let Some(row) = last_completed_run_row {
+            let counts: (i64, i64, i64, i64) = sqlx::query_as(
+                "SELECT
+                 COUNT(*) FILTER (WHERE status='passed'),
+                 COUNT(*) FILTER (WHERE status='failed'),
+                 COUNT(*) FILTER (WHERE status='blocked'),
+                 COUNT(*) FILTER (WHERE status='skipped')
+                 FROM results WHERE repo_id=$1 AND run_id=$2",
+            )
+            .bind(&repo_id)
+            .bind(&row.run_id)
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0, 0, 0, 0));
+            let (p, f, b, s) = (
+                counts.0 as i32,
+                counts.1 as i32,
+                counts.2 as i32,
+                counts.3 as i32,
+            );
+            Some(run_meta_with_counts_to_pb(row, p, f, b, s, p + f + b + s))
+        } else {
+            None
+        };
 
         Ok(Response::new(pb::GetRepoStatusResponse {
             total_cases,
@@ -1857,6 +2477,146 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn bulk_update_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "auth/login".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_empty_cases_list() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_entry_with_empty_case_path() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_body_too_long() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "auth/login".to_owned(),
+                    body: "x".repeat(100_001),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("body"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_valid_passes_validation_to_db() {
+        // Validation passes → hits DB → not InvalidArgument.
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "auth/login".to_owned(),
+                    title: "Login flow".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "".to_owned(),
+                case_paths: vec!["auth/login".to_owned()],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_rejects_empty_list() {
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_paths: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_paths"));
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_rejects_empty_path_in_list() {
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_paths: vec!["".to_owned()],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_valid_passes_validation_to_db() {
+        // Validation passes → hits DB → not InvalidArgument.
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_paths: vec!["auth/login".to_owned()],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn delete_case_rejects_empty_repo_id() {
         let s = server();
         let err = s
@@ -2160,6 +2920,21 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn finalize_run_unspecified_status_auto_detects() {
+        // UNSPECIFIED passes validation; handler then queries run from DB → Internal (no DB).
+        let s = server();
+        let err = s
+            .finalize_run(Request::new(pb::FinalizeRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                status: pb::RunStatus::Unspecified as i32,
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
@@ -2503,7 +3278,8 @@ mod tests {
     // ── create_run validation ─────────────────────────────────────────────────
 
     #[tokio::test]
-    async fn create_run_rejects_empty_slug() {
+    async fn create_run_empty_slug_passes_validation() {
+        // Empty slug is valid — server auto-generates one; handler then hits DB → Internal.
         let s = server();
         let err = s
             .create_run(Request::new(pb::CreateRunRequest {
@@ -2513,8 +3289,7 @@ mod tests {
             }))
             .await
             .unwrap_err();
-        assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("slug is required"));
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
@@ -2888,13 +3663,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn finalize_run_rejects_unspecified_status() {
+    async fn finalize_run_rejects_in_progress_status() {
+        // IN_PROGRESS is always rejected — only completed/aborted/unspecified are valid.
         let s = server();
         let err = s
             .finalize_run(Request::new(pb::FinalizeRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
-                status: pb::RunStatus::Unspecified as i32,
+                status: pb::RunStatus::InProgress as i32,
             }))
             .await
             .unwrap_err();
@@ -3259,6 +4035,179 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_run_rejects_since_ref_with_cases() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("since_ref") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_since_ref_with_suite() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("since_ref") || err.message().contains("suite"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_changed_files_with_cases() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                changed_files: vec!["src/main.rs".to_owned()],
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("changed_files") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_changed_files_with_suite() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                changed_files: vec!["src/main.rs".to_owned()],
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("changed_files") || err.message().contains("suite"));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_changed_files_passes_validation_to_db() {
+        // changed_files set + no suite/cases → passes validation → DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                changed_files: vec!["src/main.rs".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_with_since_ref_passes_validation_to_github_err() {
+        // since_ref set + no suite/cases → passes validation → GitHub/DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_since_ref() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                since_ref: "abc123".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("since_ref"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_changed_files() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                changed_files: vec!["src/main.rs".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("changed_files"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_cases() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_suite() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("suite"));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_use_last_run_passes_validation_to_db() {
+        // use_last_run=true + no suite/cases/since_ref → passes validation → DB error.
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
     async fn update_case_with_no_optional_fields_passes_validation() {
         // All optional fields absent — all take the None path; passes validation → DB error.
         let s = server();
@@ -3348,6 +4297,23 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn get_affected_cases_with_tags_filter_passes_validation() {
+        // tags filter is valid (validation only checks repo_id); handler hits DB → Internal.
+        let s = server();
+        let err = s
+            .get_affected_cases(Request::new(pb::GetAffectedCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "".to_owned(),
+                changed_files: vec![],
+                tags: vec!["smoke".to_owned()],
                 ..Default::default()
             }))
             .await
@@ -3665,6 +4631,27 @@ mod tests {
         assert_eq!(priority_rank("bogus"), 3);
     }
 
+    // ── result_status_rank ────────────────────────────────────────────────────
+
+    #[test]
+    fn result_status_rank_ordering() {
+        assert!(result_status_rank("failed") < result_status_rank("never"));
+        assert!(result_status_rank("never") < result_status_rank("blocked"));
+        assert!(result_status_rank("blocked") < result_status_rank("skipped"));
+        assert!(result_status_rank("skipped") < result_status_rank("passed"));
+        assert!(result_status_rank("passed") < result_status_rank("unknown"));
+    }
+
+    #[test]
+    fn result_status_rank_known_values() {
+        assert_eq!(result_status_rank("failed"), 0);
+        assert_eq!(result_status_rank("never"), 1);
+        assert_eq!(result_status_rank("blocked"), 2);
+        assert_eq!(result_status_rank("skipped"), 3);
+        assert_eq!(result_status_rank("passed"), 4);
+        assert_eq!(result_status_rank("bogus"), 5);
+    }
+
     // ── conversion helpers ────────────────────────────────────────────────────
 
     #[test]
@@ -3724,6 +4711,32 @@ mod tests {
         assert_eq!(pb.environment, "");
         assert_eq!(pb.suite, "");
         assert_eq!(pb.commit_sha, "");
+        // run_meta_to_pb always zeroes counts; callers that have counts use
+        // run_meta_with_counts_to_pb directly.
+        assert_eq!(pb.passed, 0);
+        assert_eq!(pb.failed, 0);
+        assert_eq!(pb.blocked, 0);
+        assert_eq!(pb.skipped, 0);
+        assert_eq!(pb.total, 0);
+    }
+
+    #[test]
+    fn run_meta_with_counts_to_pb_maps_counts() {
+        let r = repo::RunRow {
+            run_id: "r1".to_owned(),
+            date: "2026-01-01".to_owned(),
+            tester: "alice".to_owned(),
+            status: "completed".to_owned(),
+            environment: None,
+            suite: None,
+            commit_sha: String::new(),
+        };
+        let pb = run_meta_with_counts_to_pb(&r, 3, 1, 0, 2, 6);
+        assert_eq!(pb.passed, 3);
+        assert_eq!(pb.failed, 1);
+        assert_eq!(pb.blocked, 0);
+        assert_eq!(pb.skipped, 2);
+        assert_eq!(pb.total, 6);
     }
 
     #[test]
@@ -3981,6 +4994,42 @@ mod tests {
         assert!(!is_doc_file("app.py"));
     }
 
+    // ── find_uncovered_files ──────────────────────────────────────────────────
+
+    #[test]
+    fn find_uncovered_files_excludes_doc_files() {
+        let files = vec!["README.md".to_string(), "docs/guide.yml".to_string()];
+        let known: Vec<String> = vec![];
+        assert!(find_uncovered_files(&files, &known).is_empty());
+    }
+
+    #[test]
+    fn find_uncovered_files_excludes_covered_source_files() {
+        let files = vec!["src/auth/login.ts".to_string()];
+        let known = vec!["auth/login".to_string()];
+        assert!(find_uncovered_files(&files, &known).is_empty());
+    }
+
+    #[test]
+    fn find_uncovered_files_returns_uncovered_source_files() {
+        let files = vec!["src/auth/signup.ts".to_string()];
+        let known = vec!["auth/login".to_string()];
+        let result = find_uncovered_files(&files, &known);
+        assert_eq!(result, vec!["src/auth/signup.ts"]);
+    }
+
+    #[test]
+    fn find_uncovered_files_mixed() {
+        let files = vec![
+            "src/auth/login.ts".to_string(),
+            "src/auth/signup.ts".to_string(),
+            "README.md".to_string(),
+        ];
+        let known = vec!["auth/login".to_string()];
+        let result = find_uncovered_files(&files, &known);
+        assert_eq!(result, vec!["src/auth/signup.ts"]);
+    }
+
     #[test]
     fn text_references_case_single_quote_prefix() {
         // '\'' is in the prefix list — path led by a single-quote should match
@@ -4199,6 +5248,7 @@ mod tests {
                 repo_id: "".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
                 new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -4214,6 +5264,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "".to_owned(),
                 new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -4222,18 +5273,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_run_rejects_empty_new_slug() {
+    async fn update_run_rejects_when_no_fields_provided() {
         let s = server();
         let err = s
             .update_run(Request::new(pb::UpdateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
                 new_slug: "".to_owned(),
+                commit_sha: None,
+                tester: None,
+                environment: None,
             }))
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("new_slug is required"));
+        assert!(err.message().contains("at least one"));
     }
 
     #[tokio::test]
@@ -4244,9 +5298,28 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
                 new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_metadata_only_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "".to_owned(),
+                commit_sha: Some("abc1234".to_owned()),
+                tester: None,
+                environment: None,
+            }))
+            .await
+            .unwrap_err();
+        // Reaches the DB (not InvalidArgument); fails with NotFound since the run doesn't exist.
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 }

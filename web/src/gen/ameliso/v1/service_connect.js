@@ -3,80 +3,23 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import {
-  BulkCreateCasesRequest,
-  BulkCreateCasesResponse,
-  BulkRecordResultsRequest,
-  BulkRecordResultsResponse,
-  CreateCaseRequest,
-  CreateCaseResponse,
-  CreateRunRequest,
-  CreateRunResponse,
-  CreateSuiteRequest,
-  CreateSuiteResponse,
-  DeleteCaseRequest,
-  DeleteCaseResponse,
-  DeleteRunRequest,
-  DeleteRunResponse,
-  DeleteSuiteRequest,
-  DeleteSuiteResponse,
-  FinalizeRunRequest,
-  FinalizeRunResponse,
-  GetAffectedCasesRequest,
-  GetAffectedCasesResponse,
-  GetCaseRequest,
-  GetCaseResponse,
-  GetCoverageReportRequest,
-  GetCoverageReportResponse,
-  GetGitHubInstallUrlRequest,
-  GetGitHubInstallUrlResponse,
-  GetPendingCasesRequest,
-  GetPendingCasesResponse,
-  GetRepoStatusRequest,
-  GetRepoStatusResponse,
-  GetRunRequest,
-  GetRunResponse,
-  GetSuiteRequest,
-  GetSuiteResponse,
-  HandleGitHubCallbackRequest,
-  HandleGitHubCallbackResponse,
-  ListCasesRequest,
-  ListCasesResponse,
-  ListRepositoriesRequest,
-  ListRepositoriesResponse,
-  ListRunsRequest,
-  ListRunsResponse,
-  ListSuitesRequest,
-  ListSuitesResponse,
-  RecordResultRequest,
-  RecordResultResponse,
-  RemoveRepositoryRequest,
-  RemoveRepositoryResponse,
-  SyncRepositoryRequest,
-  SyncRepositoryResponse,
-  UpdateCaseRequest,
-  UpdateCaseResponse,
-  UpdateRunRequest,
-  UpdateRunResponse,
-  UpdateSuiteRequest,
-  UpdateSuiteResponse,
-} from "./service_pb.js";
+import { BulkCreateCasesRequest, BulkCreateCasesResponse, BulkDeleteCasesRequest, BulkDeleteCasesResponse, BulkRecordResultsRequest, BulkRecordResultsResponse, BulkUpdateCasesRequest, BulkUpdateCasesResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRepoStatusRequest, GetRepoStatusResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateRunRequest, UpdateRunResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
- * Recommended agent workflow:
- *   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
- *      including body and latest_status; sort by failed/never first.
- *   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
- *   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
- *   4. RecordResult per case — response.pending_count tells you how many remain.
- *   5. FinalizeRun — mark run complete/aborted.
- *   6. Loop from step 1 with new commit_sha.
+ * Recommended agent workflow (minimum 3 RPCs):
+ *   1. CreateRun(commit_sha=<HEAD>, use_last_run=true) — auto-scopes to cases affected since the
+ *      last completed run, returns pending with body + latest_status; no GetRepoStatus needed.
+ *      On the first ever run (no prior run) all cases are included.
+ *   2. BulkRecordResults — record all results in one call; pending_count tells you how many remain.
+ *   3. FinalizeRun(status=UNSPECIFIED) — auto-detects ABORTED if any FAILED result, else COMPLETED.
  *
- *   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
+ * Repeat from step 1 on the next commit.
+ * For richer context before running (stats, active runs), call GetRepoStatus first.
+ * For a read-only preview of affected cases, call GetAffectedCases instead of CreateRun.
  *
  * @generated from service ameliso.v1.AmelisoService
  */
@@ -131,12 +74,30 @@ export const AmelisoService = {
       kind: MethodKind.Unary,
     },
     /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkUpdateCases
+     */
+    bulkUpdateCases: {
+      name: "BulkUpdateCases",
+      I: BulkUpdateCasesRequest,
+      O: BulkUpdateCasesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
      */
     deleteCase: {
       name: "DeleteCase",
       I: DeleteCaseRequest,
       O: DeleteCaseResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkDeleteCases
+     */
+    bulkDeleteCases: {
+      name: "BulkDeleteCases",
+      I: BulkDeleteCasesRequest,
+      O: BulkDeleteCasesResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -273,6 +234,7 @@ export const AmelisoService = {
     },
     /**
      * --- Reports ---
+     * Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
      */
@@ -284,6 +246,7 @@ export const AmelisoService = {
     },
     /**
      * Return cases affected by source changes since since_ref (uses GitHub compare API).
+     * Sorted failed/never first then by priority — same ordering as GetPendingCases.
      *
      * @generated from rpc ameliso.v1.AmelisoService.GetAffectedCases
      */
@@ -351,5 +314,6 @@ export const AmelisoService = {
       O: RemoveRepositoryResponse,
       kind: MethodKind.Unary,
     },
-  },
+  }
 };
+

@@ -310,7 +310,7 @@ export default function RunsTab({
     if (!selectedRunId || !recordState) return;
     setRecording(true);
     try {
-      await client.recordResult({
+      const res = await client.recordResult({
         repoId,
         runId: selectedRunId,
         casePath: recordState.casePath,
@@ -320,9 +320,7 @@ export default function RunsTab({
       setRecordState(null);
       lastFocusRef.current?.focus();
       announce("Result recorded");
-      // Refresh pending
-      const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-      setPendingCases(res.cases);
+      setPendingCases(res.pending.flatMap((e) => (e.case ? [e.case] : [])));
       setTotalInScope(res.totalInScope);
     } catch (e) {
       setError(errorMessage(e));

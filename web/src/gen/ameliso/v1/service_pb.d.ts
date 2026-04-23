@@ -4,19 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type {
-  AffectedCase,
-  Case,
-  CaseResult,
-  CoverageEntry,
-  Priority,
-  Repository,
-  ResultStatus,
-  Run,
-  RunMeta,
-  RunStatus,
-  Suite,
-} from "./types_pb";
+import type { AffectedCase, Case, CaseResult, CoverageEntry, Priority, Repository, ResultStatus, Run, RunMeta, RunStatus, Suite } from "./types_pb";
 
 /**
  * Describes the file ameliso/v1/service.proto.
@@ -333,6 +321,84 @@ export declare type UpdateCaseResponse = Message<"ameliso.v1.UpdateCaseResponse"
 export declare const UpdateCaseResponseSchema: GenMessage<UpdateCaseResponse>;
 
 /**
+ * @generated from message ameliso.v1.BulkUpdateEntry
+ */
+export declare type BulkUpdateEntry = Message<"ameliso.v1.BulkUpdateEntry"> & {
+  /**
+   * @generated from field: string case_path = 1;
+   */
+  casePath: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: repeated string tags = 4;
+   */
+  tags: string[];
+
+  /**
+   * @generated from field: ameliso.v1.Priority priority = 5;
+   */
+  priority: Priority;
+
+  /**
+   * @generated from field: string body = 6;
+   */
+  body: string;
+};
+
+/**
+ * Describes the message ameliso.v1.BulkUpdateEntry.
+ * Use `create(BulkUpdateEntrySchema)` to create a new message.
+ */
+export declare const BulkUpdateEntrySchema: GenMessage<BulkUpdateEntry>;
+
+/**
+ * @generated from message ameliso.v1.BulkUpdateCasesRequest
+ */
+export declare type BulkUpdateCasesRequest = Message<"ameliso.v1.BulkUpdateCasesRequest"> & {
+  /**
+   * @generated from field: string repo_id = 1;
+   */
+  repoId: string;
+
+  /**
+   * @generated from field: repeated ameliso.v1.BulkUpdateEntry cases = 2;
+   */
+  cases: BulkUpdateEntry[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkUpdateCasesRequest.
+ * Use `create(BulkUpdateCasesRequestSchema)` to create a new message.
+ */
+export declare const BulkUpdateCasesRequestSchema: GenMessage<BulkUpdateCasesRequest>;
+
+/**
+ * @generated from message ameliso.v1.BulkUpdateCasesResponse
+ */
+export declare type BulkUpdateCasesResponse = Message<"ameliso.v1.BulkUpdateCasesResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Case cases = 1;
+   */
+  cases: Case[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkUpdateCasesResponse.
+ * Use `create(BulkUpdateCasesResponseSchema)` to create a new message.
+ */
+export declare const BulkUpdateCasesResponseSchema: GenMessage<BulkUpdateCasesResponse>;
+
+/**
  * @generated from message ameliso.v1.DeleteCaseRequest
  */
 export declare type DeleteCaseRequest = Message<"ameliso.v1.DeleteCaseRequest"> & {
@@ -368,6 +434,43 @@ export declare type DeleteCaseResponse = Message<"ameliso.v1.DeleteCaseResponse"
  * Use `create(DeleteCaseResponseSchema)` to create a new message.
  */
 export declare const DeleteCaseResponseSchema: GenMessage<DeleteCaseResponse>;
+
+/**
+ * @generated from message ameliso.v1.BulkDeleteCasesRequest
+ */
+export declare type BulkDeleteCasesRequest = Message<"ameliso.v1.BulkDeleteCasesRequest"> & {
+  /**
+   * @generated from field: string repo_id = 1;
+   */
+  repoId: string;
+
+  /**
+   * @generated from field: repeated string case_paths = 2;
+   */
+  casePaths: string[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkDeleteCasesRequest.
+ * Use `create(BulkDeleteCasesRequestSchema)` to create a new message.
+ */
+export declare const BulkDeleteCasesRequestSchema: GenMessage<BulkDeleteCasesRequest>;
+
+/**
+ * @generated from message ameliso.v1.BulkDeleteCasesResponse
+ */
+export declare type BulkDeleteCasesResponse = Message<"ameliso.v1.BulkDeleteCasesResponse"> & {
+  /**
+   * @generated from field: repeated string file_paths = 1;
+   */
+  filePaths: string[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkDeleteCasesResponse.
+ * Use `create(BulkDeleteCasesResponseSchema)` to create a new message.
+ */
+export declare const BulkDeleteCasesResponseSchema: GenMessage<BulkDeleteCasesResponse>;
 
 /**
  * @generated from message ameliso.v1.ListSuitesRequest
@@ -664,6 +767,14 @@ export declare type GetRunResponse = Message<"ameliso.v1.GetRunResponse"> & {
    * @generated from field: ameliso.v1.Run run = 1;
    */
   run?: Run;
+
+  /**
+   * In-scope cases for this run — same set as GetPendingCases returns for a pending run.
+   * Populated so callers can avoid a separate ListCases call.
+   *
+   * @generated from field: repeated ameliso.v1.Case cases = 2;
+   */
+  cases: Case[];
 };
 
 /**
@@ -682,6 +793,9 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
   repoId: string;
 
   /**
+   * Human-readable slug appended to the date prefix to form run_id (e.g. "smoke").
+   * When empty, the server auto-generates a unique slug from the current timestamp.
+   *
    * @generated from field: string slug = 2;
    */
   slug: string;
@@ -703,7 +817,7 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
 
   /**
    * Optional inline case list — when set, the run is scoped to these cases without
-   * requiring a pre-existing suite. Mutually exclusive with `suite`.
+   * requiring a pre-existing suite. Mutually exclusive with `suite`, `since_ref`, and `changed_files`.
    *
    * @generated from field: repeated string cases = 6;
    */
@@ -711,11 +825,38 @@ export declare type CreateRunRequest = Message<"ameliso.v1.CreateRunRequest"> & 
 
   /**
    * Optional git commit SHA (HEAD at run creation time). Stored in RunMeta so agents
-   * can later pass it as `since_ref` in GetAffectedCases.
+   * can later pass it as `since_ref` in GetAffectedCases or CreateRun on the next iteration.
    *
    * @generated from field: string commit_sha = 7;
    */
   commitSha: string;
+
+  /**
+   * Auto-scope this run to cases affected since this git ref (uses GitHub compare API).
+   * Mutually exclusive with `suite`, `cases`, and `use_last_run`. When `changed_files` is also
+   * set, `changed_files` takes priority and no GitHub call is made.
+   *
+   * @generated from field: string since_ref = 8;
+   */
+  sinceRef: string;
+
+  /**
+   * Pass `git diff --name-only <ref>` output to scope the run without a GitHub call.
+   * Mutually exclusive with `suite`, `cases`, and `use_last_run`.
+   *
+   * @generated from field: repeated string changed_files = 9;
+   */
+  changedFiles: string[];
+
+  /**
+   * When true, auto-scope to cases affected since the last completed run's commit_sha.
+   * Equivalent to since_ref=<last_completed_run.commit_sha>. If no completed run exists
+   * or it has no commit_sha, all cases are included.
+   * Mutually exclusive with `suite`, `cases`, `since_ref`, and `changed_files`.
+   *
+   * @generated from field: bool use_last_run = 10;
+   */
+  useLastRun: boolean;
 };
 
 /**
@@ -737,6 +878,32 @@ export declare type CreateRunResponse = Message<"ameliso.v1.CreateRunResponse"> 
    * @generated from field: string dir_path = 2;
    */
   dirPath: string;
+
+  /**
+   * Pending cases at run creation time — same as GetPendingCases.pending.
+   * Lets agents start executing immediately without a separate GetPendingCases call.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 3;
+   */
+  pending: PendingEntry[];
+
+  /**
+   * Total cases in the repo (not just this run's scope). Lets agents compute
+   * what fraction of the suite is being covered without a separate GetRepoStatus call.
+   *
+   * @generated from field: int32 total_repo_cases = 4;
+   */
+  totalRepoCases: number;
+
+  /**
+   * Source files touched by the diff (since_ref / use_last_run / changed_files) that have
+   * no matching test case — i.e., coverage gaps. Agents can use this list to decide which
+   * new cases to create without a separate GetAffectedCases call.
+   * Empty when the run is not scoped by a diff (suite, inline cases, or all cases).
+   *
+   * @generated from field: repeated string uncovered_files = 5;
+   */
+  uncoveredFiles: string[];
 };
 
 /**
@@ -799,6 +966,14 @@ export declare type RecordResultResponse = Message<"ameliso.v1.RecordResultRespo
    * @generated from field: int32 total_in_scope = 3;
    */
   totalInScope: number;
+
+  /**
+   * Remaining pending cases after this result — lets agents skip a separate
+   * GetPendingCases call when testing sequentially.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
+   */
+  pending: PendingEntry[];
 };
 
 /**
@@ -877,6 +1052,14 @@ export declare type BulkRecordResultsResponse = Message<"ameliso.v1.BulkRecordRe
    * @generated from field: int32 total_in_scope = 3;
    */
   totalInScope: number;
+
+  /**
+   * Remaining pending cases after bulk recording — lets agents confirm completion
+   * or find remaining cases without a separate GetPendingCases call.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
+   */
+  pending: PendingEntry[];
 };
 
 /**
@@ -900,6 +1083,9 @@ export declare type FinalizeRunRequest = Message<"ameliso.v1.FinalizeRunRequest"
   runId: string;
 
   /**
+   * Desired final status. When UNSPECIFIED (or omitted), the server auto-detects:
+   * ABORTED if any recorded result is FAILED, otherwise COMPLETED.
+   *
    * @generated from field: ameliso.v1.RunStatus status = 3;
    */
   status: RunStatus;
@@ -919,6 +1105,14 @@ export declare type FinalizeRunResponse = Message<"ameliso.v1.FinalizeRunRespons
    * @generated from field: ameliso.v1.RunMeta run = 1;
    */
   run?: RunMeta;
+
+  /**
+   * All results for the finalized run — avoids a separate GetRun call when agents
+   * need to inspect which cases failed or were blocked.
+   *
+   * @generated from field: repeated ameliso.v1.CaseResult results = 2;
+   */
+  results: CaseResult[];
 };
 
 /**
@@ -994,7 +1188,8 @@ export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCases
 export declare const GetPendingCasesRequestSchema: GenMessage<GetPendingCasesRequest>;
 
 /**
- * A pending test case with status and body — for agent-friendly GetPendingCases.
+ * A pending test case with status — for agent-friendly GetPendingCases and CreateRun.
+ * case.body is always populated; the top-level body field is deprecated.
  *
  * @generated from message ameliso.v1.PendingEntry
  */
@@ -1005,6 +1200,8 @@ export declare type PendingEntry = Message<"ameliso.v1.PendingEntry"> & {
   case?: Case;
 
   /**
+   * Deprecated: use case.body instead (Case.body is now always populated).
+   *
    * @generated from field: string body = 2;
    */
   body: string;
@@ -1026,6 +1223,8 @@ export declare const PendingEntrySchema: GenMessage<PendingEntry>;
  */
 export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCasesResponse"> & {
   /**
+   * Deprecated: use pending instead — it includes body and latest_status.
+   *
    * @generated from field: repeated ameliso.v1.Case cases = 1;
    */
   cases: Case[];
@@ -1036,16 +1235,15 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
   totalInScope: number;
 
   /**
-   * Same cases as `cases` but with latest coverage status included — lets
-   * agents prioritize failed/never-run cases without a separate coverage call.
+   * Deprecated: use pending instead — PendingEntry already has latest_status.
    *
    * @generated from field: repeated ameliso.v1.CoverageEntry entries = 3;
    */
   entries: CoverageEntry[];
 
   /**
-   * Full pending case data (case metadata + body + latest status) in one field.
-   * Prefer this over `cases` + `entries` when body content is needed.
+   * Preferred: full pending case data — case metadata (with body) + latest_status.
+   * Sorted failed/never first then by case priority.
    *
    * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
    */
@@ -1079,6 +1277,24 @@ export declare type UpdateRunRequest = Message<"ameliso.v1.UpdateRunRequest"> & 
    * @generated from field: string new_slug = 3;
    */
   newSlug: string;
+
+  /**
+   * Optional metadata updates — only applied when the field is non-empty.
+   * Use these to patch commit_sha, tester, or environment after creation.
+   *
+   * @generated from field: optional string commit_sha = 4;
+   */
+  commitSha?: string;
+
+  /**
+   * @generated from field: optional string tester = 5;
+   */
+  tester?: string;
+
+  /**
+   * @generated from field: optional string environment = 6;
+   */
+  environment?: string;
 };
 
 /**
@@ -1178,6 +1394,13 @@ export declare type GetAffectedCasesRequest = Message<"ameliso.v1.GetAffectedCas
    * @generated from field: ameliso.v1.Priority priority_filter = 4;
    */
   priorityFilter: Priority;
+
+  /**
+   * When non-empty, only return affected cases that have ALL of these tags.
+   *
+   * @generated from field: repeated string tags = 5;
+   */
+  tags: string[];
 };
 
 /**
@@ -1199,6 +1422,15 @@ export declare type GetAffectedCasesResponse = Message<"ameliso.v1.GetAffectedCa
    * @generated from field: string reason = 2;
    */
   reason: string;
+
+  /**
+   * Changed files that have no matching test case — i.e., coverage gaps.
+   * Agents can use this list to decide which new cases to create.
+   * Doc files (.md, .yml, etc.) are excluded.
+   *
+   * @generated from field: repeated string uncovered_files = 3;
+   */
+  uncoveredFiles: string[];
 };
 
 /**
@@ -1261,6 +1493,11 @@ export declare type ActiveRunStatus = Message<"ameliso.v1.ActiveRunStatus"> & {
    * @generated from field: string commit_sha = 7;
    */
   commitSha: string;
+
+  /**
+   * @generated from field: string environment = 8;
+   */
+  environment: string;
 };
 
 /**
@@ -1351,8 +1588,8 @@ export declare const GetRepoStatusResponseSchema: GenMessage<GetRepoStatusRespon
 /**
  * @generated from message ameliso.v1.GetGitHubInstallUrlRequest
  */
-export declare type GetGitHubInstallUrlRequest =
-  Message<"ameliso.v1.GetGitHubInstallUrlRequest"> & {};
+export declare type GetGitHubInstallUrlRequest = Message<"ameliso.v1.GetGitHubInstallUrlRequest"> & {
+};
 
 /**
  * Describes the message ameliso.v1.GetGitHubInstallUrlRequest.
@@ -1363,18 +1600,17 @@ export declare const GetGitHubInstallUrlRequestSchema: GenMessage<GetGitHubInsta
 /**
  * @generated from message ameliso.v1.GetGitHubInstallUrlResponse
  */
-export declare type GetGitHubInstallUrlResponse =
-  Message<"ameliso.v1.GetGitHubInstallUrlResponse"> & {
-    /**
-     * @generated from field: string url = 1;
-     */
-    url: string;
+export declare type GetGitHubInstallUrlResponse = Message<"ameliso.v1.GetGitHubInstallUrlResponse"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
 
-    /**
-     * @generated from field: bool configured = 2;
-     */
-    configured: boolean;
-  };
+  /**
+   * @generated from field: bool configured = 2;
+   */
+  configured: boolean;
+};
 
 /**
  * Describes the message ameliso.v1.GetGitHubInstallUrlResponse.
@@ -1385,13 +1621,12 @@ export declare const GetGitHubInstallUrlResponseSchema: GenMessage<GetGitHubInst
 /**
  * @generated from message ameliso.v1.HandleGitHubCallbackRequest
  */
-export declare type HandleGitHubCallbackRequest =
-  Message<"ameliso.v1.HandleGitHubCallbackRequest"> & {
-    /**
-     * @generated from field: string installation_id = 1;
-     */
-    installationId: string;
-  };
+export declare type HandleGitHubCallbackRequest = Message<"ameliso.v1.HandleGitHubCallbackRequest"> & {
+  /**
+   * @generated from field: string installation_id = 1;
+   */
+  installationId: string;
+};
 
 /**
  * Describes the message ameliso.v1.HandleGitHubCallbackRequest.
@@ -1402,13 +1637,12 @@ export declare const HandleGitHubCallbackRequestSchema: GenMessage<HandleGitHubC
 /**
  * @generated from message ameliso.v1.HandleGitHubCallbackResponse
  */
-export declare type HandleGitHubCallbackResponse =
-  Message<"ameliso.v1.HandleGitHubCallbackResponse"> & {
-    /**
-     * @generated from field: repeated ameliso.v1.Repository repositories = 1;
-     */
-    repositories: Repository[];
-  };
+export declare type HandleGitHubCallbackResponse = Message<"ameliso.v1.HandleGitHubCallbackResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Repository repositories = 1;
+   */
+  repositories: Repository[];
+};
 
 /**
  * Describes the message ameliso.v1.HandleGitHubCallbackResponse.
@@ -1419,7 +1653,8 @@ export declare const HandleGitHubCallbackResponseSchema: GenMessage<HandleGitHub
 /**
  * @generated from message ameliso.v1.ListRepositoriesRequest
  */
-export declare type ListRepositoriesRequest = Message<"ameliso.v1.ListRepositoriesRequest"> & {};
+export declare type ListRepositoriesRequest = Message<"ameliso.v1.ListRepositoriesRequest"> & {
+};
 
 /**
  * Describes the message ameliso.v1.ListRepositoriesRequest.
@@ -1494,7 +1729,8 @@ export declare const RemoveRepositoryRequestSchema: GenMessage<RemoveRepositoryR
 /**
  * @generated from message ameliso.v1.RemoveRepositoryResponse
  */
-export declare type RemoveRepositoryResponse = Message<"ameliso.v1.RemoveRepositoryResponse"> & {};
+export declare type RemoveRepositoryResponse = Message<"ameliso.v1.RemoveRepositoryResponse"> & {
+};
 
 /**
  * Describes the message ameliso.v1.RemoveRepositoryResponse.
@@ -1506,16 +1742,16 @@ export declare const RemoveRepositoryResponseSchema: GenMessage<RemoveRepository
  * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
- * Recommended agent workflow:
- *   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
- *      including body and latest_status; sort by failed/never first.
- *   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
- *   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
- *   4. RecordResult per case — response.pending_count tells you how many remain.
- *   5. FinalizeRun — mark run complete/aborted.
- *   6. Loop from step 1 with new commit_sha.
+ * Recommended agent workflow (minimum 3 RPCs):
+ *   1. CreateRun(commit_sha=<HEAD>, use_last_run=true) — auto-scopes to cases affected since the
+ *      last completed run, returns pending with body + latest_status; no GetRepoStatus needed.
+ *      On the first ever run (no prior run) all cases are included.
+ *   2. BulkRecordResults — record all results in one call; pending_count tells you how many remain.
+ *   3. FinalizeRun(status=UNSPECIFIED) — auto-detects ABORTED if any FAILED result, else COMPLETED.
  *
- *   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
+ * Repeat from step 1 on the next commit.
+ * For richer context before running (stats, active runs), call GetRepoStatus first.
+ * For a read-only preview of affected cases, call GetAffectedCases instead of CreateRun.
  *
  * @generated from service ameliso.v1.AmelisoService
  */
@@ -1529,7 +1765,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListCasesRequestSchema;
     output: typeof ListCasesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetCase
    */
@@ -1537,7 +1773,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetCaseRequestSchema;
     output: typeof GetCaseResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.CreateCase
    */
@@ -1545,7 +1781,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof CreateCaseRequestSchema;
     output: typeof CreateCaseResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.BulkCreateCases
    */
@@ -1553,7 +1789,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof BulkCreateCasesRequestSchema;
     output: typeof BulkCreateCasesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.UpdateCase
    */
@@ -1561,7 +1797,15 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateCaseRequestSchema;
     output: typeof UpdateCaseResponseSchema;
-  };
+  },
+  /**
+   * @generated from rpc ameliso.v1.AmelisoService.BulkUpdateCases
+   */
+  bulkUpdateCases: {
+    methodKind: "unary";
+    input: typeof BulkUpdateCasesRequestSchema;
+    output: typeof BulkUpdateCasesResponseSchema;
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
    */
@@ -1569,7 +1813,15 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteCaseRequestSchema;
     output: typeof DeleteCaseResponseSchema;
-  };
+  },
+  /**
+   * @generated from rpc ameliso.v1.AmelisoService.BulkDeleteCases
+   */
+  bulkDeleteCases: {
+    methodKind: "unary";
+    input: typeof BulkDeleteCasesRequestSchema;
+    output: typeof BulkDeleteCasesResponseSchema;
+  },
   /**
    * --- Suites ---
    *
@@ -1579,7 +1831,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListSuitesRequestSchema;
     output: typeof ListSuitesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetSuite
    */
@@ -1587,7 +1839,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetSuiteRequestSchema;
     output: typeof GetSuiteResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.CreateSuite
    */
@@ -1595,7 +1847,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof CreateSuiteRequestSchema;
     output: typeof CreateSuiteResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.UpdateSuite
    */
@@ -1603,7 +1855,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateSuiteRequestSchema;
     output: typeof UpdateSuiteResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteSuite
    */
@@ -1611,7 +1863,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteSuiteRequestSchema;
     output: typeof DeleteSuiteResponseSchema;
-  };
+  },
   /**
    * --- Runs ---
    *
@@ -1621,7 +1873,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListRunsRequestSchema;
     output: typeof ListRunsResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetRun
    */
@@ -1629,7 +1881,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetRunRequestSchema;
     output: typeof GetRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.CreateRun
    */
@@ -1637,7 +1889,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof CreateRunRequestSchema;
     output: typeof CreateRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.RecordResult
    */
@@ -1645,7 +1897,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof RecordResultRequestSchema;
     output: typeof RecordResultResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
    */
@@ -1653,7 +1905,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof BulkRecordResultsRequestSchema;
     output: typeof BulkRecordResultsResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
    */
@@ -1661,7 +1913,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof FinalizeRunRequestSchema;
     output: typeof FinalizeRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteRun
    */
@@ -1669,7 +1921,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteRunRequestSchema;
     output: typeof DeleteRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetPendingCases
    */
@@ -1677,7 +1929,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetPendingCasesRequestSchema;
     output: typeof GetPendingCasesResponseSchema;
-  };
+  },
   /**
    * Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
    *
@@ -1687,9 +1939,10 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateRunRequestSchema;
     output: typeof UpdateRunResponseSchema;
-  };
+  },
   /**
    * --- Reports ---
+   * Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
    */
@@ -1697,9 +1950,10 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetCoverageReportRequestSchema;
     output: typeof GetCoverageReportResponseSchema;
-  };
+  },
   /**
    * Return cases affected by source changes since since_ref (uses GitHub compare API).
+   * Sorted failed/never first then by priority — same ordering as GetPendingCases.
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetAffectedCases
    */
@@ -1707,7 +1961,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetAffectedCasesRequestSchema;
     output: typeof GetAffectedCasesResponseSchema;
-  };
+  },
   /**
    * Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
    *
@@ -1717,7 +1971,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetRepoStatusRequestSchema;
     output: typeof GetRepoStatusResponseSchema;
-  };
+  },
   /**
    * --- GitHub App ---
    *
@@ -1727,7 +1981,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetGitHubInstallUrlRequestSchema;
     output: typeof GetGitHubInstallUrlResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
    */
@@ -1735,7 +1989,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof HandleGitHubCallbackRequestSchema;
     output: typeof HandleGitHubCallbackResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
    */
@@ -1743,7 +1997,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListRepositoriesRequestSchema;
     output: typeof ListRepositoriesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
    */
@@ -1751,7 +2005,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof SyncRepositoryRequestSchema;
     output: typeof SyncRepositoryResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
    */
@@ -1759,5 +2013,6 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof RemoveRepositoryRequestSchema;
     output: typeof RemoveRepositoryResponseSchema;
-  };
+  },
 }>;
+
