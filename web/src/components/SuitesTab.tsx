@@ -41,6 +41,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     onExpandedChangeRef.current = onExpandedChange;
     toggleExpandRef.current = (slug: string) => void toggleExpand(slug);
   });
+  const [search, setSearch] = useState("");
+  const [filterAnnouncement, announceFilter] = useAnnounce();
+  const prevFilterCountRef = useRef<number | null>(null);
   const [actionAnnouncement, announce] = useAnnounce();
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -191,6 +194,25 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     }
   }
 
+  const q = search.trim().toLowerCase();
+  const filteredSuites = q
+    ? suites.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.slug.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q)
+      )
+    : suites;
+
+  useEffect(() => {
+    if (loading || !q) return;
+    const count = filteredSuites.length;
+    if (prevFilterCountRef.current !== null && prevFilterCountRef.current !== count) {
+      announceFilter(count === 1 ? "1 suite found" : `${count} suites found`);
+    }
+    prevFilterCountRef.current = count;
+  }, [filteredSuites.length, loading, q, announceFilter]);
+
   if (!repoId) {
     return <div className={styles.noRepo}>Set a repository path in the Overview tab first.</div>;
   }
@@ -199,6 +221,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     <div>
       <div role="status" aria-live="polite" className="sr-only">
         {actionAnnouncement}
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {filterAnnouncement}
       </div>
       <div className={styles.header}>
         <h2 className={styles.title}>Suites</h2>
@@ -324,6 +349,24 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         </div>
       )}
 
+      {suites.length > 0 && (
+        <div className={styles.searchWrapper}>
+          <input
+            type="search"
+            aria-label="Search suites"
+            placeholder="Search suites…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            className={styles.searchInput}
+          />
+          <span className={styles.searchIcon} aria-hidden="true">
+            ⌕
+          </span>
+        </div>
+      )}
+
       {loading && (
         <div className={styles.loadingMsg} role="status">
           Loading…
@@ -334,8 +377,12 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         <div className={styles.emptyCard}>No suites found.</div>
       )}
 
+      {!loading && q && filteredSuites.length === 0 && suites.length > 0 && (
+        <div className={styles.emptyCard}>No suites match &ldquo;{search}&rdquo;.</div>
+      )}
+
       <ul className={styles.list} aria-busy={loading} role="list">
-        {suites.map((suite) => (
+        {filteredSuites.map((suite) => (
           <li key={suite.slug}>
             {editingSlug === suite.slug ? (
               <div className={styles.card}>
