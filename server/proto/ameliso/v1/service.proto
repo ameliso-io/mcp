@@ -349,6 +349,8 @@ message GetAffectedCasesRequest {
   // If set, skip GitHub comparison and match cases against these file paths directly.
   // Pass output of `git diff --name-only <ref>` for local workflows without GitHub.
   repeated string changed_files = 3;
+  // When set (non-UNSPECIFIED), only return affected cases at this priority level.
+  Priority priority_filter = 4;
 }
 
 message GetAffectedCasesResponse {

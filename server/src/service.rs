@@ -1084,6 +1084,13 @@ impl AmelisoService for AmelisoServer {
             } else {
                 reasons.join("; ")
             };
+            if let Some(pri) = priority_from_i32(req.priority_filter) {
+                affected.retain(|path| {
+                    case_map
+                        .get(path.as_str())
+                        .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+                });
+            }
             let pb_cases = affected
                 .iter()
                 .map(|path| pb::AffectedCase {
@@ -1108,8 +1115,10 @@ impl AmelisoService for AmelisoServer {
         }
 
         if req.since_ref.is_empty() {
+            let pri_filter = priority_from_i32(req.priority_filter);
             let affected = cases
                 .iter()
+                .filter(|c| pri_filter.is_none_or(|p| c.priority.eq_ignore_ascii_case(p)))
                 .map(|c| pb::AffectedCase {
                     case: Some(case_to_pb(c)),
                     reason: "no since_ref provided; all cases flagged".to_owned(),
@@ -1209,6 +1218,13 @@ impl AmelisoService for AmelisoServer {
                 .map_or(3, |c| priority_rank(&c.priority))
         });
 
+        if let Some(pri) = priority_from_i32(req.priority_filter) {
+            affected.retain(|path| {
+                case_map
+                    .get(path.as_str())
+                    .is_some_and(|c| c.priority.eq_ignore_ascii_case(pri))
+            });
+        }
         let pb_cases = affected
             .iter()
             .map(|path| pb::AffectedCase {
@@ -1951,6 +1967,7 @@ mod tests {
                 repo_id: "".to_owned(),
                 since_ref: "HEAD~1".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -1967,6 +1984,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: String::new(),
                 changed_files: vec!["src/auth.ts".to_owned()],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -3305,6 +3323,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "abc123".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -3320,6 +3339,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "".to_owned(),
                 changed_files: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
