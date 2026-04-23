@@ -302,4 +302,36 @@ mod tests {
         let err = parse_case_from_base64("cases/auth/login.md", &invalid_utf8).unwrap_err();
         assert!(err.to_string().contains("not valid UTF-8"));
     }
+
+    #[test]
+    fn parse_case_markdown_strips_leading_whitespace_before_delimiter() {
+        let content = "\n\n  \n---\ntitle: Trimmed\n---\n\nbody text";
+        let parsed = parse_case_markdown("cases/a/b.md", content).unwrap();
+        assert_eq!(parsed.title, "Trimmed");
+        assert_eq!(parsed.body, "body text");
+    }
+
+    #[test]
+    fn parse_case_markdown_strips_leading_newlines_from_body() {
+        let content = "---\ntitle: Body Test\n---\n\n\n\nbody starts here";
+        let parsed = parse_case_markdown("cases/a/b.md", content).unwrap();
+        assert_eq!(parsed.body, "body starts here");
+    }
+
+    #[test]
+    fn parse_case_from_base64_handles_newlines_in_encoded_string() {
+        let case = sample_case();
+        let md = case_to_markdown(&case);
+        let b64_clean = BASE64.encode(md.as_bytes());
+        // Insert line breaks every 76 chars (typical PEM/MIME wrapping)
+        let b64_wrapped: String = b64_clean
+            .as_bytes()
+            .chunks(76)
+            .map(|c| std::str::from_utf8(c).unwrap())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let parsed = parse_case_from_base64("cases/auth/login.md", &b64_wrapped).unwrap();
+        assert_eq!(parsed.title, "User Login");
+        assert_eq!(parsed.case_path, "auth/login");
+    }
 }

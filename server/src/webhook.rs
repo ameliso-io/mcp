@@ -65,6 +65,7 @@ fn collect_case_changes(
     for commit in commits {
         for path in commit.added.iter().chain(commit.modified.iter()) {
             if is_case_file(path) {
+                remove.remove(path);
                 upsert.insert(path.clone());
             }
         }
@@ -385,5 +386,52 @@ mod tests {
             .await
             .into_response();
         assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn github_push_valid_signature_no_changes_returns_ok() {
+        let secret = "test-secret";
+        let body_str = r#"{"commits":[],"repository":{"full_name":"owner/repo"}}"#;
+        let body_bytes = body_str.as_bytes();
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(body_bytes);
+        let hex_sig = hex::encode(mac.finalize().into_bytes());
+        let state = Arc::new(WebhookState {
+            pool: lazy_pool(),
+            secret: Some(secret.to_owned()),
+        });
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-hub-signature-256",
+            format!("sha256={hex_sig}").parse().unwrap(),
+        );
+        let body = Bytes::copy_from_slice(body_bytes);
+        let resp = github_push(State(state), headers, body)
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn collect_case_changes_remove_then_add_same_file_lands_in_upsert_only() {
+        let commits = vec![
+            commit(&[], &[], &["cases/auth/login.md"]),
+            commit(&["cases/auth/login.md"], &[], &[]),
+        ];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.contains("cases/auth/login.md"));
+        assert!(!remove.contains("cases/auth/login.md"));
+    }
+
+    #[test]
+    fn collect_case_changes_added_and_modified_non_case_file_ignored() {
+        let commits = vec![commit(
+            &["docs/README.md", "src/main.rs"],
+            &["cases/auth/login.txt"],
+            &[],
+        )];
+        let (upsert, remove) = collect_case_changes(&commits);
+        assert!(upsert.is_empty());
+        assert!(remove.is_empty());
     }
 }

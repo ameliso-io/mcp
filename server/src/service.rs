@@ -70,7 +70,11 @@ fn clean_tags(tags: Vec<String>) -> Vec<String> {
     tags.into_iter()
         .filter_map(|t| {
             let s = t.trim().to_owned();
-            if s.is_empty() { None } else { Some(s) }
+            if s.is_empty() {
+                None
+            } else {
+                Some(s)
+            }
         })
         .collect()
 }
@@ -431,7 +435,11 @@ impl AmelisoService for AmelisoServer {
             None
         } else {
             let cleaned = clean_tags(req.tags);
-            if cleaned.is_empty() { None } else { Some(cleaned) }
+            if cleaned.is_empty() {
+                None
+            } else {
+                Some(cleaned)
+            }
         };
         let body = if req.body.is_empty() {
             None
