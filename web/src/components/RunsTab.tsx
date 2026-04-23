@@ -99,6 +99,14 @@ export default function RunsTab({
 
   // Selected run for recording results or viewing results
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const selectedRunIdRef = useRef(selectedRunId);
+  useEffect(() => {
+    selectedRunIdRef.current = selectedRunId;
+  }, [selectedRunId]);
+  const onSelectedRunIdChangeRef = useRef(onSelectedRunIdChange);
+  useEffect(() => {
+    onSelectedRunIdChangeRef.current = onSelectedRunIdChange;
+  });
   const [pendingCases, setPendingCases] = useState<Case[]>([]);
   const [totalInScope, setTotalInScope] = useState(0);
   const [loadingPending, setLoadingPending] = useState(false);
@@ -127,6 +135,46 @@ export default function RunsTab({
   const [renaming, setRenaming] = useState(false);
   const [actionAnnouncement, announce] = useAnnounce();
 
+  const selectRun = useCallback(
+    async (runId: string, status: RunStatus) => {
+      if (selectedRunIdRef.current === runId) {
+        setSelectedRunId(null);
+        onSelectedRunIdChangeRef.current?.(null);
+        setPendingCases([]);
+        setRecordedResults([]);
+        setResultStatusFilter(null);
+        setRecordState(null);
+        return;
+      }
+      setSelectedRunId(runId);
+      onSelectedRunIdChangeRef.current?.(runId);
+      setLoadingPending(true);
+      setPendingCases([]);
+      setRecordedResults([]);
+      setResultStatusFilter(null);
+      setRecordState(null);
+      try {
+        if (status === RunStatus.IN_PROGRESS) {
+          const res = await client.getPendingCases({ repoId, runId });
+          setPendingCases(res.cases);
+          setTotalInScope(res.totalInScope);
+        } else {
+          const [runRes, casesRes] = await Promise.all([
+            client.getRun({ repoId, runId }),
+            client.listCases({ repoId }),
+          ]);
+          setRecordedResults(runRes.run?.results ?? []);
+          setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
+        }
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setLoadingPending(false);
+      }
+    },
+    [repoId]
+  );
+
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const consumedRef = useRef(false);
   useEffect(() => {
@@ -143,8 +191,7 @@ export default function RunsTab({
     consumedSelectedRef.current = true;
     const run = runs.find((r) => r.id === initialSelectedRunId);
     if (run) void selectRun(run.id, run.status);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runs, initialSelectedRunId]);
+  }, [runs, initialSelectedRunId, selectRun]);
 
   const consumedResultFilterRef = useRef(false);
   useEffect(() => {
@@ -233,43 +280,6 @@ export default function RunsTab({
       setError(errorMessage(e));
     } finally {
       setCreating(false);
-    }
-  }
-
-  async function selectRun(runId: string, status: RunStatus) {
-    if (selectedRunId === runId) {
-      setSelectedRunId(null);
-      onSelectedRunIdChange?.(null);
-      setPendingCases([]);
-      setRecordedResults([]);
-      setResultStatusFilter(null);
-      setRecordState(null);
-      return;
-    }
-    setSelectedRunId(runId);
-    onSelectedRunIdChange?.(runId);
-    setLoadingPending(true);
-    setPendingCases([]);
-    setRecordedResults([]);
-    setResultStatusFilter(null);
-    setRecordState(null);
-    try {
-      if (status === RunStatus.IN_PROGRESS) {
-        const res = await client.getPendingCases({ repoId, runId });
-        setPendingCases(res.cases);
-        setTotalInScope(res.totalInScope);
-      } else {
-        const [runRes, casesRes] = await Promise.all([
-          client.getRun({ repoId, runId }),
-          client.listCases({ repoId }),
-        ]);
-        setRecordedResults(runRes.run?.results ?? []);
-        setCaseTitleMap(new Map(casesRes.cases.map((c) => [c.path, c])));
-      }
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoadingPending(false);
     }
   }
 
