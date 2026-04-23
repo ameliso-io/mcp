@@ -323,7 +323,9 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
       )}
 
       <ul
-        className={loading && suites.length > 0 ? `${styles.list} ${styles.listStale}` : styles.list}
+        className={
+          loading && suites.length > 0 ? `${styles.list} ${styles.listStale}` : styles.list
+        }
         aria-busy={loading}
         role="list"
       >
