@@ -74,16 +74,24 @@ export default function RepositoriesTab({
     setError(null);
     try {
       const installationIds = [...new Set(repos.map((r) => r.installationId).filter(Boolean))];
-      const results = await Promise.all(
+      const settled = await Promise.allSettled(
         installationIds.map((installationId) => client.handleGitHubCallback({ installationId }))
       );
-      for (const res of results) {
-        setRepos((prev) => {
-          const ids = new Set(res.repositories.map((r) => r.id));
-          return [...prev.filter((r) => !ids.has(r.id)), ...res.repositories];
-        });
+      for (const result of settled) {
+        if (result.status === "fulfilled") {
+          setRepos((prev) => {
+            const ids = new Set(result.value.repositories.map((r) => r.id));
+            return [...prev.filter((r) => !ids.has(r.id)), ...result.value.repositories];
+          });
+        }
       }
-      announce("Repositories refreshed");
+      const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      if (failures.length > 0) {
+        setError(errorMessage(failures.at(0)?.reason));
+      } else {
+        announce("Repositories refreshed");
+      }
+      /* v8 ignore next 3 — Promise.allSettled never rejects; guard for unexpected throws */
     } catch (e) {
       setError(errorMessage(e));
     } finally {
