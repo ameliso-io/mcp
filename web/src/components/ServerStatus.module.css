@@ -1,0 +1,30 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connecting {
+  background-color: var(--color-subtle);
+}
+
+.online {
+  background-color: var(--color-success);
+}
+
+.offline {
+  background-color: var(--color-danger);
+}
+
+.label {
+  font-size: 12px;
+  color: var(--color-nav-link);
+}

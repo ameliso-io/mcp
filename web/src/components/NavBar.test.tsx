@@ -10,6 +10,10 @@ vi.mock("next/navigation", () => ({
   usePathname: mockUsePathname,
 }));
 
+vi.mock("./ServerStatus", () => ({
+  default: () => null,
+}));
+
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
   default: ({

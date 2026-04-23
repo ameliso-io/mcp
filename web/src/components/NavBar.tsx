@@ -1,6 +1,7 @@
 import type { Route } from "next";
 import Link from "next/link";
 import NavLink from "./NavLink";
+import ServerStatus from "./ServerStatus";
 import styles from "./NavBar.module.css";
 
 interface Props {
@@ -30,6 +31,7 @@ export default function NavBar({ basePath }: Props) {
           ))}
         </nav>
       )}
+      <ServerStatus />
     </header>
   );
 }
