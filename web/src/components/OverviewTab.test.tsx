@@ -770,6 +770,15 @@ describe("OverviewTab", () => {
     );
   });
 
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.getCoverageReport).mockRejectedValueOnce(new Error("load error"));
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
+    vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.getCoverageReport).toHaveBeenCalledTimes(2));
+  });
+
   it("resets coverage filter to All statuses when repoId changes", async () => {
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />

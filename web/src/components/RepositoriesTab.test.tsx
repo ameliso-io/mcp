@@ -617,6 +617,15 @@ describe("RepositoriesTab", () => {
     expect(screen.queryByText("Active")).not.toBeInTheDocument();
   });
 
+  it("retries load when Retry button clicked", async () => {
+    vi.mocked(client.listRepositories).mockRejectedValueOnce(new Error("load error"));
+    render(<RepositoriesTab onRepoSelect={() => {}} activeRepoId="" />);
+    await waitFor(() => expect(screen.getByText("load error")).toBeInTheDocument());
+    vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [] } as never);
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(client.listRepositories).toHaveBeenCalledTimes(2));
+  });
+
   it("calls onRepoSelect with empty string when active repo is removed", async () => {
     vi.mocked(client.listRepositories).mockResolvedValue({ repositories: [makeRepo()] } as never);
     const onRepoSelect = vi.fn();
