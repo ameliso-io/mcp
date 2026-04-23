@@ -1058,7 +1058,7 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
 
-        let pb_entries = entries
+        let mut pb_entries: Vec<pb::CoverageEntry> = entries
             .into_iter()
             .filter_map(|row| {
                 let status_i32 = result_status_to_i32(&row.latest_status);
@@ -1086,6 +1086,13 @@ impl AmelisoService for AmelisoServer {
                 })
             })
             .collect();
+        pb_entries.sort_by(|a, b| {
+            let sa = result_status_rank(result_status_from_i32(a.latest_status));
+            let sb = result_status_rank(result_status_from_i32(b.latest_status));
+            let pa = a.case.as_ref().map_or(3, |c| priority_rank(&c.priority));
+            let pb_rank = b.case.as_ref().map_or(3, |c| priority_rank(&c.priority));
+            sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
+        });
 
         Ok(Response::new(pb::GetCoverageReportResponse {
             entries: pb_entries,
@@ -1145,13 +1152,23 @@ impl AmelisoService for AmelisoServer {
             let mut affected: Vec<String> = affected_set.into_iter().collect();
             affected.sort_by(|a, b| {
                 let sa = result_status_rank(
-                    status_map.get(a.as_str()).map(String::as_str).unwrap_or("never"),
+                    status_map
+                        .get(a.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
                 );
                 let sb = result_status_rank(
-                    status_map.get(b.as_str()).map(String::as_str).unwrap_or("never"),
+                    status_map
+                        .get(b.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
                 );
-                let pa = case_map.get(a.as_str()).map_or(3, |c| priority_rank(&c.priority));
-                let pb_rank = case_map.get(b.as_str()).map_or(3, |c| priority_rank(&c.priority));
+                let pa = case_map
+                    .get(a.as_str())
+                    .map_or(3, |c| priority_rank(&c.priority));
+                let pb_rank = case_map
+                    .get(b.as_str())
+                    .map_or(3, |c| priority_rank(&c.priority));
                 sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
             });
             let reason = if reasons.is_empty() {
@@ -1224,7 +1241,8 @@ impl AmelisoService for AmelisoServer {
                         .map(String::as_str)
                         .unwrap_or("never"),
                 );
-                sa.cmp(&sb).then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
+                sa.cmp(&sb)
+                    .then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
             });
             let pb_cases = affected
                 .iter()
@@ -1323,13 +1341,23 @@ impl AmelisoService for AmelisoServer {
 
         affected.sort_by(|a, b| {
             let sa = result_status_rank(
-                status_map.get(a.as_str()).map(String::as_str).unwrap_or("never"),
+                status_map
+                    .get(a.as_str())
+                    .map(String::as_str)
+                    .unwrap_or("never"),
             );
             let sb = result_status_rank(
-                status_map.get(b.as_str()).map(String::as_str).unwrap_or("never"),
+                status_map
+                    .get(b.as_str())
+                    .map(String::as_str)
+                    .unwrap_or("never"),
             );
-            let pa = case_map.get(a.as_str()).map_or(3, |c| priority_rank(&c.priority));
-            let pb_rank = case_map.get(b.as_str()).map_or(3, |c| priority_rank(&c.priority));
+            let pa = case_map
+                .get(a.as_str())
+                .map_or(3, |c| priority_rank(&c.priority));
+            let pb_rank = case_map
+                .get(b.as_str())
+                .map_or(3, |c| priority_rank(&c.priority));
             sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
         });
 
@@ -3037,7 +3065,9 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("status must be completed or aborted"));
+        assert!(err
+            .message()
+            .contains("status must be completed or aborted"));
     }
 
     #[tokio::test]

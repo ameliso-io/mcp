@@ -47,8 +47,10 @@ service AmelisoService {
   rpc UpdateRun(UpdateRunRequest) returns (UpdateRunResponse);
 
   // --- Reports ---
+  // Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
   rpc GetCoverageReport(GetCoverageReportRequest) returns (GetCoverageReportResponse);
   // Return cases affected by source changes since since_ref (uses GitHub compare API).
+  // Sorted failed/never first then by priority — same ordering as GetPendingCases.
   rpc GetAffectedCases(GetAffectedCasesRequest) returns (GetAffectedCasesResponse);
   // Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
   rpc GetRepoStatus(GetRepoStatusRequest) returns (GetRepoStatusResponse);

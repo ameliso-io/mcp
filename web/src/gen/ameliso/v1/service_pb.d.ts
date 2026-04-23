@@ -1697,6 +1697,7 @@ export declare const AmelisoService: GenService<{
   },
   /**
    * --- Reports ---
+   * Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetCoverageReport
    */
@@ -1707,6 +1708,7 @@ export declare const AmelisoService: GenService<{
   },
   /**
    * Return cases affected by source changes since since_ref (uses GitHub compare API).
+   * Sorted failed/never first then by priority — same ordering as GetPendingCases.
    *
    * @generated from rpc ameliso.v1.AmelisoService.GetAffectedCases
    */
