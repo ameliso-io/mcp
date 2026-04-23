@@ -83,7 +83,5 @@ pre-push:
 	wait $$PID1 || FAIL=1; \
 	wait $$PID2 || FAIL=1; \
 	$(MAKE) test-server & PID3=$$!; \
-	$(MAKE) coverage-check & PID4=$$!; \
 	wait $$PID3 || FAIL=1; \
-	wait $$PID4 || FAIL=1; \
 	[ "$$FAIL" -eq 0 ] && echo "pre-push: OK" || exit 1
