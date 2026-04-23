@@ -1332,6 +1332,14 @@ export declare type GetRepoStatusResponse = Message<"ameliso.v1.GetRepoStatusRes
    * @generated from field: repeated ameliso.v1.ActiveRunStatus active_runs = 12;
    */
   activeRuns: ActiveRunStatus[];
+
+  /**
+   * Most recently completed run — commit_sha can be passed as since_ref to GetAffectedCases
+   * without a separate ListRuns call.
+   *
+   * @generated from field: ameliso.v1.RunMeta last_completed_run = 13;
+   */
+  lastCompletedRun?: RunMeta;
 };
 
 /**

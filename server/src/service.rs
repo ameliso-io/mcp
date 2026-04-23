@@ -954,6 +954,7 @@ impl AmelisoService for AmelisoServer {
                 ),
                 last_run_id: String::new(),
                 last_run_date: String::new(),
+                body: c.body.clone(),
                 case: Some(case_to_pb(c)),
             })
             .collect();
@@ -1014,6 +1015,7 @@ impl AmelisoService for AmelisoServer {
                     latest_status: status_i32,
                     last_run_id: row.last_run_id,
                     last_run_date: row.last_run_date,
+                    body: row.body,
                 })
             })
             .collect();
@@ -1320,6 +1322,12 @@ impl AmelisoService for AmelisoServer {
             });
         }
 
+        let last_completed_run = runs
+            .iter()
+            .filter(|r| r.status == "completed")
+            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
+            .map(run_meta_to_pb);
+
         Ok(Response::new(pb::GetRepoStatusResponse {
             total_cases,
             high_cases,
@@ -1333,6 +1341,7 @@ impl AmelisoService for AmelisoServer {
             suite_count: i32::try_from(suites.len()).unwrap_or(i32::MAX),
             run_count: i32::try_from(runs.len()).unwrap_or(i32::MAX),
             active_runs,
+            last_completed_run,
         }))
     }
 
