@@ -984,7 +984,9 @@ export default function RunsTab({
                             <span className={styles.pendingTitle}>{c.title}</span>
                             <button
                               type="button"
-                              onClick={() => { openRecord(c.path); }}
+                              onClick={() => {
+                                openRecord(c.path);
+                              }}
                               aria-label={
                                 recordingCase === c.path
                                   ? `Cancel recording ${c.path}`

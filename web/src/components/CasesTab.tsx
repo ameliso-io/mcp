@@ -663,7 +663,9 @@ export default function CasesTab({
                     <button
                       type="button"
                       className={styles.caseExpandBtn}
-                      onClick={() => { toggleExpand(c); }}
+                      onClick={() => {
+                        toggleExpand(c);
+                      }}
                       aria-expanded={expandedPath === c.path}
                     >
                       <span
@@ -692,7 +694,9 @@ export default function CasesTab({
                     </button>
                     <button
                       type="button"
-                      onClick={() => { startEdit(c); }}
+                      onClick={() => {
+                        startEdit(c);
+                      }}
                       aria-label={`Edit ${c.path}`}
                       className={styles.btnOutlineSm}
                     >

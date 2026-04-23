@@ -1031,6 +1031,8 @@ export declare const PendingEntrySchema: GenMessage<PendingEntry>;
  */
 export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCasesResponse"> & {
   /**
+   * Deprecated: use pending instead — it includes body and latest_status.
+   *
    * @generated from field: repeated ameliso.v1.Case cases = 1;
    */
   cases: Case[];
@@ -1041,16 +1043,15 @@ export declare type GetPendingCasesResponse = Message<"ameliso.v1.GetPendingCase
   totalInScope: number;
 
   /**
-   * Same cases as `cases` but with latest coverage status included — lets
-   * agents prioritize failed/never-run cases without a separate coverage call.
+   * Deprecated: use pending instead — PendingEntry already has latest_status.
    *
    * @generated from field: repeated ameliso.v1.CoverageEntry entries = 3;
    */
   entries: CoverageEntry[];
 
   /**
-   * Full pending case data (case metadata + body + latest status) in one field.
-   * Prefer this over `cases` + `entries` when body content is needed.
+   * Preferred: full pending case data — case metadata (with body) + latest_status.
+   * Sorted failed/never first then by case priority.
    *
    * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
    */

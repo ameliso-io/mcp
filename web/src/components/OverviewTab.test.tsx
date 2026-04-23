@@ -116,7 +116,9 @@ describe("OverviewTab", () => {
       neverRun: 0,
       suiteCount: 0,
       runCount: 0,
-      activeRuns: [makeActiveRunStatus({ runId: "run-abc", tester: "alice", environment: "staging" })],
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-abc", tester: "alice", environment: "staging" }),
+      ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
@@ -324,7 +326,12 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 0,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-active", tester: "alice", suite: "smoke", date: "2026-01-01" }),
+        makeActiveRunStatus({
+          runId: "run-active",
+          tester: "alice",
+          suite: "smoke",
+          date: "2026-01-01",
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -405,7 +412,9 @@ describe("OverviewTab", () => {
       neverRun: 0,
       suiteCount: 0,
       runCount: 0,
-      activeRuns: [makeActiveRunStatus({ runId: "run-poll", tester: "alice", environment: "staging" })],
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-poll", tester: "alice", environment: "staging" }),
+      ],
     } as never);
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
@@ -527,7 +536,9 @@ describe("OverviewTab", () => {
       neverRun: 0,
       suiteCount: 0,
       runCount: 0,
-      activeRuns: [makeActiveRunStatus({ runId: "run-unmount", tester: "alice", environment: "staging" })],
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-unmount", tester: "alice", environment: "staging" }),
+      ],
     } as never);
     const { unmount } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
@@ -549,7 +560,9 @@ describe("OverviewTab", () => {
       neverRun: 0,
       suiteCount: 0,
       runCount: 0,
-      activeRuns: [makeActiveRunStatus({ runId: "run-poll", tester: "alice", environment: "staging" })],
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-poll", tester: "alice", environment: "staging" }),
+      ],
     } as never);
     // Spy on announce by verifying only one announcement fires for the initial load
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -653,7 +666,9 @@ describe("OverviewTab", () => {
       neverRun: 0,
       suiteCount: 0,
       runCount: 0,
-      activeRuns: [makeActiveRunStatus({ runId: "run-ar", tester: "dave", suite: "", date: "2026-03-01" })],
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-ar", tester: "dave", suite: "", date: "2026-03-01" }),
+      ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/auto-refresh 30s/)).toBeInTheDocument());
@@ -684,7 +699,12 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 0,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-badge", tester: "carol", suite: "e2e", date: "2026-02-01" }),
+        makeActiveRunStatus({
+          runId: "run-badge",
+          tester: "carol",
+          suite: "e2e",
+          date: "2026-02-01",
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -736,7 +756,13 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 0,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-no-sha", tester: "bob", suite: "", date: "2026-04-01", commitSha: "" }),
+        makeActiveRunStatus({
+          runId: "run-no-sha",
+          tester: "bob",
+          suite: "",
+          date: "2026-04-01",
+          commitSha: "",
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -758,7 +784,12 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 0,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-timer", tester: "alice", suite: "smoke", date: "2026-01-01" }),
+        makeActiveRunStatus({
+          runId: "run-timer",
+          tester: "alice",
+          suite: "smoke",
+          date: "2026-01-01",
+        }),
       ],
     } as never);
     let capturedCallback: (() => void) | null = null;
@@ -794,7 +825,12 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 0,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-no-goto", tester: "alice", suite: "smoke", date: "2026-01-01" }),
+        makeActiveRunStatus({
+          runId: "run-no-goto",
+          tester: "alice",
+          suite: "smoke",
+          date: "2026-01-01",
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -815,7 +851,9 @@ describe("OverviewTab", () => {
       neverRun: 0,
       suiteCount: 0,
       runCount: 0,
-      activeRuns: [makeActiveRunStatus({ runId: "run-bare", tester: "", suite: "", date: "2026-04-01" })],
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-bare", tester: "", suite: "", date: "2026-04-01" }),
+      ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("run-bare")).toBeInTheDocument());
@@ -838,7 +876,12 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 0,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-poll-err", tester: "bob", suite: "smoke", date: "2026-01-01" }),
+        makeActiveRunStatus({
+          runId: "run-poll-err",
+          tester: "bob",
+          suite: "smoke",
+          date: "2026-01-01",
+        }),
       ],
     } as never);
     vi.mocked(client.getCoverageReport)
@@ -884,7 +927,13 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 1,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-zero", tester: "eve", environment: "", totalInScope: 5, pendingCases: 5 }),
+        makeActiveRunStatus({
+          runId: "run-zero",
+          tester: "eve",
+          environment: "",
+          totalInScope: 5,
+          pendingCases: 5,
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -909,7 +958,13 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 1,
       activeRuns: [
-        makeActiveRunStatus({ runId: "run-one", tester: "eve", environment: "", pendingCases: 1, totalInScope: 1 }),
+        makeActiveRunStatus({
+          runId: "run-one",
+          tester: "eve",
+          environment: "",
+          pendingCases: 1,
+          totalInScope: 1,
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
