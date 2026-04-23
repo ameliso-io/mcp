@@ -12,13 +12,13 @@ import { MethodKind } from "@bufbuild/protobuf";
  *
  * Recommended agent workflow (minimum 4 RPCs):
  *   0. GetRepoStatus — snapshot: total/coverage counts, last_completed_run.commit_sha for step 1.
- *   1. GetAffectedCases(since_ref=<last_completed_run.commit_sha>) — cases affected since last run,
- *      with body and latest_status included; sorted failed/never first then by priority.
- *   2. CreateRun(commit_sha=<HEAD>) — start a run; response.pending already contains pending cases
- *      with body + latest_status, so GetPendingCases is NOT needed after CreateRun.
- *   3. RecordResult (or BulkRecordResults) per case — response.pending_count tells you how many remain.
- *   4. FinalizeRun(status=UNSPECIFIED) — auto-detects: ABORTED if any FAILED result, else COMPLETED.
- *   5. Loop from step 0 with the new commit_sha recorded in the run.
+ *   1. CreateRun(commit_sha=<HEAD>, since_ref=<last_completed_run.commit_sha>) — auto-scopes run to
+ *      affected cases AND returns pending with body + latest_status; GetAffectedCases is NOT needed.
+ *   2. RecordResult (or BulkRecordResults) per case — response.pending_count tells you how many remain.
+ *   3. FinalizeRun(status=UNSPECIFIED) — auto-detects: ABORTED if any FAILED result, else COMPLETED.
+ *   4. Loop from step 0 with the new commit_sha recorded in the run.
+ *
+ * GetAffectedCases is still useful for a read-only preview before starting a run.
  *
  * @generated from service ameliso.v1.AmelisoService
  */

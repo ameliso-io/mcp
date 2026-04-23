@@ -217,6 +217,87 @@ fn result_status_rank(s: &str) -> u8 {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: resolve affected case paths given since_ref or changed_files
+// ---------------------------------------------------------------------------
+
+// Returns the set of case paths affected by the given diff scope.
+// If `changed_files` is non-empty, matches them directly without GitHub.
+// If `since_ref` is non-empty, calls the GitHub compare API.
+// Returns an empty Vec when there are no relevant changes.
+async fn resolve_affected_case_paths(
+    pool: &PgPool,
+    repo_id: &str,
+    since_ref: &str,
+    changed_files: &[String],
+) -> Result<Vec<String>, Status> {
+    let cases = repo::list_cases(pool, repo_id).await.map_err(repo_err)?;
+    let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+
+    if !changed_files.is_empty() {
+        let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for file in changed_files {
+            for path in &known_paths {
+                if text_references_case(file, path) {
+                    affected_set.insert(path.clone());
+                }
+            }
+        }
+        let has_source_changes = changed_files.iter().any(|f| !is_doc_file(f));
+        if has_source_changes && affected_set.is_empty() {
+            return Ok(known_paths);
+        }
+        return Ok(affected_set.into_iter().collect());
+    }
+
+    // GitHub compare path.
+    let stored = crate::repos_store::get(pool, repo_id)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?
+        .ok_or_else(|| Status::not_found(format!("repository {repo_id} not found")))?;
+    let cfg = crate::github::config()
+        .ok_or_else(|| Status::failed_precondition("GitHub App not configured"))?;
+    let jwt = crate::github::generate_jwt(&cfg.app_id, &cfg.private_key)
+        .map_err(|e| Status::internal(e.to_string()))?;
+    let token = crate::github::get_installation_token(&stored.installation_id, &jwt)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+    let parts: Vec<&str> = stored.full_name.splitn(2, '/').collect();
+    if parts.len() != 2 {
+        return Err(Status::internal("invalid full_name in stored repo"));
+    }
+    let (owner, repo_name) = (parts[0], parts[1]);
+    let compare = crate::github::compare(owner, repo_name, since_ref, &token)
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?;
+
+    let mut affected: Vec<String> = Vec::new();
+    let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let all_text = compare.commit_messages.join("\n");
+    for path in &known_paths {
+        if text_references_case(&all_text, path) && affected_set.insert(path.clone()) {
+            affected.push(path.clone());
+        }
+    }
+    for file in &compare.changed_files {
+        for path in &known_paths {
+            if text_references_case(file, path) && affected_set.insert(path.clone()) {
+                affected.push(path.clone());
+            }
+        }
+    }
+    let source_changed: Vec<&str> = compare
+        .changed_files
+        .iter()
+        .filter(|f| !is_doc_file(f))
+        .map(String::as_str)
+        .collect();
+    if !source_changed.is_empty() && affected.is_empty() {
+        affected = known_paths;
+    }
+    Ok(affected)
+}
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -751,7 +832,29 @@ impl AmelisoService for AmelisoServer {
         } else {
             req.tester
         };
-        let inline_cases = req.cases;
+        let has_since_ref = !req.since_ref.is_empty();
+        let has_changed_files = !req.changed_files.is_empty();
+        if (has_since_ref || has_changed_files) && !req.cases.is_empty() {
+            return Err(invalid(
+                "since_ref/changed_files and cases are mutually exclusive",
+            ));
+        }
+        if (has_since_ref || has_changed_files) && suite.is_some() {
+            return Err(invalid(
+                "since_ref/changed_files and suite are mutually exclusive",
+            ));
+        }
+        let inline_cases = if has_since_ref || has_changed_files {
+            resolve_affected_case_paths(
+                &self.pool,
+                &req.repo_id,
+                &req.since_ref,
+                &req.changed_files,
+            )
+            .await?
+        } else {
+            req.cases
+        };
         let commit_sha = req.commit_sha;
         let meta = repo::create_run(
             &self.pool,
@@ -3418,6 +3521,100 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 slug: "smoke".to_owned(),
                 cases: vec!["auth/login".to_owned(), "billing/checkout".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_since_ref_with_cases() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("since_ref") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_since_ref_with_suite() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("since_ref") || err.message().contains("suite"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_changed_files_with_cases() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                changed_files: vec!["src/main.rs".to_owned()],
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("changed_files") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_changed_files_with_suite() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                changed_files: vec!["src/main.rs".to_owned()],
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("changed_files") || err.message().contains("suite"));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_changed_files_passes_validation_to_db() {
+        // changed_files set + no suite/cases → passes validation → DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                changed_files: vec!["src/main.rs".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_with_since_ref_passes_validation_to_github_err() {
+        // since_ref set + no suite/cases → passes validation → GitHub/DB error (not InvalidArgument).
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                since_ref: "abc123".to_owned(),
                 ..Default::default()
             }))
             .await
