@@ -956,6 +956,14 @@ export declare type RecordResultResponse = Message<"ameliso.v1.RecordResultRespo
    * @generated from field: int32 total_in_scope = 3;
    */
   totalInScope: number;
+
+  /**
+   * Remaining pending cases after this result — lets agents skip a separate
+   * GetPendingCases call when testing sequentially.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
+   */
+  pending: PendingEntry[];
 };
 
 /**
@@ -1034,6 +1042,14 @@ export declare type BulkRecordResultsResponse = Message<"ameliso.v1.BulkRecordRe
    * @generated from field: int32 total_in_scope = 3;
    */
   totalInScope: number;
+
+  /**
+   * Remaining pending cases after bulk recording — lets agents confirm completion
+   * or find remaining cases without a separate GetPendingCases call.
+   *
+   * @generated from field: repeated ameliso.v1.PendingEntry pending = 4;
+   */
+  pending: PendingEntry[];
 };
 
 /**

@@ -307,6 +307,9 @@ message RecordResultResponse {
   CaseResult result = 1;
   int32 pending_count = 2;
   int32 total_in_scope = 3;
+  // Remaining pending cases after this result — lets agents skip a separate
+  // GetPendingCases call when testing sequentially.
+  repeated PendingEntry pending = 4;
 }
 
 message BulkResultEntry {
@@ -325,6 +328,9 @@ message BulkRecordResultsResponse {
   repeated CaseResult results = 1;
   int32 pending_count = 2;
   int32 total_in_scope = 3;
+  // Remaining pending cases after bulk recording — lets agents confirm completion
+  // or find remaining cases without a separate GetPendingCases call.
+  repeated PendingEntry pending = 4;
 }
 
 message FinalizeRunRequest {

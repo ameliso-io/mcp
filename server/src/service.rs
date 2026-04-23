@@ -152,6 +152,26 @@ fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
     }
 }
 
+/// Build a `PendingEntry` list from pending cases + latest status map.
+fn build_pending_entries(
+    pending_cases: &[repo::LoadedCase],
+    statuses: &std::collections::HashMap<String, String>,
+) -> Vec<pb::PendingEntry> {
+    pending_cases
+        .iter()
+        .map(|c| pb::PendingEntry {
+            case: Some(case_to_pb(c)),
+            body: c.body.clone(),
+            latest_status: result_status_to_i32(
+                statuses
+                    .get(c.case_path.as_str())
+                    .map(String::as_str)
+                    .unwrap_or("never"),
+            ),
+        })
+        .collect()
+}
+
 fn stored_to_pb(r: &crate::repos_store::StoredRepo) -> pb::Repository {
     pb::Repository {
         id: r.id.clone(),
@@ -1107,19 +1127,7 @@ impl AmelisoService for AmelisoServer {
                     .unwrap_or_default()
             },
         );
-        let pending_entries = pending_cases
-            .iter()
-            .map(|c| pb::PendingEntry {
-                case: Some(case_to_pb(c)),
-                body: c.body.clone(),
-                latest_status: result_status_to_i32(
-                    statuses
-                        .get(c.case_path.as_str())
-                        .map(String::as_str)
-                        .unwrap_or("never"),
-                ),
-            })
-            .collect();
+        let pending_entries = build_pending_entries(&pending_cases, &statuses);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
@@ -1164,14 +1172,23 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
-        let (pending_cases, total_in_scope) =
-            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map_err(repo_err)?;
+        let ((pending_cases, total_in_scope), statuses) = tokio::join!(
+            async {
+                repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::get_latest_statuses(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+        );
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
             pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
             total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
+            pending: build_pending_entries(&pending_cases, &statuses),
         }))
     }
 
@@ -1221,14 +1238,23 @@ impl AmelisoService for AmelisoServer {
             .map_err(repo_err)?;
             recorded.push(result_to_pb(&result));
         }
-        let (pending_cases, total_in_scope) =
-            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
-                .await
-                .map_err(repo_err)?;
+        let ((pending_cases, total_in_scope), statuses) = tokio::join!(
+            async {
+                repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                    .await
+                    .unwrap_or_default()
+            },
+            async {
+                repo::get_latest_statuses(&self.pool, &req.repo_id)
+                    .await
+                    .unwrap_or_default()
+            },
+        );
         Ok(Response::new(pb::BulkRecordResultsResponse {
             results: recorded,
             pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
             total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
+            pending: build_pending_entries(&pending_cases, &statuses),
         }))
     }
 

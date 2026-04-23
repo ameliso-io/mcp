@@ -33,7 +33,12 @@ beforeEach(() => {
     totalInScope: 1,
   } as never);
   vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
-  vi.mocked(client.recordResult).mockResolvedValue({ result: undefined } as never);
+  vi.mocked(client.recordResult).mockResolvedValue({
+    result: undefined,
+    pending: [],
+    pendingCount: 0,
+    totalInScope: 1,
+  } as never);
   vi.mocked(client.finalizeRun).mockResolvedValue({
     run: { ...mockRun, status: RunStatus.COMPLETED },
   } as never);
@@ -1143,6 +1148,13 @@ describe("RunsTab", () => {
 
   it("resets recordStatus to PASSED after recording a result", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    // Return the case still pending so the Record button reappears after recording.
+    vi.mocked(client.recordResult).mockResolvedValue({
+      result: undefined,
+      pending: pendingOf(mockCase),
+      pendingCount: 1,
+      totalInScope: 1,
+    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
