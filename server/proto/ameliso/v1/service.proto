@@ -224,6 +224,8 @@ message GetRunResponse {
 
 message CreateRunRequest {
   string repo_id = 1;
+  // Human-readable slug appended to the date prefix to form run_id (e.g. "smoke").
+  // When empty, the server auto-generates a unique slug from the current timestamp.
   string slug = 2;
   string tester = 3;
   string environment = 4;
@@ -351,6 +353,8 @@ message GetAffectedCasesRequest {
   repeated string changed_files = 3;
   // When set (non-UNSPECIFIED), only return affected cases at this priority level.
   Priority priority_filter = 4;
+  // When non-empty, only return affected cases that have ALL of these tags.
+  repeated string tags = 5;
 }
 
 message GetAffectedCasesResponse {

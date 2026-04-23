@@ -712,10 +712,16 @@ impl AmelisoService for AmelisoServer {
         if req.repo_id.is_empty() {
             return Err(invalid("repo_id is required"));
         }
-        if req.slug.is_empty() {
-            return Err(invalid("slug is required"));
-        }
-        check_max_len("slug", &req.slug, 100)?;
+        let slug = if req.slug.is_empty() {
+            let micros = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros();
+            format!("run-{micros:x}")
+        } else {
+            req.slug.clone()
+        };
+        check_max_len("slug", &slug, 100)?;
         check_max_len("tester", &req.tester, 255)?;
         check_max_len("environment", &req.environment, 255)?;
         check_max_len("suite", &req.suite, 100)?;
@@ -739,7 +745,7 @@ impl AmelisoService for AmelisoServer {
         let meta = repo::create_run(
             &self.pool,
             &req.repo_id,
-            &req.slug,
+            &slug,
             &tester,
             env,
             suite,
@@ -2530,7 +2536,8 @@ mod tests {
     // ── create_run validation ─────────────────────────────────────────────────
 
     #[tokio::test]
-    async fn create_run_rejects_empty_slug() {
+    async fn create_run_empty_slug_passes_validation() {
+        // Empty slug is valid — server auto-generates one; handler then hits DB → Internal.
         let s = server();
         let err = s
             .create_run(Request::new(pb::CreateRunRequest {
@@ -2540,8 +2547,7 @@ mod tests {
             }))
             .await
             .unwrap_err();
-        assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("slug is required"));
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
