@@ -157,7 +157,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
   async function handleDelete(slug: string) {
     try {
       await client.deleteSuite({ repoId, slug });
-      if (expanded === slug) setExpanded(null);
+      if (expanded === slug) {
+        setExpanded(null);
+        onExpandedChangeRef.current?.(null);
+      }
       setConfirmingDelete(null);
       announce("Suite deleted");
       void load();

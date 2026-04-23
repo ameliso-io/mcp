@@ -628,6 +628,25 @@ describe("SuitesTab", () => {
     expect(onExpandedChange).toHaveBeenCalledWith("smoke");
   });
 
+  it("calls onExpandedChange(null) when expanded suite is deleted", async () => {
+    const onExpandedChange = vi.fn();
+    render(
+      <SuitesTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onExpandedChange={onExpandedChange}
+      />
+    );
+    await waitFor(() => screen.getByText("Smoke Tests"));
+    await userEvent.click(screen.getByText("Smoke Tests"));
+    await waitFor(() => screen.getByRole("button", { name: "Delete smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete smoke" }));
+    await waitFor(() => screen.getByText("Delete?"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete smoke" }));
+    await waitFor(() => expect(client.deleteSuite).toHaveBeenCalled());
+    expect(onExpandedChange).toHaveBeenLastCalledWith(null);
+  });
+
   it("calls onExpandedChange with null when suite collapsed", async () => {
     const onExpandedChange = vi.fn();
     render(
