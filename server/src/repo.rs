@@ -2233,7 +2233,7 @@ mod tests {
         create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
             .await
             .unwrap();
-        let run = create_run(&pool, repo, "sprint-2", "", None, None, vec![])
+        let run = create_run(&pool, repo, "sprint-2", "", None, None, vec![], String::new())
             .await
             .unwrap();
         finalize_run(&pool, repo, &run.run_id, "aborted")
