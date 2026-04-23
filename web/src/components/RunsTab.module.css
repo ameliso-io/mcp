@@ -1,4 +1,3 @@
-
 .header {
   display: flex;
   justify-content: space-between;
@@ -372,6 +371,11 @@
   font-family: monospace;
   color: var(--color-muted);
   flex-shrink: 0;
+  text-decoration: none;
+}
+
+.resultPath:hover {
+  text-decoration: underline;
 }
 
 .resultTitle {
@@ -465,6 +469,12 @@
   flex: 1;
   font-size: 14px;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pendingPath:hover {
+  text-decoration: underline;
 }
 
 .pendingTitle {

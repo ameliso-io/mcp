@@ -108,6 +108,7 @@ function RunsInner() {
   return (
     <RunsTab
       repoId={repoId}
+      basePath={basePath}
       initialSuite={initialSuite}
       onInitialSuiteConsumed={handleInitialSuiteConsumed}
       initialStatusFilter={initialStatusFilter}

@@ -1,6 +1,8 @@
 "use client";
 
+import type { Route } from "next";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
 import { client } from "@/client";
@@ -14,6 +16,7 @@ const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
 
 interface Props {
   repoId: string;
+  basePath: string;
   initialSuite?: string | undefined;
   onInitialSuiteConsumed?: (() => void) | undefined;
   initialStatusFilter?: RunStatus | undefined;
@@ -54,6 +57,7 @@ function runStatusLabel(s: RunStatus): string {
 
 export default function RunsTab({
   repoId,
+  basePath,
   initialSuite,
   onInitialSuiteConsumed,
   initialStatusFilter,
@@ -132,7 +136,12 @@ export default function RunsTab({
 
   const consumedResultFilterRef = useRef(false);
   useEffect(() => {
-    if (initialResultStatusFilter == null || consumedResultFilterRef.current || recordedResults.length === 0) return;
+    if (
+      initialResultStatusFilter == null ||
+      consumedResultFilterRef.current ||
+      recordedResults.length === 0
+    )
+      return;
     consumedResultFilterRef.current = true;
     setResultStatusFilter(initialResultStatusFilter);
   }, [recordedResults, initialResultStatusFilter]);
@@ -752,7 +761,14 @@ export default function RunsTab({
                             >
                               {statusLabel(r.status)}
                             </span>
-                            <span className={styles.resultPath}>{r.casePath}</span>
+                            <Link
+                              href={
+                                `${basePath}/cases?case=${encodeURIComponent(r.casePath)}` as Route
+                              }
+                              className={styles.resultPath}
+                            >
+                              {r.casePath}
+                            </Link>
                             {caseTitleMap.get(r.casePath)?.title && (
                               <span className={styles.resultTitle}>
                                 {caseTitleMap.get(r.casePath)?.title}
@@ -912,7 +928,14 @@ export default function RunsTab({
                       {pendingCases.map((c) => (
                         <li key={c.path}>
                           <div className={styles.pendingRow}>
-                            <span className={styles.pendingPath}>{c.path}</span>
+                            <Link
+                              href={
+                                `${basePath}/cases?case=${encodeURIComponent(c.path)}` as Route
+                              }
+                              className={styles.pendingPath}
+                            >
+                              {c.path}
+                            </Link>
                             <span className={styles.pendingTitle}>{c.title}</span>
                             {run.status === RunStatus.IN_PROGRESS && (
                               <button
