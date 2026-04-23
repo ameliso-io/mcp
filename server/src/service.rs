@@ -1927,27 +1927,50 @@ impl AmelisoService for AmelisoServer {
         let active_runs_meta: Vec<&RunRow> =
             runs.iter().filter(|r| r.status == "in-progress").collect();
 
-        let mut active_runs: Vec<pb::ActiveRunStatus> = Vec::new();
+        // Fetch pending counts for all active runs in parallel.
+        let mut join_set: tokio::task::JoinSet<(String, i32, i32)> =
+            tokio::task::JoinSet::new();
         for run_meta in &active_runs_meta {
-            let (pending, total_in_scope) =
-                match repo::get_pending_cases(pool, &repo_id, &run_meta.run_id).await {
+            let pool = pool.clone();
+            let repo_id = repo_id.clone();
+            let run_id = run_meta.run_id.clone();
+            join_set.spawn(async move {
+                match repo::get_pending_cases(&pool, &repo_id, &run_id).await {
                     Ok((cases, total)) => (
+                        run_id,
                         i32::try_from(cases.len()).unwrap_or(i32::MAX),
                         i32::try_from(total).unwrap_or(i32::MAX),
                     ),
-                    Err(_) => (0, 0),
-                };
-            active_runs.push(pb::ActiveRunStatus {
-                run_id: run_meta.run_id.clone(),
-                tester: run_meta.tester.clone(),
-                suite: run_meta.suite.clone().unwrap_or_default(),
-                date: run_meta.date.clone(),
-                pending_cases: pending,
-                total_in_scope,
-                commit_sha: run_meta.commit_sha.clone(),
-                environment: run_meta.environment.clone().unwrap_or_default(),
+                    Err(_) => (run_id, 0, 0),
+                }
             });
         }
+        let mut pending_map: std::collections::HashMap<String, (i32, i32)> =
+            std::collections::HashMap::new();
+        while let Some(res) = join_set.join_next().await {
+            if let Ok((run_id, pending, total)) = res {
+                pending_map.insert(run_id, (pending, total));
+            }
+        }
+        let active_runs: Vec<pb::ActiveRunStatus> = active_runs_meta
+            .iter()
+            .map(|run_meta| {
+                let (pending, total_in_scope) = pending_map
+                    .get(&run_meta.run_id)
+                    .copied()
+                    .unwrap_or((0, 0));
+                pb::ActiveRunStatus {
+                    run_id: run_meta.run_id.clone(),
+                    tester: run_meta.tester.clone(),
+                    suite: run_meta.suite.clone().unwrap_or_default(),
+                    date: run_meta.date.clone(),
+                    pending_cases: pending,
+                    total_in_scope,
+                    commit_sha: run_meta.commit_sha.clone(),
+                    environment: run_meta.environment.clone().unwrap_or_default(),
+                }
+            })
+            .collect();
 
         let last_completed_run_row = runs
             .iter()
