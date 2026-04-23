@@ -10,15 +10,16 @@ import { MethodKind } from "@bufbuild/protobuf";
  * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
- * Recommended agent workflow (minimum 4 RPCs):
- *   0. GetRepoStatus — snapshot: total/coverage counts, last_completed_run.commit_sha for step 1.
- *   1. CreateRun(commit_sha=<HEAD>, since_ref=<last_completed_run.commit_sha>) — auto-scopes run to
- *      affected cases AND returns pending with body + latest_status; GetAffectedCases is NOT needed.
- *   2. RecordResult (or BulkRecordResults) per case — response.pending_count tells you how many remain.
- *   3. FinalizeRun(status=UNSPECIFIED) — auto-detects: ABORTED if any FAILED result, else COMPLETED.
- *   4. Loop from step 0 with the new commit_sha recorded in the run.
+ * Recommended agent workflow (minimum 3 RPCs):
+ *   1. CreateRun(commit_sha=<HEAD>, use_last_run=true) — auto-scopes to cases affected since the
+ *      last completed run, returns pending with body + latest_status; no GetRepoStatus needed.
+ *      On the first ever run (no prior run) all cases are included.
+ *   2. BulkRecordResults — record all results in one call; pending_count tells you how many remain.
+ *   3. FinalizeRun(status=UNSPECIFIED) — auto-detects ABORTED if any FAILED result, else COMPLETED.
  *
- * GetAffectedCases is still useful for a read-only preview before starting a run.
+ * Repeat from step 1 on the next commit.
+ * For richer context before running (stats, active runs), call GetRepoStatus first.
+ * For a read-only preview of affected cases, call GetAffectedCases instead of CreateRun.
  *
  * @generated from service ameliso.v1.AmelisoService
  */

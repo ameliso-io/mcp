@@ -221,9 +221,9 @@ fn result_status_rank(s: &str) -> u8 {
 // ---------------------------------------------------------------------------
 
 // Returns the set of case paths affected by the given diff scope.
+// If both `since_ref` and `changed_files` are empty, returns all known case paths.
 // If `changed_files` is non-empty, matches them directly without GitHub.
 // If `since_ref` is non-empty, calls the GitHub compare API.
-// Returns an empty Vec when there are no relevant changes.
 async fn resolve_affected_case_paths(
     pool: &PgPool,
     repo_id: &str,
@@ -232,6 +232,10 @@ async fn resolve_affected_case_paths(
 ) -> Result<Vec<String>, Status> {
     let cases = repo::list_cases(pool, repo_id).await.map_err(repo_err)?;
     let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
+
+    if since_ref.is_empty() && changed_files.is_empty() {
+        return Ok(known_paths);
+    }
 
     if !changed_files.is_empty() {
         let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -834,6 +838,18 @@ impl AmelisoService for AmelisoServer {
         };
         let has_since_ref = !req.since_ref.is_empty();
         let has_changed_files = !req.changed_files.is_empty();
+        let use_last_run = req.use_last_run;
+        if use_last_run && (has_since_ref || has_changed_files) {
+            return Err(invalid(
+                "use_last_run and since_ref/changed_files are mutually exclusive",
+            ));
+        }
+        if use_last_run && !req.cases.is_empty() {
+            return Err(invalid("use_last_run and cases are mutually exclusive"));
+        }
+        if use_last_run && suite.is_some() {
+            return Err(invalid("use_last_run and suite are mutually exclusive"));
+        }
         if (has_since_ref || has_changed_files) && !req.cases.is_empty() {
             return Err(invalid(
                 "since_ref/changed_files and cases are mutually exclusive",
@@ -844,7 +860,24 @@ impl AmelisoService for AmelisoServer {
                 "since_ref/changed_files and suite are mutually exclusive",
             ));
         }
-        let inline_cases = if has_since_ref || has_changed_files {
+        let inline_cases = if use_last_run {
+            let runs = repo::list_runs(&self.pool, &req.repo_id)
+                .await
+                .unwrap_or_default();
+            let last_sha = runs
+                .iter()
+                .filter(|r| r.status == "completed")
+                .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
+                .and_then(|r| {
+                    if r.commit_sha.is_empty() {
+                        None
+                    } else {
+                        Some(r.commit_sha.as_str())
+                    }
+                })
+                .unwrap_or("");
+            resolve_affected_case_paths(&self.pool, &req.repo_id, last_sha, &[]).await?
+        } else if has_since_ref || has_changed_files {
             resolve_affected_case_paths(
                 &self.pool,
                 &req.repo_id,
@@ -3615,6 +3648,85 @@ mod tests {
             .create_run(Request::new(pb::CreateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 since_ref: "abc123".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_since_ref() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                since_ref: "abc123".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("since_ref"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_changed_files() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                changed_files: vec!["src/main.rs".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("changed_files"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_cases() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                cases: vec!["auth/login".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn create_run_rejects_use_last_run_with_suite() {
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
+                suite: "smoke".to_owned(),
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("use_last_run") || err.message().contains("suite"));
+    }
+
+    #[tokio::test]
+    async fn create_run_with_use_last_run_passes_validation_to_db() {
+        // use_last_run=true + no suite/cases/since_ref → passes validation → DB error.
+        let s = server();
+        let err = s
+            .create_run(Request::new(pb::CreateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                use_last_run: true,
                 ..Default::default()
             }))
             .await
