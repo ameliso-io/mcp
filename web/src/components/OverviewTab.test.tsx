@@ -290,10 +290,10 @@ describe("OverviewTab", () => {
       runCount: 3,
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
+    expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
-    expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
   it("sorts unknown priority to end in affected cases", async () => {
@@ -378,10 +378,10 @@ describe("OverviewTab", () => {
       runCount: 1,
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
-    await waitFor(() => expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByText("Unknown")).toBeInTheDocument());
+    expect(screen.getAllByText("Blocked").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Skipped").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Never run").length).toBeGreaterThan(0);
-    expect(screen.getByText("Unknown")).toBeInTheDocument();
   });
 
   it("dismisses error banner when X button clicked", async () => {
