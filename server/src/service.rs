@@ -617,7 +617,11 @@ impl AmelisoService for AmelisoServer {
                 None
             } else {
                 let cleaned = clean_tags(entry.tags.clone());
-                if cleaned.is_empty() { None } else { Some(cleaned) }
+                if cleaned.is_empty() {
+                    None
+                } else {
+                    Some(cleaned)
+                }
             };
             let body = if entry.body.is_empty() {
                 None
@@ -652,7 +656,9 @@ impl AmelisoService for AmelisoServer {
             }
             updated.push(case_to_pb(&case));
         }
-        Ok(Response::new(pb::BulkUpdateCasesResponse { cases: updated }))
+        Ok(Response::new(pb::BulkUpdateCasesResponse {
+            cases: updated,
+        }))
     }
 
     async fn delete_case(
@@ -686,6 +692,46 @@ impl AmelisoService for AmelisoServer {
         Ok(Response::new(pb::DeleteCaseResponse {
             file_path: format!("cases/{}.md", req.case_path),
         }))
+    }
+
+    async fn bulk_delete_cases(
+        &self,
+        request: Request<pb::BulkDeleteCasesRequest>,
+    ) -> Result<Response<pb::BulkDeleteCasesResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.case_paths.is_empty() {
+            return Err(invalid("case_paths must not be empty"));
+        }
+        for path in &req.case_paths {
+            if path.is_empty() {
+                return Err(invalid("each case_path must be non-empty"));
+            }
+        }
+        let mut file_paths: Vec<String> = Vec::new();
+        for path in &req.case_paths {
+            repo::delete_case(&self.pool, &req.repo_id, path)
+                .await
+                .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let path_clone = path.clone();
+                tokio::spawn(async move {
+                    if let Err(e) =
+                        crate::sync::delete_case_file(&pool, &repo_id, &path_clone).await
+                    {
+                        eprintln!(
+                            "warning: github delete sync failed for {repo_id}/{path_clone}: {e}"
+                        );
+                    }
+                });
+            }
+            file_paths.push(format!("cases/{path}.md"));
+        }
+        Ok(Response::new(pb::BulkDeleteCasesResponse { file_paths }))
     }
 
     async fn list_suites(
@@ -2296,6 +2342,62 @@ mod tests {
                     title: "Login flow".to_owned(),
                     ..Default::default()
                 }],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "".to_owned(),
+                case_paths: vec!["auth/login".to_owned()],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_rejects_empty_list() {
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_paths: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_paths"));
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_rejects_empty_path_in_list() {
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_paths: vec!["".to_owned()],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_delete_cases_valid_passes_validation_to_db() {
+        // Validation passes → hits DB → not InvalidArgument.
+        let s = server();
+        let err = s
+            .bulk_delete_cases(Request::new(pb::BulkDeleteCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_paths: vec!["auth/login".to_owned()],
             }))
             .await
             .unwrap_err();

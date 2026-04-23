@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BulkCreateCasesRequest, BulkCreateCasesResponse, BulkRecordResultsRequest, BulkRecordResultsResponse, BulkUpdateCasesRequest, BulkUpdateCasesResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRepoStatusRequest, GetRepoStatusResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateRunRequest, UpdateRunResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
+import { BulkCreateCasesRequest, BulkCreateCasesResponse, BulkDeleteCasesRequest, BulkDeleteCasesResponse, BulkRecordResultsRequest, BulkRecordResultsResponse, BulkUpdateCasesRequest, BulkUpdateCasesResponse, CreateCaseRequest, CreateCaseResponse, CreateRunRequest, CreateRunResponse, CreateSuiteRequest, CreateSuiteResponse, DeleteCaseRequest, DeleteCaseResponse, DeleteRunRequest, DeleteRunResponse, DeleteSuiteRequest, DeleteSuiteResponse, FinalizeRunRequest, FinalizeRunResponse, GetAffectedCasesRequest, GetAffectedCasesResponse, GetCaseRequest, GetCaseResponse, GetCoverageReportRequest, GetCoverageReportResponse, GetGitHubInstallUrlRequest, GetGitHubInstallUrlResponse, GetPendingCasesRequest, GetPendingCasesResponse, GetRepoStatusRequest, GetRepoStatusResponse, GetRunRequest, GetRunResponse, GetSuiteRequest, GetSuiteResponse, HandleGitHubCallbackRequest, HandleGitHubCallbackResponse, ListCasesRequest, ListCasesResponse, ListRepositoriesRequest, ListRepositoriesResponse, ListRunsRequest, ListRunsResponse, ListSuitesRequest, ListSuitesResponse, RecordResultRequest, RecordResultResponse, RemoveRepositoryRequest, RemoveRepositoryResponse, SyncRepositoryRequest, SyncRepositoryResponse, UpdateCaseRequest, UpdateCaseResponse, UpdateRunRequest, UpdateRunResponse, UpdateSuiteRequest, UpdateSuiteResponse } from "./service_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -89,6 +89,15 @@ export declare const AmelisoService: {
       readonly name: "DeleteCase",
       readonly I: typeof DeleteCaseRequest,
       readonly O: typeof DeleteCaseResponse,
+      readonly kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc ameliso.v1.AmelisoService.BulkDeleteCases
+     */
+    readonly bulkDeleteCases: {
+      readonly name: "BulkDeleteCases",
+      readonly I: typeof BulkDeleteCasesRequest,
+      readonly O: typeof BulkDeleteCasesResponse,
       readonly kind: MethodKind.Unary,
     },
     /**

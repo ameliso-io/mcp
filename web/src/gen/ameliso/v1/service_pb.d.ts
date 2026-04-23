@@ -436,6 +436,43 @@ export declare type DeleteCaseResponse = Message<"ameliso.v1.DeleteCaseResponse"
 export declare const DeleteCaseResponseSchema: GenMessage<DeleteCaseResponse>;
 
 /**
+ * @generated from message ameliso.v1.BulkDeleteCasesRequest
+ */
+export declare type BulkDeleteCasesRequest = Message<"ameliso.v1.BulkDeleteCasesRequest"> & {
+  /**
+   * @generated from field: string repo_id = 1;
+   */
+  repoId: string;
+
+  /**
+   * @generated from field: repeated string case_paths = 2;
+   */
+  casePaths: string[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkDeleteCasesRequest.
+ * Use `create(BulkDeleteCasesRequestSchema)` to create a new message.
+ */
+export declare const BulkDeleteCasesRequestSchema: GenMessage<BulkDeleteCasesRequest>;
+
+/**
+ * @generated from message ameliso.v1.BulkDeleteCasesResponse
+ */
+export declare type BulkDeleteCasesResponse = Message<"ameliso.v1.BulkDeleteCasesResponse"> & {
+  /**
+   * @generated from field: repeated string file_paths = 1;
+   */
+  filePaths: string[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkDeleteCasesResponse.
+ * Use `create(BulkDeleteCasesResponseSchema)` to create a new message.
+ */
+export declare const BulkDeleteCasesResponseSchema: GenMessage<BulkDeleteCasesResponse>;
+
+/**
  * @generated from message ameliso.v1.ListSuitesRequest
  */
 export declare type ListSuitesRequest = Message<"ameliso.v1.ListSuitesRequest"> & {
@@ -1699,6 +1736,14 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteCaseRequestSchema;
     output: typeof DeleteCaseResponseSchema;
+  },
+  /**
+   * @generated from rpc ameliso.v1.AmelisoService.BulkDeleteCases
+   */
+  bulkDeleteCases: {
+    methodKind: "unary";
+    input: typeof BulkDeleteCasesRequestSchema;
+    output: typeof BulkDeleteCasesResponseSchema;
   },
   /**
    * --- Suites ---

@@ -28,6 +28,7 @@ service AmelisoService {
   rpc UpdateCase(UpdateCaseRequest) returns (UpdateCaseResponse);
   rpc BulkUpdateCases(BulkUpdateCasesRequest) returns (BulkUpdateCasesResponse);
   rpc DeleteCase(DeleteCaseRequest) returns (DeleteCaseResponse);
+  rpc BulkDeleteCases(BulkDeleteCasesRequest) returns (BulkDeleteCasesResponse);
 
   // --- Suites ---
   rpc ListSuites(ListSuitesRequest) returns (ListSuitesResponse);
@@ -164,6 +165,15 @@ message DeleteCaseRequest {
 
 message DeleteCaseResponse {
   string file_path = 1;
+}
+
+message BulkDeleteCasesRequest {
+  string repo_id = 1;
+  repeated string case_paths = 2;
+}
+
+message BulkDeleteCasesResponse {
+  repeated string file_paths = 1;
 }
 
 // --- Suites ---
