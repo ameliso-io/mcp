@@ -894,6 +894,16 @@ export declare type CreateRunResponse = Message<"ameliso.v1.CreateRunResponse"> 
    * @generated from field: int32 total_repo_cases = 4;
    */
   totalRepoCases: number;
+
+  /**
+   * Source files touched by the diff (since_ref / use_last_run / changed_files) that have
+   * no matching test case — i.e., coverage gaps. Agents can use this list to decide which
+   * new cases to create without a separate GetAffectedCases call.
+   * Empty when the run is not scoped by a diff (suite, inline cases, or all cases).
+   *
+   * @generated from field: repeated string uncovered_files = 5;
+   */
+  uncoveredFiles: string[];
 };
 
 /**
@@ -1404,6 +1414,15 @@ export declare type GetAffectedCasesResponse = Message<"ameliso.v1.GetAffectedCa
    * @generated from field: string reason = 2;
    */
   reason: string;
+
+  /**
+   * Changed files that have no matching test case — i.e., coverage gaps.
+   * Agents can use this list to decide which new cases to create.
+   * Doc files (.md, .yml, etc.) are excluded.
+   *
+   * @generated from field: repeated string uncovered_files = 3;
+   */
+  uncoveredFiles: string[];
 };
 
 /**

@@ -270,17 +270,19 @@ fn result_status_rank(s: &str) -> u8 {
 // If both `since_ref` and `changed_files` are empty, returns all known case paths.
 // If `changed_files` is non-empty, matches them directly without GitHub.
 // If `since_ref` is non-empty, calls the GitHub compare API.
+/// Returns `(affected_case_paths, changed_files)`.
+/// `changed_files` is empty when there is no diff scope (all cases included).
 async fn resolve_affected_case_paths(
     pool: &PgPool,
     repo_id: &str,
     since_ref: &str,
     changed_files: &[String],
-) -> Result<Vec<String>, Status> {
+) -> Result<(Vec<String>, Vec<String>), Status> {
     let cases = repo::list_cases(pool, repo_id).await.map_err(repo_err)?;
     let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
 
     if since_ref.is_empty() && changed_files.is_empty() {
-        return Ok(known_paths);
+        return Ok((known_paths, vec![]));
     }
 
     if !changed_files.is_empty() {
@@ -294,9 +296,12 @@ async fn resolve_affected_case_paths(
         }
         let has_source_changes = changed_files.iter().any(|f| !is_doc_file(f));
         if has_source_changes && affected_set.is_empty() {
-            return Ok(known_paths);
+            return Ok((known_paths, changed_files.to_vec()));
         }
-        return Ok(affected_set.into_iter().collect());
+        return Ok((
+            affected_set.into_iter().collect(),
+            changed_files.to_vec(),
+        ));
     }
 
     // GitHub compare path.
@@ -342,9 +347,9 @@ async fn resolve_affected_case_paths(
         .map(String::as_str)
         .collect();
     if !source_changed.is_empty() && affected.is_empty() {
-        affected = known_paths;
+        affected = known_paths.clone();
     }
-    Ok(affected)
+    Ok((affected, compare.changed_files))
 }
 
 // ---------------------------------------------------------------------------
@@ -1078,7 +1083,7 @@ impl AmelisoService for AmelisoServer {
                 "since_ref/changed_files and suite are mutually exclusive",
             ));
         }
-        let inline_cases = if use_last_run {
+        let (inline_cases, diff_files) = if use_last_run {
             let runs = repo::list_runs(&self.pool, &req.repo_id)
                 .await
                 .unwrap_or_default();
@@ -1104,7 +1109,7 @@ impl AmelisoService for AmelisoServer {
             )
             .await?
         } else {
-            req.cases
+            (req.cases, vec![])
         };
         let commit_sha = req.commit_sha;
         let meta = repo::create_run(
@@ -1137,12 +1142,18 @@ impl AmelisoService for AmelisoServer {
                     .unwrap_or_default()
             },
         );
+        let all_known_paths: Vec<String> = all_cases.iter().map(|c| c.case_path.clone()).collect();
+        let uncovered_files: Vec<String> = find_uncovered_files(&diff_files, &all_known_paths)
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
         let pending_entries = build_pending_entries(&pending_cases, &statuses);
         Ok(Response::new(pb::CreateRunResponse {
             run: Some(run_meta_to_pb(&meta)),
             dir_path,
             pending: pending_entries,
             total_repo_cases: i32::try_from(all_cases.len()).unwrap_or(i32::MAX),
+            uncovered_files,
         }))
     }
 

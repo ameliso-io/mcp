@@ -293,6 +293,11 @@ message CreateRunResponse {
   // Total cases in the repo (not just this run's scope). Lets agents compute
   // what fraction of the suite is being covered without a separate GetRepoStatus call.
   int32 total_repo_cases = 4;
+  // Source files touched by the diff (since_ref / use_last_run / changed_files) that have
+  // no matching test case — i.e., coverage gaps. Agents can use this list to decide which
+  // new cases to create without a separate GetAffectedCases call.
+  // Empty when the run is not scoped by a diff (suite, inline cases, or all cases).
+  repeated string uncovered_files = 5;
 }
 
 message RecordResultRequest {
