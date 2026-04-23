@@ -1,4 +1,4 @@
-.PHONY: install build test fmt lint spell pre-commit pre-push dev coverage-check db-up db-down
+.PHONY: install build test fmt lint spell check-file-size pre-commit pre-push dev coverage-check db-up db-down
 
 dev: install build
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
@@ -48,7 +48,18 @@ db-down:
 
 # --- Git hooks (called by Husky) ---
 
-pre-commit: fmt lint spell
+check-file-size:
+	@LIMIT=5600; FAILED=0; \
+	for file in $$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$$'); do \
+		lines=$$(wc -l < "$$file"); \
+		if [ "$$lines" -gt "$$LIMIT" ]; then \
+			echo "ERROR: $$file has $$lines lines (limit: $$LIMIT)"; \
+			FAILED=1; \
+		fi; \
+	done; \
+	[ "$$FAILED" -eq 1 ] && exit 1 || true
+
+pre-commit: fmt lint spell check-file-size
 	@echo "pre-commit: OK"
 
 pre-push: fmt-check build test coverage-check
