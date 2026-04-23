@@ -69,7 +69,8 @@
       "Bash(pnpm fmt:check)",
       "Bash(pnpm tsc *)",
       "Bash(xargs cat *)",
-      "Bash(git show *)"
+      "Bash(git show *)",
+      "mcp__playwright__browser_click"
     ]
   }
 }
