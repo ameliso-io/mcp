@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import styles from "./OverviewTab.module.css";
 import { client } from "@/client";
@@ -61,6 +61,8 @@ export default function OverviewTab({
   onCoverageFilterChange,
 }: Props) {
   const [entries, setEntries] = useState<CoverageEntry[]>([]);
+  const deferredEntries = useDeferredValue(entries);
+  const isEntriesStale = entries !== deferredEntries;
   const [runCount, setRunCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,10 +184,10 @@ export default function OverviewTab({
 
   const sortedEntries = useMemo(
     () =>
-      [...entries].sort(
+      [...deferredEntries].sort(
         (a, b) => statusSortOrder(a.latestStatus) - statusSortOrder(b.latestStatus)
       ),
-    [entries]
+    [deferredEntries]
   );
 
   return (
@@ -218,7 +220,10 @@ export default function OverviewTab({
       )}
 
       {entries.length > 0 && (
-        <div className={loading ? styles.panelStale : undefined} aria-busy={loading}>
+        <div
+          className={loading || isEntriesStale ? styles.panelStale : undefined}
+          aria-busy={loading || isEntriesStale}
+        >
           <dl className={styles.statsGrid}>
             {[
               { label: "Total Cases", value: statCases, status: null },
