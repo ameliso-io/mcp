@@ -1498,13 +1498,43 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("rename failed")).toBeInTheDocument());
   });
 
+  it("calls onSelectedRunIdChange with null when run is finalized", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    const onSelectedRunIdChange = vi.fn();
+    render(<RunsTab repoId="owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
+    await waitFor(() => screen.getByText("Complete Run"));
+    await userEvent.click(screen.getByText("Complete Run"));
+    await waitFor(() => screen.getByText("Complete?"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm complete run 2026-01-01-smoke" })
+    );
+    await waitFor(() => expect(onSelectedRunIdChange).toHaveBeenLastCalledWith(null));
+  });
+
+  it("calls onSelectedRunIdChange with null when selected run is deleted", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    const onSelectedRunIdChange = vi.fn();
+    render(<RunsTab repoId="owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
+    await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm delete 2026-01-01-smoke" })
+    );
+    await waitFor(() => expect(onSelectedRunIdChange).toHaveBeenLastCalledWith(null));
+  });
+
   it("auto-expands run matching initialSelectedRunId when runs load", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     render(<RunsTab repoId="owner/repo" initialSelectedRunId={mockRun.id} />);
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /^In Progress run/ })
-      ).toHaveAttribute("aria-expanded", "true")
+      expect(screen.getByRole("button", { name: /^In Progress run/ })).toHaveAttribute(
+        "aria-expanded",
+        "true"
+      )
     );
   });
 

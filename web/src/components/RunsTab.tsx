@@ -123,7 +123,7 @@ export default function RunsTab({
     consumedSelectedRef.current = true;
     const run = runs.find((r) => r.id === initialSelectedRunId);
     if (run) void selectRun(run.id, run.status);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runs, initialSelectedRunId]);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
@@ -300,6 +300,7 @@ export default function RunsTab({
     try {
       await client.finalizeRun({ repoId, runId, status });
       setSelectedRunId(null);
+      onSelectedRunIdChange?.(null);
       setPendingCases([]);
       announce(status === RunStatus.COMPLETED ? "Run completed" : "Run aborted");
       void load();
@@ -338,6 +339,7 @@ export default function RunsTab({
       await client.deleteRun({ repoId, runId });
       if (selectedRunId === runId) {
         setSelectedRunId(null);
+        onSelectedRunIdChange?.(null);
         setPendingCases([]);
         setRecordState(null);
       }
