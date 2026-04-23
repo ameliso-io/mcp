@@ -1,12 +1,12 @@
 "use client";
 
-import type { Route } from "next";
-import { useCallback, Suspense, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import CasesTab from "@/components/CasesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useRepoParams } from "@/hooks/useRepoParams";
+import { useRouteReplace } from "@/hooks/useRouteReplace";
 
 const PRIORITY_SLUG: Record<string, Priority> = {
   low: Priority.LOW,
@@ -22,9 +22,8 @@ const SLUG_BY_PRIORITY: Record<number, string> = {
 
 function CasesInner() {
   const { repoId, basePath } = useRepoParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const replace = useRouteReplace(`${basePath}/cases`);
 
   const initialSearch = searchParams.get("q") ?? "";
   const initialPriorityFilter =
@@ -43,59 +42,49 @@ function CasesInner() {
       suite: string;
       sort: "path" | "priority";
     }) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (filters.search) {
-        params.set("q", filters.search);
-      } else {
-        params.delete("q");
-      }
-      const prioritySlug = SLUG_BY_PRIORITY[filters.priority];
-      if (prioritySlug) {
-        params.set("priority", prioritySlug);
-      } else {
-        params.delete("priority");
-      }
-      if (filters.tag) {
-        params.set("tag", filters.tag);
-      } else {
-        params.delete("tag");
-      }
-      if (filters.suite) {
-        params.set("suite", filters.suite);
-      } else {
-        params.delete("suite");
-      }
-      if (filters.sort !== "priority") {
-        params.set("sort", filters.sort);
-      } else {
-        params.delete("sort");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        if (filters.search) {
+          params.set("q", filters.search);
+        } else {
+          params.delete("q");
+        }
+        const prioritySlug = SLUG_BY_PRIORITY[filters.priority];
+        if (prioritySlug) {
+          params.set("priority", prioritySlug);
+        } else {
+          params.delete("priority");
+        }
+        if (filters.tag) {
+          params.set("tag", filters.tag);
+        } else {
+          params.delete("tag");
+        }
+        if (filters.suite) {
+          params.set("suite", filters.suite);
+        } else {
+          params.delete("suite");
+        }
+        if (filters.sort !== "priority") {
+          params.set("sort", filters.sort);
+        } else {
+          params.delete("sort");
+        }
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   const handleExpandedPathChange = useCallback(
     (path: string | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (path) {
-        params.set("case", path);
-      } else {
-        params.delete("case");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/cases?${qs}` : `${basePath}/cases`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        if (path) {
+          params.set("case", path);
+        } else {
+          params.delete("case");
+        }
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   return (

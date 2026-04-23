@@ -1,12 +1,12 @@
 "use client";
 
-import type { Route } from "next";
-import { Suspense, useCallback, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import OverviewTab from "@/components/OverviewTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { useRepoParams } from "@/hooks/useRepoParams";
+import { useRouteReplace } from "@/hooks/useRouteReplace";
 
 const STATUS_SLUG: Record<string, ResultStatus> = {
   passed: ResultStatus.PASSED,
@@ -26,30 +26,24 @@ const SLUG_BY_STATUS: Record<number, string> = {
 
 function OverviewInner() {
   const { repoId, basePath } = useRepoParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const replace = useRouteReplace(`${basePath}/overview`);
 
   const initialCoverageFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? ResultStatus.UNSPECIFIED;
 
   const handleCoverageFilterChange = useCallback(
     (s: ResultStatus) => {
-      const params = new URLSearchParams(searchParams.toString());
-      const slug = SLUG_BY_STATUS[s];
-      if (slug) {
-        params.set("status", slug);
-      } else {
-        params.delete("status");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/overview?${qs}` : `${basePath}/overview`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        const slug = SLUG_BY_STATUS[s];
+        if (slug) {
+          params.set("status", slug);
+        } else {
+          params.delete("status");
+        }
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   return (

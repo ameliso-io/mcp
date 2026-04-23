@@ -1,12 +1,12 @@
 "use client";
 
-import type { Route } from "next";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, Suspense, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, Suspense } from "react";
 import RunsTab from "@/components/RunsTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { useRepoParams } from "@/hooks/useRepoParams";
+import { useRouteReplace } from "@/hooks/useRouteReplace";
 
 const STATUS_SLUG: Record<string, RunStatus> = {
   "in-progress": RunStatus.IN_PROGRESS,
@@ -36,9 +36,9 @@ const SLUG_BY_RESULT: Record<number, string> = {
 
 function RunsInner() {
   const { repoId, basePath } = useRepoParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const replace = useRouteReplace(`${basePath}/runs`);
+
   const initialSuite = searchParams.get("suite") ?? undefined;
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
@@ -46,71 +46,51 @@ function RunsInner() {
   const initialResultStatusFilter = RESULT_SLUG[searchParams.get("result") ?? ""] ?? null;
 
   const handleInitialSuiteConsumed = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("suite");
-    const qs = params.toString();
-    startTransition(() => {
-      router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
-        scroll: false,
-      });
+    replace((params) => {
+      params.delete("suite");
     });
-  }, [router, searchParams, basePath]);
+  }, [replace]);
 
   const handleStatusFilterChange = useCallback(
     (s: RunStatus) => {
-      const params = new URLSearchParams(searchParams.toString());
-      const slug = SLUG_BY_STATUS[s];
-      if (slug) {
-        params.set("status", slug);
-      } else {
-        params.delete("status");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        const slug = SLUG_BY_STATUS[s];
+        if (slug) {
+          params.set("status", slug);
+        } else {
+          params.delete("status");
+        }
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   const handleSelectedRunIdChange = useCallback(
     (id: string | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (id) {
-        params.set("run", id);
-      } else {
-        params.delete("run");
-      }
-      params.delete("result");
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        if (id) {
+          params.set("run", id);
+        } else {
+          params.delete("run");
+        }
+        params.delete("result");
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   const handleResultStatusFilterChange = useCallback(
     (s: ResultStatus | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      const slug = s !== null ? SLUG_BY_RESULT[s] : undefined;
-      if (slug) {
-        params.set("result", slug);
-      } else {
-        params.delete("result");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        const slug = s !== null ? SLUG_BY_RESULT[s] : undefined;
+        if (slug) {
+          params.set("result", slug);
+        } else {
+          params.delete("result");
+        }
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   return (

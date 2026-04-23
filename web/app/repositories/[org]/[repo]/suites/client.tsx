@@ -1,36 +1,30 @@
 "use client";
 
-import type { Route } from "next";
-import { useCallback, Suspense, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import SuitesTab from "@/components/SuitesTab";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useRepoParams } from "@/hooks/useRepoParams";
+import { useRouteReplace } from "@/hooks/useRouteReplace";
 
 function SuitesInner() {
   const { repoId, basePath } = useRepoParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const replace = useRouteReplace(`${basePath}/suites`);
 
   const initialExpanded = searchParams.get("expanded") ?? undefined;
 
   const handleExpandedChange = useCallback(
     (slug: string | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (slug) {
-        params.set("expanded", slug);
-      } else {
-        params.delete("expanded");
-      }
-      const qs = params.toString();
-      startTransition(() => {
-        router.replace((qs ? `${basePath}/suites?${qs}` : `${basePath}/suites`) as Route, {
-          scroll: false,
-        });
+      replace((params) => {
+        if (slug) {
+          params.set("expanded", slug);
+        } else {
+          params.delete("expanded");
+        }
       });
     },
-    [router, searchParams, basePath]
+    [replace]
   );
 
   return (
