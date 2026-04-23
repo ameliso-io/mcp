@@ -876,6 +876,19 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let suite_clone = suite.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::sync::push_suite(&pool, &repo_id, &suite_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for suite {}: {e}",
+                        suite_clone.slug
+                    );
+                }
+            });
+        }
         Ok(Response::new(pb::CreateSuiteResponse {
             suite: Some(suite_to_pb(&suite)),
             file_path: format!("suites/{}.yaml", req.slug),
@@ -917,6 +930,8 @@ impl AmelisoService for AmelisoServer {
         } else {
             Some(req.new_slug.as_str())
         };
+        let old_slug = req.slug.clone();
+        let slug_changed = !req.new_slug.is_empty();
         let suite = repo::update_suite(
             &self.pool,
             &req.repo_id,
@@ -928,6 +943,25 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let suite_clone = suite.clone();
+            tokio::spawn(async move {
+                if slug_changed {
+                    if let Err(e) = crate::sync::delete_suite_file(&pool, &repo_id, &old_slug).await
+                    {
+                        eprintln!("warning: github sync failed deleting suite {old_slug}: {e}");
+                    }
+                }
+                if let Err(e) = crate::sync::push_suite(&pool, &repo_id, &suite_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for suite {}: {e}",
+                        suite_clone.slug
+                    );
+                }
+            });
+        }
         Ok(Response::new(pb::UpdateSuiteResponse {
             suite: Some(suite_to_pb(&suite)),
         }))
@@ -947,6 +981,16 @@ impl AmelisoService for AmelisoServer {
         repo::delete_suite(&self.pool, &req.repo_id, &req.slug)
             .await
             .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let slug = req.slug.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::sync::delete_suite_file(&pool, &repo_id, &slug).await {
+                    eprintln!("warning: github sync failed deleting suite {slug}: {e}");
+                }
+            });
+        }
         Ok(Response::new(pb::DeleteSuiteResponse {
             file_path: format!("suites/{}.yaml", req.slug),
         }))
@@ -1148,6 +1192,19 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let run_clone = meta.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::sync::push_run_meta(&pool, &repo_id, &run_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for run {}: {e}",
+                        run_clone.run_id
+                    );
+                }
+            });
+        }
         let dir_path = format!("runs/{}", meta.run_id);
         let ((pending_cases, _), statuses, all_cases) = tokio::join!(
             async {
@@ -1217,6 +1274,22 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let run_id = req.run_id.clone();
+            let result_clone = result.clone();
+            tokio::spawn(async move {
+                if let Err(e) =
+                    crate::sync::push_result(&pool, &repo_id, &run_id, &result_clone).await
+                {
+                    eprintln!(
+                        "warning: github sync failed for result {}/{}: {e}",
+                        run_id, result_clone.case_path
+                    );
+                }
+            });
+        }
         let ((pending_cases, total_in_scope), statuses) = tokio::join!(
             async {
                 repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
@@ -1281,6 +1354,22 @@ impl AmelisoService for AmelisoServer {
             )
             .await
             .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let run_id = req.run_id.clone();
+                let result_clone = result.clone();
+                tokio::spawn(async move {
+                    if let Err(e) =
+                        crate::sync::push_result(&pool, &repo_id, &run_id, &result_clone).await
+                    {
+                        eprintln!(
+                            "warning: github sync failed for result {}/{}: {e}",
+                            run_id, result_clone.case_path
+                        );
+                    }
+                });
+            }
             recorded.push(result_to_pb(&result));
         }
         let ((pending_cases, total_in_scope), statuses) = tokio::join!(
@@ -1342,6 +1431,19 @@ impl AmelisoService for AmelisoServer {
         let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, resolved_status)
             .await
             .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let run_clone = meta.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::sync::push_run_meta(&pool, &repo_id, &run_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for run {}: {e}",
+                        run_clone.run_id
+                    );
+                }
+            });
+        }
         // Get results: reuse pre-fetched ones (UNSPECIFIED path) or fetch now (explicit status).
         let results = match pre_results {
             Some(rs) => rs,
@@ -1387,9 +1489,25 @@ impl AmelisoService for AmelisoServer {
             return Err(invalid("run_id is required"));
         }
         let dir_path = format!("runs/{}", req.run_id);
+        let result_paths: Vec<String> = repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+            .await
+            .map(|r| r.results.into_iter().map(|res| res.case_path).collect())
+            .unwrap_or_default();
         repo::delete_run(&self.pool, &req.repo_id, &req.run_id)
             .await
             .map_err(repo_err)?;
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let run_id = req.run_id.clone();
+            tokio::spawn(async move {
+                if let Err(e) =
+                    crate::sync::delete_run_files(&pool, &repo_id, &run_id, &result_paths).await
+                {
+                    eprintln!("warning: github sync failed deleting run {run_id}: {e}");
+                }
+            });
+        }
         Ok(Response::new(pb::DeleteRunResponse { dir_path }))
     }
 
@@ -1434,6 +1552,15 @@ impl AmelisoService for AmelisoServer {
                 .await
                 .map_err(repo_err)?;
         }
+        let old_run_id = req.run_id.clone();
+        let old_result_paths: Vec<String> = if has_slug {
+            repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map(|r| r.results.into_iter().map(|res| res.case_path).collect())
+                .unwrap_or_default()
+        } else {
+            vec![]
+        };
         let run = if has_slug {
             repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
                 .await
@@ -1444,6 +1571,48 @@ impl AmelisoService for AmelisoServer {
                 .map_err(repo_err)?
                 .meta
         };
+        {
+            let pool = self.pool.clone();
+            let repo_id = req.repo_id.clone();
+            let run_clone = run.clone();
+            let renamed = has_slug;
+            tokio::spawn(async move {
+                if renamed {
+                    if let Err(e) = crate::sync::delete_run_files(
+                        &pool,
+                        &repo_id,
+                        &old_run_id,
+                        &old_result_paths,
+                    )
+                    .await
+                    {
+                        eprintln!("warning: github sync failed deleting old run {old_run_id}: {e}");
+                    }
+                    // Re-push all results under new run_id.
+                    let results = repo::get_run(&pool, &repo_id, &run_clone.run_id)
+                        .await
+                        .map(|r| r.results)
+                        .unwrap_or_default();
+                    for result in &results {
+                        if let Err(e) =
+                            crate::sync::push_result(&pool, &repo_id, &run_clone.run_id, result)
+                                .await
+                        {
+                            eprintln!(
+                                "warning: github sync failed pushing result {}/{}: {e}",
+                                run_clone.run_id, result.case_path
+                            );
+                        }
+                    }
+                }
+                if let Err(e) = crate::sync::push_run_meta(&pool, &repo_id, &run_clone).await {
+                    eprintln!(
+                        "warning: github sync failed for run {}: {e}",
+                        run_clone.run_id
+                    );
+                }
+            });
+        }
         let new_dir_path = format!("runs/{}", run.run_id);
         let pending = if has_add_cases {
             let ((pending_cases, _), statuses) = tokio::join!(

@@ -3,7 +3,7 @@ use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::repo::LoadedCase;
+use crate::repo::{LoadedCase, LoadedResult, RunRow, SuiteRow};
 
 fn yaml_quote(s: &str) -> String {
     // Always double-quote to handle YAML special chars ({, [, :, #, etc.) in user input.
@@ -166,6 +166,193 @@ pub async fn delete_case_file(pool: &PgPool, repo_id: &str, case_path: &str) -> 
     };
     let message = format!("chore(cases): delete {case_path}");
     crate::github::delete_file(&owner, &repo_name, &file_path, &message, &sha, &token).await
+}
+
+pub fn suite_to_yaml(suite: &SuiteRow) -> String {
+    let cases_yaml = if suite.cases.is_empty() {
+        "cases: []".to_owned()
+    } else {
+        let items = suite
+            .cases
+            .iter()
+            .map(|c| format!("  - {c}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        format!("cases:\n{items}")
+    };
+    let desc_line = match &suite.description {
+        Some(d) if !d.is_empty() => format!("\ndescription: {}", yaml_quote(d)),
+        _ => String::new(),
+    };
+    format!(
+        "name: {}{desc_line}\n{cases_yaml}\n",
+        yaml_quote(&suite.name)
+    )
+}
+
+pub fn run_to_yaml(run: &RunRow) -> String {
+    let mut out = format!(
+        "date: {}\ntester: {}\nstatus: {}\n",
+        yaml_quote(&run.date),
+        yaml_quote(&run.tester),
+        yaml_quote(&run.status),
+    );
+    if let Some(env) = &run.environment {
+        if !env.is_empty() {
+            out.push_str(&format!("environment: {}\n", yaml_quote(env)));
+        }
+    }
+    if let Some(suite) = &run.suite {
+        if !suite.is_empty() {
+            out.push_str(&format!("suite: {}\n", yaml_quote(suite)));
+        }
+    }
+    if !run.commit_sha.is_empty() {
+        out.push_str(&format!("commit_sha: {}\n", yaml_quote(&run.commit_sha)));
+    }
+    out
+}
+
+pub fn result_to_markdown(result: &LoadedResult) -> String {
+    if result.notes.is_empty() {
+        format!("---\nstatus: {}\n---\n", result.status)
+    } else {
+        format!("---\nstatus: {}\n---\n\n{}\n", result.status, result.notes)
+    }
+}
+
+async fn upsert_file(
+    owner: &str,
+    repo_name: &str,
+    file_path: &str,
+    content_b64: &str,
+    message: &str,
+    token: &str,
+) -> Result<()> {
+    let existing = crate::github::get_file(owner, repo_name, file_path, token).await?;
+    let sha = existing.as_ref().map(|(_, s)| s.as_str());
+    match crate::github::put_file(
+        owner,
+        repo_name,
+        file_path,
+        content_b64,
+        message,
+        sha,
+        token,
+    )
+    .await
+    {
+        Ok(()) => Ok(()),
+        Err(e) if e.to_string().contains("HTTP 409") => {
+            let current = crate::github::get_file(owner, repo_name, file_path, token).await?;
+            let fresh_sha = current.as_ref().map(|(_, s)| s.as_str());
+            crate::github::put_file(
+                owner,
+                repo_name,
+                file_path,
+                content_b64,
+                message,
+                fresh_sha,
+                token,
+            )
+            .await
+        }
+        Err(e) => Err(e),
+    }
+}
+
+async fn delete_file_if_exists(
+    owner: &str,
+    repo_name: &str,
+    file_path: &str,
+    message: &str,
+    token: &str,
+) -> Result<()> {
+    let existing = crate::github::get_file(owner, repo_name, file_path, token).await?;
+    let Some((_, sha)) = existing else {
+        return Ok(());
+    };
+    crate::github::delete_file(owner, repo_name, file_path, message, &sha, token).await
+}
+
+pub async fn push_suite(pool: &PgPool, repo_id: &str, suite: &SuiteRow) -> Result<()> {
+    let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
+    let file_path = format!("suites/{}.yaml", suite.slug);
+    let content = suite_to_yaml(suite);
+    let content_b64 = BASE64.encode(content.as_bytes());
+    let message = format!("chore(suites): upsert {}", suite.slug);
+    upsert_file(
+        &owner,
+        &repo_name,
+        &file_path,
+        &content_b64,
+        &message,
+        &token,
+    )
+    .await
+}
+
+pub async fn delete_suite_file(pool: &PgPool, repo_id: &str, slug: &str) -> Result<()> {
+    let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
+    let file_path = format!("suites/{slug}.yaml");
+    let message = format!("chore(suites): delete {slug}");
+    delete_file_if_exists(&owner, &repo_name, &file_path, &message, &token).await
+}
+
+pub async fn push_run_meta(pool: &PgPool, repo_id: &str, run: &RunRow) -> Result<()> {
+    let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
+    let file_path = format!("runs/{}/run.yaml", run.run_id);
+    let content = run_to_yaml(run);
+    let content_b64 = BASE64.encode(content.as_bytes());
+    let message = format!("chore(runs): upsert {}", run.run_id);
+    upsert_file(
+        &owner,
+        &repo_name,
+        &file_path,
+        &content_b64,
+        &message,
+        &token,
+    )
+    .await
+}
+
+pub async fn push_result(
+    pool: &PgPool,
+    repo_id: &str,
+    run_id: &str,
+    result: &LoadedResult,
+) -> Result<()> {
+    let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
+    let file_path = format!("runs/{}/results/{}.md", run_id, result.case_path);
+    let content = result_to_markdown(result);
+    let content_b64 = BASE64.encode(content.as_bytes());
+    let message = format!("chore(runs): record result {}/{}", run_id, result.case_path);
+    upsert_file(
+        &owner,
+        &repo_name,
+        &file_path,
+        &content_b64,
+        &message,
+        &token,
+    )
+    .await
+}
+
+pub async fn delete_run_files(
+    pool: &PgPool,
+    repo_id: &str,
+    run_id: &str,
+    result_case_paths: &[String],
+) -> Result<()> {
+    let (token, owner, repo_name) = get_token_and_parts(pool, repo_id).await?;
+    let run_yaml = format!("runs/{run_id}/run.yaml");
+    let message = format!("chore(runs): delete {run_id}");
+    delete_file_if_exists(&owner, &repo_name, &run_yaml, &message, &token).await?;
+    for case_path in result_case_paths {
+        let result_file = format!("runs/{run_id}/results/{case_path}.md");
+        delete_file_if_exists(&owner, &repo_name, &result_file, &message, &token).await?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
