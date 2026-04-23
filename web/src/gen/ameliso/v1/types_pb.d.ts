@@ -137,6 +137,34 @@ export declare type RunMeta = Message<"ameliso.v1.RunMeta"> & {
    * @generated from field: string commit_sha = 7;
    */
   commitSha: string;
+
+  /**
+   * Result counts — populated by ListRuns and FinalizeRun so agents can
+   * read pass/fail outcomes without a separate GetRun call.
+   *
+   * @generated from field: int32 passed = 8;
+   */
+  passed: number;
+
+  /**
+   * @generated from field: int32 failed = 9;
+   */
+  failed: number;
+
+  /**
+   * @generated from field: int32 blocked = 10;
+   */
+  blocked: number;
+
+  /**
+   * @generated from field: int32 skipped = 11;
+   */
+  skipped: number;
+
+  /**
+   * @generated from field: int32 total = 12;
+   */
+  total: number;
 };
 
 /**

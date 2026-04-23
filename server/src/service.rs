@@ -108,6 +108,17 @@ fn case_to_pb(c: &repo::LoadedCase) -> pb::Case {
 }
 
 fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
+    run_meta_with_counts_to_pb(r, 0, 0, 0, 0, 0)
+}
+
+fn run_meta_with_counts_to_pb(
+    r: &repo::RunRow,
+    passed: i32,
+    failed: i32,
+    blocked: i32,
+    skipped: i32,
+    total: i32,
+) -> pb::RunMeta {
     pb::RunMeta {
         id: r.run_id.clone(),
         date: r.date.clone(),
@@ -116,6 +127,11 @@ fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
         environment: r.environment.clone().unwrap_or_default(),
         suite: r.suite.clone().unwrap_or_default(),
         commit_sha: r.commit_sha.clone(),
+        passed,
+        failed,
+        blocked,
+        skipped,
+        total,
     }
 }
 
@@ -889,13 +905,36 @@ impl AmelisoService for AmelisoServer {
         let runs = repo::list_runs(&self.pool, &req.repo_id)
             .await
             .map_err(repo_err)?;
+        // Fetch per-run result counts in one GROUP BY query.
+        let raw_counts: Vec<(String, i64, i64, i64, i64)> = sqlx::query_as(
+            "SELECT run_id,
+             COUNT(*) FILTER (WHERE status='passed'),
+             COUNT(*) FILTER (WHERE status='failed'),
+             COUNT(*) FILTER (WHERE status='blocked'),
+             COUNT(*) FILTER (WHERE status='skipped')
+             FROM results WHERE repo_id=$1 GROUP BY run_id",
+        )
+        .bind(&req.repo_id)
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+        let counts_map: std::collections::HashMap<&str, (i32, i32, i32, i32, i32)> = raw_counts
+            .iter()
+            .map(|(id, p, f, b, s)| {
+                let (p, f, b, s) = (*p as i32, *f as i32, *b as i32, *s as i32);
+                (id.as_str(), (p, f, b, s, p + f + b + s))
+            })
+            .collect();
         let pb_runs = runs
             .iter()
             .filter(|r| {
                 status_filter == pb::RunStatus::Unspecified as i32
                     || run_status_to_i32(&r.status) == status_filter
             })
-            .map(run_meta_to_pb)
+            .map(|r| {
+                let (p, f, b, s, t) = counts_map.get(r.run_id.as_str()).copied().unwrap_or_default();
+                run_meta_with_counts_to_pb(r, p, f, b, s, t)
+            })
             .collect();
         Ok(Response::new(pb::ListRunsResponse { runs: pb_runs }))
     }
@@ -932,8 +971,7 @@ impl AmelisoService for AmelisoServer {
                 .await
                 .unwrap_or_default()
         } else {
-            let path_set: std::collections::HashSet<String> =
-                inline_paths.into_iter().collect();
+            let path_set: std::collections::HashSet<String> = inline_paths.into_iter().collect();
             repo::list_cases(&self.pool, &req.repo_id)
                 .await
                 .unwrap_or_default()
@@ -1210,8 +1248,23 @@ impl AmelisoService for AmelisoServer {
         let meta = repo::finalize_run(&self.pool, &req.repo_id, &req.run_id, resolved_status)
             .await
             .map_err(repo_err)?;
+        // Fetch result counts so agents can read outcomes without a separate GetRun.
+        let counts: (i64, i64, i64, i64) = sqlx::query_as(
+            "SELECT
+             COUNT(*) FILTER (WHERE status='passed'),
+             COUNT(*) FILTER (WHERE status='failed'),
+             COUNT(*) FILTER (WHERE status='blocked'),
+             COUNT(*) FILTER (WHERE status='skipped')
+             FROM results WHERE repo_id=$1 AND run_id=$2",
+        )
+        .bind(&req.repo_id)
+        .bind(&req.run_id)
+        .fetch_one(&self.pool)
+        .await
+        .unwrap_or((0, 0, 0, 0));
+        let (p, f, b, s) = (counts.0 as i32, counts.1 as i32, counts.2 as i32, counts.3 as i32);
         Ok(Response::new(pb::FinalizeRunResponse {
-            run: Some(run_meta_to_pb(&meta)),
+            run: Some(run_meta_with_counts_to_pb(&meta, p, f, b, s, p + f + b + s)),
         }))
     }
 
@@ -4525,6 +4578,32 @@ mod tests {
         assert_eq!(pb.environment, "");
         assert_eq!(pb.suite, "");
         assert_eq!(pb.commit_sha, "");
+        // run_meta_to_pb always zeroes counts; callers that have counts use
+        // run_meta_with_counts_to_pb directly.
+        assert_eq!(pb.passed, 0);
+        assert_eq!(pb.failed, 0);
+        assert_eq!(pb.blocked, 0);
+        assert_eq!(pb.skipped, 0);
+        assert_eq!(pb.total, 0);
+    }
+
+    #[test]
+    fn run_meta_with_counts_to_pb_maps_counts() {
+        let r = repo::RunRow {
+            run_id: "r1".to_owned(),
+            date: "2026-01-01".to_owned(),
+            tester: "alice".to_owned(),
+            status: "completed".to_owned(),
+            environment: None,
+            suite: None,
+            commit_sha: String::new(),
+        };
+        let pb = run_meta_with_counts_to_pb(&r, 3, 1, 0, 2, 6);
+        assert_eq!(pb.passed, 3);
+        assert_eq!(pb.failed, 1);
+        assert_eq!(pb.blocked, 0);
+        assert_eq!(pb.skipped, 2);
+        assert_eq!(pb.total, 6);
     }
 
     #[test]

@@ -35,6 +35,13 @@ message RunMeta {
   // Agents can use this as `since_ref` in GetAffectedCases to find
   // tests affected since this run's baseline commit.
   string commit_sha = 7;
+  // Result counts — populated by ListRuns and FinalizeRun so agents can
+  // read pass/fail outcomes without a separate GetRun call.
+  int32 passed = 8;
+  int32 failed = 9;
+  int32 blocked = 10;
+  int32 skipped = 11;
+  int32 total = 12;
 }
 
 message CaseResult {
