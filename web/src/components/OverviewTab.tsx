@@ -396,9 +396,20 @@ export default function OverviewTab({ repoId, basePath }: Props) {
               <ul className={styles.affectedList} role="list">
                 {[...affected]
                   .sort((a, b) => {
-                    const order = { high: 0, medium: 1, low: 2 } as Record<string, number>;
+                    const statusOrder: Partial<Record<number, number>> = {
+                      [ResultStatus.FAILED]: 0,
+                      [ResultStatus.NEVER]: 1,
+                      [ResultStatus.BLOCKED]: 2,
+                      [ResultStatus.SKIPPED]: 3,
+                      [ResultStatus.PASSED]: 4,
+                    };
+                    const sA = statusOrder[a.latestStatus] ?? 5;
+                    const sB = statusOrder[b.latestStatus] ?? 5;
+                    if (sA !== sB) return sA - sB;
+                    const priorityOrder = { high: 0, medium: 1, low: 2 } as Record<string, number>;
                     return (
-                      (order[a.case?.priority ?? ""] ?? 3) - (order[b.case?.priority ?? ""] ?? 3)
+                      (priorityOrder[a.case?.priority ?? ""] ?? 3) -
+                      (priorityOrder[b.case?.priority ?? ""] ?? 3)
                     );
                   })
                   .map((ac, idx) => (

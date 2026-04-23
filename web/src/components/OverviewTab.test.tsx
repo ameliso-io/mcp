@@ -191,14 +191,16 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("coverage failed")).toBeInTheDocument());
   });
 
-  it("sorts affected cases high before low", async () => {
+  it("sorts affected cases high before low when status is the same", async () => {
     const highCase = makeAffectedCase({
       case: { path: "auth/login", title: "High Priority", priority: "high" },
       reason: "modified",
+      latestStatus: ResultStatus.NEVER,
     });
     const lowCase = makeAffectedCase({
       case: { path: "auth/logout", title: "Low Priority", priority: "low" },
       reason: "added",
+      latestStatus: ResultStatus.NEVER,
     });
     vi.mocked(client.getAffectedCases).mockResolvedValue({
       cases: [lowCase, highCase],
@@ -211,6 +213,32 @@ describe("OverviewTab", () => {
     const titles = screen.getAllByText(/Priority/);
     expect(titles[0]!.textContent).toBe("High Priority");
     expect(titles[1]!.textContent).toBe("Low Priority");
+  });
+
+  it("sorts affected cases failed before passed regardless of priority", async () => {
+    const passedCase = makeAffectedCase({
+      case: { path: "billing/pay", title: "Passed High", priority: "high" },
+      reason: "modified",
+      latestStatus: ResultStatus.PASSED,
+    });
+    const failedCase = makeAffectedCase({
+      case: { path: "billing/refund", title: "Failed Low", priority: "low" },
+      reason: "added",
+      latestStatus: ResultStatus.FAILED,
+    });
+    vi.mocked(client.getAffectedCases).mockResolvedValue({
+      cases: [passedCase, failedCase],
+      reason: "",
+    } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() => expect(screen.getByText("Passed High")).toBeInTheDocument());
+    const affectedItems = screen
+      .getAllByRole("listitem")
+      .filter((el) => el.textContent?.includes("billing/"));
+    expect(affectedItems[0]!.textContent).toContain("Failed Low");
+    expect(affectedItems[1]!.textContent).toContain("Passed High");
   });
 
   it('shows singular "run" when runCount is 1', async () => {
