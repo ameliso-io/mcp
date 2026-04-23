@@ -1318,22 +1318,22 @@ impl AmelisoService for AmelisoServer {
         // Get results: reuse pre-fetched ones (UNSPECIFIED path) or fetch now (explicit status).
         let results = match pre_results {
             Some(rs) => rs,
-            None => {
-                repo::get_run(&self.pool, &req.repo_id, &req.run_id)
-                    .await
-                    .map(|r| r.results)
-                    .unwrap_or_default()
-            }
+            None => repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map(|r| r.results)
+                .unwrap_or_default(),
         };
-        let (p, f, b, s) = results.iter().fold((0i32, 0i32, 0i32, 0i32), |(p, f, b, s), r| {
-            match r.status.as_str() {
-                "passed" => (p + 1, f, b, s),
-                "failed" => (p, f + 1, b, s),
-                "blocked" => (p, f, b + 1, s),
-                "skipped" => (p, f, b, s + 1),
-                _ => (p, f, b, s),
-            }
-        });
+        let (p, f, b, s) = results
+            .iter()
+            .fold((0i32, 0i32, 0i32, 0i32), |(p, f, b, s), r| {
+                match r.status.as_str() {
+                    "passed" => (p + 1, f, b, s),
+                    "failed" => (p, f + 1, b, s),
+                    "blocked" => (p, f, b + 1, s),
+                    "skipped" => (p, f, b, s + 1),
+                    _ => (p, f, b, s),
+                }
+            });
         let pb_results: Vec<pb::CaseResult> = results
             .into_iter()
             .map(|r| pb::CaseResult {
