@@ -4,7 +4,6 @@ import type { Route } from "next";
 import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import styles from "./OverviewTab.module.css";
-import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { AffectedCase, CoverageEntry } from "@/gen/ameliso/v1/types_pb";
