@@ -69,7 +69,9 @@ pub fn parse_case_markdown(file_path: &str, content: &str) -> Result<ParsedCase>
     let case_path = file_path
         .strip_prefix(".ameliso/cases/")
         .and_then(|p| p.strip_suffix(".md"))
-        .with_context(|| format!("file path must start with .ameliso/cases/ and end with .md: {file_path}"))?
+        .with_context(|| {
+            format!("file path must start with .ameliso/cases/ and end with .md: {file_path}")
+        })?
         .to_owned();
 
     let text = content.trim_start();

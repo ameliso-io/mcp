@@ -44,7 +44,8 @@
       "Bash(pnpm test *)",
       "Bash(pnpm vitest *)",
       "Bash(wait)",
-      "mcp__centy__centy_v1_CentyDaemon_GetItem"
+      "mcp__centy__centy_v1_CentyDaemon_GetItem",
+      "Bash(awk *)"
     ]
   }
 }

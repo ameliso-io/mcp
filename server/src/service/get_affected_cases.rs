@@ -30,8 +30,7 @@ pub(super) async fn handle(
         let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
         let case_map: std::collections::HashMap<&str, &repo::LoadedCase> =
             cases.iter().map(|c| (c.case_path.as_str(), c)).collect();
-        let mut affected_set: std::collections::HashSet<String> =
-            std::collections::HashSet::new();
+        let mut affected_set: std::collections::HashSet<String> = std::collections::HashSet::new();
         let mut reasons: Vec<String> = Vec::new();
         for file in &req.changed_files {
             for path in &known_paths {

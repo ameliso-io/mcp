@@ -2,12 +2,14 @@ use sqlx::PgPool;
 use tonic::{Request, Response, Status};
 
 use crate::proto::ameliso_v1::{self as pb, ameliso_service_server::AmelisoService};
-use crate::repo::{self, RepoError, RunRow};
+use crate::repo::{self, RepoError};
 
+mod create_run;
 mod create_suite;
 #[cfg(test)]
 mod create_suite_test;
 mod get_affected_cases;
+mod get_repo_status;
 
 /// Returns true when `text` contains `case_path` as whole path segments.
 /// Prevents `auth/log` from matching inside `auth/login`.
@@ -112,11 +114,11 @@ pub(super) fn case_to_pb(c: &repo::LoadedCase) -> pb::Case {
     }
 }
 
-fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
+pub(super) fn run_meta_to_pb(r: &repo::RunRow) -> pb::RunMeta {
     run_meta_with_counts_to_pb(r, 0, 0, 0, 0, 0)
 }
 
-fn run_meta_with_counts_to_pb(
+pub(super) fn run_meta_with_counts_to_pb(
     r: &repo::RunRow,
     passed: i32,
     failed: i32,
@@ -158,7 +160,10 @@ pub(super) fn suite_to_pb(s: &repo::SuiteRow) -> pb::Suite {
 }
 
 /// Return source files (non-doc) from `files` that no known case path covers.
-pub(super) fn find_uncovered_files<'a>(files: &'a [String], known_paths: &[String]) -> Vec<&'a str> {
+pub(super) fn find_uncovered_files<'a>(
+    files: &'a [String],
+    known_paths: &[String],
+) -> Vec<&'a str> {
     files
         .iter()
         .filter(|f| !is_doc_file(f))
@@ -168,7 +173,7 @@ pub(super) fn find_uncovered_files<'a>(files: &'a [String], known_paths: &[Strin
 }
 
 /// Build a `PendingEntry` list from pending cases + latest status map.
-fn build_pending_entries(
+pub(super) fn build_pending_entries(
     pending_cases: &[repo::LoadedCase],
     statuses: &std::collections::HashMap<String, String>,
 ) -> Vec<pb::PendingEntry> {
@@ -277,7 +282,7 @@ pub(super) fn result_status_rank(s: &str) -> u8 {
 // If `since_ref` is non-empty, calls the GitHub compare API.
 /// Returns `(affected_case_paths, changed_files)`.
 /// `changed_files` is empty when there is no diff scope (all cases included).
-async fn resolve_affected_case_paths(
+pub(super) async fn resolve_affected_case_paths(
     pool: &PgPool,
     repo_id: &str,
     since_ref: &str,
@@ -1056,147 +1061,7 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::CreateRunRequest>,
     ) -> Result<Response<pb::CreateRunResponse>, Status> {
-        let req = request.into_inner();
-        if req.repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-        let slug = if req.slug.is_empty() {
-            let micros = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_micros();
-            format!("run-{micros:x}")
-        } else {
-            req.slug.clone()
-        };
-        check_max_len("slug", &slug, 100)?;
-        check_max_len("tester", &req.tester, 255)?;
-        check_max_len("environment", &req.environment, 255)?;
-        check_max_len("suite", &req.suite, 100)?;
-        let env = if req.environment.is_empty() {
-            None
-        } else {
-            Some(req.environment)
-        };
-        let suite = if req.suite.is_empty() {
-            None
-        } else {
-            Some(req.suite)
-        };
-        let tester = if req.tester.is_empty() {
-            "unknown".to_owned()
-        } else {
-            req.tester
-        };
-        let has_since_ref = !req.since_ref.is_empty();
-        let has_changed_files = !req.changed_files.is_empty();
-        let use_last_run = req.use_last_run;
-        if use_last_run && (has_since_ref || has_changed_files) {
-            return Err(invalid(
-                "use_last_run and since_ref/changed_files are mutually exclusive",
-            ));
-        }
-        if use_last_run && !req.cases.is_empty() {
-            return Err(invalid("use_last_run and cases are mutually exclusive"));
-        }
-        if use_last_run && suite.is_some() {
-            return Err(invalid("use_last_run and suite are mutually exclusive"));
-        }
-        if (has_since_ref || has_changed_files) && !req.cases.is_empty() {
-            return Err(invalid(
-                "since_ref/changed_files and cases are mutually exclusive",
-            ));
-        }
-        if (has_since_ref || has_changed_files) && suite.is_some() {
-            return Err(invalid(
-                "since_ref/changed_files and suite are mutually exclusive",
-            ));
-        }
-        let (inline_cases, diff_files) = if use_last_run {
-            let runs = repo::list_runs(&self.pool, &req.repo_id)
-                .await
-                .unwrap_or_default();
-            let last_sha = runs
-                .iter()
-                .filter(|r| r.status == "completed")
-                .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
-                .and_then(|r| {
-                    if r.commit_sha.is_empty() {
-                        None
-                    } else {
-                        Some(r.commit_sha.as_str())
-                    }
-                })
-                .unwrap_or("");
-            resolve_affected_case_paths(&self.pool, &req.repo_id, last_sha, &[]).await?
-        } else if has_since_ref || has_changed_files {
-            resolve_affected_case_paths(
-                &self.pool,
-                &req.repo_id,
-                &req.since_ref,
-                &req.changed_files,
-            )
-            .await?
-        } else {
-            (req.cases, vec![])
-        };
-        let commit_sha = req.commit_sha;
-        let meta = repo::create_run(
-            &self.pool,
-            &req.repo_id,
-            &slug,
-            &tester,
-            env,
-            suite,
-            inline_cases,
-            commit_sha,
-        )
-        .await
-        .map_err(repo_err)?;
-        {
-            let pool = self.pool.clone();
-            let repo_id = req.repo_id.clone();
-            let run_clone = meta.clone();
-            tokio::spawn(async move {
-                if let Err(e) = crate::sync::push_run_meta(&pool, &repo_id, &run_clone).await {
-                    eprintln!(
-                        "warning: github sync failed for run {}: {e}",
-                        run_clone.run_id
-                    );
-                }
-            });
-        }
-        let dir_path = format!(".ameliso/runs/{}", meta.run_id);
-        let ((pending_cases, _), statuses, all_cases) = tokio::join!(
-            async {
-                repo::get_pending_cases(&self.pool, &req.repo_id, &meta.run_id)
-                    .await
-                    .unwrap_or_default()
-            },
-            async {
-                repo::get_latest_statuses(&self.pool, &req.repo_id)
-                    .await
-                    .unwrap_or_default()
-            },
-            async {
-                repo::list_cases(&self.pool, &req.repo_id)
-                    .await
-                    .unwrap_or_default()
-            },
-        );
-        let all_known_paths: Vec<String> = all_cases.iter().map(|c| c.case_path.clone()).collect();
-        let uncovered_files: Vec<String> = find_uncovered_files(&diff_files, &all_known_paths)
-            .into_iter()
-            .map(str::to_owned)
-            .collect();
-        let pending_entries = build_pending_entries(&pending_cases, &statuses);
-        Ok(Response::new(pb::CreateRunResponse {
-            run: Some(run_meta_to_pb(&meta)),
-            dir_path,
-            pending: pending_entries,
-            total_repo_cases: i32::try_from(all_cases.len()).unwrap_or(i32::MAX),
-            uncovered_files,
-        }))
+        create_run::handle(self, request).await
     }
 
     async fn record_result(
@@ -1736,138 +1601,7 @@ impl AmelisoService for AmelisoServer {
         &self,
         request: Request<pb::GetRepoStatusRequest>,
     ) -> Result<Response<pb::GetRepoStatusResponse>, Status> {
-        let repo_id = request.into_inner().repo_id;
-        if repo_id.is_empty() {
-            return Err(invalid("repo_id is required"));
-        }
-
-        let pool = &self.pool;
-        let (cov_res, suites_res, runs_res) = tokio::join!(
-            repo::get_coverage_report(pool, &repo_id),
-            repo::list_suites(pool, &repo_id),
-            repo::list_runs(pool, &repo_id),
-        );
-
-        let (cov_entries, _run_count_cov) = cov_res.map_err(repo_err)?;
-        let suites = suites_res.map_err(repo_err)?;
-        let runs = runs_res.map_err(repo_err)?;
-
-        let mut total_cases = 0i32;
-        let mut high_cases = 0i32;
-        let mut medium_cases = 0i32;
-        let mut low_cases = 0i32;
-        let mut passed = 0i32;
-        let mut failed = 0i32;
-        let mut blocked = 0i32;
-        let mut skipped = 0i32;
-        let mut never_run = 0i32;
-
-        for e in &cov_entries {
-            total_cases += 1;
-            match e.priority.as_str() {
-                "high" => high_cases += 1,
-                "medium" => medium_cases += 1,
-                "low" => low_cases += 1,
-                _ => {}
-            }
-            match e.latest_status.as_str() {
-                "passed" => passed += 1,
-                "failed" => failed += 1,
-                "blocked" => blocked += 1,
-                "skipped" => skipped += 1,
-                _ => never_run += 1,
-            }
-        }
-
-        let active_runs_meta: Vec<&RunRow> =
-            runs.iter().filter(|r| r.status == "in-progress").collect();
-
-        // Fetch pending counts for all active runs in parallel.
-        let mut join_set: tokio::task::JoinSet<(String, i32, i32)> = tokio::task::JoinSet::new();
-        for run_meta in &active_runs_meta {
-            let pool = pool.clone();
-            let repo_id = repo_id.clone();
-            let run_id = run_meta.run_id.clone();
-            join_set.spawn(async move {
-                match repo::get_pending_cases(&pool, &repo_id, &run_id).await {
-                    Ok((cases, total)) => (
-                        run_id,
-                        i32::try_from(cases.len()).unwrap_or(i32::MAX),
-                        i32::try_from(total).unwrap_or(i32::MAX),
-                    ),
-                    Err(_) => (run_id, 0, 0),
-                }
-            });
-        }
-        let mut pending_map: std::collections::HashMap<String, (i32, i32)> =
-            std::collections::HashMap::new();
-        while let Some(res) = join_set.join_next().await {
-            if let Ok((run_id, pending, total)) = res {
-                pending_map.insert(run_id, (pending, total));
-            }
-        }
-        let active_runs: Vec<pb::ActiveRunStatus> = active_runs_meta
-            .iter()
-            .map(|run_meta| {
-                let (pending, total_in_scope) =
-                    pending_map.get(&run_meta.run_id).copied().unwrap_or((0, 0));
-                pb::ActiveRunStatus {
-                    run_id: run_meta.run_id.clone(),
-                    tester: run_meta.tester.clone(),
-                    suite: run_meta.suite.clone().unwrap_or_default(),
-                    date: run_meta.date.clone(),
-                    pending_cases: pending,
-                    total_in_scope,
-                    commit_sha: run_meta.commit_sha.clone(),
-                    environment: run_meta.environment.clone().unwrap_or_default(),
-                }
-            })
-            .collect();
-
-        let last_completed_run_row = runs
-            .iter()
-            .filter(|r| r.status == "completed")
-            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)));
-        let last_completed_run = if let Some(row) = last_completed_run_row {
-            let counts: (i64, i64, i64, i64) = sqlx::query_as(
-                "SELECT
-                 COUNT(*) FILTER (WHERE status='passed'),
-                 COUNT(*) FILTER (WHERE status='failed'),
-                 COUNT(*) FILTER (WHERE status='blocked'),
-                 COUNT(*) FILTER (WHERE status='skipped')
-                 FROM results WHERE repo_id=$1 AND run_id=$2",
-            )
-            .bind(&repo_id)
-            .bind(&row.run_id)
-            .fetch_one(pool)
-            .await
-            .unwrap_or((0, 0, 0, 0));
-            let (p, f, b, s) = (
-                counts.0 as i32,
-                counts.1 as i32,
-                counts.2 as i32,
-                counts.3 as i32,
-            );
-            Some(run_meta_with_counts_to_pb(row, p, f, b, s, p + f + b + s))
-        } else {
-            None
-        };
-
-        Ok(Response::new(pb::GetRepoStatusResponse {
-            total_cases,
-            high_cases,
-            medium_cases,
-            low_cases,
-            passed,
-            failed,
-            blocked,
-            skipped,
-            never_run,
-            suite_count: i32::try_from(suites.len()).unwrap_or(i32::MAX),
-            run_count: i32::try_from(runs.len()).unwrap_or(i32::MAX),
-            active_runs,
-            last_completed_run,
-        }))
+        get_repo_status::handle(self, request).await
     }
 
     async fn get_git_hub_install_url(
