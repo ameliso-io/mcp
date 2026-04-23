@@ -54,7 +54,8 @@
       "Bash(docker port *)",
       "Bash(nc *)",
       "Bash(pnpm dev *)",
-      "Bash(npx prettier *)"
+      "Bash(npx prettier *)",
+      "Bash(cargo llvm-cov *)"
     ]
   }
 }

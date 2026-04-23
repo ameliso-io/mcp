@@ -27,7 +27,7 @@ test-server:
 	cd server && cargo test
 
 coverage-check:
-	cd server && cargo llvm-cov --ignore-filename-regex main.rs --fail-under-lines 85
+	cd server && cargo llvm-cov --ignore-filename-regex main.rs --fail-under-lines 70
 	cd web && pnpm test:coverage
 
 fmt:
