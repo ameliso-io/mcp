@@ -77,7 +77,6 @@
   border-radius: 4px;
 }
 
-
 .errorDismiss {
   background: none;
   border: none;
@@ -89,11 +88,6 @@
   flex-shrink: 0;
 }
 
-.errorRetry {
-  composes: errorDismiss;
-  font-size: 13px;
-  text-decoration: underline;
-}
 
 .inlineError {
   color: var(--color-danger-text);
