@@ -932,7 +932,10 @@ impl AmelisoService for AmelisoServer {
                     || run_status_to_i32(&r.status) == status_filter
             })
             .map(|r| {
-                let (p, f, b, s, t) = counts_map.get(r.run_id.as_str()).copied().unwrap_or_default();
+                let (p, f, b, s, t) = counts_map
+                    .get(r.run_id.as_str())
+                    .copied()
+                    .unwrap_or_default();
                 run_meta_with_counts_to_pb(r, p, f, b, s, t)
             })
             .collect();
@@ -1262,7 +1265,12 @@ impl AmelisoService for AmelisoServer {
         .fetch_one(&self.pool)
         .await
         .unwrap_or((0, 0, 0, 0));
-        let (p, f, b, s) = (counts.0 as i32, counts.1 as i32, counts.2 as i32, counts.3 as i32);
+        let (p, f, b, s) = (
+            counts.0 as i32,
+            counts.1 as i32,
+            counts.2 as i32,
+            counts.3 as i32,
+        );
         Ok(Response::new(pb::FinalizeRunResponse {
             run: Some(run_meta_with_counts_to_pb(&meta, p, f, b, s, p + f + b + s)),
         }))
@@ -1297,12 +1305,36 @@ impl AmelisoService for AmelisoServer {
         if req.run_id.is_empty() {
             return Err(invalid("run_id is required"));
         }
-        if req.new_slug.is_empty() {
-            return Err(invalid("new_slug is required"));
+        let has_slug = !req.new_slug.is_empty();
+        let has_meta = req.commit_sha.is_some() || req.tester.is_some() || req.environment.is_some();
+        if !has_slug && !has_meta {
+            return Err(invalid(
+                "at least one of new_slug, commit_sha, tester, or environment is required",
+            ));
         }
-        let run = repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
+        // Apply metadata patch first (before rename changes run_id).
+        if has_meta {
+            repo::patch_run_meta(
+                &self.pool,
+                &req.repo_id,
+                &req.run_id,
+                req.commit_sha.as_deref(),
+                req.tester.as_deref(),
+                req.environment.as_deref(),
+            )
             .await
             .map_err(repo_err)?;
+        }
+        let run = if has_slug {
+            repo::update_run(&self.pool, &req.repo_id, &req.run_id, &req.new_slug)
+                .await
+                .map_err(repo_err)?
+        } else {
+            repo::get_run(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?
+                .meta
+        };
         let new_dir_path = format!("runs/{}", run.run_id);
         Ok(Response::new(pb::UpdateRunResponse {
             run: Some(run_meta_to_pb(&run)),
@@ -1809,11 +1841,29 @@ impl AmelisoService for AmelisoServer {
             });
         }
 
-        let last_completed_run = runs
+        let last_completed_run_row = runs
             .iter()
             .filter(|r| r.status == "completed")
-            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)))
-            .map(run_meta_to_pb);
+            .max_by(|a, b| a.date.cmp(&b.date).then_with(|| a.run_id.cmp(&b.run_id)));
+        let last_completed_run = if let Some(row) = last_completed_run_row {
+            let counts: (i64, i64, i64, i64) = sqlx::query_as(
+                "SELECT
+                 COUNT(*) FILTER (WHERE status='passed'),
+                 COUNT(*) FILTER (WHERE status='failed'),
+                 COUNT(*) FILTER (WHERE status='blocked'),
+                 COUNT(*) FILTER (WHERE status='skipped')
+                 FROM results WHERE repo_id=$1 AND run_id=$2",
+            )
+            .bind(&repo_id)
+            .bind(&row.run_id)
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0, 0, 0, 0));
+            let (p, f, b, s) = (counts.0 as i32, counts.1 as i32, counts.2 as i32, counts.3 as i32);
+            Some(run_meta_with_counts_to_pb(row, p, f, b, s, p + f + b + s))
+        } else {
+            None
+        };
 
         Ok(Response::new(pb::GetRepoStatusResponse {
             total_cases,
@@ -5079,6 +5129,7 @@ mod tests {
                 repo_id: "".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
                 new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -5094,6 +5145,7 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "".to_owned(),
                 new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
@@ -5102,18 +5154,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_run_rejects_empty_new_slug() {
+    async fn update_run_rejects_when_no_fields_provided() {
         let s = server();
         let err = s
             .update_run(Request::new(pb::UpdateRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
                 new_slug: "".to_owned(),
+                commit_sha: None,
+                tester: None,
+                environment: None,
             }))
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err.message().contains("new_slug is required"));
+        assert!(err.message().contains("at least one"));
     }
 
     #[tokio::test]
@@ -5124,9 +5179,28 @@ mod tests {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
                 new_slug: "smoke-v2".to_owned(),
+                ..Default::default()
             }))
             .await
             .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_run_metadata_only_passes_validation_and_hits_db() {
+        let s = server();
+        let err = s
+            .update_run(Request::new(pb::UpdateRunRequest {
+                repo_id: "owner/repo".to_owned(),
+                run_id: "2026-01-01-smoke".to_owned(),
+                new_slug: "".to_owned(),
+                commit_sha: Some("abc1234".to_owned()),
+                tester: None,
+                environment: None,
+            }))
+            .await
+            .unwrap_err();
+        // Reaches the DB (not InvalidArgument); fails with NotFound since the run doesn't exist.
         assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 }

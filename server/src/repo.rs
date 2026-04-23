@@ -975,6 +975,58 @@ pub async fn update_run(
     get_run(pool, repo_id, &new_run_id).await.map(|r| r.meta)
 }
 
+/// Patch mutable metadata fields on an existing run (commit_sha, tester, environment).
+/// Only fields wrapped in `Some` are written; `None` means "leave unchanged".
+pub async fn patch_run_meta(
+    pool: &PgPool,
+    repo_id: &str,
+    run_id: &str,
+    commit_sha: Option<&str>,
+    tester: Option<&str>,
+    environment: Option<&str>,
+) -> RResult<RunRow> {
+    validate_slug_path(run_id, "run")?;
+    // Verify the run exists before updating.
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM runs WHERE repo_id=$1 AND run_id=$2)")
+            .bind(repo_id)
+            .bind(run_id)
+            .fetch_one(pool)
+            .await
+            .map_err(map_db)?;
+    if !exists {
+        return Err(RepoError::NotFound(format!("run not found: {run_id}")));
+    }
+    if let Some(sha) = commit_sha {
+        sqlx::query("UPDATE runs SET commit_sha=$3 WHERE repo_id=$1 AND run_id=$2")
+            .bind(repo_id)
+            .bind(run_id)
+            .bind(sha)
+            .execute(pool)
+            .await
+            .map_err(map_db)?;
+    }
+    if let Some(t) = tester {
+        sqlx::query("UPDATE runs SET tester=$3 WHERE repo_id=$1 AND run_id=$2")
+            .bind(repo_id)
+            .bind(run_id)
+            .bind(t)
+            .execute(pool)
+            .await
+            .map_err(map_db)?;
+    }
+    if let Some(e) = environment {
+        sqlx::query("UPDATE runs SET environment=$3 WHERE repo_id=$1 AND run_id=$2")
+            .bind(repo_id)
+            .bind(run_id)
+            .bind(e)
+            .execute(pool)
+            .await
+            .map_err(map_db)?;
+    }
+    get_run(pool, repo_id, run_id).await.map(|r| r.meta)
+}
+
 // ---------------------------------------------------------------------------
 // Pending cases
 // ---------------------------------------------------------------------------

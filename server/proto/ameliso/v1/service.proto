@@ -379,6 +379,11 @@ message UpdateRunRequest {
   // New slug portion only; date prefix (YYYY-MM-DD) is preserved.
   // The resulting new run_id will be "{date_prefix}-{new_slug}".
   string new_slug = 3;
+  // Optional metadata updates — only applied when the field is non-empty.
+  // Use these to patch commit_sha, tester, or environment after creation.
+  optional string commit_sha = 4;
+  optional string tester = 5;
+  optional string environment = 6;
 }
 
 message UpdateRunResponse {

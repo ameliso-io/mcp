@@ -1235,6 +1235,24 @@ export declare type UpdateRunRequest = Message<"ameliso.v1.UpdateRunRequest"> & 
    * @generated from field: string new_slug = 3;
    */
   newSlug: string;
+
+  /**
+   * Optional metadata updates — only applied when the field is non-empty.
+   * Use these to patch commit_sha, tester, or environment after creation.
+   *
+   * @generated from field: optional string commit_sha = 4;
+   */
+  commitSha?: string;
+
+  /**
+   * @generated from field: optional string tester = 5;
+   */
+  tester?: string;
+
+  /**
+   * @generated from field: optional string environment = 6;
+   */
+  environment?: string;
 };
 
 /**
