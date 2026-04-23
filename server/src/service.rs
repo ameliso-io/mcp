@@ -580,6 +580,81 @@ impl AmelisoService for AmelisoServer {
         }))
     }
 
+    async fn bulk_update_cases(
+        &self,
+        request: Request<pb::BulkUpdateCasesRequest>,
+    ) -> Result<Response<pb::BulkUpdateCasesResponse>, Status> {
+        let req = request.into_inner();
+        if req.repo_id.is_empty() {
+            return Err(invalid("repo_id is required"));
+        }
+        if req.cases.is_empty() {
+            return Err(invalid("cases must not be empty"));
+        }
+        for entry in &req.cases {
+            if entry.case_path.is_empty() {
+                return Err(invalid("each entry must have a case_path"));
+            }
+            check_max_len("case_path", &entry.case_path, 200)?;
+            check_max_len("title", &entry.title, 255)?;
+            check_max_len("description", &entry.description, 1000)?;
+            check_max_len("body", &entry.body, 100_000)?;
+        }
+        let mut updated: Vec<pb::Case> = Vec::new();
+        for entry in &req.cases {
+            let priority = priority_from_i32(entry.priority);
+            let title = if entry.title.is_empty() {
+                None
+            } else {
+                Some(entry.title.as_str())
+            };
+            let description = if entry.description.is_empty() {
+                None
+            } else {
+                Some(entry.description.as_str())
+            };
+            let tags = if entry.tags.is_empty() {
+                None
+            } else {
+                let cleaned = clean_tags(entry.tags.clone());
+                if cleaned.is_empty() { None } else { Some(cleaned) }
+            };
+            let body = if entry.body.is_empty() {
+                None
+            } else {
+                Some(entry.body.as_str())
+            };
+            let case = repo::update_case(
+                &self.pool,
+                &req.repo_id,
+                &entry.case_path,
+                title,
+                description,
+                tags,
+                priority,
+                body,
+                None,
+            )
+            .await
+            .map_err(repo_err)?;
+            {
+                let pool = self.pool.clone();
+                let repo_id = req.repo_id.clone();
+                let case_clone = case.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = crate::sync::push_case(&pool, &repo_id, &case_clone).await {
+                        eprintln!(
+                            "warning: github sync failed for {}/{}: {e}",
+                            repo_id, case_clone.case_path
+                        );
+                    }
+                });
+            }
+            updated.push(case_to_pb(&case));
+        }
+        Ok(Response::new(pb::BulkUpdateCasesResponse { cases: updated }))
+    }
+
     async fn delete_case(
         &self,
         request: Request<pb::DeleteCaseRequest>,
@@ -2137,6 +2212,90 @@ mod tests {
                         ..Default::default()
                     },
                 ],
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_empty_repo_id() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "auth/login".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("repo_id is required"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_empty_cases_list() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("cases"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_entry_with_empty_case_path() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "".to_owned(),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("case_path"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_rejects_body_too_long() {
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "auth/login".to_owned(),
+                    body: "x".repeat(100_001),
+                    ..Default::default()
+                }],
+            }))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+        assert!(err.message().contains("body"));
+    }
+
+    #[tokio::test]
+    async fn bulk_update_cases_valid_passes_validation_to_db() {
+        // Validation passes → hits DB → not InvalidArgument.
+        let s = server();
+        let err = s
+            .bulk_update_cases(Request::new(pb::BulkUpdateCasesRequest {
+                repo_id: "owner/repo".to_owned(),
+                cases: vec![pb::BulkUpdateEntry {
+                    case_path: "auth/login".to_owned(),
+                    title: "Login flow".to_owned(),
+                    ..Default::default()
+                }],
             }))
             .await
             .unwrap_err();

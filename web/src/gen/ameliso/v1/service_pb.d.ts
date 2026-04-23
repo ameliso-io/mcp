@@ -321,6 +321,84 @@ export declare type UpdateCaseResponse = Message<"ameliso.v1.UpdateCaseResponse"
 export declare const UpdateCaseResponseSchema: GenMessage<UpdateCaseResponse>;
 
 /**
+ * @generated from message ameliso.v1.BulkUpdateEntry
+ */
+export declare type BulkUpdateEntry = Message<"ameliso.v1.BulkUpdateEntry"> & {
+  /**
+   * @generated from field: string case_path = 1;
+   */
+  casePath: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: repeated string tags = 4;
+   */
+  tags: string[];
+
+  /**
+   * @generated from field: ameliso.v1.Priority priority = 5;
+   */
+  priority: Priority;
+
+  /**
+   * @generated from field: string body = 6;
+   */
+  body: string;
+};
+
+/**
+ * Describes the message ameliso.v1.BulkUpdateEntry.
+ * Use `create(BulkUpdateEntrySchema)` to create a new message.
+ */
+export declare const BulkUpdateEntrySchema: GenMessage<BulkUpdateEntry>;
+
+/**
+ * @generated from message ameliso.v1.BulkUpdateCasesRequest
+ */
+export declare type BulkUpdateCasesRequest = Message<"ameliso.v1.BulkUpdateCasesRequest"> & {
+  /**
+   * @generated from field: string repo_id = 1;
+   */
+  repoId: string;
+
+  /**
+   * @generated from field: repeated ameliso.v1.BulkUpdateEntry cases = 2;
+   */
+  cases: BulkUpdateEntry[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkUpdateCasesRequest.
+ * Use `create(BulkUpdateCasesRequestSchema)` to create a new message.
+ */
+export declare const BulkUpdateCasesRequestSchema: GenMessage<BulkUpdateCasesRequest>;
+
+/**
+ * @generated from message ameliso.v1.BulkUpdateCasesResponse
+ */
+export declare type BulkUpdateCasesResponse = Message<"ameliso.v1.BulkUpdateCasesResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Case cases = 1;
+   */
+  cases: Case[];
+};
+
+/**
+ * Describes the message ameliso.v1.BulkUpdateCasesResponse.
+ * Use `create(BulkUpdateCasesResponseSchema)` to create a new message.
+ */
+export declare const BulkUpdateCasesResponseSchema: GenMessage<BulkUpdateCasesResponse>;
+
+/**
  * @generated from message ameliso.v1.DeleteCaseRequest
  */
 export declare type DeleteCaseRequest = Message<"ameliso.v1.DeleteCaseRequest"> & {
@@ -1605,6 +1683,14 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateCaseRequestSchema;
     output: typeof UpdateCaseResponseSchema;
+  },
+  /**
+   * @generated from rpc ameliso.v1.AmelisoService.BulkUpdateCases
+   */
+  bulkUpdateCases: {
+    methodKind: "unary";
+    input: typeof BulkUpdateCasesRequestSchema;
+    output: typeof BulkUpdateCasesResponseSchema;
   },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
