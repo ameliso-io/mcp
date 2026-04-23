@@ -50,7 +50,7 @@ db-down:
 
 check-file-size:
 	@LIMIT=1500; FAILED=0; \
-	for file in $$(find . -name '*.rs' -not -path './target/*' -not -path './.claude/*'); do \
+	for file in $$(find . \( -name '*.rs' -o -name '*.ts' -o -name '*.tsx' \) -not -path './target/*' -not -path './.claude/*' -not -path '*/node_modules/*' -not -path '*/gen/*' -not -name '*.test.ts' -not -name '*.test.tsx'); do \
 		lines=$$(wc -l < "$$file"); \
 		if [ "$$lines" -gt "$$LIMIT" ]; then \
 			echo "ERROR: $$file has $$lines lines (limit: $$LIMIT)"; \
