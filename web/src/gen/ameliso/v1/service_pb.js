@@ -435,16 +435,15 @@ export const RemoveRepositoryResponseSchema = /*@__PURE__*/
  * AmelisoService manages test cases, suites, and runs stored in PostgreSQL.
  * All operations accept a repo_id identifying the connected GitHub repository (full_name, e.g. "owner/repo").
  *
- * Recommended agent workflow:
- *   1. GetAffectedCases(since_ref=<last_run_commit_sha>) — get cases touched since last run,
- *      including body and latest_status; sort by failed/never first.
- *   2. CreateRun(commit_sha=<HEAD>) — start a run, receive run_id.
- *   3. GetPendingCases(run_id) — use response.pending for case body + latest_status.
- *   4. RecordResult per case — response.pending_count tells you how many remain.
- *   5. FinalizeRun — mark run complete/aborted.
- *   6. Loop from step 1 with new commit_sha.
- *
- *   For a live dashboard snapshot (active run SHAs, coverage counts, etc.) call GetRepoStatus.
+ * Recommended agent workflow (minimum 4 RPCs):
+ *   0. GetRepoStatus — snapshot: total/coverage counts, last_completed_run.commit_sha for step 1.
+ *   1. GetAffectedCases(since_ref=<last_completed_run.commit_sha>) — cases affected since last run,
+ *      with body and latest_status included; sorted failed/never first then by priority.
+ *   2. CreateRun(commit_sha=<HEAD>) — start a run; response.pending already contains pending cases
+ *      with body + latest_status, so GetPendingCases is NOT needed after CreateRun.
+ *   3. RecordResult (or BulkRecordResults) per case — response.pending_count tells you how many remain.
+ *   4. FinalizeRun(status=UNSPECIFIED) — auto-detects: ABORTED if any FAILED result, else COMPLETED.
+ *   5. Loop from step 0 with the new commit_sha recorded in the run.
  *
  * @generated from service ameliso.v1.AmelisoService
  */

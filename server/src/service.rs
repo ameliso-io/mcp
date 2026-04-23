@@ -205,6 +205,17 @@ fn priority_rank(p: &str) -> u8 {
     }
 }
 
+fn result_status_rank(s: &str) -> u8 {
+    match s {
+        "failed" => 0,
+        "never" => 1,
+        "blocked" => 2,
+        "skipped" => 3,
+        "passed" => 4,
+        _ => 5,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
@@ -985,16 +996,15 @@ impl AmelisoService for AmelisoServer {
             .unwrap_or_default();
         // Sort: failed/never first, then by case priority (high → low)
         pending.sort_by(|a, b| {
-            let status_ord = |path: &str| {
-                match statuses.get(path).map(String::as_str).unwrap_or("never") {
+            let status_ord =
+                |path: &str| match statuses.get(path).map(String::as_str).unwrap_or("never") {
                     "failed" => 0i32,
                     "never" => 1,
                     "blocked" => 2,
                     "skipped" => 3,
                     "passed" => 4,
                     _ => 5,
-                }
-            };
+                };
             status_ord(&a.case_path)
                 .cmp(&status_ord(&b.case_path))
                 .then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
@@ -1133,10 +1143,16 @@ impl AmelisoService for AmelisoServer {
                 }
             }
             let mut affected: Vec<String> = affected_set.into_iter().collect();
-            affected.sort_by_key(|p| {
-                case_map
-                    .get(p.as_str())
-                    .map_or(3, |c| priority_rank(&c.priority))
+            affected.sort_by(|a, b| {
+                let sa = result_status_rank(
+                    status_map.get(a.as_str()).map(String::as_str).unwrap_or("never"),
+                );
+                let sb = result_status_rank(
+                    status_map.get(b.as_str()).map(String::as_str).unwrap_or("never"),
+                );
+                let pa = case_map.get(a.as_str()).map_or(3, |c| priority_rank(&c.priority));
+                let pb_rank = case_map.get(b.as_str()).map_or(3, |c| priority_rank(&c.priority));
+                sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
             });
             let reason = if reasons.is_empty() {
                 "no relevant changes in provided file list".to_owned()
@@ -1184,7 +1200,7 @@ impl AmelisoService for AmelisoServer {
 
         if req.since_ref.is_empty() {
             let pri_filter = priority_from_i32(req.priority_filter);
-            let affected = cases
+            let mut affected: Vec<&repo::LoadedCase> = cases
                 .iter()
                 .filter(|c| pri_filter.is_none_or(|p| c.priority.eq_ignore_ascii_case(p)))
                 .filter(|c| {
@@ -1194,6 +1210,24 @@ impl AmelisoService for AmelisoServer {
                             .iter()
                             .all(|t| c.tags.iter().any(|ct| ct.eq_ignore_ascii_case(t)))
                 })
+                .collect();
+            affected.sort_by(|a, b| {
+                let sa = result_status_rank(
+                    status_map
+                        .get(a.case_path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                );
+                let sb = result_status_rank(
+                    status_map
+                        .get(b.case_path.as_str())
+                        .map(String::as_str)
+                        .unwrap_or("never"),
+                );
+                sa.cmp(&sb).then_with(|| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)))
+            });
+            let pb_cases = affected
+                .iter()
                 .map(|c| pb::AffectedCase {
                     case: Some(case_to_pb(c)),
                     reason: "no since_ref provided; all cases flagged".to_owned(),
@@ -1207,7 +1241,7 @@ impl AmelisoService for AmelisoServer {
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
-                cases: affected,
+                cases: pb_cases,
                 reason: "no since_ref provided; all cases flagged".to_owned(),
             }));
         }
@@ -1287,10 +1321,16 @@ impl AmelisoService for AmelisoServer {
             reasons.join("; ")
         };
 
-        affected.sort_by_key(|p| {
-            case_map
-                .get(p.as_str())
-                .map_or(3, |c| priority_rank(&c.priority))
+        affected.sort_by(|a, b| {
+            let sa = result_status_rank(
+                status_map.get(a.as_str()).map(String::as_str).unwrap_or("never"),
+            );
+            let sb = result_status_rank(
+                status_map.get(b.as_str()).map(String::as_str).unwrap_or("never"),
+            );
+            let pa = case_map.get(a.as_str()).map_or(3, |c| priority_rank(&c.priority));
+            let pb_rank = case_map.get(b.as_str()).map_or(3, |c| priority_rank(&c.priority));
+            sa.cmp(&sb).then_with(|| pa.cmp(&pb_rank))
         });
 
         if let Some(pri) = priority_from_i32(req.priority_filter) {
@@ -2985,20 +3025,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn finalize_run_rejects_unspecified_status() {
+    async fn finalize_run_rejects_in_progress_status() {
+        // IN_PROGRESS is always rejected — only completed/aborted/unspecified are valid.
         let s = server();
         let err = s
             .finalize_run(Request::new(pb::FinalizeRunRequest {
                 repo_id: "owner/repo".to_owned(),
                 run_id: "2026-01-01-smoke".to_owned(),
-                status: pb::RunStatus::Unspecified as i32,
+                status: pb::RunStatus::InProgress as i32,
             }))
             .await
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
-        assert!(err
-            .message()
-            .contains("status must be completed or aborted"));
+        assert!(err.message().contains("status must be completed or aborted"));
     }
 
     #[tokio::test]
@@ -3777,6 +3816,27 @@ mod tests {
         assert_eq!(priority_rank("medium"), 1);
         assert_eq!(priority_rank("low"), 2);
         assert_eq!(priority_rank("bogus"), 3);
+    }
+
+    // ── result_status_rank ────────────────────────────────────────────────────
+
+    #[test]
+    fn result_status_rank_ordering() {
+        assert!(result_status_rank("failed") < result_status_rank("never"));
+        assert!(result_status_rank("never") < result_status_rank("blocked"));
+        assert!(result_status_rank("blocked") < result_status_rank("skipped"));
+        assert!(result_status_rank("skipped") < result_status_rank("passed"));
+        assert!(result_status_rank("passed") < result_status_rank("unknown"));
+    }
+
+    #[test]
+    fn result_status_rank_known_values() {
+        assert_eq!(result_status_rank("failed"), 0);
+        assert_eq!(result_status_rank("never"), 1);
+        assert_eq!(result_status_rank("blocked"), 2);
+        assert_eq!(result_status_rank("skipped"), 3);
+        assert_eq!(result_status_rank("passed"), 4);
+        assert_eq!(result_status_rank("bogus"), 5);
     }
 
     // ── conversion helpers ────────────────────────────────────────────────────
