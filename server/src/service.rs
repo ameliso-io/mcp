@@ -3084,6 +3084,7 @@ mod tests {
                 environment: "staging".to_owned(),
                 suite: "smoke".to_owned(),
                 cases: vec![],
+                ..Default::default()
             }))
             .await
             .unwrap_err();
