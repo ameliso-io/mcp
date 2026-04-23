@@ -63,39 +63,6 @@
   box-sizing: border-box;
 }
 
-.errorCard {
-  composes: card;
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger-border);
-  color: var(--color-danger-text);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.errorActions {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.errorDismiss {
-  background: none;
-  border: none;
-  color: var(--color-danger-text);
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 0 0 12px;
-  flex-shrink: 0;
-}
-
-.errorRetry {
-  composes: errorDismiss;
-  font-size: 13px;
-  text-decoration: underline;
-}
-
 .loadingMsg {
   text-align: center;
   color: var(--color-muted);

@@ -11,6 +11,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import styles from "./CasesTab.module.css";
+import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Case } from "@/gen/ameliso/v1/types_pb";
@@ -560,21 +561,7 @@ export default function CasesTab({
         )}
       </div>
 
-      {error && (
-        <div className={styles.errorCard} role="alert">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-            }}
-            className={styles.errorDismiss}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
 
       {loading && (
         <div className={styles.loadingMsg} role="status">

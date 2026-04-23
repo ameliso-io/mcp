@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { useState, useEffect, useCallback, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import styles from "./SuitesTab.module.css";
+import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
@@ -298,21 +299,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         </div>
       )}
 
-      {error && (
-        <div className={styles.errorCard} role="alert">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-            }}
-            className={styles.errorDismiss}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
 
       {loading && suites.length === 0 && (
         <div className={styles.loadingMsg} role="status">

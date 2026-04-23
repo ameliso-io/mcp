@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } f
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import styles from "./RunsTab.module.css";
+import InlineError from "@/components/InlineError";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
@@ -556,21 +557,7 @@ export default function RunsTab({
         </div>
       )}
 
-      {error && (
-        <div className={styles.errorCard} role="alert">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-            }}
-            className={styles.errorDismiss}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
 
       {loading && runs.length === 0 && (
         <div className={styles.loadingMsg} role="status">
