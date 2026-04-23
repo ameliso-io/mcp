@@ -4,6 +4,8 @@
 [submodule "web"]
 	path = web
 	url = https://github.com/ameliso-io/web.git
+	branch = main
 [submodule "server"]
 	path = server
 	url = https://github.com/ameliso-io/server.git
+	branch = main

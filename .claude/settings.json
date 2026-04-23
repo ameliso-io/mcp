@@ -50,7 +50,9 @@
       "mcp__playwright__browser_take_screenshot",
       "Bash(docker compose *)",
       "Bash(docker exec *)",
-      "Bash(jobs -l)"
+      "Bash(jobs -l)",
+      "Bash(docker port *)",
+      "Bash(nc *)"
     ]
   }
 }
