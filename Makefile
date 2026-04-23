@@ -8,34 +8,36 @@ dev: install build
 	wait
 
 install:
+	git submodule update --init --recursive
 	pnpm install
+	cd web && pnpm install
 	cargo fetch
 
 build:
 	cargo build --release
-	pnpm --filter ameliso-web build
+	cd web && pnpm build
 
 test:
 	cargo test
-	pnpm --filter ameliso-web test
-	pnpm --filter ameliso-web test:typecheck
+	cd web && pnpm test
+	cd web && pnpm test:typecheck
 
 coverage-check:
 	cargo llvm-cov -p ameliso-server --ignore-filename-regex main.rs --fail-under-lines 85
-	pnpm --filter ameliso-web test:coverage
+	cd web && pnpm test:coverage
 
 fmt:
 	cargo fmt --all
-	pnpm --filter ameliso-web fmt
+	cd web && pnpm fmt
 
 fmt-check:
 	cargo fmt --all -- --check
-	pnpm --filter ameliso-web fmt:check
+	cd web && pnpm fmt:check
 
 lint:
 	cargo clippy --all -- -D warnings
 	cd server && buf lint
-	pnpm --filter ameliso-web lint
+	cd web && pnpm lint
 
 spell:
 	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile

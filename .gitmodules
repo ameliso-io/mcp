@@ -4,3 +4,6 @@
 [submodule "server/proto"]
 	path = server/proto
 	url = https://github.com/ameliso-io/ameliso-proto.git
+[submodule "web"]
+	path = web
+	url = https://github.com/ameliso-io/web.git

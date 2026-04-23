@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "prepare": "husky",
-    "build": "pnpm --filter ameliso-web build",
-    "dev": "concurrently --names \"grpc,web\" --prefix-colors \"blue,green\" \"cargo run -p ameliso-server\" \"pnpm --filter ameliso-web dev\""
+    "build": "cd web && pnpm build",
+    "dev": "concurrently --names \"grpc,web\" --prefix-colors \"blue,green\" \"cargo run -p ameliso-server\" \"cd web && pnpm dev\""
   },
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
