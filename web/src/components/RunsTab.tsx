@@ -75,6 +75,8 @@ export default function RunsTab({
   onResultStatusFilterChange,
 }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
+  const deferredRuns = useDeferredValue(runs);
+  const isRunListStale = runs !== deferredRuns;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<RunStatus>(
@@ -579,11 +581,15 @@ export default function RunsTab({
       )}
 
       <ul
-        className={loading && runs.length > 0 ? `${styles.list} ${styles.listStale}` : styles.list}
-        aria-busy={loading}
+        className={
+          (loading && runs.length > 0) || isRunListStale
+            ? `${styles.list} ${styles.listStale}`
+            : styles.list
+        }
+        aria-busy={loading || isRunListStale}
         role="list"
       >
-        {runs.map((run) => (
+        {deferredRuns.map((run) => (
           <li key={run.id}>
             <div className={selectedRunId === run.id ? styles.runCardSelected : styles.runCard}>
               <div className={styles.runRow}>
