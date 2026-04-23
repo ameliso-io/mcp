@@ -790,8 +790,14 @@ impl AmelisoService for AmelisoServer {
         )
         .await
         .map_err(repo_err)?;
+        let (pending_cases, total_in_scope) =
+            repo::get_pending_cases(&self.pool, &req.repo_id, &req.run_id)
+                .await
+                .map_err(repo_err)?;
         Ok(Response::new(pb::RecordResultResponse {
             result: Some(result_to_pb(&result)),
+            pending_count: i32::try_from(pending_cases.len()).unwrap_or(i32::MAX),
+            total_in_scope: i32::try_from(total_in_scope).unwrap_or(i32::MAX),
         }))
     }
 
@@ -938,7 +944,10 @@ impl AmelisoService for AmelisoServer {
             .iter()
             .map(|c| pb::CoverageEntry {
                 latest_status: result_status_to_i32(
-                    statuses.get(&c.case_path).map(String::as_str).unwrap_or("never"),
+                    statuses
+                        .get(&c.case_path)
+                        .map(String::as_str)
+                        .unwrap_or("never"),
                 ),
                 last_run_id: String::new(),
                 last_run_date: String::new(),

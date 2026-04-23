@@ -240,6 +240,8 @@ message RecordResultRequest {
 
 message RecordResultResponse {
   CaseResult result = 1;
+  int32 pending_count = 2;
+  int32 total_in_scope = 3;
 }
 
 message BulkResultEntry {

@@ -777,6 +777,16 @@ export declare type RecordResultResponse = Message<"ameliso.v1.RecordResultRespo
    * @generated from field: ameliso.v1.CaseResult result = 1;
    */
   result?: CaseResult;
+
+  /**
+   * @generated from field: int32 pending_count = 2;
+   */
+  pendingCount: number;
+
+  /**
+   * @generated from field: int32 total_in_scope = 3;
+   */
+  totalInScope: number;
 };
 
 /**
