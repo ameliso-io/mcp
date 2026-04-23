@@ -1497,4 +1497,33 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.getByText("rename failed")).toBeInTheDocument());
   });
+
+  it("auto-expands run matching initialSelectedRunId when runs load", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    render(<RunsTab repoId="owner/repo" initialSelectedRunId={mockRun.id} />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /^In Progress run/ })
+      ).toHaveAttribute("aria-expanded", "true")
+    );
+  });
+
+  it("calls onSelectedRunIdChange with run id when run is selected", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    const onSelectedRunIdChange = vi.fn();
+    render(<RunsTab repoId="owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
+    expect(onSelectedRunIdChange).toHaveBeenCalledWith(mockRun.id);
+  });
+
+  it("calls onSelectedRunIdChange with null when run is deselected", async () => {
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
+    const onSelectedRunIdChange = vi.fn();
+    render(<RunsTab repoId="owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
+    expect(onSelectedRunIdChange).toHaveBeenLastCalledWith(null);
+  });
 });

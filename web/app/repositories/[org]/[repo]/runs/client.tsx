@@ -28,6 +28,7 @@ function RunsInner() {
   const initialSuite = searchParams.get("suite") ?? undefined;
   const initialStatusFilter =
     STATUS_SLUG[searchParams.get("status") ?? ""] ?? RunStatus.UNSPECIFIED;
+  const initialSelectedRunId = searchParams.get("run") ?? undefined;
 
   const handleInitialSuiteConsumed = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -55,6 +56,22 @@ function RunsInner() {
     [router, searchParams, basePath]
   );
 
+  const handleSelectedRunIdChange = useCallback(
+    (id: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (id) {
+        params.set("run", id);
+      } else {
+        params.delete("run");
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace((qs ? `${basePath}/runs?${qs}` : `${basePath}/runs`) as Route);
+      });
+    },
+    [router, searchParams, basePath]
+  );
+
   return (
     <RunsTab
       repoId={repoId}
@@ -62,6 +79,8 @@ function RunsInner() {
       onInitialSuiteConsumed={handleInitialSuiteConsumed}
       initialStatusFilter={initialStatusFilter}
       onStatusFilterChange={handleStatusFilterChange}
+      initialSelectedRunId={initialSelectedRunId}
+      onSelectedRunIdChange={handleSelectedRunIdChange}
     />
   );
 }

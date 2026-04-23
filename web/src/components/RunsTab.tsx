@@ -18,6 +18,8 @@ interface Props {
   onInitialSuiteConsumed?: (() => void) | undefined;
   initialStatusFilter?: RunStatus | undefined;
   onStatusFilterChange?: ((s: RunStatus) => void) | undefined;
+  initialSelectedRunId?: string | undefined;
+  onSelectedRunIdChange?: ((id: string | null) => void) | undefined;
 }
 
 function statusLabel(s: ResultStatus): string {
@@ -54,6 +56,8 @@ export default function RunsTab({
   onInitialSuiteConsumed,
   initialStatusFilter,
   onStatusFilterChange,
+  initialSelectedRunId,
+  onSelectedRunIdChange,
 }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,7 +78,7 @@ export default function RunsTab({
   const [creating, setCreating] = useState(false);
 
   // Selected run for recording results or viewing results
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(initialSelectedRunId ?? null);
   const [pendingCases, setPendingCases] = useState<Case[]>([]);
   const [totalInScope, setTotalInScope] = useState(0);
   const [loadingPending, setLoadingPending] = useState(false);
@@ -112,6 +116,15 @@ export default function RunsTab({
     setShowCreate(true);
     onInitialSuiteConsumed?.();
   }, [initialSuite, onInitialSuiteConsumed]);
+
+  const consumedSelectedRef = useRef(false);
+  useEffect(() => {
+    if (!initialSelectedRunId || consumedSelectedRef.current || runs.length === 0) return;
+    consumedSelectedRef.current = true;
+    const run = runs.find((r) => r.id === initialSelectedRunId);
+    if (run) void selectRun(run.id, run.status);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runs, initialSelectedRunId]);
 
   // Auto-refresh pending cases every 30s when viewing an in-progress run
   const selectedRun = runs.find((r) => r.id === selectedRunId);
@@ -198,6 +211,7 @@ export default function RunsTab({
   async function selectRun(runId: string, status: RunStatus) {
     if (selectedRunId === runId) {
       setSelectedRunId(null);
+      onSelectedRunIdChange?.(null);
       setPendingCases([]);
       setRecordedResults([]);
       setResultStatusFilter(null);
@@ -205,6 +219,7 @@ export default function RunsTab({
       return;
     }
     setSelectedRunId(runId);
+    onSelectedRunIdChange?.(runId);
     setLoadingPending(true);
     setPendingCases([]);
     setRecordedResults([]);
