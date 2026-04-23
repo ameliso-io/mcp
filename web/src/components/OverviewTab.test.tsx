@@ -779,6 +779,38 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(client.getCoverageReport).toHaveBeenCalledTimes(2));
   });
 
+  it("passes changedFiles when textarea is filled, ignoring sinceRef", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    const textarea = screen.getByRole("textbox", { name: /Paste git diff --name-only/ });
+    await userEvent.type(textarea, "src/auth.ts\nsrc/login.ts");
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(client.getAffectedCases).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changedFiles: ["src/auth.ts", "src/login.ts"],
+          sinceRef: "",
+        })
+      )
+    );
+  });
+
+  it("passes empty changedFiles and uses sinceRef when textarea is empty", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("Check Diff"));
+    const sinceInput = screen.getByRole("textbox", { name: /Git ref to compare from/ });
+    await userEvent.type(sinceInput, "HEAD~1");
+    await userEvent.click(screen.getByText("Check Diff"));
+    await waitFor(() =>
+      expect(client.getAffectedCases).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changedFiles: [],
+          sinceRef: "HEAD~1",
+        })
+      )
+    );
+  });
+
   it("resets coverage filter to All statuses when repoId changes", async () => {
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />

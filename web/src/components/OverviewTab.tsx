@@ -63,6 +63,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
 
   const [sinceRef, setSinceRef] = useState("");
+  const [changedFilesText, setChangedFilesText] = useState("");
   const [affected, setAffected] = useState<AffectedCase[] | null>(null);
   const [affectedLoading, setAffectedLoading] = useState(false);
   const [affectedError, setAffectedError] = useState<string | null>(null);
@@ -134,7 +135,15 @@ export default function OverviewTab({ repoId, basePath }: Props) {
     setAffectedLoading(true);
     setAffectedError(null);
     try {
-      const res = await client.getAffectedCases({ repoId, sinceRef });
+      const parsedChangedFiles = changedFilesText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const res = await client.getAffectedCases({
+        repoId,
+        sinceRef: parsedChangedFiles.length ? "" : sinceRef,
+        changedFiles: parsedChangedFiles,
+      });
       setAffected(res.cases);
       const n = res.cases.length;
       announce(n === 0 ? "No cases affected" : `${n} case${n !== 1 ? "s" : ""} affected`);
@@ -339,19 +348,31 @@ export default function OverviewTab({ repoId, basePath }: Props) {
             onSubmit={handleAffected}
             className={styles.affectedForm}
           >
-            <input
-              type="text"
-              aria-label="Git ref to compare from (leave empty to use last run commit)"
-              value={sinceRef}
+            <div className={styles.affectedFormRow}>
+              <input
+                type="text"
+                aria-label="Git ref to compare from (leave empty to use last run commit)"
+                value={sinceRef}
+                onChange={(e) => {
+                  setSinceRef(e.target.value);
+                }}
+                placeholder="Since ref (default: last run commit)"
+                className={styles.repoInput}
+              />
+              <button type="submit" disabled={affectedLoading} className={styles.btn}>
+                {affectedLoading ? "Checking…" : "Check Diff"}
+              </button>
+            </div>
+            <textarea
+              aria-label="Paste git diff --name-only output (overrides ref above)"
+              value={changedFilesText}
               onChange={(e) => {
-                setSinceRef(e.target.value);
+                setChangedFilesText(e.target.value);
               }}
-              placeholder="Since ref (default: last run commit)"
-              className={styles.repoInput}
+              rows={3}
+              placeholder={"Or paste git diff --name-only output here…"}
+              className={styles.changedFilesInput}
             />
-            <button type="submit" disabled={affectedLoading} className={styles.btn}>
-              {affectedLoading ? "Checking…" : "Check Diff"}
-            </button>
           </form>
           {affectedError && (
             <div className={styles.inlineError} role="alert">
