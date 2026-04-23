@@ -11,7 +11,11 @@ vi.mock("@/client");
 
 const mockRun = makeRunMeta({ tester: "alice", environment: "staging" });
 
-const mockCase = makeCase({ createdAt: "2026-01-01", updatedAt: "2026-01-01" });
+const mockCase = makeCase({
+  createdAt: "2026-01-01",
+  updatedAt: "2026-01-01",
+  body: "## Steps\n\n1. Login",
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -25,10 +29,6 @@ beforeEach(() => {
     totalInScope: 1,
   } as never);
   vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
-  vi.mocked(client.getCase).mockResolvedValue({
-    case: mockCase,
-    body: "## Steps\n\n1. Login",
-  } as never);
   vi.mocked(client.recordResult).mockResolvedValue({ result: undefined } as never);
   vi.mocked(client.finalizeRun).mockResolvedValue({
     run: { ...mockRun, status: RunStatus.COMPLETED },
@@ -212,12 +212,8 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Record"));
     await userEvent.click(screen.getByText("Record"));
-    await waitFor(() =>
-      expect(client.getCase).toHaveBeenCalledWith(
-        expect.objectContaining({ casePath: "auth/login" })
-      )
-    );
     await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
+    expect(client.getCase).not.toHaveBeenCalled();
   });
 
   it("calls recordResult when Save Result submitted", async () => {
@@ -602,15 +598,15 @@ describe("RunsTab", () => {
     expect(screen.getByText("Complete Run")).toBeInTheDocument();
   });
 
-  it("opens record form even when getCase fails to fetch body", async () => {
+  it("opens record form immediately without any async fetch", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.getCase).mockRejectedValue(new Error("body unavailable"));
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Record"));
     await userEvent.click(screen.getByText("Record"));
-    await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
+    expect(screen.getByText("Save Result")).toBeInTheDocument();
+    expect(client.getCase).not.toHaveBeenCalled();
   });
 
   it("handles getRun response with no results field", async () => {
@@ -627,15 +623,20 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.getByText("No results recorded.")).toBeInTheDocument());
   });
 
-  it("shows no case body in record form when body is empty string", async () => {
+  it("shows no case body in record form when case body is empty string", async () => {
+    const noBodyCase = makeCase({ path: "auth/login", title: "User Login", body: "" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: "" } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [noBodyCase],
+      totalInScope: 1,
+    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Record"));
     await userEvent.click(screen.getByText("Record"));
-    await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
+    expect(screen.getByText("Save Result")).toBeInTheDocument();
+    expect(client.getCase).not.toHaveBeenCalled();
   });
 
   it("does not call bulkRecordResults when bulk pass inline confirm cancelled", async () => {
@@ -1226,22 +1227,15 @@ describe("RunsTab", () => {
     await waitFor(() => expect(screen.queryAllByText("Loading…").length).toBe(0));
   });
 
-  it('shows "Loading steps…" while case body is loading in record form', async () => {
+  it("shows case body immediately from pendingCases on record open", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    let resolve: (v: unknown) => void;
-    vi.mocked(client.getCase).mockReturnValue(
-      new Promise((res) => {
-        resolve = res;
-      }) as never
-    );
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Record"));
     await userEvent.click(screen.getByText("Record"));
-    await waitFor(() => expect(screen.getByText("Loading steps…")).toBeInTheDocument());
-    resolve!({ case: mockCase, body: "## Steps" });
-    await waitFor(() => expect(screen.queryByText("Loading steps…")).not.toBeInTheDocument());
+    expect(screen.queryByText("Loading steps…")).not.toBeInTheDocument();
+    expect(client.getCase).not.toHaveBeenCalled();
   });
 
   it("shows progress bar text when totalInScope > 0 and some cases pending", async () => {
@@ -1331,24 +1325,23 @@ describe("RunsTab", () => {
   });
 
   it("hides body section in record form when case has no body", async () => {
+    const noBodyCase = makeCase({ path: "auth/login", title: "User Login", body: "" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.getCase).mockResolvedValue({ case: mockCase, body: "" } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({
+      cases: [noBodyCase],
+      totalInScope: 1,
+    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("Record"));
     await userEvent.click(screen.getByText("Record"));
-    await waitFor(() => expect(screen.getByText("Save Result")).toBeInTheDocument());
-    // Body section is hidden when body is empty; "Loading steps…" never appears
+    expect(screen.getByText("Save Result")).toBeInTheDocument();
     expect(screen.queryByText("Loading steps…")).not.toBeInTheDocument();
   });
 
-  it("renders case body markdown when record form opened and body is loaded", async () => {
+  it("renders case body markdown when record form opened", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.getCase).mockResolvedValue({
-      case: mockCase,
-      body: "## Steps\n\n1. Login",
-    } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
@@ -1356,6 +1349,7 @@ describe("RunsTab", () => {
     await userEvent.click(screen.getByText("Record"));
     // MarkdownBody renders "## Steps" as an <h2> — wait for the heading to appear
     await waitFor(() => expect(screen.getByRole("heading", { name: "Steps" })).toBeInTheDocument());
+    expect(client.getCase).not.toHaveBeenCalled();
   });
 
   it("does not show notes span in result row when notes is empty", async () => {

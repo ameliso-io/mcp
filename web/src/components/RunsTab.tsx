@@ -86,7 +86,6 @@ export default function RunsTab({
   const [recordNotes, setRecordNotes] = useState("");
   const [recording, setRecording] = useState(false);
   const [caseBody, setCaseBody] = useState<string | null>(null);
-  const [caseBodyLoading, setCaseBodyLoading] = useState(false);
   const [bulkPassing, setBulkPassing] = useState(false);
 
   const [confirmingDeleteRun, setConfirmingDeleteRun] = useState<string | null>(null);
@@ -268,7 +267,7 @@ export default function RunsTab({
     }
   }
 
-  async function openRecord(casePath: string) {
+  function openRecord(casePath: string) {
     if (recordingCase === casePath) {
       setRecordingCase(null);
       setCaseBody(null);
@@ -278,16 +277,7 @@ export default function RunsTab({
     setRecordingCase(casePath);
     setRecordNotes("");
     setRecordStatus(ResultStatus.PASSED);
-    setCaseBody(null);
-    setCaseBodyLoading(true);
-    try {
-      const res = await client.getCase({ repoId, casePath });
-      setCaseBody(res.body || null);
-    } catch {
-      // body unavailable; proceed without it
-    } finally {
-      setCaseBodyLoading(false);
-    }
+    setCaseBody(pendingCases.find((c) => c.path === casePath)?.body ?? null);
   }
 
   async function handleFinalize(runId: string, status: RunStatus) {
@@ -994,7 +984,7 @@ export default function RunsTab({
                             <span className={styles.pendingTitle}>{c.title}</span>
                             <button
                               type="button"
-                              onClick={() => openRecord(c.path)}
+                              onClick={() => { openRecord(c.path); }}
                               aria-label={
                                 recordingCase === c.path
                                   ? `Cancel recording ${c.path}`
@@ -1008,15 +998,9 @@ export default function RunsTab({
 
                           {recordingCase === c.path && (
                             <div className={styles.recordPanel}>
-                              {(caseBodyLoading || caseBody) && (
+                              {caseBody && (
                                 <div className={styles.recordSteps}>
-                                  {caseBodyLoading ? (
-                                    <p className={styles.stepsLoading} role="status">
-                                      Loading steps…
-                                    </p>
-                                  ) : (
-                                    caseBody && <MarkdownBody body={caseBody} maxHeight="200px" />
-                                  )}
+                                  <MarkdownBody body={caseBody} maxHeight="200px" />
                                 </div>
                               )}
                               <form
