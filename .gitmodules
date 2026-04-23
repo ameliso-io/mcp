@@ -1,3 +1,6 @@
 [submodule ".claude/skills/product-manager"]
 	path = .claude/skills/product-manager
 	url = https://github.com/Digidai/product-manager-skills
+[submodule "server/proto"]
+	path = server/proto
+	url = https://github.com/ameliso-io/ameliso-proto.git

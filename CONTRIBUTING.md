@@ -12,6 +12,10 @@ Always follow the guidelines at https://github.com/tupe12334/guidelines when con
 ## Setup
 
 ```sh
+git clone --recurse-submodules https://github.com/tupe12334/ameliso.git
+# or, if already cloned:
+git submodule update --init --recursive
+
 pnpm install      # installs Husky git hooks
 cargo build       # build all crates
 ```
@@ -26,7 +30,7 @@ Git hooks activate automatically after `pnpm install`:
 | Directory       | Purpose                                                                            |
 | --------------- | ---------------------------------------------------------------------------------- |
 | `server/`       | gRPC server (tonic 0.12). Implements `AmelisoService` (27 RPCs).                   |
-| `server/proto/` | Protobuf definitions for `AmelisoService`.                                         |
+| `server/proto/` | Protobuf definitions for `AmelisoService` (git submodule → `ameliso-io/ameliso-proto`). |
 | `web/`          | Browser client (Next.js 16 App Router + TypeScript). Talks gRPC-Web to the server. |
 
 ## Engineering constraints
@@ -64,7 +68,9 @@ Generated TypeScript files land in `web/src/gen/`. Commit them.
 
 ## Proto changes
 
-Proto files live in `server/proto/ameliso/v1/`. After editing:
+Proto files live in the [`ameliso-io/ameliso-proto`](https://github.com/ameliso-io/ameliso-proto) repo, mounted as a submodule at `server/proto/`. To edit protos: push changes to that repo, then update the submodule pointer here with `git submodule update --remote server/proto`.
+
+After proto changes are reflected locally:
 
 ```sh
 cd server && buf lint         # lint proto schema
