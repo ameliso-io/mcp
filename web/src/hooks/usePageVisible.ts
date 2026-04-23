@@ -11,6 +11,7 @@ function getSnapshot() {
   return !document.hidden;
 }
 
+/* v8 ignore next 3 — server snapshot is SSR-only, not called in jsdom */
 function getServerSnapshot() {
   return true;
 }
