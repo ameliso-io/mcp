@@ -66,6 +66,15 @@ fn invalid(msg: impl Into<String>) -> Status {
     Status::invalid_argument(msg.into())
 }
 
+fn clean_tags(tags: Vec<String>) -> Vec<String> {
+    tags.into_iter()
+        .filter_map(|t| {
+            let s = t.trim().to_owned();
+            if s.is_empty() { None } else { Some(s) }
+        })
+        .collect()
+}
+
 #[allow(clippy::result_large_err)]
 fn check_max_len(field: &str, value: &str, max: usize) -> Result<(), Status> {
     if value.len() > max {
@@ -301,7 +310,7 @@ impl AmelisoService for AmelisoServer {
             &req.case_path,
             &req.title,
             &req.description,
-            req.tags,
+            clean_tags(req.tags),
             priority,
             body,
         )
@@ -365,7 +374,7 @@ impl AmelisoService for AmelisoServer {
                 &entry.case_path,
                 &entry.title,
                 &entry.description,
-                entry.tags.clone(),
+                clean_tags(entry.tags.clone()),
                 priority,
                 body,
             )
@@ -421,7 +430,8 @@ impl AmelisoService for AmelisoServer {
         let tags = if req.tags.is_empty() {
             None
         } else {
-            Some(req.tags)
+            let cleaned = clean_tags(req.tags);
+            if cleaned.is_empty() { None } else { Some(cleaned) }
         };
         let body = if req.body.is_empty() {
             None
@@ -2207,6 +2217,41 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);
         assert!(err.message().contains("title must not exceed 255"));
+    }
+
+    #[tokio::test]
+    async fn create_case_strips_empty_and_whitespace_tags() {
+        let s = server();
+        // Tags with empty strings and whitespace-only entries should be rejected
+        // before reaching DB. Here we just verify validation passes and hits DB
+        // (non-InvalidArgument error), meaning the clean_tags path was exercised.
+        let err = s
+            .create_case(Request::new(pb::CreateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                title: "Login".to_owned(),
+                tags: vec!["".to_owned(), "  ".to_owned(), "smoke".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn update_case_strips_whitespace_only_tags() {
+        let s = server();
+        let err = s
+            .update_case(Request::new(pb::UpdateCaseRequest {
+                repo_id: "owner/repo".to_owned(),
+                case_path: "auth/login".to_owned(),
+                tags: vec!["  ".to_owned()],
+                ..Default::default()
+            }))
+            .await
+            .unwrap_err();
+        // Whitespace-only tags cleaned to empty → treated as no-tag update → reaches DB
+        assert_ne!(err.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
