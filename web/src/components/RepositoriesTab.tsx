@@ -1,5 +1,7 @@
 "use client";
 
+import type { Route } from "next";
+import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import styles from "./RepositoriesTab.module.css";
 import { client } from "@/client";
@@ -8,7 +10,6 @@ import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 
 interface Props {
-  onRepoSelect: (id: string) => void;
   installationId?: string | undefined;
   setupAction?: string | undefined;
   onInstallationHandled?: (() => void) | undefined;
@@ -17,7 +18,6 @@ interface Props {
 }
 
 export default function RepositoriesTab({
-  onRepoSelect,
   installationId,
   setupAction,
   onInstallationHandled,
@@ -313,15 +313,12 @@ export default function RepositoriesTab({
                   </div>
                 </div>
                 <div className={styles.repoActions}>
-                  <button
-                    type="button"
+                  <Link
+                    href={`/repositories/${repo.id}/overview` as Route}
                     className={styles.btnPrimary}
-                    onClick={() => {
-                      onRepoSelect(repo.id);
-                    }}
                   >
                     Use
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     className={styles.btnSecondary}

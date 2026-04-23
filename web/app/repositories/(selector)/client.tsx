@@ -1,6 +1,5 @@
 "use client";
 
-import type { Route } from "next";
 import { useCallback, Suspense, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RepositoriesTab from "@/components/RepositoriesTab";
@@ -31,18 +30,6 @@ function RepositoriesInner() {
     [router, searchParams]
   );
 
-  const handleRepoSelect = useCallback(
-    (id: string) => {
-      const slashIdx = id.indexOf("/");
-      const org = id.slice(0, slashIdx);
-      const repo = id.slice(slashIdx + 1);
-      startTransition(() => {
-        router.push(`/repositories/${org}/${repo}/overview` as Route);
-      });
-    },
-    [router]
-  );
-
   const handleInstallationHandled = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("installation_id");
@@ -55,7 +42,6 @@ function RepositoriesInner() {
 
   return (
     <RepositoriesTab
-      onRepoSelect={handleRepoSelect}
       installationId={installationId}
       setupAction={setupAction}
       onInstallationHandled={handleInstallationHandled}
