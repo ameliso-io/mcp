@@ -30,11 +30,18 @@ function CasesInner() {
   const initialPriorityFilter =
     PRIORITY_SLUG[searchParams.get("priority") ?? ""] ?? Priority.UNSPECIFIED;
   const initialTagFilter = searchParams.get("tag") ?? "";
+  const initialSuiteFilter = searchParams.get("suite") ?? "";
   const rawSort = searchParams.get("sort");
   const initialSortBy: "path" | "priority" = rawSort === "path" ? "path" : "priority";
 
   const handleFiltersChange = useCallback(
-    (filters: { search: string; priority: Priority; tag: string; sort: "path" | "priority" }) => {
+    (filters: {
+      search: string;
+      priority: Priority;
+      tag: string;
+      suite: string;
+      sort: "path" | "priority";
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (filters.search) {
         params.set("q", filters.search);
@@ -51,6 +58,11 @@ function CasesInner() {
         params.set("tag", filters.tag);
       } else {
         params.delete("tag");
+      }
+      if (filters.suite) {
+        params.set("suite", filters.suite);
+      } else {
+        params.delete("suite");
       }
       if (filters.sort !== "priority") {
         params.set("sort", filters.sort);
@@ -71,6 +83,7 @@ function CasesInner() {
       initialSearch={initialSearch}
       initialPriorityFilter={initialPriorityFilter}
       initialTagFilter={initialTagFilter}
+      initialSuiteFilter={initialSuiteFilter}
       initialSortBy={initialSortBy}
       onFiltersChange={handleFiltersChange}
     />

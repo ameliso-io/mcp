@@ -24,6 +24,7 @@ interface FilterState {
   search: string;
   priority: Priority;
   tag: string;
+  suite: string;
   sort: "path" | "priority";
 }
 
@@ -32,6 +33,7 @@ interface Props {
   initialSearch?: string | undefined;
   initialPriorityFilter?: Priority | undefined;
   initialTagFilter?: string | undefined;
+  initialSuiteFilter?: string | undefined;
   initialSortBy?: "path" | "priority" | undefined;
   onFiltersChange?: ((filters: FilterState) => void) | undefined;
 }
@@ -67,6 +69,7 @@ export default function CasesTab({
   initialSearch,
   initialPriorityFilter,
   initialTagFilter,
+  initialSuiteFilter,
   initialSortBy,
   onFiltersChange,
 }: Props) {
@@ -80,7 +83,7 @@ export default function CasesTab({
     initialPriorityFilter ?? Priority.UNSPECIFIED
   );
   const [tagFilter, setTagFilter] = useState(initialTagFilter ?? "");
-  const [suiteFilter, setSuiteFilter] = useState("");
+  const [suiteFilter, setSuiteFilter] = useState(initialSuiteFilter ?? "");
   const [sortBy, setSortBy] = useState<"path" | "priority">(initialSortBy ?? "priority");
   const [, startSortTransition] = useTransition();
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -182,9 +185,10 @@ export default function CasesTab({
       search: debouncedSearch,
       priority: priorityFilter,
       tag: tagFilter,
+      suite: suiteFilter,
       sort: sortBy,
     });
-  }, [debouncedSearch, priorityFilter, tagFilter, sortBy]);
+  }, [debouncedSearch, priorityFilter, tagFilter, suiteFilter, sortBy]);
 
   const loadAbortRef = useRef<AbortController | null>(null);
 

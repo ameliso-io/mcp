@@ -377,6 +377,17 @@ describe("CasesTab", () => {
     expect(screen.getByDisplayValue("Sort: Path")).toBeInTheDocument();
   });
 
+  it("initializes suite filter input from initialSuiteFilter prop", async () => {
+    render(<CasesTab repoId="owner/repo" initialSuiteFilter="smoke" />);
+    await waitFor(() =>
+      expect(client.listCases).toHaveBeenCalledWith(
+        expect.objectContaining({ suite: "smoke" }),
+        expect.anything()
+      )
+    );
+    expect(screen.getByRole("searchbox", { name: "Filter by suite slug" })).toHaveValue("smoke");
+  });
+
   it("calls createCase with parsed tags when tags field is filled", async () => {
     vi.mocked(client.createCase).mockResolvedValue({
       case: mockCase,
