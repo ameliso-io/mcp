@@ -244,7 +244,7 @@ export default function CasesTab({
     if (!repoId || !newPath || !newTitle) return;
     setCreating(true);
     try {
-      await client.createCase({
+      const created = await client.createCase({
         repoId,
         casePath: newPath,
         title: newTitle,
@@ -267,7 +267,8 @@ export default function CasesTab({
       setNewBody("");
       setNewPriority(Priority.MEDIUM);
       announceAction("Case created");
-      await load();
+      const newCase = created.case;
+      if (newCase) setCases((prev) => [...prev, newCase]);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -283,7 +284,6 @@ export default function CasesTab({
       if (expandedPath === casePath) setExpandedPath(null);
       setConfirmingDelete(null);
       announceAction("Case deleted");
-      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -297,7 +297,7 @@ export default function CasesTab({
     if (!editingPath) return;
     setSaving(true);
     try {
-      await client.updateCase({
+      const updated = await client.updateCase({
         repoId,
         casePath: editingPath,
         title: editTitle,
@@ -312,10 +312,13 @@ export default function CasesTab({
         body: editBody,
         newPath: editNewPath,
       });
+      if (updated.case) {
+        const u = updated.case;
+        setCases((prev) => prev.map((c) => (c.path === editingPath ? u : c)));
+      }
       setEditingPath(null);
       lastFocusRef.current?.focus();
       announceAction("Case updated");
-      await load();
     } catch (e) {
       setError(errorMessage(e));
     } finally {

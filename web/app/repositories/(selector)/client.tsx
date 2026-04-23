@@ -20,7 +20,7 @@ function RepositoriesInner() {
       const org = id.slice(0, slashIdx);
       const repo = id.slice(slashIdx + 1);
       startTransition(() => {
-        router.push(`/repositories/${org}/${repo}/overview` as Route);
+        router.push(`/repositories/${org}/${repo}/overview`);
       });
     },
     [router, startTransition]

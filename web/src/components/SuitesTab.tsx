@@ -509,7 +509,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                       </span>
                     </button>
                     <Link
-                      href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}` as Route}
+                      href={`${basePath}/runs?suite=${encodeURIComponent(suite.slug)}`}
                       aria-label={`Run ${suite.slug}`}
                       className={styles.btnGreenSm}
                     >

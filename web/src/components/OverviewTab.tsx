@@ -292,7 +292,7 @@ export default function OverviewTab({ repoId, basePath = `/repositories/${repoId
                   Active Runs ({activeRuns.length})
                   <span className={styles.refreshHint}>auto-refresh 30s</span>
                 </h3>
-                <Link href={`${basePath}/runs` as Route} className={styles.goToRunsBtn}>
+                <Link href={`${basePath}/runs`} className={styles.goToRunsBtn}>
                   Go to Runs
                 </Link>
               </div>
