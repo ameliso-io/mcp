@@ -20,16 +20,12 @@ vi.mock("next/link", () => ({
 
 describe("NotFoundView", () => {
   it("renders the heading", () => {
-    render(
-      <NotFoundView heading="404 — Not found" backHref="/repositories" backLabel="Go back" />
-    );
+    render(<NotFoundView heading="404 — Not found" backHref="/repositories" backLabel="Go back" />);
     expect(screen.getByRole("heading", { name: "404 — Not found" })).toBeInTheDocument();
   });
 
   it("renders a link with the back label pointing to backHref", () => {
-    render(
-      <NotFoundView heading="404 — Not found" backHref="/repositories" backLabel="Go back" />
-    );
+    render(<NotFoundView heading="404 — Not found" backHref="/repositories" backLabel="Go back" />);
     const link = screen.getByRole("link", { name: "Go back" });
     expect(link).toHaveAttribute("href", "/repositories");
   });
