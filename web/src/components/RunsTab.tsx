@@ -9,6 +9,7 @@ import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useInterval } from "@/hooks/useInterval";
+import { usePageVisible } from "@/hooks/usePageVisible";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 
@@ -155,9 +156,10 @@ export default function RunsTab({
     setResultStatusFilter(initialResultStatusFilter);
   }, [recordedResults, initialResultStatusFilter]);
 
-  // Auto-refresh pending cases every 30s when viewing an in-progress run
+  // Auto-refresh pending cases every 30s when viewing an in-progress run — paused when tab is hidden
   const selectedRun = runs.find((r) => r.id === selectedRunId);
   const isSelectedInProgress = selectedRun?.status === RunStatus.IN_PROGRESS && !!selectedRunId;
+  const pageVisible = usePageVisible();
   useInterval(
     async () => {
       /* v8 ignore next 2 — guard for stale interval after deselect */
@@ -170,7 +172,7 @@ export default function RunsTab({
         // silently ignore poll errors
       }
     },
-    isSelectedInProgress ? 30_000 : null
+    isSelectedInProgress && pageVisible ? 30_000 : null
   );
 
   const loadAbortRef = useRef<AbortController | null>(null);

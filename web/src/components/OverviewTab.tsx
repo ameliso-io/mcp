@@ -10,6 +10,7 @@ import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/type
 import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useInterval } from "@/hooks/useInterval";
+import { usePageVisible } from "@/hooks/usePageVisible";
 
 interface Props {
   repoId: string;
@@ -140,8 +141,9 @@ export default function OverviewTab({
     void load();
   }, [load]);
 
-  // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
-  useInterval(() => load(true), activeRuns.length > 0 ? 30_000 : null);
+  const pageVisible = usePageVisible();
+  // Auto-refresh every 30s while there are active runs — paused when tab is hidden
+  useInterval(() => load(true), activeRuns.length > 0 && pageVisible ? 30_000 : null);
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
