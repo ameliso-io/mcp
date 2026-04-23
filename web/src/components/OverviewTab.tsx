@@ -139,12 +139,10 @@ export default function OverviewTab({
   }, [load]);
 
   // Auto-refresh every 30s while there are active runs — silent to avoid screen reader spam
-  useInterval(() => load(true), repoId && activeRuns.length > 0 ? 30_000 : null);
+  useInterval(() => load(true), activeRuns.length > 0 ? 30_000 : null);
 
   async function handleAffected(e: React.FormEvent) {
     e.preventDefault();
-    /* v8 ignore next 2 — component returns early rendering when repoId is empty */
-    if (!repoId) return;
     setAffectedLoading(true);
     setAffectedError(null);
     try {
@@ -344,12 +342,11 @@ export default function OverviewTab({
         </>
       )}
 
-      {!loading && !error && repoId && entries.length === 0 && (
+      {!loading && !error && entries.length === 0 && (
         <div className={styles.emptyCard}>No cases found in this repository.</div>
       )}
 
-      {repoId && (
-        <div className={styles.card}>
+      <div className={styles.card}>
           <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
           <form
             aria-label="Check affected cases by git diff"
@@ -416,7 +413,6 @@ export default function OverviewTab({
               </ul>
             ))}
         </div>
-      )}
     </div>
   );
 }
