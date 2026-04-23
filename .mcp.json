@@ -5,10 +5,7 @@
       "args": ["-y", "@playwright/mcp", "--isolated"]
     },
     "centy": {
-      "args": [
-        "-y",
-        "centy-mcp"
-      ],
+      "args": ["-y", "centy-mcp"],
       "command": "npx"
     },
     "ameliso": {

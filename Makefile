@@ -3,6 +3,7 @@
 dev: install build
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
 	docker compose up -d --wait && \
+	until bash -c 'echo > /dev/tcp/localhost/5432' 2>/dev/null; do sleep 0.5; done && \
 	(cd server && cargo run; kill 0) & \
 	(cd web && pnpm dev; kill 0) & \
 	wait

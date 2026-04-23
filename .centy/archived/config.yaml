@@ -10,7 +10,7 @@ features:
   move: true
   duplicate: false
 customFields:
-- name: original_item_type
-  type: string
-  required: false
+  - name: original_item_type
+    type: string
+    required: false
 listed: false

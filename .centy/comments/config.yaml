@@ -11,13 +11,13 @@ features:
   move: false
   duplicate: false
 customFields:
-- name: item_id
-  type: string
-  required: false
-- name: item_type
-  type: string
-  required: false
-- name: author
-  type: string
-  required: false
+  - name: item_id
+    type: string
+    required: false
+  - name: item_type
+    type: string
+    required: false
+  - name: author
+    type: string
+    required: false
 listed: false

@@ -13,7 +13,5 @@
     "stateColors",
     "updatedAt"
   ],
-  "ignorePaths": [
-    ".centy-manifest.json"
-  ]
+  "ignorePaths": [".centy-manifest.json"]
 }
