@@ -1078,6 +1078,10 @@ impl AmelisoService for AmelisoServer {
                             .map(String::as_str)
                             .unwrap_or("never"),
                     ),
+                    body: case_map
+                        .get(path.as_str())
+                        .map(|c| c.body.clone())
+                        .unwrap_or_default(),
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
@@ -1098,6 +1102,7 @@ impl AmelisoService for AmelisoServer {
                             .map(String::as_str)
                             .unwrap_or("never"),
                     ),
+                    body: c.body.clone(),
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
@@ -1198,6 +1203,10 @@ impl AmelisoService for AmelisoServer {
                         .map(String::as_str)
                         .unwrap_or("never"),
                 ),
+                body: case_map
+                    .get(path.as_str())
+                    .map(|c| c.body.clone())
+                    .unwrap_or_default(),
             })
             .collect();
 

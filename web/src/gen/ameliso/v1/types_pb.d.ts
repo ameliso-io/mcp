@@ -236,6 +236,14 @@ export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
    * @generated from field: ameliso.v1.ResultStatus latest_status = 3;
    */
   latestStatus: ResultStatus;
+
+  /**
+   * Markdown body of the test case — the actual test procedure/steps.
+   * Included so agents can act without a separate GetCase call.
+   *
+   * @generated from field: string body = 4;
+   */
+  body: string;
 };
 
 /**
