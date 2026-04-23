@@ -49,7 +49,7 @@ db-down:
 # --- Git hooks (called by Husky) ---
 
 check-file-size:
-	@LIMIT=5600; FAILED=0; \
+	@LIMIT=5500; FAILED=0; \
 	for file in $$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$$'); do \
 		lines=$$(wc -l < "$$file"); \
 		if [ "$$lines" -gt "$$LIMIT" ]; then \
