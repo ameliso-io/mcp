@@ -253,7 +253,12 @@ export default function OverviewTab({
                   const status = activeRunsStatus.get(run.id);
                   return (
                     <li key={run.id} className={styles.runRow}>
-                      <span className={styles.runId}>{run.id}</span>
+                      <Link
+                        href={`${basePath}/runs?run=${run.id}` as Route}
+                        className={styles.runId}
+                      >
+                        {run.id}
+                      </Link>
                       {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
                       {run.tester && <span className={styles.runTester}>{run.tester}</span>}
                       <time className={styles.runDate} dateTime={run.date}>
@@ -322,7 +327,15 @@ export default function OverviewTab({
                     aria-hidden="true"
                     data-status={ResultStatus[entry.latestStatus]}
                   />
-                  <span className={styles.coveragePath}>{entry.case?.path}</span>
+                  <Link
+                    href={
+                      /* v8 ignore next */
+                      `${basePath}/cases?case=${encodeURIComponent(entry.case?.path ?? "")}` as Route
+                    }
+                    className={styles.coveragePath}
+                  >
+                    {entry.case?.path}
+                  </Link>
                   <span className={styles.coverageTitle}>{entry.case?.title}</span>
                   {entry.lastRunDate && (
                     <time className={styles.coverageDate} dateTime={entry.lastRunDate}>
@@ -347,72 +360,72 @@ export default function OverviewTab({
       )}
 
       <div className={styles.card}>
-          <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
-          <form
-            aria-label="Check affected cases by git diff"
-            onSubmit={handleAffected}
-            className={styles.affectedForm}
-          >
-            <input
-              type="text"
-              aria-label="Git ref to compare from (leave empty to use last run commit)"
-              value={sinceRef}
-              onChange={(e) => {
-                setSinceRef(e.target.value);
+        <h3 className={`${styles.label} ${styles.sectionLabel}`}>Affected Cases by Git Diff</h3>
+        <form
+          aria-label="Check affected cases by git diff"
+          onSubmit={handleAffected}
+          className={styles.affectedForm}
+        >
+          <input
+            type="text"
+            aria-label="Git ref to compare from (leave empty to use last run commit)"
+            value={sinceRef}
+            onChange={(e) => {
+              setSinceRef(e.target.value);
+            }}
+            placeholder="Since ref (default: last run commit)"
+            className={styles.repoInput}
+          />
+          <button type="submit" disabled={affectedLoading} className={styles.btn}>
+            {affectedLoading ? "Checking…" : "Check Diff"}
+          </button>
+        </form>
+        {affectedError && (
+          <div className={styles.inlineError} role="alert">
+            <span>{affectedError}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setAffectedError(null);
               }}
-              placeholder="Since ref (default: last run commit)"
-              className={styles.repoInput}
-            />
-            <button type="submit" disabled={affectedLoading} className={styles.btn}>
-              {affectedLoading ? "Checking…" : "Check Diff"}
+              className={styles.inlineErrorDismiss}
+              aria-label="Dismiss"
+            >
+              ×
             </button>
-          </form>
-          {affectedError && (
-            <div className={styles.inlineError} role="alert">
-              <span>{affectedError}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setAffectedError(null);
-                }}
-                className={styles.inlineErrorDismiss}
-                aria-label="Dismiss"
-              >
-                ×
-              </button>
-            </div>
-          )}
-          {affected !== null &&
-            (affected.length === 0 ? (
-              <p className={styles.noAffected}>No cases affected by this diff.</p>
-            ) : (
-              <ul className={styles.affectedList} role="list">
-                {[...affected]
-                  .sort(
-                    (a, b) =>
-                      (PRIORITY_ORDER[a.case?.priority ?? ""] ?? 3) -
-                      (PRIORITY_ORDER[b.case?.priority ?? ""] ?? 3)
-                  )
-                  .map((ac, idx) => (
-                    <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
-                      {ac.case?.priority && (
-                        <>
-                          <span
-                            className={styles.priorityDot}
-                            data-priority={ac.case.priority}
-                            aria-hidden="true"
-                          />
-                          <span className="sr-only">{ac.case.priority} priority</span>
-                        </>
-                      )}
-                      <span className={styles.affectedPath}>{ac.case?.path}</span>
-                      <span className={styles.affectedTitle}>{ac.case?.title}</span>
-                      <span className={styles.affectedReason}>{ac.reason}</span>
-                    </li>
-                  ))}
-              </ul>
-            ))}
-        </div>
+          </div>
+        )}
+        {affected !== null &&
+          (affected.length === 0 ? (
+            <p className={styles.noAffected}>No cases affected by this diff.</p>
+          ) : (
+            <ul className={styles.affectedList} role="list">
+              {[...affected]
+                .sort(
+                  (a, b) =>
+                    (PRIORITY_ORDER[a.case?.priority ?? ""] ?? 3) -
+                    (PRIORITY_ORDER[b.case?.priority ?? ""] ?? 3)
+                )
+                .map((ac, idx) => (
+                  <li key={ac.case?.path ?? idx} className={styles.affectedRow}>
+                    {ac.case?.priority && (
+                      <>
+                        <span
+                          className={styles.priorityDot}
+                          data-priority={ac.case.priority}
+                          aria-hidden="true"
+                        />
+                        <span className="sr-only">{ac.case.priority} priority</span>
+                      </>
+                    )}
+                    <span className={styles.affectedPath}>{ac.case?.path}</span>
+                    <span className={styles.affectedTitle}>{ac.case?.title}</span>
+                    <span className={styles.affectedReason}>{ac.reason}</span>
+                  </li>
+                ))}
+            </ul>
+          ))}
+      </div>
     </div>
   );
 }

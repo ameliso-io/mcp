@@ -160,6 +160,26 @@ describe("OverviewTab", () => {
     await waitFor(() => expect(screen.getByText("modified")).toBeInTheDocument());
   });
 
+  it("active run ID is a link to that specific run on the runs tab", async () => {
+    const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
+    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("run-xyz"));
+    expect(screen.getByRole("link", { name: "run-xyz" })).toHaveAttribute(
+      "href",
+      "/repositories/owner/repo/runs?run=run-xyz"
+    );
+  });
+
+  it("coverage row path is a link to that case on the cases tab", async () => {
+    render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
+    await waitFor(() => screen.getByText("auth/login"));
+    expect(screen.getByRole("link", { name: "auth/login" })).toHaveAttribute(
+      "href",
+      `/repositories/owner/repo/cases?case=${encodeURIComponent("auth/login")}`
+    );
+  });
+
   it("renders Go to Runs link pointing to /runs", async () => {
     const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);

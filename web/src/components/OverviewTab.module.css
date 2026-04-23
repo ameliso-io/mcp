@@ -221,6 +221,12 @@
   font-size: 14px;
   flex: 1;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.runId:hover {
+  text-decoration: underline;
 }
 
 .runSuiteBadge {
@@ -313,6 +319,12 @@
   flex: 1;
   font-size: 14px;
   font-family: monospace;
+  color: inherit;
+  text-decoration: none;
+}
+
+.coveragePath:hover {
+  text-decoration: underline;
 }
 
 .coverageTitle {
