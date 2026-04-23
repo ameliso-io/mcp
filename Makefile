@@ -23,6 +23,9 @@ test:
 	cd web && pnpm test
 	cd web && pnpm test:typecheck
 
+test-server:
+	cd server && cargo test
+
 coverage-check:
 	cd server && cargo llvm-cov --ignore-filename-regex main.rs --fail-under-lines 85
 	cd web && pnpm test:coverage
@@ -80,7 +83,7 @@ pre-push:
 	$(MAKE) build & PID2=$$!; \
 	wait $$PID1 || FAIL=1; \
 	wait $$PID2 || FAIL=1; \
-	$(MAKE) test & PID3=$$!; \
+	$(MAKE) test-server & PID3=$$!; \
 	$(MAKE) coverage-check & PID4=$$!; \
 	wait $$PID3 || FAIL=1; \
 	wait $$PID4 || FAIL=1; \

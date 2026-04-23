@@ -53,7 +53,8 @@
       "Bash(jobs -l)",
       "Bash(docker port *)",
       "Bash(nc *)",
-      "Bash(pnpm dev *)"
+      "Bash(pnpm dev *)",
+      "Bash(npx prettier *)"
     ]
   }
 }
