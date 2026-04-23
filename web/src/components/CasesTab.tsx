@@ -250,7 +250,7 @@ export default function CasesTab({
     if (!cases.some((c) => c.path === initialExpandedPath)) return;
     consumedExpandedRef.current = true;
     void toggleExpand(initialExpandedPath);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cases, initialExpandedPath]);
 
   async function handleCreate(e: React.FormEvent) {

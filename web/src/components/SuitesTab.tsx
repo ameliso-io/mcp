@@ -498,9 +498,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
                             />
                             <span className="sr-only">{c.priority} priority</span>
                             <Link
-                              href={
-                                `${basePath}/cases?case=${encodeURIComponent(c.path)}` as Route
-                              }
+                              href={`${basePath}/cases?case=${encodeURIComponent(c.path)}` as Route}
                               className={styles.casePath}
                             >
                               {c.path}

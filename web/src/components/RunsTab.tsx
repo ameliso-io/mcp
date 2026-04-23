@@ -929,9 +929,7 @@ export default function RunsTab({
                         <li key={c.path}>
                           <div className={styles.pendingRow}>
                             <Link
-                              href={
-                                `${basePath}/cases?case=${encodeURIComponent(c.path)}` as Route
-                              }
+                              href={`${basePath}/cases?case=${encodeURIComponent(c.path)}` as Route}
                               className={styles.pendingPath}
                             >
                               {c.path}

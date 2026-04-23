@@ -80,7 +80,14 @@ describe("RunsTab", () => {
   });
 
   it("pre-fills suite when initialSuite provided", async () => {
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" initialSuite="smoke" onInitialSuiteConsumed={() => {}} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialSuite="smoke"
+        onInitialSuiteConsumed={() => {}}
+      />
+    );
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument()
     );
@@ -193,14 +200,26 @@ describe("RunsTab", () => {
 
   it("calls onStatusFilterChange when filter button clicked", async () => {
     const onStatusFilterChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onStatusFilterChange={onStatusFilterChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onStatusFilterChange={onStatusFilterChange}
+      />
+    );
     await waitFor(() => screen.getByText("No runs found."));
     await userEvent.click(screen.getByRole("button", { name: "Completed" }));
     expect(onStatusFilterChange).toHaveBeenCalledWith(RunStatus.COMPLETED);
   });
 
   it("initializes statusFilter from initialStatusFilter prop", async () => {
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" initialStatusFilter={RunStatus.ABORTED} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialStatusFilter={RunStatus.ABORTED}
+      />
+    );
     await waitFor(() =>
       expect(client.listRuns).toHaveBeenCalledWith(
         expect.objectContaining({ status: RunStatus.ABORTED }),
@@ -1078,13 +1097,20 @@ describe("RunsTab", () => {
   it("calls onInitialSuiteConsumed when initialSuite is provided", async () => {
     const onConsumed = vi.fn();
     render(
-      <RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" initialSuite="smoke" onInitialSuiteConsumed={onConsumed} />
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialSuite="smoke"
+        onInitialSuiteConsumed={onConsumed}
+      />
     );
     await waitFor(() => expect(onConsumed).toHaveBeenCalledTimes(1));
   });
 
   it("does not crash when initialSuite is provided without onInitialSuiteConsumed", async () => {
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" initialSuite="smoke" />);
+    render(
+      <RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" initialSuite="smoke" />
+    );
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Create Run" })).toBeInTheDocument()
     );
@@ -1518,7 +1544,13 @@ describe("RunsTab", () => {
   it("calls onSelectedRunIdChange with null when run is finalized", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     const onSelectedRunIdChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onSelectedRunIdChange={onSelectedRunIdChange}
+      />
+    );
     await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
     await waitFor(() => screen.getByText("Complete Run"));
@@ -1533,7 +1565,13 @@ describe("RunsTab", () => {
   it("calls onSelectedRunIdChange with null when selected run is deleted", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     const onSelectedRunIdChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onSelectedRunIdChange={onSelectedRunIdChange}
+      />
+    );
     await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
     await waitFor(() => screen.getByRole("button", { name: "Delete 2026-01-01-smoke" }));
@@ -1544,7 +1582,13 @@ describe("RunsTab", () => {
 
   it("auto-expands run matching initialSelectedRunId when runs load", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" initialSelectedRunId={mockRun.id} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        initialSelectedRunId={mockRun.id}
+      />
+    );
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /^In Progress run/ })).toHaveAttribute(
         "aria-expanded",
@@ -1556,7 +1600,13 @@ describe("RunsTab", () => {
   it("calls onSelectedRunIdChange with run id when run is selected", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     const onSelectedRunIdChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onSelectedRunIdChange={onSelectedRunIdChange}
+      />
+    );
     await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
     expect(onSelectedRunIdChange).toHaveBeenCalledWith(mockRun.id);
@@ -1575,7 +1625,8 @@ describe("RunsTab", () => {
     } as never);
     render(
       <RunsTab
-        repoId="owner/repo" basePath="/repositories/owner/repo"
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
         initialSelectedRunId={completedRun.id}
         initialResultStatusFilter={ResultStatus.PASSED}
       />
@@ -1601,7 +1652,13 @@ describe("RunsTab", () => {
       run: { meta: completedRun, results: [mockResult] },
     } as never);
     const onResultStatusFilterChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onResultStatusFilterChange={onResultStatusFilterChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onResultStatusFilterChange={onResultStatusFilterChange}
+      />
+    );
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("1 Passed"));
@@ -1621,7 +1678,13 @@ describe("RunsTab", () => {
       run: { meta: completedRun, results: [mockResult] },
     } as never);
     const onResultStatusFilterChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onResultStatusFilterChange={onResultStatusFilterChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onResultStatusFilterChange={onResultStatusFilterChange}
+      />
+    );
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("1 Passed"));
@@ -1643,7 +1706,13 @@ describe("RunsTab", () => {
       run: { meta: completedRun, results: [mockResult] },
     } as never);
     const onResultStatusFilterChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onResultStatusFilterChange={onResultStatusFilterChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onResultStatusFilterChange={onResultStatusFilterChange}
+      />
+    );
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => screen.getByText("1 Passed"));
@@ -1656,7 +1725,13 @@ describe("RunsTab", () => {
   it("calls onSelectedRunIdChange with null when run is deselected", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     const onSelectedRunIdChange = vi.fn();
-    render(<RunsTab repoId="owner/repo" basePath="/repositories/owner/repo" onSelectedRunIdChange={onSelectedRunIdChange} />);
+    render(
+      <RunsTab
+        repoId="owner/repo"
+        basePath="/repositories/owner/repo"
+        onSelectedRunIdChange={onSelectedRunIdChange}
+      />
+    );
     await waitFor(() => screen.getByRole("button", { name: /^In Progress run/ }));
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));
     await userEvent.click(screen.getByRole("button", { name: /^In Progress run/ }));

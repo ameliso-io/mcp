@@ -44,9 +44,7 @@ export default function OpenGraphImage() {
         </div>
         <div style={{ fontSize: 64, fontWeight: 700 }}>Ameliso</div>
       </div>
-      <div style={{ fontSize: 28, color: "#94a3b8" }}>
-        Test Coverage &amp; Quality Management
-      </div>
+      <div style={{ fontSize: 28, color: "#94a3b8" }}>Test Coverage &amp; Quality Management</div>
     </div>,
     { ...size }
   );
