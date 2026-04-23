@@ -138,6 +138,9 @@ message BulkCreateCasesRequest {
 
 message BulkCreateCasesResponse {
   repeated Case cases = 1;
+  // File paths for the created cases (e.g. "cases/auth/login.md").
+  // Agents can pass these directly to git add without constructing paths manually.
+  repeated string file_paths = 2;
 }
 
 message UpdateCaseRequest {
