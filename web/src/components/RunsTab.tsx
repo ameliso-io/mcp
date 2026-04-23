@@ -11,6 +11,7 @@ import { errorMessage } from "@/errorMessage";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useInterval } from "@/hooks/useInterval";
 import { usePageVisible } from "@/hooks/usePageVisible";
+import { useAbortController } from "@/hooks/useAbortController";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 
@@ -176,13 +177,10 @@ export default function RunsTab({
     isSelectedInProgress && pageVisible ? 30_000 : null
   );
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -197,9 +195,7 @@ export default function RunsTab({
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [repoId, statusFilter]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
+  }, [repoId, statusFilter, nextAbort]);
 
   useEffect(() => {
     void load();
@@ -557,7 +553,14 @@ export default function RunsTab({
         </div>
       )}
 
-      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
+      {error && (
+        <InlineError
+          error={error}
+          onDismiss={() => {
+            setError(null);
+          }}
+        />
+      )}
 
       {loading && runs.length === 0 && (
         <div className={styles.loadingMsg} role="status">

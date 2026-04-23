@@ -18,6 +18,7 @@ import type { Case } from "@/gen/ameliso/v1/types_pb";
 import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useAbortController } from "@/hooks/useAbortController";
 
 const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
   ssr: false,
@@ -205,13 +206,10 @@ export default function CasesTab({
     });
   }, [debouncedSearch, priorityFilter, tagFilter, suiteFilter, sortBy]);
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -235,9 +233,7 @@ export default function CasesTab({
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
+  }, [repoId, debouncedSearch, priorityFilter, tagFilter, suiteFilter, nextAbort]);
 
   useEffect(() => {
     void load();
@@ -561,7 +557,14 @@ export default function CasesTab({
         )}
       </div>
 
-      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
+      {error && (
+        <InlineError
+          error={error}
+          onDismiss={() => {
+            setError(null);
+          }}
+        />
+      )}
 
       {loading && (
         <div className={styles.loadingMsg} role="status">

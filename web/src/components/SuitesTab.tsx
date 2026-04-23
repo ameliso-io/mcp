@@ -9,6 +9,7 @@ import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
 import type { Suite, Case } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
+import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
   repoId: string;
@@ -88,13 +89,10 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     });
   }
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -109,9 +107,7 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [repoId]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
+  }, [repoId, nextAbort]);
 
   useEffect(() => {
     void load();
@@ -299,7 +295,14 @@ export default function SuitesTab({ repoId, basePath, initialExpanded, onExpande
         </div>
       )}
 
-      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
+      {error && (
+        <InlineError
+          error={error}
+          onDismiss={() => {
+            setError(null);
+          }}
+        />
+      )}
 
       {loading && suites.length === 0 && (
         <div className={styles.loadingMsg} role="status">

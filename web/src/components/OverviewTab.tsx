@@ -12,6 +12,7 @@ import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useInterval } from "@/hooks/useInterval";
 import { usePageVisible } from "@/hooks/usePageVisible";
+import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
   repoId: string;
@@ -84,15 +85,12 @@ export default function OverviewTab({
   const [affectedError, setAffectedError] = useState<string | null>(null);
   const [announcement, announce] = useAnnounce();
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
   const filterMountedRef = useRef(false);
 
   const load = useCallback(
     async (silent = false) => {
-      loadAbortRef.current?.abort();
-      const ctrl = new AbortController();
-      loadAbortRef.current = ctrl;
-      const { signal } = ctrl;
+      const signal = nextAbort();
       setLoading(true);
       setError(null);
       try {
@@ -125,10 +123,8 @@ export default function OverviewTab({
         if (!signal.aborted) setLoading(false);
       }
     },
-    [repoId, announce, coverageFilter]
+    [repoId, announce, coverageFilter, nextAbort]
   );
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (!filterMountedRef.current) {
@@ -200,7 +196,14 @@ export default function OverviewTab({
       </div>
       <h2 className={styles.title}>Overview</h2>
 
-      {error && <InlineError error={error} onDismiss={() => { setError(null); }} />}
+      {error && (
+        <InlineError
+          error={error}
+          onDismiss={() => {
+            setError(null);
+          }}
+        />
+      )}
 
       {loading && entries.length === 0 && (
         <div className={styles.loadingMsg} role="status">

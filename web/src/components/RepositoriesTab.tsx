@@ -10,6 +10,7 @@ import { errorMessage } from "@/errorMessage";
 import type { Repository } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useAbortController } from "@/hooks/useAbortController";
 
 interface Props {
   installationId?: string | undefined;
@@ -55,14 +56,10 @@ export default function RepositoriesTab({
     onSearchChangeRef.current?.(debouncedSearch);
   }, [debouncedSearch]);
 
-  const loadAbortRef = useRef<AbortController | null>(null);
+  const nextAbort = useAbortController();
 
   const load = useCallback(async () => {
-    /* v8 ignore next — abort guard */
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    const { signal } = ctrl;
+    const signal = nextAbort();
     setLoading(true);
     setError(null);
     try {
@@ -82,7 +79,7 @@ export default function RepositoriesTab({
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, []);
+  }, [nextAbort]);
 
   const handleRefreshAll = useCallback(async () => {
     setRefreshing(true);
@@ -113,8 +110,6 @@ export default function RepositoriesTab({
       setRefreshing(false);
     }
   }, [repos, announce]);
-
-  useEffect(() => () => loadAbortRef.current?.abort(), []);
 
   // Handle GitHub OAuth callback params passed from the page client
   useEffect(() => {
