@@ -12,7 +12,14 @@ import { useInterval } from "@/hooks/useInterval";
 import type { RunMeta, Case, CaseResult } from "@/gen/ameliso/v1/types_pb";
 import { RunStatus, ResultStatus } from "@/gen/ameliso/v1/types_pb";
 
-const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
+const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
+  ssr: false,
+  loading: () => (
+    <p className={styles.stepsLoading} role="status">
+      Loading steps…
+    </p>
+  ),
+});
 
 interface Props {
   repoId: string;

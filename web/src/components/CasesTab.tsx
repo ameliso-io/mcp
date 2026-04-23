@@ -18,7 +18,14 @@ import { Priority } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
-const MarkdownBody = dynamic(() => import("./MarkdownBody"), { ssr: false });
+const MarkdownBody = dynamic(() => import("./MarkdownBody"), {
+  ssr: false,
+  loading: () => (
+    <p className={styles.expandedLoading} role="status">
+      Loading…
+    </p>
+  ),
+});
 
 interface FilterState {
   search: string;
