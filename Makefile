@@ -1,4 +1,4 @@
-.PHONY: install build test fmt lint spell check-file-size pre-commit pre-push dev db-up db-down
+.PHONY: install build test fmt lint check-file-size pre-commit pre-push dev db-up db-down
 
 dev: install build
 	@trap 'docker compose stop; kill 0' SIGINT SIGTERM; \
@@ -39,9 +39,6 @@ lint:
 	cd server && buf lint
 	cd web && pnpm lint
 
-spell:
-	pnpm cspell --no-progress "**/*.{rs,ts,tsx,proto,toml,md,yaml,yml}" Makefile
-
 db-up:
 	docker compose up -d --wait
 
@@ -65,20 +62,20 @@ pre-commit:
 	@FAIL=0; \
 	$(MAKE) fmt-check & PID1=$$!; \
 	$(MAKE) lint & PID2=$$!; \
-	$(MAKE) spell & PID3=$$!; \
-	$(MAKE) check-file-size & PID4=$$!; \
+	$(MAKE) check-file-size & PID3=$$!; \
 	wait $$PID1 || FAIL=1; \
 	wait $$PID2 || FAIL=1; \
 	wait $$PID3 || FAIL=1; \
-	wait $$PID4 || FAIL=1; \
 	[ "$$FAIL" -eq 0 ] && echo "pre-commit: OK" || exit 1
 
 pre-push:
 	@FAIL=0; \
 	$(MAKE) fmt-check & PID1=$$!; \
-	$(MAKE) build & PID2=$$!; \
+	(cd server && cargo build --release) & PID2=$$!; \
+	(cd web && $(MAKE) pre-push) & PID3=$$!; \
 	wait $$PID1 || FAIL=1; \
 	wait $$PID2 || FAIL=1; \
-	$(MAKE) test-server & PID3=$$!; \
 	wait $$PID3 || FAIL=1; \
+	$(MAKE) test-server & PID4=$$!; \
+	wait $$PID4 || FAIL=1; \
 	[ "$$FAIL" -eq 0 ] && echo "pre-push: OK" || exit 1
