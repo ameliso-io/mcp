@@ -996,6 +996,10 @@ impl AmelisoService for AmelisoServer {
             .await
             .map_err(repo_err)?;
 
+        let status_map = repo::get_latest_statuses(&self.pool, &req.repo_id)
+            .await
+            .map_err(repo_err)?;
+
         // If caller passed changed_files directly, skip GitHub and use those.
         if !req.changed_files.is_empty() {
             let known_paths: Vec<String> = cases.iter().map(|c| c.case_path.clone()).collect();
@@ -1044,6 +1048,9 @@ impl AmelisoService for AmelisoServer {
                 .map(|path| pb::AffectedCase {
                     case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
                     reason: reason.clone(),
+                    latest_status: result_status_to_i32(
+                        status_map.get(path.as_str()).map(String::as_str).unwrap_or("never"),
+                    ),
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
@@ -1058,6 +1065,12 @@ impl AmelisoService for AmelisoServer {
                 .map(|c| pb::AffectedCase {
                     case: Some(case_to_pb(c)),
                     reason: "no since_ref provided; all cases flagged".to_owned(),
+                    latest_status: result_status_to_i32(
+                        status_map
+                            .get(c.case_path.as_str())
+                            .map(String::as_str)
+                            .unwrap_or("never"),
+                    ),
                 })
                 .collect();
             return Ok(Response::new(pb::GetAffectedCasesResponse {
@@ -1152,6 +1165,9 @@ impl AmelisoService for AmelisoServer {
             .map(|path| pb::AffectedCase {
                 case: case_map.get(path.as_str()).map(|c| case_to_pb(c)),
                 reason: reason.clone(),
+                latest_status: result_status_to_i32(
+                    status_map.get(path.as_str()).map(String::as_str).unwrap_or("never"),
+                ),
             })
             .collect();
 

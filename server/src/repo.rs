@@ -1102,6 +1102,38 @@ pub async fn get_coverage_report(pool: &PgPool, repo_id: &str) -> RResult<(Vec<C
     Ok((entries, run_count))
 }
 
+/// Returns a map from case_path to its latest result status string ("passed", "failed",
+/// "blocked", "skipped", or "never") for every case in the repository.
+pub async fn get_latest_statuses(
+    pool: &PgPool,
+    repo_id: &str,
+) -> RResult<std::collections::HashMap<String, String>> {
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        case_path: String,
+        status: String,
+    }
+    let rows = sqlx::query_as::<_, Row>(
+        "WITH latest_results AS (
+            SELECT DISTINCT ON (r.case_path)
+                r.case_path, r.status
+            FROM results r
+            JOIN runs ru ON ru.repo_id = r.repo_id AND ru.run_id = r.run_id
+            WHERE r.repo_id = $1
+            ORDER BY r.case_path, ru.date DESC, r.run_id DESC
+        )
+        SELECT c.case_path, COALESCE(lr.status, 'never') AS status
+        FROM cases c
+        LEFT JOIN latest_results lr ON lr.case_path = c.case_path
+        WHERE c.repo_id = $1",
+    )
+    .bind(repo_id)
+    .fetch_all(pool)
+    .await
+    .map_err(map_db)?;
+    Ok(rows.into_iter().map(|r| (r.case_path, r.status)).collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2135,6 +2167,14 @@ mod tests {
         assert!(!matches!(err, RepoError::InvalidArg(_)));
     }
 
+    #[tokio::test]
+    async fn get_latest_statuses_returns_db_error_when_no_connection() {
+        let err = get_latest_statuses(&lazy_pool(), "owner/repo")
+            .await
+            .unwrap_err();
+        assert!(!matches!(err, RepoError::InvalidArg(_)));
+    }
+
     // -----------------------------------------------------------------------
     // DB tests — require DATABASE_URL; run with:
     //   DATABASE_URL=postgres://ameliso:ameliso@localhost/ameliso \
@@ -2233,9 +2273,18 @@ mod tests {
         create_case(&pool, repo, "a/b", "A", "", vec![], "low", None)
             .await
             .unwrap();
-        let run = create_run(&pool, repo, "sprint-2", "", None, None, vec![], String::new())
-            .await
-            .unwrap();
+        let run = create_run(
+            &pool,
+            repo,
+            "sprint-2",
+            "",
+            None,
+            None,
+            vec![],
+            String::new(),
+        )
+        .await
+        .unwrap();
         finalize_run(&pool, repo, &run.run_id, "aborted")
             .await
             .unwrap();

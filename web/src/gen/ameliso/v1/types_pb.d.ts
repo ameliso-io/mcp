@@ -228,6 +228,14 @@ export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
    * @generated from field: string reason = 2;
    */
   reason: string;
+
+  /**
+   * Latest test result status for this case — lets agents prioritize
+   * never-run or failed cases over recently-passed ones.
+   *
+   * @generated from field: ameliso.v1.ResultStatus latest_status = 3;
+   */
+  latestStatus: ResultStatus;
 };
 
 /**
@@ -386,3 +394,4 @@ export enum Priority {
  * Describes the enum ameliso.v1.Priority.
  */
 export declare const PrioritySchema: GenEnum<Priority>;
+

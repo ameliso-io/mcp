@@ -413,8 +413,19 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                           <span className="sr-only">{ac.case.priority} priority</span>
                         </>
                       )}
+                      <span
+                        className={styles.statusDot}
+                        aria-hidden="true"
+                        data-status={ResultStatus[ac.latestStatus]}
+                      />
                       <span className={styles.affectedPath}>{ac.case?.path}</span>
                       <span className={styles.affectedTitle}>{ac.case?.title}</span>
+                      <span
+                        className={styles.coverageStatus}
+                        data-status={ResultStatus[ac.latestStatus]}
+                      >
+                        {statusLabel(ac.latestStatus)}
+                      </span>
                       <span className={styles.affectedReason}>{ac.reason}</span>
                     </li>
                   ))}

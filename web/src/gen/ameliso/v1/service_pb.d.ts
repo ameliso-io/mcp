@@ -4,19 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type {
-  AffectedCase,
-  Case,
-  CaseResult,
-  CoverageEntry,
-  Priority,
-  Repository,
-  ResultStatus,
-  Run,
-  RunMeta,
-  RunStatus,
-  Suite,
-} from "./types_pb";
+import type { AffectedCase, Case, CaseResult, CoverageEntry, Priority, Repository, ResultStatus, Run, RunMeta, RunStatus, Suite } from "./types_pb";
 
 /**
  * Describes the file ameliso/v1/service.proto.
@@ -1269,8 +1257,8 @@ export declare const GetRepoStatusResponseSchema: GenMessage<GetRepoStatusRespon
 /**
  * @generated from message ameliso.v1.GetGitHubInstallUrlRequest
  */
-export declare type GetGitHubInstallUrlRequest =
-  Message<"ameliso.v1.GetGitHubInstallUrlRequest"> & {};
+export declare type GetGitHubInstallUrlRequest = Message<"ameliso.v1.GetGitHubInstallUrlRequest"> & {
+};
 
 /**
  * Describes the message ameliso.v1.GetGitHubInstallUrlRequest.
@@ -1281,18 +1269,17 @@ export declare const GetGitHubInstallUrlRequestSchema: GenMessage<GetGitHubInsta
 /**
  * @generated from message ameliso.v1.GetGitHubInstallUrlResponse
  */
-export declare type GetGitHubInstallUrlResponse =
-  Message<"ameliso.v1.GetGitHubInstallUrlResponse"> & {
-    /**
-     * @generated from field: string url = 1;
-     */
-    url: string;
+export declare type GetGitHubInstallUrlResponse = Message<"ameliso.v1.GetGitHubInstallUrlResponse"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
 
-    /**
-     * @generated from field: bool configured = 2;
-     */
-    configured: boolean;
-  };
+  /**
+   * @generated from field: bool configured = 2;
+   */
+  configured: boolean;
+};
 
 /**
  * Describes the message ameliso.v1.GetGitHubInstallUrlResponse.
@@ -1303,13 +1290,12 @@ export declare const GetGitHubInstallUrlResponseSchema: GenMessage<GetGitHubInst
 /**
  * @generated from message ameliso.v1.HandleGitHubCallbackRequest
  */
-export declare type HandleGitHubCallbackRequest =
-  Message<"ameliso.v1.HandleGitHubCallbackRequest"> & {
-    /**
-     * @generated from field: string installation_id = 1;
-     */
-    installationId: string;
-  };
+export declare type HandleGitHubCallbackRequest = Message<"ameliso.v1.HandleGitHubCallbackRequest"> & {
+  /**
+   * @generated from field: string installation_id = 1;
+   */
+  installationId: string;
+};
 
 /**
  * Describes the message ameliso.v1.HandleGitHubCallbackRequest.
@@ -1320,13 +1306,12 @@ export declare const HandleGitHubCallbackRequestSchema: GenMessage<HandleGitHubC
 /**
  * @generated from message ameliso.v1.HandleGitHubCallbackResponse
  */
-export declare type HandleGitHubCallbackResponse =
-  Message<"ameliso.v1.HandleGitHubCallbackResponse"> & {
-    /**
-     * @generated from field: repeated ameliso.v1.Repository repositories = 1;
-     */
-    repositories: Repository[];
-  };
+export declare type HandleGitHubCallbackResponse = Message<"ameliso.v1.HandleGitHubCallbackResponse"> & {
+  /**
+   * @generated from field: repeated ameliso.v1.Repository repositories = 1;
+   */
+  repositories: Repository[];
+};
 
 /**
  * Describes the message ameliso.v1.HandleGitHubCallbackResponse.
@@ -1337,7 +1322,8 @@ export declare const HandleGitHubCallbackResponseSchema: GenMessage<HandleGitHub
 /**
  * @generated from message ameliso.v1.ListRepositoriesRequest
  */
-export declare type ListRepositoriesRequest = Message<"ameliso.v1.ListRepositoriesRequest"> & {};
+export declare type ListRepositoriesRequest = Message<"ameliso.v1.ListRepositoriesRequest"> & {
+};
 
 /**
  * Describes the message ameliso.v1.ListRepositoriesRequest.
@@ -1412,7 +1398,8 @@ export declare const RemoveRepositoryRequestSchema: GenMessage<RemoveRepositoryR
 /**
  * @generated from message ameliso.v1.RemoveRepositoryResponse
  */
-export declare type RemoveRepositoryResponse = Message<"ameliso.v1.RemoveRepositoryResponse"> & {};
+export declare type RemoveRepositoryResponse = Message<"ameliso.v1.RemoveRepositoryResponse"> & {
+};
 
 /**
  * Describes the message ameliso.v1.RemoveRepositoryResponse.
@@ -1436,7 +1423,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListCasesRequestSchema;
     output: typeof ListCasesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetCase
    */
@@ -1444,7 +1431,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetCaseRequestSchema;
     output: typeof GetCaseResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.CreateCase
    */
@@ -1452,7 +1439,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof CreateCaseRequestSchema;
     output: typeof CreateCaseResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.BulkCreateCases
    */
@@ -1460,7 +1447,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof BulkCreateCasesRequestSchema;
     output: typeof BulkCreateCasesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.UpdateCase
    */
@@ -1468,7 +1455,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateCaseRequestSchema;
     output: typeof UpdateCaseResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteCase
    */
@@ -1476,7 +1463,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteCaseRequestSchema;
     output: typeof DeleteCaseResponseSchema;
-  };
+  },
   /**
    * --- Suites ---
    *
@@ -1486,7 +1473,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListSuitesRequestSchema;
     output: typeof ListSuitesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetSuite
    */
@@ -1494,7 +1481,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetSuiteRequestSchema;
     output: typeof GetSuiteResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.CreateSuite
    */
@@ -1502,7 +1489,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof CreateSuiteRequestSchema;
     output: typeof CreateSuiteResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.UpdateSuite
    */
@@ -1510,7 +1497,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateSuiteRequestSchema;
     output: typeof UpdateSuiteResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteSuite
    */
@@ -1518,7 +1505,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteSuiteRequestSchema;
     output: typeof DeleteSuiteResponseSchema;
-  };
+  },
   /**
    * --- Runs ---
    *
@@ -1528,7 +1515,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListRunsRequestSchema;
     output: typeof ListRunsResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetRun
    */
@@ -1536,7 +1523,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetRunRequestSchema;
     output: typeof GetRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.CreateRun
    */
@@ -1544,7 +1531,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof CreateRunRequestSchema;
     output: typeof CreateRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.RecordResult
    */
@@ -1552,7 +1539,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof RecordResultRequestSchema;
     output: typeof RecordResultResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.BulkRecordResults
    */
@@ -1560,7 +1547,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof BulkRecordResultsRequestSchema;
     output: typeof BulkRecordResultsResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.FinalizeRun
    */
@@ -1568,7 +1555,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof FinalizeRunRequestSchema;
     output: typeof FinalizeRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.DeleteRun
    */
@@ -1576,7 +1563,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof DeleteRunRequestSchema;
     output: typeof DeleteRunResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.GetPendingCases
    */
@@ -1584,7 +1571,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetPendingCasesRequestSchema;
     output: typeof GetPendingCasesResponseSchema;
-  };
+  },
   /**
    * Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
    *
@@ -1594,7 +1581,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof UpdateRunRequestSchema;
     output: typeof UpdateRunResponseSchema;
-  };
+  },
   /**
    * --- Reports ---
    *
@@ -1604,7 +1591,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetCoverageReportRequestSchema;
     output: typeof GetCoverageReportResponseSchema;
-  };
+  },
   /**
    * Return cases affected by source changes since since_ref (uses GitHub compare API).
    *
@@ -1614,7 +1601,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetAffectedCasesRequestSchema;
     output: typeof GetAffectedCasesResponseSchema;
-  };
+  },
   /**
    * Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
    *
@@ -1624,7 +1611,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetRepoStatusRequestSchema;
     output: typeof GetRepoStatusResponseSchema;
-  };
+  },
   /**
    * --- GitHub App ---
    *
@@ -1634,7 +1621,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof GetGitHubInstallUrlRequestSchema;
     output: typeof GetGitHubInstallUrlResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.HandleGitHubCallback
    */
@@ -1642,7 +1629,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof HandleGitHubCallbackRequestSchema;
     output: typeof HandleGitHubCallbackResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.ListRepositories
    */
@@ -1650,7 +1637,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof ListRepositoriesRequestSchema;
     output: typeof ListRepositoriesResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.SyncRepository
    */
@@ -1658,7 +1645,7 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof SyncRepositoryRequestSchema;
     output: typeof SyncRepositoryResponseSchema;
-  };
+  },
   /**
    * @generated from rpc ameliso.v1.AmelisoService.RemoveRepository
    */
@@ -1666,5 +1653,6 @@ export declare const AmelisoService: GenService<{
     methodKind: "unary";
     input: typeof RemoveRepositoryRequestSchema;
     output: typeof RemoveRepositoryResponseSchema;
-  };
+  },
 }>;
+
