@@ -10,6 +10,7 @@ import {
   SuiteSchema,
 } from "@/gen/ameliso/v1/types_pb";
 import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
+import { ActiveRunStatusSchema } from "@/gen/ameliso/v1/service_pb";
 
 export function makeCase(init: MessageInitShape<typeof CaseSchema> = {}) {
   return create(CaseSchema, {
@@ -66,6 +67,20 @@ export function makeCoverageEntry(init: MessageInitShape<typeof CoverageEntrySch
 export function makeAffectedCase(init: MessageInitShape<typeof AffectedCaseSchema> = {}) {
   return create(AffectedCaseSchema, {
     reason: "file changed",
+    ...init,
+  });
+}
+
+export function makeActiveRunStatus(init: MessageInitShape<typeof ActiveRunStatusSchema> = {}) {
+  return create(ActiveRunStatusSchema, {
+    runId: "run-abc",
+    tester: "",
+    suite: "",
+    date: "2026-01-01",
+    pendingCases: 0,
+    totalInScope: 0,
+    commitSha: "",
+    environment: "",
     ...init,
   });
 }

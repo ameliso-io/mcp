@@ -308,9 +308,11 @@ message GetPendingCasesRequest {
   Priority priority_filter = 3;
 }
 
-// A pending test case with status and body — for agent-friendly GetPendingCases.
+// A pending test case with status — for agent-friendly GetPendingCases and CreateRun.
+// case.body is always populated; the top-level body field is deprecated.
 message PendingEntry {
   Case case = 1;
+  // Deprecated: use case.body instead (Case.body is now always populated).
   string body = 2;
   ResultStatus latest_status = 3;
 }
@@ -382,6 +384,7 @@ message ActiveRunStatus {
   int32 pending_cases = 5;
   int32 total_in_scope = 6;
   string commit_sha = 7;
+  string environment = 8;
 }
 
 message GetRepoStatusResponse {

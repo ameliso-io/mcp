@@ -4,7 +4,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import OverviewTab from "./OverviewTab";
 import { client } from "@/client";
 import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
-import { makeAffectedCase, makeCoverageEntry, makeRunMeta } from "@/test/factories";
+import { makeAffectedCase, makeCoverageEntry, makeActiveRunStatus } from "@/test/factories";
 
 vi.mock("@/client");
 
@@ -43,7 +43,21 @@ beforeEach(() => {
     entries: coverageEntries,
     runCount: 5,
   } as never);
-  vi.mocked(client.listRuns).mockResolvedValue({ runs: [] } as never);
+  vi.mocked(client.getRepoStatus).mockResolvedValue({
+    totalCases: 0,
+    highCases: 0,
+    mediumCases: 0,
+    lowCases: 0,
+    passed: 0,
+    failed: 0,
+    blocked: 0,
+    skipped: 0,
+    neverRun: 0,
+    suiteCount: 0,
+    runCount: 0,
+    activeRuns: [],
+    lastCompletedRun: undefined,
+  } as never);
   vi.mocked(client.getAffectedCases).mockResolvedValue({ cases: [], reason: "" } as never);
 });
 
@@ -90,16 +104,26 @@ describe("OverviewTab", () => {
   });
 
   it("shows active runs panel when in-progress runs exist", async () => {
-    const activeRun = makeRunMeta({ id: "run-abc", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-abc", tester: "alice", environment: "staging" })],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     expect(screen.getByText("run-abc")).toBeInTheDocument();
   });
 
   it("shows pending count for active runs when getRepoStatus has matching data", async () => {
-    const activeRun = makeRunMeta({ id: "2026-01-01-sprint", tester: "bob", environment: "" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     vi.mocked(client.getRepoStatus).mockResolvedValue({
       totalCases: 5,
       highCases: 2,
@@ -113,14 +137,14 @@ describe("OverviewTab", () => {
       suiteCount: 1,
       runCount: 1,
       activeRuns: [
-        {
+        makeActiveRunStatus({
           runId: "2026-01-01-sprint",
           tester: "bob",
           suite: "",
           date: "2026-01-01",
           pendingCases: 2,
           totalInScope: 5,
-        },
+        }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
@@ -167,8 +191,20 @@ describe("OverviewTab", () => {
   });
 
   it("renders Go to Runs link pointing to /runs", async () => {
-    const activeRun = makeRunMeta({ id: "run-xyz", tester: "bob", environment: "prod" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-xyz", tester: "bob", environment: "prod" })],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText("Go to Runs"));
     expect(screen.getByRole("link", { name: "Go to Runs" })).toHaveAttribute(
@@ -274,14 +310,23 @@ describe("OverviewTab", () => {
   });
 
   it("active runs panel not shown when coverage entries empty even with active runs", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-active",
-      tester: "alice",
-      suite: "smoke",
-      date: "2026-01-01",
-    });
     vi.mocked(client.getCoverageReport).mockResolvedValue({ entries: [], runCount: 0 } as never);
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-active", tester: "alice", suite: "smoke", date: "2026-01-01" }),
+      ],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
       expect(screen.getByText("No cases found in this repository.")).toBeInTheDocument()
@@ -348,8 +393,20 @@ describe("OverviewTab", () => {
   });
 
   it("clears existing poll interval when rerendered with new repoId while active runs exist", async () => {
-    const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-poll", tester: "alice", environment: "staging" })],
+    } as never);
     const { rerender } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
     );
@@ -431,21 +488,14 @@ describe("OverviewTab", () => {
 
   it("shows loading state while fetching coverage data", async () => {
     let resolveCoverage: (v: unknown) => void;
-    let resolveRuns: (v: unknown) => void;
     vi.mocked(client.getCoverageReport).mockReturnValue(
       new Promise((res) => {
         resolveCoverage = res;
       }) as never
     );
-    vi.mocked(client.listRuns).mockReturnValue(
-      new Promise((res) => {
-        resolveRuns = res;
-      }) as never
-    );
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
     resolveCoverage!({ entries: [], runCount: 0 });
-    resolveRuns!({ runs: [] });
     await waitFor(() => expect(screen.queryByText("Loading…")).not.toBeInTheDocument());
   });
 
@@ -465,8 +515,20 @@ describe("OverviewTab", () => {
   });
 
   it("unmounts cleanly when polling interval is active", async () => {
-    const activeRun = makeRunMeta({ id: "run-unmount", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-unmount", tester: "alice", environment: "staging" })],
+    } as never);
     const { unmount } = render(
       <OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />
     );
@@ -475,8 +537,20 @@ describe("OverviewTab", () => {
   });
 
   it("getCoverageReport call count matches render cycle — poll uses silent=true so no extra announce", async () => {
-    const activeRun = makeRunMeta({ id: "run-poll", tester: "alice", environment: "staging" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-poll", tester: "alice", environment: "staging" })],
+    } as never);
     // Spy on announce by verifying only one announcement fires for the initial load
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() =>
@@ -567,8 +641,20 @@ describe("OverviewTab", () => {
   });
 
   it('shows "auto-refresh 30s" label in active runs panel', async () => {
-    const activeRun = makeRunMeta({ id: "run-ar", tester: "dave", suite: "", date: "2026-03-01" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-ar", tester: "dave", suite: "", date: "2026-03-01" })],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/auto-refresh 30s/)).toBeInTheDocument());
   });
@@ -585,13 +671,22 @@ describe("OverviewTab", () => {
   });
 
   it("shows suite badge and tester in active runs panel", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-badge",
-      tester: "carol",
-      suite: "e2e",
-      date: "2026-02-01",
-    });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-badge", tester: "carol", suite: "e2e", date: "2026-02-01" }),
+      ],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("e2e")).toBeInTheDocument());
     expect(screen.getByText("carol")).toBeInTheDocument();
@@ -599,14 +694,28 @@ describe("OverviewTab", () => {
   });
 
   it("shows abbreviated commit SHA in active run row when commitSha is set", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-sha",
-      tester: "alice",
-      suite: "",
-      date: "2026-04-01",
-      commitSha: "abc1234567890",
-    });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({
+          runId: "run-sha",
+          tester: "alice",
+          suite: "",
+          date: "2026-04-01",
+          commitSha: "abc1234567890",
+        }),
+      ],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     const shaEl = screen.getByTitle("abc1234567890");
@@ -614,27 +723,44 @@ describe("OverviewTab", () => {
   });
 
   it("does not show commit SHA code element when commitSha is empty", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-no-sha",
-      tester: "bob",
-      suite: "",
-      date: "2026-04-01",
-      commitSha: "",
-    });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-no-sha", tester: "bob", suite: "", date: "2026-04-01", commitSha: "" }),
+      ],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("run-no-sha")).toBeInTheDocument());
     expect(screen.queryByTitle("")).not.toBeInTheDocument();
   });
 
   it("polling timer callback triggers reload when active runs present", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-timer",
-      tester: "alice",
-      suite: "smoke",
-      date: "2026-01-01",
-    });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-timer", tester: "alice", suite: "smoke", date: "2026-01-01" }),
+      ],
+    } as never);
     let capturedCallback: (() => void) | null = null;
     const spy = vi
       .spyOn(globalThis, "setInterval")
@@ -655,21 +781,42 @@ describe("OverviewTab", () => {
   });
 
   it("Go to Runs button not shown when onGoToRuns prop is not provided", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-no-goto",
-      tester: "alice",
-      suite: "smoke",
-      date: "2026-01-01",
-    });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-no-goto", tester: "alice", suite: "smoke", date: "2026-01-01" }),
+      ],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText(/Active Runs/)).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: "Go to Runs" })).not.toBeInTheDocument();
   });
 
   it("does not show suite badge or tester span when active run has empty suite and tester", async () => {
-    const bareRun = makeRunMeta({ id: "run-bare", tester: "", suite: "", date: "2026-04-01" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [bareRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [makeActiveRunStatus({ runId: "run-bare", tester: "", suite: "", date: "2026-04-01" })],
+    } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("run-bare")).toBeInTheDocument());
     // suite badge and tester span are conditionally rendered — must be absent
@@ -678,13 +825,22 @@ describe("OverviewTab", () => {
   });
 
   it("polling timer callback shows error banner when load fails", async () => {
-    const activeRun = makeRunMeta({
-      id: "run-poll-err",
-      tester: "bob",
-      suite: "smoke",
-      date: "2026-01-01",
-    });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
+    vi.mocked(client.getRepoStatus).mockResolvedValue({
+      totalCases: 0,
+      highCases: 0,
+      mediumCases: 0,
+      lowCases: 0,
+      passed: 0,
+      failed: 0,
+      blocked: 0,
+      skipped: 0,
+      neverRun: 0,
+      suiteCount: 0,
+      runCount: 0,
+      activeRuns: [
+        makeActiveRunStatus({ runId: "run-poll-err", tester: "bob", suite: "smoke", date: "2026-01-01" }),
+      ],
+    } as never);
     vi.mocked(client.getCoverageReport)
       .mockResolvedValueOnce({ entries: coverageEntries, runCount: 5 } as never)
       .mockRejectedValueOnce(new Error("poll error"));
@@ -707,7 +863,7 @@ describe("OverviewTab", () => {
   });
 
   it("active runs panel not shown when coverage entries exist but no active runs", async () => {
-    // default mocks: entries=[2 entries], listRuns=[] — activeRuns is empty
+    // default mocks: entries=[2 entries], getRepoStatus.activeRuns=[] — activeRuns is empty
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => expect(screen.getByText("auth/login")).toBeInTheDocument());
     // active runs panel only shown when activeRuns.length > 0
@@ -715,42 +871,31 @@ describe("OverviewTab", () => {
   });
 
   it("progress bar renders 0% width when totalInScope is zero", async () => {
-    const activeRun = makeRunMeta({ id: "run-zero", tester: "eve", environment: "" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     vi.mocked(client.getRepoStatus).mockResolvedValue({
-      totalCases: 0,
-      highCases: 0,
+      totalCases: 5,
+      highCases: 5,
       mediumCases: 0,
       lowCases: 0,
       passed: 0,
       failed: 0,
       blocked: 0,
       skipped: 0,
-      neverRun: 0,
+      neverRun: 5,
       suiteCount: 0,
       runCount: 1,
       activeRuns: [
-        {
-          runId: "run-zero",
-          tester: "eve",
-          suite: "",
-          date: "2026-01-01",
-          pendingCases: 0,
-          totalInScope: 0,
-        },
+        makeActiveRunStatus({ runId: "run-zero", tester: "eve", environment: "", totalInScope: 5, pendingCases: 5 }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);
     await waitFor(() => screen.getByText(/Active Runs/));
-    expect(screen.getByText("0/0 done")).toBeInTheDocument();
+    expect(screen.getByText("0/5 done")).toBeInTheDocument();
     const bar = screen.getByRole("progressbar", { name: "Run progress" });
-    expect(bar).toHaveAttribute("aria-valuemax", "0");
+    expect(bar).toHaveAttribute("aria-valuemax", "5");
     expect((bar.firstChild as HTMLElement).style.width).toBe("0%");
   });
 
   it("progress bar aria-valuetext uses singular 'case' when totalInScope is 1", async () => {
-    const activeRun = makeRunMeta({ id: "run-one", tester: "eve", environment: "" });
-    vi.mocked(client.listRuns).mockResolvedValue({ runs: [activeRun] } as never);
     vi.mocked(client.getRepoStatus).mockResolvedValue({
       totalCases: 1,
       highCases: 1,
@@ -764,14 +909,7 @@ describe("OverviewTab", () => {
       suiteCount: 0,
       runCount: 1,
       activeRuns: [
-        {
-          runId: "run-one",
-          tester: "eve",
-          suite: "",
-          date: "2026-01-01",
-          pendingCases: 1,
-          totalInScope: 1,
-        },
+        makeActiveRunStatus({ runId: "run-one", tester: "eve", environment: "", pendingCases: 1, totalInScope: 1 }),
       ],
     } as never);
     render(<OverviewTab repoId="owner/repo" basePath="/repositories/owner/repo" />);

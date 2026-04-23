@@ -1469,6 +1469,7 @@ impl AmelisoService for AmelisoServer {
                 pending_cases: pending,
                 total_in_scope,
                 commit_sha: run_meta.commit_sha.clone(),
+                environment: run_meta.environment.clone().unwrap_or_default(),
             });
         }
 

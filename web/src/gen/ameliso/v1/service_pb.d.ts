@@ -996,7 +996,8 @@ export declare type GetPendingCasesRequest = Message<"ameliso.v1.GetPendingCases
 export declare const GetPendingCasesRequestSchema: GenMessage<GetPendingCasesRequest>;
 
 /**
- * A pending test case with status and body — for agent-friendly GetPendingCases.
+ * A pending test case with status — for agent-friendly GetPendingCases and CreateRun.
+ * case.body is always populated; the top-level body field is deprecated.
  *
  * @generated from message ameliso.v1.PendingEntry
  */
@@ -1007,6 +1008,8 @@ export declare type PendingEntry = Message<"ameliso.v1.PendingEntry"> & {
   case?: Case;
 
   /**
+   * Deprecated: use case.body instead (Case.body is now always populated).
+   *
    * @generated from field: string body = 2;
    */
   body: string;
@@ -1270,6 +1273,11 @@ export declare type ActiveRunStatus = Message<"ameliso.v1.ActiveRunStatus"> & {
    * @generated from field: string commit_sha = 7;
    */
   commitSha: string;
+
+  /**
+   * @generated from field: string environment = 8;
+   */
+  environment: string;
 };
 
 /**

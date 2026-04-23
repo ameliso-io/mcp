@@ -6,8 +6,9 @@ import Link from "next/link";
 import styles from "./OverviewTab.module.css";
 import { client } from "@/client";
 import { errorMessage } from "@/errorMessage";
-import type { AffectedCase, CoverageEntry, RunMeta } from "@/gen/ameliso/v1/types_pb";
-import { ResultStatus, RunStatus } from "@/gen/ameliso/v1/types_pb";
+import type { AffectedCase, CoverageEntry } from "@/gen/ameliso/v1/types_pb";
+import type { ActiveRunStatus } from "@/gen/ameliso/v1/service_pb";
+import { ResultStatus } from "@/gen/ameliso/v1/types_pb";
 import { useAnnounce } from "@/hooks/useAnnounce";
 
 interface Props {
@@ -55,10 +56,7 @@ export default function OverviewTab({ repoId, basePath }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeRuns, setActiveRuns] = useState<RunMeta[]>([]);
-  const [activeRunsStatus, setActiveRunsStatus] = useState<
-    Map<string, { pendingCases: number; totalInScope: number }>
-  >(new Map());
+  const [activeRuns, setActiveRuns] = useState<ActiveRunStatus[]>([]);
 
   const [coverageFilter, setCoverageFilter] = useState<ResultStatus>(ResultStatus.UNSPECIFIED);
 
@@ -76,22 +74,13 @@ export default function OverviewTab({ repoId, basePath }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const [coverageRes, activeRunsRes, statusRes] = await Promise.all([
+        const [coverageRes, statusRes] = await Promise.all([
           client.getCoverageReport({ repoId: path, statusFilter: coverageFilter }),
-          client.listRuns({ repoId: path, status: RunStatus.IN_PROGRESS }),
           client.getRepoStatus({ repoId: path }),
         ]);
         setEntries(coverageRes.entries);
         setRunCount(coverageRes.runCount);
-        setActiveRuns(activeRunsRes.runs);
-        setActiveRunsStatus(
-          new Map(
-            statusRes.activeRuns.map((r) => [
-              r.runId,
-              { pendingCases: r.pendingCases, totalInScope: r.totalInScope },
-            ])
-          )
-        );
+        setActiveRuns(statusRes.activeRuns);
         if (!silent) {
           const n = coverageRes.entries.length;
           announce(n === 0 ? "No cases found" : `${n} case${n !== 1 ? "s" : ""} loaded`);
@@ -242,50 +231,44 @@ export default function OverviewTab({ repoId, basePath }: Props) {
                 </Link>
               </div>
               <ul className={styles.runList} role="list">
-                {activeRuns.map((run) => {
-                  const status = activeRunsStatus.get(run.id);
-                  return (
-                    <li key={run.id} className={styles.runRow}>
-                      <span className={styles.runId}>{run.id}</span>
-                      {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
-                      {run.tester && <span className={styles.runTester}>{run.tester}</span>}
-                      <time className={styles.runDate} dateTime={run.date}>
-                        {run.date}
-                      </time>
-                      {run.commitSha && (
-                        <code className={styles.runCommitSha} title={run.commitSha}>
-                          {run.commitSha.slice(0, 7)}
-                        </code>
-                      )}
-                      {status && (
-                        <div className={styles.runProgressWrap}>
+                {activeRuns.map((run) => (
+                  <li key={run.runId} className={styles.runRow}>
+                    <span className={styles.runId}>{run.runId}</span>
+                    {run.suite && <span className={styles.runSuiteBadge}>{run.suite}</span>}
+                    {run.tester && <span className={styles.runTester}>{run.tester}</span>}
+                    <time className={styles.runDate} dateTime={run.date}>
+                      {run.date}
+                    </time>
+                    {run.commitSha && (
+                      <code className={styles.runCommitSha} title={run.commitSha}>
+                        {run.commitSha.slice(0, 7)}
+                      </code>
+                    )}
+                    {run.totalInScope > 0 && (
+                      <div className={styles.runProgressWrap}>
+                        <div
+                          className={styles.runProgressTrack}
+                          role="progressbar"
+                          aria-label="Run progress"
+                          aria-valuemin={0}
+                          aria-valuemax={run.totalInScope}
+                          aria-valuenow={run.totalInScope - run.pendingCases}
+                          aria-valuetext={`${run.totalInScope - run.pendingCases} of ${run.totalInScope} case${run.totalInScope !== 1 ? "s" : ""} complete`}
+                        >
                           <div
-                            className={styles.runProgressTrack}
-                            role="progressbar"
-                            aria-label="Run progress"
-                            aria-valuemin={0}
-                            aria-valuemax={status.totalInScope}
-                            aria-valuenow={status.totalInScope - status.pendingCases}
-                            aria-valuetext={`${status.totalInScope - status.pendingCases} of ${status.totalInScope} case${status.totalInScope !== 1 ? "s" : ""} complete`}
-                          >
-                            <div
-                              className={styles.runProgressBar}
-                              style={{
-                                width:
-                                  status.totalInScope > 0
-                                    ? `${Math.round(((status.totalInScope - status.pendingCases) / status.totalInScope) * 100)}%`
-                                    : "0%",
-                              }}
-                            />
-                          </div>
-                          <span className={styles.runProgressText}>
-                            {status.totalInScope - status.pendingCases}/{status.totalInScope} done
-                          </span>
+                            className={styles.runProgressBar}
+                            style={{
+                              width: `${Math.round(((run.totalInScope - run.pendingCases) / run.totalInScope) * 100)}%`,
+                            }}
+                          />
                         </div>
-                      )}
-                    </li>
-                  );
-                })}
+                        <span className={styles.runProgressText}>
+                          {run.totalInScope - run.pendingCases}/{run.totalInScope} done
+                        </span>
+                      </div>
+                    )}
+                  </li>
+                ))}
               </ul>
             </div>
           )}

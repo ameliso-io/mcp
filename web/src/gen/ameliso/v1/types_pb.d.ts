@@ -217,7 +217,7 @@ export declare type CoverageEntry = Message<"ameliso.v1.CoverageEntry"> & {
   lastRunDate: string;
 
   /**
-   * Markdown body of the test case — populated in GetCoverageReport and GetPendingCases.
+   * Deprecated: use case.body instead (Case.body is now always populated).
    *
    * @generated from field: string body = 5;
    */
@@ -253,8 +253,7 @@ export declare type AffectedCase = Message<"ameliso.v1.AffectedCase"> & {
   latestStatus: ResultStatus;
 
   /**
-   * Markdown body of the test case — the actual test procedure/steps.
-   * Included so agents can act without a separate GetCase call.
+   * Deprecated: use case.body instead (Case.body is now always populated).
    *
    * @generated from field: string body = 4;
    */
