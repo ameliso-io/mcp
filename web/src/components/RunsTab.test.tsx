@@ -17,6 +17,10 @@ const mockCase = makeCase({
   body: "## Steps\n\n1. Login",
 });
 
+function pendingOf(...cases: Case[]) {
+  return cases.map((c) => ({ case: c, latestStatus: ResultStatus.NEVER, body: c.body }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(client.listRuns).mockResolvedValue({ runs: [] } as never);
@@ -25,7 +29,7 @@ beforeEach(() => {
     dirPath: "runs/2026-01-01-smoke",
   } as never);
   vi.mocked(client.getPendingCases).mockResolvedValue({
-    cases: [mockCase],
+    pending: pendingOf(mockCase),
     totalInScope: 1,
   } as never);
   vi.mocked(client.listCases).mockResolvedValue({ cases: [] } as never);
@@ -276,7 +280,7 @@ describe("RunsTab", () => {
     const case2 = makeCase({ path: "auth/logout", title: "User Logout" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase, case2],
+      pending: pendingOf(mockCase, case2),
       totalInScope: 2,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -434,7 +438,7 @@ describe("RunsTab", () => {
   it("shows progressbar with aria-valuetext for completion progress", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase],
+      pending: pendingOf(mockCase),
       totalInScope: 3,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -449,7 +453,7 @@ describe("RunsTab", () => {
 
   it('shows "all cases recorded" message when pending is empty', async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
-    vi.mocked(client.getPendingCases).mockResolvedValue({ cases: [], totalInScope: 1 } as never);
+    vi.mocked(client.getPendingCases).mockResolvedValue({ pending: [], totalInScope: 1 } as never);
     render(<RunsTab repoId="owner/repo" />);
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
@@ -627,7 +631,7 @@ describe("RunsTab", () => {
     const noBodyCase = makeCase({ path: "auth/login", title: "User Login", body: "" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [noBodyCase],
+      pending: pendingOf(noBodyCase),
       totalInScope: 1,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -660,7 +664,7 @@ describe("RunsTab", () => {
     } as unknown as typeof mockCase;
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase, mockCase2],
+      pending: pendingOf(mockCase, mockCase2 as unknown as Case),
       totalInScope: 2,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -807,7 +811,7 @@ describe("RunsTab", () => {
   it("polling timer callback silently ignores errors", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases)
-      .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
+      .mockResolvedValueOnce({ pending: pendingOf(mockCase), totalInScope: 1 } as never)
       .mockRejectedValueOnce(new Error("poll error"));
     let capturedCallback: (() => Promise<void>) | null = null;
     const spy = vi
@@ -832,7 +836,7 @@ describe("RunsTab", () => {
   it("shows stale warning after two consecutive poll failures", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases)
-      .mockResolvedValueOnce({ cases: [mockCase], totalInScope: 1 } as never)
+      .mockResolvedValueOnce({ pending: pendingOf(mockCase), totalInScope: 1 } as never)
       .mockRejectedValue(new Error("poll error"));
     let capturedCallback: (() => Promise<void>) | null = null;
     const spy = vi
@@ -1033,7 +1037,7 @@ describe("RunsTab", () => {
     } as unknown as Case;
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase, case2],
+      pending: pendingOf(mockCase, case2),
       totalInScope: 2,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -1064,7 +1068,7 @@ describe("RunsTab", () => {
     } as unknown as RunMeta;
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun, run2] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase],
+      pending: pendingOf(mockCase),
       totalInScope: 1,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -1223,7 +1227,7 @@ describe("RunsTab", () => {
     await waitFor(() => screen.getByText("2026-01-01-smoke"));
     await userEvent.click(screen.getByText("2026-01-01-smoke"));
     await waitFor(() => expect(screen.getAllByText("Loading…").length).toBeGreaterThan(0));
-    resolve!({ cases: [mockCase], totalInScope: 1 });
+    resolve!({ pending: pendingOf(mockCase), totalInScope: 1 });
     await waitFor(() => expect(screen.queryAllByText("Loading…").length).toBe(0));
   });
 
@@ -1241,7 +1245,7 @@ describe("RunsTab", () => {
   it("shows progress bar text when totalInScope > 0 and some cases pending", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase],
+      pending: pendingOf(mockCase),
       totalInScope: 3,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -1328,7 +1332,7 @@ describe("RunsTab", () => {
     const noBodyCase = makeCase({ path: "auth/login", title: "User Login", body: "" });
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [noBodyCase],
+      pending: pendingOf(noBodyCase),
       totalInScope: 1,
     } as never);
     render(<RunsTab repoId="owner/repo" />);
@@ -1442,7 +1446,7 @@ describe("RunsTab", () => {
   it("shows inline confirmation when All Passed button clicked", async () => {
     vi.mocked(client.listRuns).mockResolvedValue({ runs: [mockRun] } as never);
     vi.mocked(client.getPendingCases).mockResolvedValue({
-      cases: [mockCase],
+      pending: pendingOf(mockCase),
       totalInScope: 1,
     } as never);
     render(<RunsTab repoId="owner/repo" />);

@@ -127,7 +127,7 @@ export default function RunsTab({
         void client
           .getPendingCases({ repoId, runId })
           .then((res) => {
-            setPendingCases(res.cases);
+            setPendingCases(res.pending.flatMap((e) => (e.case ? [e.case] : [])));
             setTotalInScope(res.totalInScope);
             setPollFailCount(0);
           })
@@ -220,7 +220,7 @@ export default function RunsTab({
     try {
       if (status === RunStatus.IN_PROGRESS) {
         const res = await client.getPendingCases({ repoId, runId });
-        setPendingCases(res.cases);
+        setPendingCases(res.pending.flatMap((e) => (e.case ? [e.case] : [])));
         setTotalInScope(res.totalInScope);
       } else {
         const [runRes, casesRes] = await Promise.all([
@@ -258,7 +258,7 @@ export default function RunsTab({
       announce("Result recorded");
       // Refresh pending
       const res = await client.getPendingCases({ repoId, runId: selectedRunId });
-      setPendingCases(res.cases);
+      setPendingCases(res.pending.flatMap((e) => (e.case ? [e.case] : [])));
       setTotalInScope(res.totalInScope);
     } catch (e) {
       setError(errorMessage(e));
