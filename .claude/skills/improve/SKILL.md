@@ -1,6 +1,6 @@
 ---
 description: Make Ameliso better — pick the highest-value improvement for server or web, implement it end-to-end, verify it builds and tests pass, commit and push.
-allowed-tools: Bash(git *), Bash(pnpm *), Bash(cargo *), Bash(buf *), Read, Edit, Write, Grep, Glob, WebFetch, mcp__centy__centy_v1_CentyDaemon_ListItems, mcp__centy__IsRunning
+allowed-tools: Bash(git *), Bash(pnpm *), Bash(cargo *), Bash(buf *), Read, Edit, Write, Grep, Glob, WebFetch, mcp__centy__centy_v1_CentyDaemon_ListItems, mcp__centy__centy_v1_CentyDaemon_UpdateItem, mcp__centy__IsRunning
 ---
 
 ```mermaid
@@ -39,7 +39,11 @@ flowchart TD
     S4 --> DECLARE["State intent:
     'Implementing X because it advances goal by Y'"]
 
-    DECLARE --> PROTO{Proto change?}
+    DECLARE --> SET_WIP["Set in-progress
+    mcp__centy__centy_v1_CentyDaemon_UpdateItem
+    status → in-progress (if Centy issue selected)"]
+
+    SET_WIP --> PROTO{Proto change?}
 
     PROTO -- yes --> PROTO_FLOW["service.proto
     → buf generate in server/
