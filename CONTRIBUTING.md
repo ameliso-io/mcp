@@ -18,6 +18,7 @@ git submodule update --init --recursive
 
 pnpm install      # installs Husky git hooks
 cargo build       # build all crates
+cargo install cargo-dylint dylint-link  # required for make lint
 ```
 
 Git hooks activate automatically after `pnpm install`:

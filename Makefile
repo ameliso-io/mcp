@@ -27,6 +27,7 @@ coverage-check:
 lint:
 	cd server && cargo clippy --all -- -D warnings
 	cd server && buf lint
+	cd server && cargo dylint --all
 
 db-up:
 	docker compose up -d --wait
