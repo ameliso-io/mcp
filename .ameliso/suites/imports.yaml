@@ -1,0 +1,3 @@
+name: "Import from testmo"
+cases:
+  - import/import-duplication
