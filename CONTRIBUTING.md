@@ -22,8 +22,10 @@ cargo build       # build all crates
 
 Git hooks activate automatically after `pnpm install`:
 
-- `pre-commit`: `make pre-commit` — fmt (Rust + web), clippy, buf lint, web ESLint, cspell
-- `pre-push`: `make pre-push` — fmt-check, build, test, coverage check
+- `pre-commit`: `make pre-commit` — clippy, buf lint
+- `pre-push`: `make pre-push` — (intentionally minimal; each repo defines its own quality gates)
+
+Each controlled repository is responsible for its own pre-push enforcement (tests, coverage, formatting). The ameliso repo hooks stay lean so agents can commit and push freely.
 
 ## Project structure
 
