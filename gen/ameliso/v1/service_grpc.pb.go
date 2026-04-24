@@ -54,6 +54,8 @@ const (
 	AmelisoService_ListRepositories_FullMethodName     = "/ameliso.v1.AmelisoService/ListRepositories"
 	AmelisoService_SyncRepository_FullMethodName       = "/ameliso.v1.AmelisoService/SyncRepository"
 	AmelisoService_RemoveRepository_FullMethodName     = "/ameliso.v1.AmelisoService/RemoveRepository"
+	AmelisoService_RotateRepoApiKey_FullMethodName     = "/ameliso.v1.AmelisoService/RotateRepoApiKey"
+	AmelisoService_ListAuditLog_FullMethodName         = "/ameliso.v1.AmelisoService/ListAuditLog"
 )
 
 // AmelisoServiceClient is the client API for AmelisoService service.
@@ -144,6 +146,10 @@ type AmelisoServiceClient interface {
 	ListRepositories(ctx context.Context, in *ListRepositoriesRequest, opts ...grpc.CallOption) (*ListRepositoriesResponse, error)
 	SyncRepository(ctx context.Context, in *SyncRepositoryRequest, opts ...grpc.CallOption) (*SyncRepositoryResponse, error)
 	RemoveRepository(ctx context.Context, in *RemoveRepositoryRequest, opts ...grpc.CallOption) (*RemoveRepositoryResponse, error)
+	// Generate a new API key for the given repository (rotates any existing key).
+	RotateRepoApiKey(ctx context.Context, in *RotateRepoApiKeyRequest, opts ...grpc.CallOption) (*RotateRepoApiKeyResponse, error)
+	// Append-only log of destructive actions (delete case/run/suite).
+	ListAuditLog(ctx context.Context, in *ListAuditLogRequest, opts ...grpc.CallOption) (*ListAuditLogResponse, error)
 }
 
 type amelisoServiceClient struct {
@@ -504,6 +510,26 @@ func (c *amelisoServiceClient) RemoveRepository(ctx context.Context, in *RemoveR
 	return out, nil
 }
 
+func (c *amelisoServiceClient) RotateRepoApiKey(ctx context.Context, in *RotateRepoApiKeyRequest, opts ...grpc.CallOption) (*RotateRepoApiKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RotateRepoApiKeyResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RotateRepoApiKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) ListAuditLog(ctx context.Context, in *ListAuditLogRequest, opts ...grpc.CallOption) (*ListAuditLogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAuditLogResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListAuditLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AmelisoServiceServer is the server API for AmelisoService service.
 // All implementations must embed UnimplementedAmelisoServiceServer
 // for forward compatibility.
@@ -592,6 +618,10 @@ type AmelisoServiceServer interface {
 	ListRepositories(context.Context, *ListRepositoriesRequest) (*ListRepositoriesResponse, error)
 	SyncRepository(context.Context, *SyncRepositoryRequest) (*SyncRepositoryResponse, error)
 	RemoveRepository(context.Context, *RemoveRepositoryRequest) (*RemoveRepositoryResponse, error)
+	// Generate a new API key for the given repository (rotates any existing key).
+	RotateRepoApiKey(context.Context, *RotateRepoApiKeyRequest) (*RotateRepoApiKeyResponse, error)
+	// Append-only log of destructive actions (delete case/run/suite).
+	ListAuditLog(context.Context, *ListAuditLogRequest) (*ListAuditLogResponse, error)
 	mustEmbedUnimplementedAmelisoServiceServer()
 }
 
@@ -706,6 +736,12 @@ func (UnimplementedAmelisoServiceServer) SyncRepository(context.Context, *SyncRe
 }
 func (UnimplementedAmelisoServiceServer) RemoveRepository(context.Context, *RemoveRepositoryRequest) (*RemoveRepositoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveRepository not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RotateRepoApiKey(context.Context, *RotateRepoApiKeyRequest) (*RotateRepoApiKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RotateRepoApiKey not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ListAuditLog(context.Context, *ListAuditLogRequest) (*ListAuditLogResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAuditLog not implemented")
 }
 func (UnimplementedAmelisoServiceServer) mustEmbedUnimplementedAmelisoServiceServer() {}
 func (UnimplementedAmelisoServiceServer) testEmbeddedByValue()                        {}
@@ -1358,6 +1394,42 @@ func _AmelisoService_RemoveRepository_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_RotateRepoApiKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RotateRepoApiKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RotateRepoApiKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RotateRepoApiKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RotateRepoApiKey(ctx, req.(*RotateRepoApiKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_ListAuditLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAuditLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListAuditLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListAuditLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListAuditLog(ctx, req.(*ListAuditLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AmelisoService_ServiceDesc is the grpc.ServiceDesc for AmelisoService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1504,6 +1576,14 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveRepository",
 			Handler:    _AmelisoService_RemoveRepository_Handler,
+		},
+		{
+			MethodName: "RotateRepoApiKey",
+			Handler:    _AmelisoService_RotateRepoApiKey_Handler,
+		},
+		{
+			MethodName: "ListAuditLog",
+			Handler:    _AmelisoService_ListAuditLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

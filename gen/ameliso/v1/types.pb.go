@@ -491,12 +491,11 @@ func (x *RunMeta) GetTotal() int32 {
 }
 
 type CaseResult struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	CasePath string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
-	Status   ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
-	Notes    string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
-	// Snapshot of the case body markdown at the time the result was recorded.
-	BodySnapshot  string `protobuf:"bytes,4,opt,name=body_snapshot,json=bodySnapshot,proto3" json:"body_snapshot,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CasePath      string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	Status        ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
+	Notes         string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	BodySnapshot  string                 `protobuf:"bytes,4,opt,name=body_snapshot,json=bodySnapshot,proto3" json:"body_snapshot,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -619,7 +618,7 @@ type CoverageEntry struct {
 	LastRunDate  string                 `protobuf:"bytes,4,opt,name=last_run_date,json=lastRunDate,proto3" json:"last_run_date,omitempty"`
 	// Deprecated: use case.body instead (Case.body is now always populated).
 	Body string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
-	// Ratio of recent runs that had inconsistent results (0.0–1.0).
+	// 0.0 = never flaky, 1.0 = status changes every run. Only set when ≥2 results exist.
 	FlakinessScore float32 `protobuf:"fixed32,6,opt,name=flakiness_score,json=flakinessScore,proto3" json:"flakiness_score,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -769,6 +768,82 @@ func (x *AffectedCase) GetBody() string {
 }
 
 // A GitHub repository connected via the GitHub App installation.
+type AuditEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action        string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`                                 // "delete"
+	ResourceType  string                 `protobuf:"bytes,3,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"` // "case", "run", "suite"
+	ResourceId    string                 `protobuf:"bytes,4,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`       // case_path, run_id, or slug
+	CreatedAt     string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`          // ISO-8601 timestamp
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditEntry) Reset() {
+	*x = AuditEntry{}
+	mi := &file_ameliso_v1_types_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditEntry) ProtoMessage() {}
+
+func (x *AuditEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_types_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditEntry.ProtoReflect.Descriptor instead.
+func (*AuditEntry) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AuditEntry) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AuditEntry) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
 type Repository struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                             // "owner/repo"
@@ -777,13 +852,14 @@ type Repository struct {
 	HtmlUrl        string                 `protobuf:"bytes,4,opt,name=html_url,json=htmlUrl,proto3" json:"html_url,omitempty"`    // "https://github.com/owner/repo"
 	InstallationId string                 `protobuf:"bytes,6,opt,name=installation_id,json=installationId,proto3" json:"installation_id,omitempty"`
 	AddedAt        string                 `protobuf:"bytes,8,opt,name=added_at,json=addedAt,proto3" json:"added_at,omitempty"`
+	ApiKey         string                 `protobuf:"bytes,9,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Repository) Reset() {
 	*x = Repository{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[7]
+	mi := &file_ameliso_v1_types_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -795,7 +871,7 @@ func (x *Repository) String() string {
 func (*Repository) ProtoMessage() {}
 
 func (x *Repository) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[7]
+	mi := &file_ameliso_v1_types_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -808,7 +884,7 @@ func (x *Repository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Repository.ProtoReflect.Descriptor instead.
 func (*Repository) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{7}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Repository) GetId() string {
@@ -849,6 +925,13 @@ func (x *Repository) GetInstallationId() string {
 func (x *Repository) GetAddedAt() string {
 	if x != nil {
 		return x.AddedAt
+	}
+	return ""
+}
+
+func (x *Repository) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
 	}
 	return ""
 }
@@ -910,7 +993,16 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12=\n" +
 	"\rlatest_status\x18\x03 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\flatestStatus\x12\x12\n" +
-	"\x04body\x18\x04 \x01(\tR\x04body\"\xcc\x01\n" +
+	"\x04body\x18\x04 \x01(\tR\x04body\"\x99\x01\n" +
+	"\n" +
+	"AuditEntry\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x16\n" +
+	"\x06action\x18\x02 \x01(\tR\x06action\x12#\n" +
+	"\rresource_type\x18\x03 \x01(\tR\fresourceType\x12\x1f\n" +
+	"\vresource_id\x18\x04 \x01(\tR\n" +
+	"resourceId\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xe5\x01\n" +
 	"\n" +
 	"Repository\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -918,7 +1010,8 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\tfull_name\x18\x03 \x01(\tR\bfullName\x12\x19\n" +
 	"\bhtml_url\x18\x04 \x01(\tR\ahtmlUrl\x12'\n" +
 	"\x0finstallation_id\x18\x06 \x01(\tR\x0einstallationId\x12\x19\n" +
-	"\badded_at\x18\b \x01(\tR\aaddedAtJ\x04\b\x05\x10\x06J\x04\b\a\x10\bR\n" +
+	"\badded_at\x18\b \x01(\tR\aaddedAt\x12\x17\n" +
+	"\aapi_key\x18\t \x01(\tR\x06apiKeyJ\x04\b\x05\x10\x06J\x04\b\a\x10\bR\n" +
 	"local_pathR\x06cloned*u\n" +
 	"\tRunStatus\x12\x1a\n" +
 	"\x16RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
@@ -951,7 +1044,7 @@ func file_ameliso_v1_types_proto_rawDescGZIP() []byte {
 }
 
 var file_ameliso_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_ameliso_v1_types_proto_goTypes = []any{
 	(RunStatus)(0),        // 0: ameliso.v1.RunStatus
 	(ResultStatus)(0),     // 1: ameliso.v1.ResultStatus
@@ -963,7 +1056,8 @@ var file_ameliso_v1_types_proto_goTypes = []any{
 	(*Run)(nil),           // 7: ameliso.v1.Run
 	(*CoverageEntry)(nil), // 8: ameliso.v1.CoverageEntry
 	(*AffectedCase)(nil),  // 9: ameliso.v1.AffectedCase
-	(*Repository)(nil),    // 10: ameliso.v1.Repository
+	(*AuditEntry)(nil),    // 10: ameliso.v1.AuditEntry
+	(*Repository)(nil),    // 11: ameliso.v1.Repository
 }
 var file_ameliso_v1_types_proto_depIdxs = []int32{
 	0, // 0: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
@@ -992,7 +1086,7 @@ func file_ameliso_v1_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_types_proto_rawDesc), len(file_ameliso_v1_types_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
