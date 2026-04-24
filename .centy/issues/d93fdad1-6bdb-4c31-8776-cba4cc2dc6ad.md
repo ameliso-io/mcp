@@ -1,10 +1,10 @@
 ---
 # This file is managed by Centy. Use the Centy CLI to modify it.
 displayNumber: 3
-status: open
+status: closed
 priority: 1
 createdAt: 2026-04-21T10:40:26.671669+00:00
-updatedAt: 2026-04-21T10:40:26.671669+00:00
+updatedAt: 2026-04-24T09:10:54.022438+00:00
 tags:
 - testing
 - server
