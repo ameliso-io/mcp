@@ -491,11 +491,12 @@ func (x *RunMeta) GetTotal() int32 {
 }
 
 type CaseResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CasePath      string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
-	Status        ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
-	Notes         string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
-	BodySnapshot  string                 `protobuf:"bytes,4,opt,name=body_snapshot,json=bodySnapshot,proto3" json:"body_snapshot,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	CasePath string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	Status   ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
+	Notes    string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	// Snapshot of case body (markdown) at time of result recording.
+	BodySnapshot  string `protobuf:"bytes,4,opt,name=body_snapshot,json=bodySnapshot,proto3" json:"body_snapshot,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -767,7 +768,6 @@ func (x *AffectedCase) GetBody() string {
 	return ""
 }
 
-// A GitHub repository connected via the GitHub App installation.
 type AuditEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -844,6 +844,7 @@ func (x *AuditEntry) GetCreatedAt() string {
 	return ""
 }
 
+// A GitHub repository connected via the GitHub App installation.
 type Repository struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                             // "owner/repo"

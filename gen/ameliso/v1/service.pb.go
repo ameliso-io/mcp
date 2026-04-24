@@ -1465,8 +1465,10 @@ type ListSuitesRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	RepoId string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
 	// 0 = return all (default, backward-compatible)
-	PageSize      int32  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageSize  int32  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Optional free-text search against slug and name.
+	Query         string `protobuf:"bytes,4,opt,name=query,proto3" json:"query,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1518,6 +1520,13 @@ func (x *ListSuitesRequest) GetPageSize() int32 {
 func (x *ListSuitesRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListSuitesRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
 	}
 	return ""
 }
@@ -2133,8 +2142,10 @@ type ListRunsRequest struct {
 	RepoId string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
 	Status RunStatus              `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.RunStatus" json:"status,omitempty"`
 	// 0 = return all (default, backward-compatible)
-	PageSize      int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageSize  int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Optional free-text search against run_id, suite, and environment.
+	Query         string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2193,6 +2204,13 @@ func (x *ListRunsRequest) GetPageSize() int32 {
 func (x *ListRunsRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListRunsRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
 	}
 	return ""
 }
@@ -4929,12 +4947,13 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x12RestoreCaseRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tcase_path\x18\x02 \x01(\tR\bcasePath\"\x15\n" +
-	"\x13RestoreCaseResponse\"h\n" +
+	"\x13RestoreCaseResponse\"~\n" +
 	"\x11ListSuitesRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"\x88\x01\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x14\n" +
+	"\x05query\x18\x04 \x01(\tR\x05query\"\x88\x01\n" +
 	"\x12ListSuitesResponse\x12)\n" +
 	"\x06suites\x18\x01 \x03(\v2\x11.ameliso.v1.SuiteR\x06suites\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
@@ -4972,13 +4991,14 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x13RestoreSuiteRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\"\x16\n" +
-	"\x14RestoreSuiteResponse\"\x95\x01\n" +
+	"\x14RestoreSuiteResponse\"\xab\x01\n" +
 	"\x0fListRunsRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12-\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x15.ameliso.v1.RunStatusR\x06status\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\"\x84\x01\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\x12\x14\n" +
+	"\x05query\x18\x05 \x01(\tR\x05query\"\x84\x01\n" +
 	"\x10ListRunsResponse\x12'\n" +
 	"\x04runs\x18\x01 \x03(\v2\x13.ameliso.v1.RunMetaR\x04runs\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
