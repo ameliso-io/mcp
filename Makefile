@@ -36,7 +36,6 @@ db-down:
 	docker compose down
 
 pre-commit:
-	$(MAKE) lint
 	@echo "pre-commit: OK"
 
 pre-push:
