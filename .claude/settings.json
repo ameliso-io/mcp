@@ -90,7 +90,8 @@
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_evaluate",
-      "Bash(buf --version)"
+      "Bash(buf --version)",
+      "mcp__centy__centy_v1_CentyDaemon_DeleteItem"
     ]
   }
 }
