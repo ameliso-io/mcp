@@ -491,10 +491,12 @@ func (x *RunMeta) GetTotal() int32 {
 }
 
 type CaseResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CasePath      string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
-	Status        ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
-	Notes         string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	CasePath string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	Status   ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
+	Notes    string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	// Snapshot of the case body markdown at the time the result was recorded.
+	BodySnapshot  string `protobuf:"bytes,4,opt,name=body_snapshot,json=bodySnapshot,proto3" json:"body_snapshot,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -546,6 +548,13 @@ func (x *CaseResult) GetStatus() ResultStatus {
 func (x *CaseResult) GetNotes() string {
 	if x != nil {
 		return x.Notes
+	}
+	return ""
+}
+
+func (x *CaseResult) GetBodySnapshot() string {
+	if x != nil {
+		return x.BodySnapshot
 	}
 	return ""
 }
@@ -609,9 +618,11 @@ type CoverageEntry struct {
 	LastRunId    string                 `protobuf:"bytes,3,opt,name=last_run_id,json=lastRunId,proto3" json:"last_run_id,omitempty"`
 	LastRunDate  string                 `protobuf:"bytes,4,opt,name=last_run_date,json=lastRunDate,proto3" json:"last_run_date,omitempty"`
 	// Deprecated: use case.body instead (Case.body is now always populated).
-	Body          string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Body string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	// Ratio of recent runs that had inconsistent results (0.0–1.0).
+	FlakinessScore float32 `protobuf:"fixed32,6,opt,name=flakiness_score,json=flakinessScore,proto3" json:"flakiness_score,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CoverageEntry) Reset() {
@@ -677,6 +688,13 @@ func (x *CoverageEntry) GetBody() string {
 		return x.Body
 	}
 	return ""
+}
+
+func (x *CoverageEntry) GetFlakinessScore() float32 {
+	if x != nil {
+		return x.FlakinessScore
+	}
+	return 0
 }
 
 type AffectedCase struct {
@@ -871,21 +889,23 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\ablocked\x18\n" +
 	" \x01(\x05R\ablocked\x12\x18\n" +
 	"\askipped\x18\v \x01(\x05R\askipped\x12\x14\n" +
-	"\x05total\x18\f \x01(\x05R\x05total\"q\n" +
+	"\x05total\x18\f \x01(\x05R\x05total\"\x96\x01\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\x06status\x12\x14\n" +
-	"\x05notes\x18\x03 \x01(\tR\x05notes\"`\n" +
+	"\x05notes\x18\x03 \x01(\tR\x05notes\x12#\n" +
+	"\rbody_snapshot\x18\x04 \x01(\tR\fbodySnapshot\"`\n" +
 	"\x03Run\x12'\n" +
 	"\x04meta\x18\x01 \x01(\v2\x13.ameliso.v1.RunMetaR\x04meta\x120\n" +
-	"\aresults\x18\x02 \x03(\v2\x16.ameliso.v1.CaseResultR\aresults\"\xcc\x01\n" +
+	"\aresults\x18\x02 \x03(\v2\x16.ameliso.v1.CaseResultR\aresults\"\xf5\x01\n" +
 	"\rCoverageEntry\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12=\n" +
 	"\rlatest_status\x18\x02 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\flatestStatus\x12\x1e\n" +
 	"\vlast_run_id\x18\x03 \x01(\tR\tlastRunId\x12\"\n" +
 	"\rlast_run_date\x18\x04 \x01(\tR\vlastRunDate\x12\x12\n" +
-	"\x04body\x18\x05 \x01(\tR\x04body\"\x9f\x01\n" +
+	"\x04body\x18\x05 \x01(\tR\x04body\x12'\n" +
+	"\x0fflakiness_score\x18\x06 \x01(\x02R\x0eflakinessScore\"\x9f\x01\n" +
 	"\fAffectedCase\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12=\n" +
