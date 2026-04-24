@@ -1,0 +1,25 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: gen
+    opt:
+      - paths=source_relative
+      - Mameliso/v1/types.proto=github.com/tupe12334/ameliso/mcp/gen/ameliso/v1;ameliso
+      - Mameliso/v1/service.proto=github.com/tupe12334/ameliso/mcp/gen/ameliso/v1;ameliso
+  - remote: buf.build/grpc/go
+    out: gen
+    opt:
+      - paths=source_relative
+      - Mameliso/v1/types.proto=github.com/tupe12334/ameliso/mcp/gen/ameliso/v1;ameliso
+      - Mameliso/v1/service.proto=github.com/tupe12334/ameliso/mcp/gen/ameliso/v1;ameliso
+  - local:
+      - go
+      - run
+      - github.com/redpanda-data/protoc-gen-go-mcp/cmd/protoc-gen-go-mcp@latest
+    out: gen
+    opt:
+      - paths=source_relative
+      - Mameliso/v1/types.proto=github.com/tupe12334/ameliso/mcp/gen/ameliso/v1;ameliso
+      - Mameliso/v1/service.proto=github.com/tupe12334/ameliso/mcp/gen/ameliso/v1;ameliso
+inputs:
+  - directory: ../server/proto

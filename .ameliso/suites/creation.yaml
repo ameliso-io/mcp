@@ -1,4 +1,0 @@
-name: "Creation validation"
-cases:
-  - creation/suites
-  - creation/cases
