@@ -7,11 +7,12 @@
 package ameliso
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -588,11 +589,12 @@ type RunMeta struct {
 	CommitSha string `protobuf:"bytes,7,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
 	// Result counts — populated by ListRuns and FinalizeRun so agents can
 	// read pass/fail outcomes without a separate GetRun call.
-	Passed        int32 `protobuf:"varint,8,opt,name=passed,proto3" json:"passed,omitempty"`
-	Failed        int32 `protobuf:"varint,9,opt,name=failed,proto3" json:"failed,omitempty"`
-	Blocked       int32 `protobuf:"varint,10,opt,name=blocked,proto3" json:"blocked,omitempty"`
-	Skipped       int32 `protobuf:"varint,11,opt,name=skipped,proto3" json:"skipped,omitempty"`
-	Total         int32 `protobuf:"varint,12,opt,name=total,proto3" json:"total,omitempty"`
+	Passed        int32  `protobuf:"varint,8,opt,name=passed,proto3" json:"passed,omitempty"`
+	Failed        int32  `protobuf:"varint,9,opt,name=failed,proto3" json:"failed,omitempty"`
+	Blocked       int32  `protobuf:"varint,10,opt,name=blocked,proto3" json:"blocked,omitempty"`
+	Skipped       int32  `protobuf:"varint,11,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	Total         int32  `protobuf:"varint,12,opt,name=total,proto3" json:"total,omitempty"`
+	Description   string `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -709,6 +711,13 @@ func (x *RunMeta) GetTotal() int32 {
 		return x.Total
 	}
 	return 0
+}
+
+func (x *RunMeta) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
 }
 
 type CaseResult struct {
@@ -1218,7 +1227,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05cases\x18\x04 \x03(\tR\x05cases\"\xc7\x02\n" +
+	"\x05cases\x18\x04 \x03(\tR\x05cases\"\xe9\x02\n" +
 	"\aRunMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x18\n" +
@@ -1233,7 +1242,8 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\ablocked\x18\n" +
 	" \x01(\x05R\ablocked\x12\x18\n" +
 	"\askipped\x18\v \x01(\x05R\askipped\x12\x14\n" +
-	"\x05total\x18\f \x01(\x05R\x05total\"\xd6\x01\n" +
+	"\x05total\x18\f \x01(\x05R\x05total\x12 \n" +
+	"\vdescription\x18\r \x01(\tR\vdescription\"\xd6\x01\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
