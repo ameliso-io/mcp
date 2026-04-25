@@ -7,12 +7,11 @@
 package ameliso
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -445,6 +444,7 @@ type RepoToken struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
 	CreatedAt     string                 `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // ISO-8601 UTC, empty = never expires
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -503,6 +503,13 @@ func (x *RepoToken) GetRole() string {
 func (x *RepoToken) GetCreatedAt() string {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *RepoToken) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
 	}
 	return ""
 }
@@ -1185,6 +1192,74 @@ func (x *Repository) GetApiKey() string {
 	return ""
 }
 
+type SuiteCoverageSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	TotalCases    int32                  `protobuf:"varint,2,opt,name=total_cases,json=totalCases,proto3" json:"total_cases,omitempty"`
+	CoveredCases  int32                  `protobuf:"varint,3,opt,name=covered_cases,json=coveredCases,proto3" json:"covered_cases,omitempty"`
+	CoveragePct   int32                  `protobuf:"varint,4,opt,name=coverage_pct,json=coveragePct,proto3" json:"coverage_pct,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuiteCoverageSummary) Reset() {
+	*x = SuiteCoverageSummary{}
+	mi := &file_ameliso_v1_types_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuiteCoverageSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuiteCoverageSummary) ProtoMessage() {}
+
+func (x *SuiteCoverageSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_types_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuiteCoverageSummary.ProtoReflect.Descriptor instead.
+func (*SuiteCoverageSummary) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SuiteCoverageSummary) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *SuiteCoverageSummary) GetTotalCases() int32 {
+	if x != nil {
+		return x.TotalCases
+	}
+	return 0
+}
+
+func (x *SuiteCoverageSummary) GetCoveredCases() int32 {
+	if x != nil {
+		return x.CoveredCases
+	}
+	return 0
+}
+
+func (x *SuiteCoverageSummary) GetCoveragePct() int32 {
+	if x != nil {
+		return x.CoveragePct
+	}
+	return 0
+}
+
 var File_ameliso_v1_types_proto protoreflect.FileDescriptor
 
 const file_ameliso_v1_types_proto_rawDesc = "" +
@@ -1216,13 +1291,15 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"deleted_at\x18\a \x01(\tR\tdeletedAt\"8\n" +
 	"\x0eRepoPermission\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
-	"\x04role\x18\x02 \x01(\tR\x04role\"h\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\"\x87\x01\n" +
 	"\tRepoToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04role\x18\x03 \x01(\tR\x04role\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\tR\tcreatedAt\"g\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x05 \x01(\tR\texpiresAt\"g\n" +
 	"\x05Suite\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1287,7 +1364,13 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x0finstallation_id\x18\x06 \x01(\tR\x0einstallationId\x12\x19\n" +
 	"\badded_at\x18\b \x01(\tR\aaddedAt\x12\x17\n" +
 	"\aapi_key\x18\t \x01(\tR\x06apiKeyJ\x04\b\x05\x10\x06J\x04\b\a\x10\bR\n" +
-	"local_pathR\x06cloned*u\n" +
+	"local_pathR\x06cloned\"\x93\x01\n" +
+	"\x14SuiteCoverageSummary\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x1f\n" +
+	"\vtotal_cases\x18\x02 \x01(\x05R\n" +
+	"totalCases\x12#\n" +
+	"\rcovered_cases\x18\x03 \x01(\x05R\fcoveredCases\x12!\n" +
+	"\fcoverage_pct\x18\x04 \x01(\x05R\vcoveragePct*u\n" +
 	"\tRunStatus\x12\x1a\n" +
 	"\x16RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16RUN_STATUS_IN_PROGRESS\x10\x01\x12\x18\n" +
@@ -1319,23 +1402,24 @@ func file_ameliso_v1_types_proto_rawDescGZIP() []byte {
 }
 
 var file_ameliso_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_ameliso_v1_types_proto_goTypes = []any{
-	(RunStatus)(0),          // 0: ameliso.v1.RunStatus
-	(ResultStatus)(0),       // 1: ameliso.v1.ResultStatus
-	(Priority)(0),           // 2: ameliso.v1.Priority
-	(*Case)(nil),            // 3: ameliso.v1.Case
-	(*TestingStrategy)(nil), // 4: ameliso.v1.TestingStrategy
-	(*RepoPermission)(nil),  // 5: ameliso.v1.RepoPermission
-	(*RepoToken)(nil),       // 6: ameliso.v1.RepoToken
-	(*Suite)(nil),           // 7: ameliso.v1.Suite
-	(*RunMeta)(nil),         // 8: ameliso.v1.RunMeta
-	(*CaseResult)(nil),      // 9: ameliso.v1.CaseResult
-	(*Run)(nil),             // 10: ameliso.v1.Run
-	(*CoverageEntry)(nil),   // 11: ameliso.v1.CoverageEntry
-	(*AffectedCase)(nil),    // 12: ameliso.v1.AffectedCase
-	(*AuditEntry)(nil),      // 13: ameliso.v1.AuditEntry
-	(*Repository)(nil),      // 14: ameliso.v1.Repository
+	(RunStatus)(0),               // 0: ameliso.v1.RunStatus
+	(ResultStatus)(0),            // 1: ameliso.v1.ResultStatus
+	(Priority)(0),                // 2: ameliso.v1.Priority
+	(*Case)(nil),                 // 3: ameliso.v1.Case
+	(*TestingStrategy)(nil),      // 4: ameliso.v1.TestingStrategy
+	(*RepoPermission)(nil),       // 5: ameliso.v1.RepoPermission
+	(*RepoToken)(nil),            // 6: ameliso.v1.RepoToken
+	(*Suite)(nil),                // 7: ameliso.v1.Suite
+	(*RunMeta)(nil),              // 8: ameliso.v1.RunMeta
+	(*CaseResult)(nil),           // 9: ameliso.v1.CaseResult
+	(*Run)(nil),                  // 10: ameliso.v1.Run
+	(*CoverageEntry)(nil),        // 11: ameliso.v1.CoverageEntry
+	(*AffectedCase)(nil),         // 12: ameliso.v1.AffectedCase
+	(*AuditEntry)(nil),           // 13: ameliso.v1.AuditEntry
+	(*Repository)(nil),           // 14: ameliso.v1.Repository
+	(*SuiteCoverageSummary)(nil), // 15: ameliso.v1.SuiteCoverageSummary
 }
 var file_ameliso_v1_types_proto_depIdxs = []int32{
 	0, // 0: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
@@ -1364,7 +1448,7 @@ func file_ameliso_v1_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_types_proto_rawDesc), len(file_ameliso_v1_types_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
