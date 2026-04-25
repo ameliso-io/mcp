@@ -2470,7 +2470,8 @@ type CreateRunRequest struct {
 	// Equivalent to since_ref=<last_completed_run.commit_sha>. If no completed run exists
 	// or it has no commit_sha, all cases are included.
 	// Mutually exclusive with `suite`, `cases`, `since_ref`, and `changed_files`.
-	UseLastRun    bool `protobuf:"varint,10,opt,name=use_last_run,json=useLastRun,proto3" json:"use_last_run,omitempty"`
+	UseLastRun    bool   `protobuf:"varint,10,opt,name=use_last_run,json=useLastRun,proto3" json:"use_last_run,omitempty"`
+	Description   string `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2573,6 +2574,13 @@ func (x *CreateRunRequest) GetUseLastRun() bool {
 		return x.UseLastRun
 	}
 	return false
+}
+
+func (x *CreateRunRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
 }
 
 type CreateRunResponse struct {
@@ -3581,6 +3589,7 @@ type UpdateRunRequest struct {
 	// Idempotent — already-included case paths are ignored.
 	// Use this after BulkCreateCases to add newly-created cases to an in-progress run.
 	AddCases      []string `protobuf:"bytes,7,rep,name=add_cases,json=addCases,proto3" json:"add_cases,omitempty"`
+	Description   *string  `protobuf:"bytes,8,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3662,6 +3671,13 @@ func (x *UpdateRunRequest) GetAddCases() []string {
 		return x.AddCases
 	}
 	return nil
+}
+
+func (x *UpdateRunRequest) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
 }
 
 type UpdateRunResponse struct {
@@ -6559,7 +6575,7 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x0eGetRunResponse\x12!\n" +
 	"\x03run\x18\x01 \x01(\v2\x0f.ameliso.v1.RunR\x03run\x12&\n" +
 	"\x05cases\x18\x02 \x03(\v2\x10.ameliso.v1.CaseR\x05cases\x12&\n" +
-	"\x0fnext_page_token\x18\x03 \x01(\tR\rnextPageToken\"\xaa\x02\n" +
+	"\x0fnext_page_token\x18\x03 \x01(\tR\rnextPageToken\"\xcc\x02\n" +
 	"\x10CreateRunRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x18\n" +
@@ -6573,7 +6589,8 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\rchanged_files\x18\t \x03(\tR\fchangedFiles\x12 \n" +
 	"\fuse_last_run\x18\n" +
 	" \x01(\bR\n" +
-	"useLastRun\"\xdc\x01\n" +
+	"useLastRun\x12 \n" +
+	"\vdescription\x18\v \x01(\tR\vdescription\"\xdc\x01\n" +
 	"\x11CreateRunResponse\x12%\n" +
 	"\x03run\x18\x01 \x01(\v2\x13.ameliso.v1.RunMetaR\x03run\x12\x19\n" +
 	"\bdir_path\x18\x02 \x01(\tR\adirPath\x122\n" +
@@ -6645,7 +6662,7 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x0etotal_in_scope\x18\x02 \x01(\x05R\ftotalInScope\x123\n" +
 	"\aentries\x18\x03 \x03(\v2\x19.ameliso.v1.CoverageEntryR\aentries\x122\n" +
 	"\apending\x18\x04 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\x12&\n" +
-	"\x0fnext_page_token\x18\x05 \x01(\tR\rnextPageToken\"\xfe\x01\n" +
+	"\x0fnext_page_token\x18\x05 \x01(\tR\rnextPageToken\"\xb5\x02\n" +
 	"\x10UpdateRunRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x19\n" +
@@ -6654,9 +6671,11 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"commit_sha\x18\x04 \x01(\tH\x00R\tcommitSha\x88\x01\x01\x12\x18\n" +
 	"\atesters\x18\x05 \x03(\tR\atesters\x12%\n" +
 	"\venvironment\x18\x06 \x01(\tH\x01R\venvironment\x88\x01\x01\x12\x1b\n" +
-	"\tadd_cases\x18\a \x03(\tR\baddCasesB\r\n" +
+	"\tadd_cases\x18\a \x03(\tR\baddCases\x12%\n" +
+	"\vdescription\x18\b \x01(\tH\x02R\vdescription\x88\x01\x01B\r\n" +
 	"\v_commit_shaB\x0e\n" +
-	"\f_environment\"\x90\x01\n" +
+	"\f_environmentB\x0e\n" +
+	"\f_description\"\x90\x01\n" +
 	"\x11UpdateRunResponse\x12%\n" +
 	"\x03run\x18\x01 \x01(\v2\x13.ameliso.v1.RunMetaR\x03run\x12 \n" +
 	"\fnew_dir_path\x18\x02 \x01(\tR\n" +
