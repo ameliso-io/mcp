@@ -55,7 +55,20 @@ const (
 	AmelisoService_SyncRepository_FullMethodName       = "/ameliso.v1.AmelisoService/SyncRepository"
 	AmelisoService_RemoveRepository_FullMethodName     = "/ameliso.v1.AmelisoService/RemoveRepository"
 	AmelisoService_RotateRepoApiKey_FullMethodName     = "/ameliso.v1.AmelisoService/RotateRepoApiKey"
+	AmelisoService_ListRepoTokens_FullMethodName       = "/ameliso.v1.AmelisoService/ListRepoTokens"
+	AmelisoService_CreateRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/CreateRepoToken"
+	AmelisoService_DeleteRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/DeleteRepoToken"
+	AmelisoService_UpdateRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/UpdateRepoToken"
 	AmelisoService_ListAuditLog_FullMethodName         = "/ameliso.v1.AmelisoService/ListAuditLog"
+	AmelisoService_ListStrategies_FullMethodName       = "/ameliso.v1.AmelisoService/ListStrategies"
+	AmelisoService_GetStrategy_FullMethodName          = "/ameliso.v1.AmelisoService/GetStrategy"
+	AmelisoService_CreateStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/CreateStrategy"
+	AmelisoService_UpdateStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/UpdateStrategy"
+	AmelisoService_DeleteStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/DeleteStrategy"
+	AmelisoService_RestoreStrategy_FullMethodName      = "/ameliso.v1.AmelisoService/RestoreStrategy"
+	AmelisoService_ListPermissions_FullMethodName      = "/ameliso.v1.AmelisoService/ListPermissions"
+	AmelisoService_AddPermission_FullMethodName        = "/ameliso.v1.AmelisoService/AddPermission"
+	AmelisoService_RemovePermission_FullMethodName     = "/ameliso.v1.AmelisoService/RemovePermission"
 )
 
 // AmelisoServiceClient is the client API for AmelisoService service.
@@ -148,8 +161,22 @@ type AmelisoServiceClient interface {
 	RemoveRepository(ctx context.Context, in *RemoveRepositoryRequest, opts ...grpc.CallOption) (*RemoveRepositoryResponse, error)
 	// Generate a new API key for the given repository (rotates any existing key).
 	RotateRepoApiKey(ctx context.Context, in *RotateRepoApiKeyRequest, opts ...grpc.CallOption) (*RotateRepoApiKeyResponse, error)
+	ListRepoTokens(ctx context.Context, in *ListRepoTokensRequest, opts ...grpc.CallOption) (*ListRepoTokensResponse, error)
+	CreateRepoToken(ctx context.Context, in *CreateRepoTokenRequest, opts ...grpc.CallOption) (*CreateRepoTokenResponse, error)
+	DeleteRepoToken(ctx context.Context, in *DeleteRepoTokenRequest, opts ...grpc.CallOption) (*DeleteRepoTokenResponse, error)
+	UpdateRepoToken(ctx context.Context, in *UpdateRepoTokenRequest, opts ...grpc.CallOption) (*UpdateRepoTokenResponse, error)
 	// Append-only log of destructive actions (delete case/run/suite).
 	ListAuditLog(ctx context.Context, in *ListAuditLogRequest, opts ...grpc.CallOption) (*ListAuditLogResponse, error)
+	// --- Testing Strategies ---
+	ListStrategies(ctx context.Context, in *ListStrategiesRequest, opts ...grpc.CallOption) (*ListStrategiesResponse, error)
+	GetStrategy(ctx context.Context, in *GetStrategyRequest, opts ...grpc.CallOption) (*GetStrategyResponse, error)
+	CreateStrategy(ctx context.Context, in *CreateStrategyRequest, opts ...grpc.CallOption) (*CreateStrategyResponse, error)
+	UpdateStrategy(ctx context.Context, in *UpdateStrategyRequest, opts ...grpc.CallOption) (*UpdateStrategyResponse, error)
+	DeleteStrategy(ctx context.Context, in *DeleteStrategyRequest, opts ...grpc.CallOption) (*DeleteStrategyResponse, error)
+	RestoreStrategy(ctx context.Context, in *RestoreStrategyRequest, opts ...grpc.CallOption) (*RestoreStrategyResponse, error)
+	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
+	AddPermission(ctx context.Context, in *AddPermissionRequest, opts ...grpc.CallOption) (*AddPermissionResponse, error)
+	RemovePermission(ctx context.Context, in *RemovePermissionRequest, opts ...grpc.CallOption) (*RemovePermissionResponse, error)
 }
 
 type amelisoServiceClient struct {
@@ -520,10 +547,140 @@ func (c *amelisoServiceClient) RotateRepoApiKey(ctx context.Context, in *RotateR
 	return out, nil
 }
 
+func (c *amelisoServiceClient) ListRepoTokens(ctx context.Context, in *ListRepoTokensRequest, opts ...grpc.CallOption) (*ListRepoTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRepoTokensResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListRepoTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) CreateRepoToken(ctx context.Context, in *CreateRepoTokenRequest, opts ...grpc.CallOption) (*CreateRepoTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateRepoTokenResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_CreateRepoToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) DeleteRepoToken(ctx context.Context, in *DeleteRepoTokenRequest, opts ...grpc.CallOption) (*DeleteRepoTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteRepoTokenResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_DeleteRepoToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) UpdateRepoToken(ctx context.Context, in *UpdateRepoTokenRequest, opts ...grpc.CallOption) (*UpdateRepoTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateRepoTokenResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_UpdateRepoToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) ListAuditLog(ctx context.Context, in *ListAuditLogRequest, opts ...grpc.CallOption) (*ListAuditLogResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAuditLogResponse)
 	err := c.cc.Invoke(ctx, AmelisoService_ListAuditLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) ListStrategies(ctx context.Context, in *ListStrategiesRequest, opts ...grpc.CallOption) (*ListStrategiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListStrategiesResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListStrategies_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) GetStrategy(ctx context.Context, in *GetStrategyRequest, opts ...grpc.CallOption) (*GetStrategyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStrategyResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_GetStrategy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) CreateStrategy(ctx context.Context, in *CreateStrategyRequest, opts ...grpc.CallOption) (*CreateStrategyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateStrategyResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_CreateStrategy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) UpdateStrategy(ctx context.Context, in *UpdateStrategyRequest, opts ...grpc.CallOption) (*UpdateStrategyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateStrategyResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_UpdateStrategy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) DeleteStrategy(ctx context.Context, in *DeleteStrategyRequest, opts ...grpc.CallOption) (*DeleteStrategyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteStrategyResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_DeleteStrategy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) RestoreStrategy(ctx context.Context, in *RestoreStrategyRequest, opts ...grpc.CallOption) (*RestoreStrategyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreStrategyResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RestoreStrategy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPermissionsResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListPermissions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) AddPermission(ctx context.Context, in *AddPermissionRequest, opts ...grpc.CallOption) (*AddPermissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddPermissionResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_AddPermission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) RemovePermission(ctx context.Context, in *RemovePermissionRequest, opts ...grpc.CallOption) (*RemovePermissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemovePermissionResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RemovePermission_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -620,8 +777,22 @@ type AmelisoServiceServer interface {
 	RemoveRepository(context.Context, *RemoveRepositoryRequest) (*RemoveRepositoryResponse, error)
 	// Generate a new API key for the given repository (rotates any existing key).
 	RotateRepoApiKey(context.Context, *RotateRepoApiKeyRequest) (*RotateRepoApiKeyResponse, error)
+	ListRepoTokens(context.Context, *ListRepoTokensRequest) (*ListRepoTokensResponse, error)
+	CreateRepoToken(context.Context, *CreateRepoTokenRequest) (*CreateRepoTokenResponse, error)
+	DeleteRepoToken(context.Context, *DeleteRepoTokenRequest) (*DeleteRepoTokenResponse, error)
+	UpdateRepoToken(context.Context, *UpdateRepoTokenRequest) (*UpdateRepoTokenResponse, error)
 	// Append-only log of destructive actions (delete case/run/suite).
 	ListAuditLog(context.Context, *ListAuditLogRequest) (*ListAuditLogResponse, error)
+	// --- Testing Strategies ---
+	ListStrategies(context.Context, *ListStrategiesRequest) (*ListStrategiesResponse, error)
+	GetStrategy(context.Context, *GetStrategyRequest) (*GetStrategyResponse, error)
+	CreateStrategy(context.Context, *CreateStrategyRequest) (*CreateStrategyResponse, error)
+	UpdateStrategy(context.Context, *UpdateStrategyRequest) (*UpdateStrategyResponse, error)
+	DeleteStrategy(context.Context, *DeleteStrategyRequest) (*DeleteStrategyResponse, error)
+	RestoreStrategy(context.Context, *RestoreStrategyRequest) (*RestoreStrategyResponse, error)
+	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
+	AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionResponse, error)
+	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error)
 	mustEmbedUnimplementedAmelisoServiceServer()
 }
 
@@ -740,8 +911,47 @@ func (UnimplementedAmelisoServiceServer) RemoveRepository(context.Context, *Remo
 func (UnimplementedAmelisoServiceServer) RotateRepoApiKey(context.Context, *RotateRepoApiKeyRequest) (*RotateRepoApiKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RotateRepoApiKey not implemented")
 }
+func (UnimplementedAmelisoServiceServer) ListRepoTokens(context.Context, *ListRepoTokensRequest) (*ListRepoTokensResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRepoTokens not implemented")
+}
+func (UnimplementedAmelisoServiceServer) CreateRepoToken(context.Context, *CreateRepoTokenRequest) (*CreateRepoTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateRepoToken not implemented")
+}
+func (UnimplementedAmelisoServiceServer) DeleteRepoToken(context.Context, *DeleteRepoTokenRequest) (*DeleteRepoTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteRepoToken not implemented")
+}
+func (UnimplementedAmelisoServiceServer) UpdateRepoToken(context.Context, *UpdateRepoTokenRequest) (*UpdateRepoTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRepoToken not implemented")
+}
 func (UnimplementedAmelisoServiceServer) ListAuditLog(context.Context, *ListAuditLogRequest) (*ListAuditLogResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAuditLog not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ListStrategies(context.Context, *ListStrategiesRequest) (*ListStrategiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListStrategies not implemented")
+}
+func (UnimplementedAmelisoServiceServer) GetStrategy(context.Context, *GetStrategyRequest) (*GetStrategyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStrategy not implemented")
+}
+func (UnimplementedAmelisoServiceServer) CreateStrategy(context.Context, *CreateStrategyRequest) (*CreateStrategyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateStrategy not implemented")
+}
+func (UnimplementedAmelisoServiceServer) UpdateStrategy(context.Context, *UpdateStrategyRequest) (*UpdateStrategyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateStrategy not implemented")
+}
+func (UnimplementedAmelisoServiceServer) DeleteStrategy(context.Context, *DeleteStrategyRequest) (*DeleteStrategyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteStrategy not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RestoreStrategy(context.Context, *RestoreStrategyRequest) (*RestoreStrategyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestoreStrategy not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPermissions not implemented")
+}
+func (UnimplementedAmelisoServiceServer) AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddPermission not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemovePermission not implemented")
 }
 func (UnimplementedAmelisoServiceServer) mustEmbedUnimplementedAmelisoServiceServer() {}
 func (UnimplementedAmelisoServiceServer) testEmbeddedByValue()                        {}
@@ -1412,6 +1622,78 @@ func _AmelisoService_RotateRepoApiKey_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_ListRepoTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRepoTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListRepoTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListRepoTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListRepoTokens(ctx, req.(*ListRepoTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_CreateRepoToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRepoTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).CreateRepoToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_CreateRepoToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).CreateRepoToken(ctx, req.(*CreateRepoTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_DeleteRepoToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRepoTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).DeleteRepoToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_DeleteRepoToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).DeleteRepoToken(ctx, req.(*DeleteRepoTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_UpdateRepoToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRepoTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).UpdateRepoToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_UpdateRepoToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).UpdateRepoToken(ctx, req.(*UpdateRepoTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_ListAuditLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListAuditLogRequest)
 	if err := dec(in); err != nil {
@@ -1426,6 +1708,168 @@ func _AmelisoService_ListAuditLog_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AmelisoServiceServer).ListAuditLog(ctx, req.(*ListAuditLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_ListStrategies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListStrategiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListStrategies(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListStrategies_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListStrategies(ctx, req.(*ListStrategiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_GetStrategy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStrategyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).GetStrategy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_GetStrategy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).GetStrategy(ctx, req.(*GetStrategyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_CreateStrategy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateStrategyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).CreateStrategy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_CreateStrategy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).CreateStrategy(ctx, req.(*CreateStrategyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_UpdateStrategy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateStrategyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).UpdateStrategy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_UpdateStrategy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).UpdateStrategy(ctx, req.(*UpdateStrategyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_DeleteStrategy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteStrategyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).DeleteStrategy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_DeleteStrategy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).DeleteStrategy(ctx, req.(*DeleteStrategyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_RestoreStrategy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreStrategyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RestoreStrategy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RestoreStrategy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RestoreStrategy(ctx, req.(*RestoreStrategyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_ListPermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPermissionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListPermissions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListPermissions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListPermissions(ctx, req.(*ListPermissionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_AddPermission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddPermissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).AddPermission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_AddPermission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).AddPermission(ctx, req.(*AddPermissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_RemovePermission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemovePermissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RemovePermission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RemovePermission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RemovePermission(ctx, req.(*RemovePermissionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1582,8 +2026,60 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AmelisoService_RotateRepoApiKey_Handler,
 		},
 		{
+			MethodName: "ListRepoTokens",
+			Handler:    _AmelisoService_ListRepoTokens_Handler,
+		},
+		{
+			MethodName: "CreateRepoToken",
+			Handler:    _AmelisoService_CreateRepoToken_Handler,
+		},
+		{
+			MethodName: "DeleteRepoToken",
+			Handler:    _AmelisoService_DeleteRepoToken_Handler,
+		},
+		{
+			MethodName: "UpdateRepoToken",
+			Handler:    _AmelisoService_UpdateRepoToken_Handler,
+		},
+		{
 			MethodName: "ListAuditLog",
 			Handler:    _AmelisoService_ListAuditLog_Handler,
+		},
+		{
+			MethodName: "ListStrategies",
+			Handler:    _AmelisoService_ListStrategies_Handler,
+		},
+		{
+			MethodName: "GetStrategy",
+			Handler:    _AmelisoService_GetStrategy_Handler,
+		},
+		{
+			MethodName: "CreateStrategy",
+			Handler:    _AmelisoService_CreateStrategy_Handler,
+		},
+		{
+			MethodName: "UpdateStrategy",
+			Handler:    _AmelisoService_UpdateStrategy_Handler,
+		},
+		{
+			MethodName: "DeleteStrategy",
+			Handler:    _AmelisoService_DeleteStrategy_Handler,
+		},
+		{
+			MethodName: "RestoreStrategy",
+			Handler:    _AmelisoService_RestoreStrategy_Handler,
+		},
+		{
+			MethodName: "ListPermissions",
+			Handler:    _AmelisoService_ListPermissions_Handler,
+		},
+		{
+			MethodName: "AddPermission",
+			Handler:    _AmelisoService_AddPermission_Handler,
+		},
+		{
+			MethodName: "RemovePermission",
+			Handler:    _AmelisoService_RemovePermission_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

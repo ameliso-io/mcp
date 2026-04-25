@@ -509,6 +509,7 @@ type CreateCaseRequest struct {
 	Tags          []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
 	Priority      Priority               `protobuf:"varint,6,opt,name=priority,proto3,enum=ameliso.v1.Priority" json:"priority,omitempty"`
 	Body          string                 `protobuf:"bytes,7,opt,name=body,proto3" json:"body,omitempty"`
+	StrategyIds   []string               `protobuf:"bytes,8,rep,name=strategy_ids,json=strategyIds,proto3" json:"strategy_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -590,6 +591,13 @@ func (x *CreateCaseRequest) GetBody() string {
 		return x.Body
 	}
 	return ""
+}
+
+func (x *CreateCaseRequest) GetStrategyIds() []string {
+	if x != nil {
+		return x.StrategyIds
+	}
+	return nil
 }
 
 type CreateCaseResponse struct {
@@ -735,9 +743,13 @@ type BulkCreateCasesRequest struct {
 	// Optional run_id — when set, created cases are added to this run's inline scope.
 	// Useful for adding newly-discovered cases (from uncovered_files) to an in-progress run
 	// without a separate UpdateRun(add_cases=...) call.
-	RunId         string `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	RunId string `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	// Optional idempotency key. When non-empty, the server records this key and returns
+	// an empty success response on any subsequent call with the same (repo_id, key) pair
+	// within 24 hours. Prevents duplicate case creation on retried requests.
+	IdempotencyKey string `protobuf:"bytes,10,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *BulkCreateCasesRequest) Reset() {
@@ -791,6 +803,13 @@ func (x *BulkCreateCasesRequest) GetRunId() string {
 	return ""
 }
 
+func (x *BulkCreateCasesRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
 type BulkCreateCasesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Cases []*Case                `protobuf:"bytes,1,rep,name=cases,proto3" json:"cases,omitempty"`
@@ -799,7 +818,9 @@ type BulkCreateCasesResponse struct {
 	FilePaths []string `protobuf:"bytes,2,rep,name=file_paths,json=filePaths,proto3" json:"file_paths,omitempty"`
 	// Updated pending entries for the run, when run_id was set in the request.
 	// Avoids a separate GetPendingCases call after adding the new cases to the run.
-	Pending       []*PendingEntry `protobuf:"bytes,3,rep,name=pending,proto3" json:"pending,omitempty"`
+	Pending []*PendingEntry `protobuf:"bytes,3,rep,name=pending,proto3" json:"pending,omitempty"`
+	// Case paths that were skipped because a case with that path already exists.
+	SkippedPaths  []string `protobuf:"bytes,4,rep,name=skipped_paths,json=skippedPaths,proto3" json:"skipped_paths,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -855,6 +876,13 @@ func (x *BulkCreateCasesResponse) GetPending() []*PendingEntry {
 	return nil
 }
 
+func (x *BulkCreateCasesResponse) GetSkippedPaths() []string {
+	if x != nil {
+		return x.SkippedPaths
+	}
+	return nil
+}
+
 type UpdateCaseRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	RepoId      string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
@@ -866,7 +894,10 @@ type UpdateCaseRequest struct {
 	Body        string                 `protobuf:"bytes,7,opt,name=body,proto3" json:"body,omitempty"`
 	// When non-empty, rename the case to this path. Must be unique within the repo.
 	// Also updates any suites that reference the old path.
-	NewPath       string `protobuf:"bytes,8,opt,name=new_path,json=newPath,proto3" json:"new_path,omitempty"`
+	NewPath string `protobuf:"bytes,8,opt,name=new_path,json=newPath,proto3" json:"new_path,omitempty"`
+	// When non-empty, set the case's linked strategy IDs to exactly this list.
+	// If empty (proto3 default), strategies are left unchanged.
+	StrategyIds   []string `protobuf:"bytes,9,rep,name=strategy_ids,json=strategyIds,proto3" json:"strategy_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -955,6 +986,13 @@ func (x *UpdateCaseRequest) GetNewPath() string {
 		return x.NewPath
 	}
 	return ""
+}
+
+func (x *UpdateCaseRequest) GetStrategyIds() []string {
+	if x != nil {
+		return x.StrategyIds
+	}
+	return nil
 }
 
 type UpdateCaseResponse struct {
@@ -2276,9 +2314,12 @@ func (x *ListRunsResponse) GetTotalCount() int32 {
 }
 
 type GetRunRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	RepoId string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	RunId  string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	// 0 = return all (default, backward-compatible)
+	PageSize      int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2327,12 +2368,27 @@ func (x *GetRunRequest) GetRunId() string {
 	return ""
 }
 
+func (x *GetRunRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetRunRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type GetRunResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Run   *Run                   `protobuf:"bytes,1,opt,name=run,proto3" json:"run,omitempty"`
 	// In-scope cases for this run — same set as GetPendingCases returns for a pending run.
 	// Populated so callers can avoid a separate ListCases call.
 	Cases         []*Case `protobuf:"bytes,2,rep,name=cases,proto3" json:"cases,omitempty"`
+	NextPageToken string  `protobuf:"bytes,3,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2379,6 +2435,13 @@ func (x *GetRunResponse) GetCases() []*Case {
 		return x.Cases
 	}
 	return nil
+}
+
+func (x *GetRunResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type CreateRunRequest struct {
@@ -2597,12 +2660,16 @@ func (x *CreateRunResponse) GetUncoveredFiles() []string {
 }
 
 type RecordResultRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	CasePath      string                 `protobuf:"bytes,3,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
-	Status        ResultStatus           `protobuf:"varint,4,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
-	Notes         string                 `protobuf:"bytes,5,opt,name=notes,proto3" json:"notes,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	RepoId   string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	RunId    string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	CasePath string                 `protobuf:"bytes,3,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	Status   ResultStatus           `protobuf:"varint,4,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
+	Notes    string                 `protobuf:"bytes,5,opt,name=notes,proto3" json:"notes,omitempty"`
+	// Execution time in milliseconds. 0 means not recorded.
+	DurationMs int64 `protobuf:"varint,6,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	// Free-form failure category (e.g. "assertion", "timeout", "crash"). Empty when not set.
+	ErrorType     string `protobuf:"bytes,7,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2668,6 +2735,20 @@ func (x *RecordResultRequest) GetStatus() ResultStatus {
 func (x *RecordResultRequest) GetNotes() string {
 	if x != nil {
 		return x.Notes
+	}
+	return ""
+}
+
+func (x *RecordResultRequest) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *RecordResultRequest) GetErrorType() string {
+	if x != nil {
+		return x.ErrorType
 	}
 	return ""
 }
@@ -2743,10 +2824,14 @@ func (x *RecordResultResponse) GetPending() []*PendingEntry {
 }
 
 type BulkResultEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CasePath      string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
-	Status        ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
-	Notes         string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	CasePath string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	Status   ResultStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=ameliso.v1.ResultStatus" json:"status,omitempty"`
+	Notes    string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	// Execution time in milliseconds. 0 means not recorded.
+	DurationMs int64 `protobuf:"varint,4,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	// Free-form failure category (e.g. "assertion", "timeout", "crash"). Empty when not set.
+	ErrorType     string `protobuf:"bytes,5,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2802,13 +2887,31 @@ func (x *BulkResultEntry) GetNotes() string {
 	return ""
 }
 
+func (x *BulkResultEntry) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *BulkResultEntry) GetErrorType() string {
+	if x != nil {
+		return x.ErrorType
+	}
+	return ""
+}
+
 type BulkRecordResultsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Results       []*BulkResultEntry     `protobuf:"bytes,3,rep,name=results,proto3" json:"results,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	RepoId  string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	RunId   string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Results []*BulkResultEntry     `protobuf:"bytes,3,rep,name=results,proto3" json:"results,omitempty"`
+	// Optional idempotency key. When non-empty, the server records this key and returns
+	// an empty success response on any subsequent call with the same (repo_id, key) pair
+	// within 24 hours. Prevents duplicate result recording on retried requests.
+	IdempotencyKey string `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *BulkRecordResultsRequest) Reset() {
@@ -2860,6 +2963,13 @@ func (x *BulkRecordResultsRequest) GetResults() []*BulkResultEntry {
 		return x.Results
 	}
 	return nil
+}
+
+func (x *BulkRecordResultsRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
 }
 
 type BulkRecordResultsResponse struct {
@@ -3239,8 +3349,11 @@ type GetPendingCasesRequest struct {
 	// When set (non-UNSPECIFIED), only return pending cases at this priority level.
 	// Useful for agents that want to tackle high-priority cases first.
 	PriorityFilter Priority `protobuf:"varint,3,opt,name=priority_filter,json=priorityFilter,proto3,enum=ameliso.v1.Priority" json:"priority_filter,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// 0 = return all (default, backward-compatible)
+	PageSize      int32  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetPendingCasesRequest) Reset() {
@@ -3292,6 +3405,20 @@ func (x *GetPendingCasesRequest) GetPriorityFilter() Priority {
 		return x.PriorityFilter
 	}
 	return Priority_PRIORITY_UNSPECIFIED
+}
+
+func (x *GetPendingCasesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetPendingCasesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
 }
 
 // A pending test case with status — for agent-friendly GetPendingCases and CreateRun.
@@ -3367,6 +3494,7 @@ type GetPendingCasesResponse struct {
 	// Preferred: full pending case data — case metadata (with body) + latest_status.
 	// Sorted failed/never first then by case priority.
 	Pending       []*PendingEntry `protobuf:"bytes,4,rep,name=pending,proto3" json:"pending,omitempty"`
+	NextPageToken string          `protobuf:"bytes,5,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3427,6 +3555,13 @@ func (x *GetPendingCasesResponse) GetPending() []*PendingEntry {
 		return x.Pending
 	}
 	return nil
+}
+
+func (x *GetPendingCasesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type UpdateRunRequest struct {
@@ -3592,9 +3727,15 @@ func (x *UpdateRunResponse) GetPending() []*PendingEntry {
 }
 
 type GetCoverageReportRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	StatusFilter  ResultStatus           `protobuf:"varint,2,opt,name=status_filter,json=statusFilter,proto3,enum=ameliso.v1.ResultStatus" json:"status_filter,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	RepoId       string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StatusFilter ResultStatus           `protobuf:"varint,2,opt,name=status_filter,json=statusFilter,proto3,enum=ameliso.v1.ResultStatus" json:"status_filter,omitempty"`
+	// When non-empty, filter entries to those whose case_path or title contains this string (case-insensitive).
+	Search string `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
+	// When set (non-UNSPECIFIED), only return entries whose case priority matches.
+	PriorityFilter Priority `protobuf:"varint,4,opt,name=priority_filter,json=priorityFilter,proto3,enum=ameliso.v1.Priority" json:"priority_filter,omitempty"`
+	// When true, only return entries with a flakiness_score > 0.
+	FlakyOnly     bool `protobuf:"varint,5,opt,name=flaky_only,json=flakyOnly,proto3" json:"flaky_only,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3641,6 +3782,27 @@ func (x *GetCoverageReportRequest) GetStatusFilter() ResultStatus {
 		return x.StatusFilter
 	}
 	return ResultStatus_RESULT_STATUS_UNSPECIFIED
+}
+
+func (x *GetCoverageReportRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *GetCoverageReportRequest) GetPriorityFilter() Priority {
+	if x != nil {
+		return x.PriorityFilter
+	}
+	return Priority_PRIORITY_UNSPECIFIED
+}
+
+func (x *GetCoverageReportRequest) GetFlakyOnly() bool {
+	if x != nil {
+		return x.FlakyOnly
+	}
+	return false
 }
 
 type GetCoverageReportResponse struct {
@@ -3999,8 +4161,11 @@ type GetRepoStatusResponse struct {
 	// Most recently completed run — commit_sha can be passed as since_ref to GetAffectedCases
 	// without a separate ListRuns call.
 	LastCompletedRun *RunMeta `protobuf:"bytes,13,opt,name=last_completed_run,json=lastCompletedRun,proto3" json:"last_completed_run,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	StrategyCount    int32    `protobuf:"varint,14,opt,name=strategy_count,json=strategyCount,proto3" json:"strategy_count,omitempty"`
+	// Last 10 distinct non-empty environment values, most recent first.
+	RecentEnvironments []string `protobuf:"bytes,15,rep,name=recent_environments,json=recentEnvironments,proto3" json:"recent_environments,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GetRepoStatusResponse) Reset() {
@@ -4120,6 +4285,20 @@ func (x *GetRepoStatusResponse) GetActiveRuns() []*ActiveRunStatus {
 func (x *GetRepoStatusResponse) GetLastCompletedRun() *RunMeta {
 	if x != nil {
 		return x.LastCompletedRun
+	}
+	return nil
+}
+
+func (x *GetRepoStatusResponse) GetStrategyCount() int32 {
+	if x != nil {
+		return x.StrategyCount
+	}
+	return 0
+}
+
+func (x *GetRepoStatusResponse) GetRecentEnvironments() []string {
+	if x != nil {
+		return x.RecentEnvironments
 	}
 	return nil
 }
@@ -4724,18 +4903,407 @@ func (x *RotateRepoApiKeyResponse) GetApiKey() string {
 	return ""
 }
 
+type ListRepoTokensRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRepoTokensRequest) Reset() {
+	*x = ListRepoTokensRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRepoTokensRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRepoTokensRequest) ProtoMessage() {}
+
+func (x *ListRepoTokensRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRepoTokensRequest.ProtoReflect.Descriptor instead.
+func (*ListRepoTokensRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *ListRepoTokensRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+type ListRepoTokensResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tokens        []*RepoToken           `protobuf:"bytes,1,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRepoTokensResponse) Reset() {
+	*x = ListRepoTokensResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[79]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRepoTokensResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRepoTokensResponse) ProtoMessage() {}
+
+func (x *ListRepoTokensResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[79]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRepoTokensResponse.ProtoReflect.Descriptor instead.
+func (*ListRepoTokensResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{79}
+}
+
+func (x *ListRepoTokensResponse) GetTokens() []*RepoToken {
+	if x != nil {
+		return x.Tokens
+	}
+	return nil
+}
+
+type CreateRepoTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRepoTokenRequest) Reset() {
+	*x = CreateRepoTokenRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[80]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRepoTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRepoTokenRequest) ProtoMessage() {}
+
+func (x *CreateRepoTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[80]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRepoTokenRequest.ProtoReflect.Descriptor instead.
+func (*CreateRepoTokenRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{80}
+}
+
+func (x *CreateRepoTokenRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *CreateRepoTokenRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateRepoTokenRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type CreateRepoTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         *RepoToken             `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRepoTokenResponse) Reset() {
+	*x = CreateRepoTokenResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRepoTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRepoTokenResponse) ProtoMessage() {}
+
+func (x *CreateRepoTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRepoTokenResponse.ProtoReflect.Descriptor instead.
+func (*CreateRepoTokenResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *CreateRepoTokenResponse) GetToken() *RepoToken {
+	if x != nil {
+		return x.Token
+	}
+	return nil
+}
+
+type DeleteRepoTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRepoTokenRequest) Reset() {
+	*x = DeleteRepoTokenRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[82]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRepoTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRepoTokenRequest) ProtoMessage() {}
+
+func (x *DeleteRepoTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[82]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteRepoTokenRequest.ProtoReflect.Descriptor instead.
+func (*DeleteRepoTokenRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *DeleteRepoTokenRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *DeleteRepoTokenRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type DeleteRepoTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRepoTokenResponse) Reset() {
+	*x = DeleteRepoTokenResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[83]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRepoTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRepoTokenResponse) ProtoMessage() {}
+
+func (x *DeleteRepoTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[83]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteRepoTokenResponse.ProtoReflect.Descriptor instead.
+func (*DeleteRepoTokenResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{83}
+}
+
+type UpdateRepoTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateRepoTokenRequest) Reset() {
+	*x = UpdateRepoTokenRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[84]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRepoTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRepoTokenRequest) ProtoMessage() {}
+
+func (x *UpdateRepoTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[84]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateRepoTokenRequest.ProtoReflect.Descriptor instead.
+func (*UpdateRepoTokenRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *UpdateRepoTokenRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *UpdateRepoTokenRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *UpdateRepoTokenRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type UpdateRepoTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         *RepoToken             `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateRepoTokenResponse) Reset() {
+	*x = UpdateRepoTokenResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[85]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRepoTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRepoTokenResponse) ProtoMessage() {}
+
+func (x *UpdateRepoTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[85]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateRepoTokenResponse.ProtoReflect.Descriptor instead.
+func (*UpdateRepoTokenResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{85}
+}
+
+func (x *UpdateRepoTokenResponse) GetToken() *RepoToken {
+	if x != nil {
+		return x.Token
+	}
+	return nil
+}
+
 type ListAuditLogRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
 	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	ResourceType  string                 `protobuf:"bytes,4,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,5,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	Action        string                 `protobuf:"bytes,6,opt,name=action,proto3" json:"action,omitempty"`
+	Since         string                 `protobuf:"bytes,7,opt,name=since,proto3" json:"since,omitempty"`
+	Until         string                 `protobuf:"bytes,8,opt,name=until,proto3" json:"until,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListAuditLogRequest) Reset() {
 	*x = ListAuditLogRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[78]
+	mi := &file_ameliso_v1_service_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4747,7 +5315,7 @@ func (x *ListAuditLogRequest) String() string {
 func (*ListAuditLogRequest) ProtoMessage() {}
 
 func (x *ListAuditLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[78]
+	mi := &file_ameliso_v1_service_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4760,7 +5328,7 @@ func (x *ListAuditLogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditLogRequest.ProtoReflect.Descriptor instead.
 func (*ListAuditLogRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{78}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *ListAuditLogRequest) GetRepoId() string {
@@ -4784,6 +5352,41 @@ func (x *ListAuditLogRequest) GetPageToken() string {
 	return ""
 }
 
+func (x *ListAuditLogRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *ListAuditLogRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+func (x *ListAuditLogRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ListAuditLogRequest) GetSince() string {
+	if x != nil {
+		return x.Since
+	}
+	return ""
+}
+
+func (x *ListAuditLogRequest) GetUntil() string {
+	if x != nil {
+		return x.Until
+	}
+	return ""
+}
+
 type ListAuditLogResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entries       []*AuditEntry          `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
@@ -4794,7 +5397,7 @@ type ListAuditLogResponse struct {
 
 func (x *ListAuditLogResponse) Reset() {
 	*x = ListAuditLogResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[79]
+	mi := &file_ameliso_v1_service_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4806,7 +5409,7 @@ func (x *ListAuditLogResponse) String() string {
 func (*ListAuditLogResponse) ProtoMessage() {}
 
 func (x *ListAuditLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[79]
+	mi := &file_ameliso_v1_service_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4819,7 +5422,7 @@ func (x *ListAuditLogResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditLogResponse.ProtoReflect.Descriptor instead.
 func (*ListAuditLogResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{79}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *ListAuditLogResponse) GetEntries() []*AuditEntry {
@@ -4834,6 +5437,944 @@ func (x *ListAuditLogResponse) GetNextPageToken() string {
 		return x.NextPageToken
 	}
 	return ""
+}
+
+type ListStrategiesRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	RepoId string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	// Optional free-text search against strategy name (case-insensitive substring match).
+	Query string `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
+	// 0 = return all (default, backward-compatible)
+	PageSize      int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListStrategiesRequest) Reset() {
+	*x = ListStrategiesRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[88]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListStrategiesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListStrategiesRequest) ProtoMessage() {}
+
+func (x *ListStrategiesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[88]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListStrategiesRequest.ProtoReflect.Descriptor instead.
+func (*ListStrategiesRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{88}
+}
+
+func (x *ListStrategiesRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *ListStrategiesRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *ListStrategiesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListStrategiesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListStrategiesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Strategies    []*TestingStrategy     `protobuf:"bytes,1,rep,name=strategies,proto3" json:"strategies,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListStrategiesResponse) Reset() {
+	*x = ListStrategiesResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[89]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListStrategiesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListStrategiesResponse) ProtoMessage() {}
+
+func (x *ListStrategiesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[89]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListStrategiesResponse.ProtoReflect.Descriptor instead.
+func (*ListStrategiesResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{89}
+}
+
+func (x *ListStrategiesResponse) GetStrategies() []*TestingStrategy {
+	if x != nil {
+		return x.Strategies
+	}
+	return nil
+}
+
+func (x *ListStrategiesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *ListStrategiesResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+type GetStrategyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStrategyRequest) Reset() {
+	*x = GetStrategyRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[90]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStrategyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStrategyRequest) ProtoMessage() {}
+
+func (x *GetStrategyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[90]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStrategyRequest.ProtoReflect.Descriptor instead.
+func (*GetStrategyRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{90}
+}
+
+func (x *GetStrategyRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *GetStrategyRequest) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
+type GetStrategyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Strategy      *TestingStrategy       `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStrategyResponse) Reset() {
+	*x = GetStrategyResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[91]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStrategyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStrategyResponse) ProtoMessage() {}
+
+func (x *GetStrategyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[91]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStrategyResponse.ProtoReflect.Descriptor instead.
+func (*GetStrategyResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{91}
+}
+
+func (x *GetStrategyResponse) GetStrategy() *TestingStrategy {
+	if x != nil {
+		return x.Strategy
+	}
+	return nil
+}
+
+type CreateStrategyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Tags          []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateStrategyRequest) Reset() {
+	*x = CreateStrategyRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[92]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateStrategyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateStrategyRequest) ProtoMessage() {}
+
+func (x *CreateStrategyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[92]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateStrategyRequest.ProtoReflect.Descriptor instead.
+func (*CreateStrategyRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{92}
+}
+
+func (x *CreateStrategyRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *CreateStrategyRequest) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
+func (x *CreateStrategyRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateStrategyRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateStrategyRequest) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+type CreateStrategyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Strategy      *TestingStrategy       `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateStrategyResponse) Reset() {
+	*x = CreateStrategyResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[93]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateStrategyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateStrategyResponse) ProtoMessage() {}
+
+func (x *CreateStrategyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[93]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateStrategyResponse.ProtoReflect.Descriptor instead.
+func (*CreateStrategyResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{93}
+}
+
+func (x *CreateStrategyResponse) GetStrategy() *TestingStrategy {
+	if x != nil {
+		return x.Strategy
+	}
+	return nil
+}
+
+type UpdateStrategyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Tags          []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
+	NewId         string                 `protobuf:"bytes,6,opt,name=new_id,json=newId,proto3" json:"new_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateStrategyRequest) Reset() {
+	*x = UpdateStrategyRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[94]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateStrategyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateStrategyRequest) ProtoMessage() {}
+
+func (x *UpdateStrategyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[94]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateStrategyRequest.ProtoReflect.Descriptor instead.
+func (*UpdateStrategyRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{94}
+}
+
+func (x *UpdateStrategyRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *UpdateStrategyRequest) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
+func (x *UpdateStrategyRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdateStrategyRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *UpdateStrategyRequest) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *UpdateStrategyRequest) GetNewId() string {
+	if x != nil {
+		return x.NewId
+	}
+	return ""
+}
+
+type UpdateStrategyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Strategy      *TestingStrategy       `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateStrategyResponse) Reset() {
+	*x = UpdateStrategyResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[95]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateStrategyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateStrategyResponse) ProtoMessage() {}
+
+func (x *UpdateStrategyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[95]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateStrategyResponse.ProtoReflect.Descriptor instead.
+func (*UpdateStrategyResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{95}
+}
+
+func (x *UpdateStrategyResponse) GetStrategy() *TestingStrategy {
+	if x != nil {
+		return x.Strategy
+	}
+	return nil
+}
+
+type DeleteStrategyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteStrategyRequest) Reset() {
+	*x = DeleteStrategyRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[96]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteStrategyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteStrategyRequest) ProtoMessage() {}
+
+func (x *DeleteStrategyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[96]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteStrategyRequest.ProtoReflect.Descriptor instead.
+func (*DeleteStrategyRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{96}
+}
+
+func (x *DeleteStrategyRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *DeleteStrategyRequest) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
+type DeleteStrategyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteStrategyResponse) Reset() {
+	*x = DeleteStrategyResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[97]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteStrategyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteStrategyResponse) ProtoMessage() {}
+
+func (x *DeleteStrategyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[97]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteStrategyResponse.ProtoReflect.Descriptor instead.
+func (*DeleteStrategyResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{97}
+}
+
+type RestoreStrategyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreStrategyRequest) Reset() {
+	*x = RestoreStrategyRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[98]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreStrategyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreStrategyRequest) ProtoMessage() {}
+
+func (x *RestoreStrategyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[98]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreStrategyRequest.ProtoReflect.Descriptor instead.
+func (*RestoreStrategyRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{98}
+}
+
+func (x *RestoreStrategyRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *RestoreStrategyRequest) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
+type RestoreStrategyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreStrategyResponse) Reset() {
+	*x = RestoreStrategyResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[99]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreStrategyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreStrategyResponse) ProtoMessage() {}
+
+func (x *RestoreStrategyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[99]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreStrategyResponse.ProtoReflect.Descriptor instead.
+func (*RestoreStrategyResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{99}
+}
+
+type ListPermissionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPermissionsRequest) Reset() {
+	*x = ListPermissionsRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[100]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPermissionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPermissionsRequest) ProtoMessage() {}
+
+func (x *ListPermissionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[100]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPermissionsRequest.ProtoReflect.Descriptor instead.
+func (*ListPermissionsRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{100}
+}
+
+func (x *ListPermissionsRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+type ListPermissionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Permissions   []*RepoPermission      `protobuf:"bytes,1,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPermissionsResponse) Reset() {
+	*x = ListPermissionsResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[101]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPermissionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPermissionsResponse) ProtoMessage() {}
+
+func (x *ListPermissionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[101]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPermissionsResponse.ProtoReflect.Descriptor instead.
+func (*ListPermissionsResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{101}
+}
+
+func (x *ListPermissionsResponse) GetPermissions() []*RepoPermission {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+type AddPermissionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddPermissionRequest) Reset() {
+	*x = AddPermissionRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[102]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddPermissionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddPermissionRequest) ProtoMessage() {}
+
+func (x *AddPermissionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[102]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddPermissionRequest.ProtoReflect.Descriptor instead.
+func (*AddPermissionRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{102}
+}
+
+func (x *AddPermissionRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *AddPermissionRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AddPermissionRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type AddPermissionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Permission    *RepoPermission        `protobuf:"bytes,1,opt,name=permission,proto3" json:"permission,omitempty"`
+	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddPermissionResponse) Reset() {
+	*x = AddPermissionResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[103]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddPermissionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddPermissionResponse) ProtoMessage() {}
+
+func (x *AddPermissionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[103]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddPermissionResponse.ProtoReflect.Descriptor instead.
+func (*AddPermissionResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{103}
+}
+
+func (x *AddPermissionResponse) GetPermission() *RepoPermission {
+	if x != nil {
+		return x.Permission
+	}
+	return nil
+}
+
+func (x *AddPermissionResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type RemovePermissionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemovePermissionRequest) Reset() {
+	*x = RemovePermissionRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[104]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemovePermissionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemovePermissionRequest) ProtoMessage() {}
+
+func (x *RemovePermissionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[104]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemovePermissionRequest.ProtoReflect.Descriptor instead.
+func (*RemovePermissionRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{104}
+}
+
+func (x *RemovePermissionRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *RemovePermissionRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type RemovePermissionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemovePermissionResponse) Reset() {
+	*x = RemovePermissionResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[105]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemovePermissionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemovePermissionResponse) ProtoMessage() {}
+
+func (x *RemovePermissionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[105]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemovePermissionResponse.ProtoReflect.Descriptor instead.
+func (*RemovePermissionResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{105}
 }
 
 var File_ameliso_v1_service_proto protoreflect.FileDescriptor
@@ -4881,7 +6422,7 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\aentries\x18\x01 \x03(\v2\x1c.ameliso.v1.CaseHistoryEntryR\aentries\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xdb\x01\n" +
+	"totalCount\"\xfe\x01\n" +
 	"\x11CreateCaseRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tcase_path\x18\x02 \x01(\tR\bcasePath\x12\x14\n" +
@@ -4889,7 +6430,8 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x12\n" +
 	"\x04tags\x18\x05 \x03(\tR\x04tags\x120\n" +
 	"\bpriority\x18\x06 \x01(\x0e2\x14.ameliso.v1.PriorityR\bpriority\x12\x12\n" +
-	"\x04body\x18\a \x01(\tR\x04body\"W\n" +
+	"\x04body\x18\a \x01(\tR\x04body\x12!\n" +
+	"\fstrategy_ids\x18\b \x03(\tR\vstrategyIds\"W\n" +
 	"\x12CreateCaseResponse\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12\x1b\n" +
 	"\tfile_path\x18\x02 \x01(\tR\bfilePath\"\xbe\x01\n" +
@@ -4899,16 +6441,19 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x12\n" +
 	"\x04tags\x18\x04 \x03(\tR\x04tags\x120\n" +
 	"\bpriority\x18\x05 \x01(\x0e2\x14.ameliso.v1.PriorityR\bpriority\x12\x12\n" +
-	"\x04body\x18\x06 \x01(\tR\x04body\"y\n" +
+	"\x04body\x18\x06 \x01(\tR\x04body\"\xa2\x01\n" +
 	"\x16BulkCreateCasesRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12/\n" +
 	"\x05cases\x18\x02 \x03(\v2\x19.ameliso.v1.BulkCaseEntryR\x05cases\x12\x15\n" +
-	"\x06run_id\x18\x03 \x01(\tR\x05runId\"\x94\x01\n" +
+	"\x06run_id\x18\x03 \x01(\tR\x05runId\x12'\n" +
+	"\x0fidempotency_key\x18\n" +
+	" \x01(\tR\x0eidempotencyKey\"\xb9\x01\n" +
 	"\x17BulkCreateCasesResponse\x12&\n" +
 	"\x05cases\x18\x01 \x03(\v2\x10.ameliso.v1.CaseR\x05cases\x12\x1d\n" +
 	"\n" +
 	"file_paths\x18\x02 \x03(\tR\tfilePaths\x122\n" +
-	"\apending\x18\x03 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\"\xf6\x01\n" +
+	"\apending\x18\x03 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\x12#\n" +
+	"\rskipped_paths\x18\x04 \x03(\tR\fskippedPaths\"\x99\x02\n" +
 	"\x11UpdateCaseRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tcase_path\x18\x02 \x01(\tR\bcasePath\x12\x14\n" +
@@ -4917,7 +6462,8 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x04tags\x18\x05 \x03(\tR\x04tags\x120\n" +
 	"\bpriority\x18\x06 \x01(\x0e2\x14.ameliso.v1.PriorityR\bpriority\x12\x12\n" +
 	"\x04body\x18\a \x01(\tR\x04body\x12\x19\n" +
-	"\bnew_path\x18\b \x01(\tR\anewPath\":\n" +
+	"\bnew_path\x18\b \x01(\tR\anewPath\x12!\n" +
+	"\fstrategy_ids\x18\t \x03(\tR\vstrategyIds\":\n" +
 	"\x12UpdateCaseResponse\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\"\xc0\x01\n" +
 	"\x0fBulkUpdateEntry\x12\x1b\n" +
@@ -5003,13 +6549,17 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x04runs\x18\x01 \x03(\v2\x13.ameliso.v1.RunMetaR\x04runs\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"?\n" +
+	"totalCount\"{\n" +
 	"\rGetRunRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
-	"\x06run_id\x18\x02 \x01(\tR\x05runId\"[\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"\x83\x01\n" +
 	"\x0eGetRunResponse\x12!\n" +
 	"\x03run\x18\x01 \x01(\v2\x0f.ameliso.v1.RunR\x03run\x12&\n" +
-	"\x05cases\x18\x02 \x03(\v2\x10.ameliso.v1.CaseR\x05cases\"\xaa\x02\n" +
+	"\x05cases\x18\x02 \x03(\v2\x10.ameliso.v1.CaseR\x05cases\x12&\n" +
+	"\x0fnext_page_token\x18\x03 \x01(\tR\rnextPageToken\"\xaa\x02\n" +
 	"\x10CreateRunRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x18\n" +
@@ -5029,26 +6579,35 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\bdir_path\x18\x02 \x01(\tR\adirPath\x122\n" +
 	"\apending\x18\x03 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\x12(\n" +
 	"\x10total_repo_cases\x18\x04 \x01(\x05R\x0etotalRepoCases\x12'\n" +
-	"\x0funcovered_files\x18\x05 \x03(\tR\x0euncoveredFiles\"\xaa\x01\n" +
+	"\x0funcovered_files\x18\x05 \x03(\tR\x0euncoveredFiles\"\xea\x01\n" +
 	"\x13RecordResultRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
 	"\tcase_path\x18\x03 \x01(\tR\bcasePath\x120\n" +
 	"\x06status\x18\x04 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\x06status\x12\x14\n" +
-	"\x05notes\x18\x05 \x01(\tR\x05notes\"\xc5\x01\n" +
+	"\x05notes\x18\x05 \x01(\tR\x05notes\x12\x1f\n" +
+	"\vduration_ms\x18\x06 \x01(\x03R\n" +
+	"durationMs\x12\x1d\n" +
+	"\n" +
+	"error_type\x18\a \x01(\tR\terrorType\"\xc5\x01\n" +
 	"\x14RecordResultResponse\x12.\n" +
 	"\x06result\x18\x01 \x01(\v2\x16.ameliso.v1.CaseResultR\x06result\x12#\n" +
 	"\rpending_count\x18\x02 \x01(\x05R\fpendingCount\x12$\n" +
 	"\x0etotal_in_scope\x18\x03 \x01(\x05R\ftotalInScope\x122\n" +
-	"\apending\x18\x04 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\"v\n" +
+	"\apending\x18\x04 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\"\xb6\x01\n" +
 	"\x0fBulkResultEntry\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\x06status\x12\x14\n" +
-	"\x05notes\x18\x03 \x01(\tR\x05notes\"\x81\x01\n" +
+	"\x05notes\x18\x03 \x01(\tR\x05notes\x12\x1f\n" +
+	"\vduration_ms\x18\x04 \x01(\x03R\n" +
+	"durationMs\x12\x1d\n" +
+	"\n" +
+	"error_type\x18\x05 \x01(\tR\terrorType\"\xaa\x01\n" +
 	"\x18BulkRecordResultsRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x125\n" +
-	"\aresults\x18\x03 \x03(\v2\x1b.ameliso.v1.BulkResultEntryR\aresults\"\xcc\x01\n" +
+	"\aresults\x18\x03 \x03(\v2\x1b.ameliso.v1.BulkResultEntryR\aresults\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"\xcc\x01\n" +
 	"\x19BulkRecordResultsResponse\x120\n" +
 	"\aresults\x18\x01 \x03(\v2\x16.ameliso.v1.CaseResultR\aresults\x12#\n" +
 	"\rpending_count\x18\x02 \x01(\x05R\fpendingCount\x12$\n" +
@@ -5069,20 +6628,24 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x11RestoreRunRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\"\x14\n" +
-	"\x12RestoreRunResponse\"\x87\x01\n" +
+	"\x12RestoreRunResponse\"\xc3\x01\n" +
 	"\x16GetPendingCasesRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12=\n" +
-	"\x0fpriority_filter\x18\x03 \x01(\x0e2\x14.ameliso.v1.PriorityR\x0epriorityFilter\"\x87\x01\n" +
+	"\x0fpriority_filter\x18\x03 \x01(\x0e2\x14.ameliso.v1.PriorityR\x0epriorityFilter\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x05 \x01(\tR\tpageToken\"\x87\x01\n" +
 	"\fPendingEntry\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12\x12\n" +
 	"\x04body\x18\x02 \x01(\tR\x04body\x12=\n" +
-	"\rlatest_status\x18\x03 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\flatestStatus\"\xd0\x01\n" +
+	"\rlatest_status\x18\x03 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\flatestStatus\"\xf8\x01\n" +
 	"\x17GetPendingCasesResponse\x12&\n" +
 	"\x05cases\x18\x01 \x03(\v2\x10.ameliso.v1.CaseR\x05cases\x12$\n" +
 	"\x0etotal_in_scope\x18\x02 \x01(\x05R\ftotalInScope\x123\n" +
 	"\aentries\x18\x03 \x03(\v2\x19.ameliso.v1.CoverageEntryR\aentries\x122\n" +
-	"\apending\x18\x04 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\"\xfe\x01\n" +
+	"\apending\x18\x04 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\x12&\n" +
+	"\x0fnext_page_token\x18\x05 \x01(\tR\rnextPageToken\"\xfe\x01\n" +
 	"\x10UpdateRunRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x19\n" +
@@ -5098,10 +6661,14 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x03run\x18\x01 \x01(\v2\x13.ameliso.v1.RunMetaR\x03run\x12 \n" +
 	"\fnew_dir_path\x18\x02 \x01(\tR\n" +
 	"newDirPath\x122\n" +
-	"\apending\x18\x03 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\"r\n" +
+	"\apending\x18\x03 \x03(\v2\x18.ameliso.v1.PendingEntryR\apending\"\xe8\x01\n" +
 	"\x18GetCoverageReportRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12=\n" +
-	"\rstatus_filter\x18\x02 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\fstatusFilter\"m\n" +
+	"\rstatus_filter\x18\x02 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\fstatusFilter\x12\x16\n" +
+	"\x06search\x18\x03 \x01(\tR\x06search\x12=\n" +
+	"\x0fpriority_filter\x18\x04 \x01(\x0e2\x14.ameliso.v1.PriorityR\x0epriorityFilter\x12\x1d\n" +
+	"\n" +
+	"flaky_only\x18\x05 \x01(\bR\tflakyOnly\"m\n" +
 	"\x19GetCoverageReportResponse\x123\n" +
 	"\aentries\x18\x01 \x03(\v2\x19.ameliso.v1.CoverageEntryR\aentries\x12\x1b\n" +
 	"\trun_count\x18\x02 \x01(\x05R\brunCount\"\xc7\x01\n" +
@@ -5126,7 +6693,7 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x0etotal_in_scope\x18\x06 \x01(\x05R\ftotalInScope\x12\x1d\n" +
 	"\n" +
 	"commit_sha\x18\a \x01(\tR\tcommitSha\x12 \n" +
-	"\venvironment\x18\b \x01(\tR\venvironment\"\xd7\x03\n" +
+	"\venvironment\x18\b \x01(\tR\venvironment\"\xaf\x04\n" +
 	"\x15GetRepoStatusResponse\x12\x1f\n" +
 	"\vtotal_cases\x18\x01 \x01(\x05R\n" +
 	"totalCases\x12\x1d\n" +
@@ -5145,7 +6712,9 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\trun_count\x18\v \x01(\x05R\brunCount\x12<\n" +
 	"\vactive_runs\x18\f \x03(\v2\x1b.ameliso.v1.ActiveRunStatusR\n" +
 	"activeRuns\x12A\n" +
-	"\x12last_completed_run\x18\r \x01(\v2\x13.ameliso.v1.RunMetaR\x10lastCompletedRun\"6\n" +
+	"\x12last_completed_run\x18\r \x01(\v2\x13.ameliso.v1.RunMetaR\x10lastCompletedRun\x12%\n" +
+	"\x0estrategy_count\x18\x0e \x01(\x05R\rstrategyCount\x12/\n" +
+	"\x13recent_environments\x18\x0f \x03(\tR\x12recentEnvironments\"6\n" +
 	"\x1bGetTesterSuggestionsRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\"@\n" +
 	"\x1cGetTesterSuggestionsResponse\x12 \n" +
@@ -5175,15 +6744,106 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x17RotateRepoApiKeyRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\"3\n" +
 	"\x18RotateRepoApiKeyResponse\x12\x17\n" +
-	"\aapi_key\x18\x01 \x01(\tR\x06apiKey\"j\n" +
+	"\aapi_key\x18\x01 \x01(\tR\x06apiKey\"0\n" +
+	"\x15ListRepoTokensRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\"G\n" +
+	"\x16ListRepoTokensResponse\x12-\n" +
+	"\x06tokens\x18\x01 \x03(\v2\x15.ameliso.v1.RepoTokenR\x06tokens\"Y\n" +
+	"\x16CreateRepoTokenRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\"F\n" +
+	"\x17CreateRepoTokenResponse\x12+\n" +
+	"\x05token\x18\x01 \x01(\v2\x15.ameliso.v1.RepoTokenR\x05token\"G\n" +
+	"\x16DeleteRepoTokenRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\x19\n" +
+	"\x17DeleteRepoTokenResponse\"[\n" +
+	"\x16UpdateRepoTokenRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\"F\n" +
+	"\x17UpdateRepoTokenResponse\x12+\n" +
+	"\x05token\x18\x01 \x01(\v2\x15.ameliso.v1.RepoTokenR\x05token\"\xf4\x01\n" +
 	"\x13ListAuditLogRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"p\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\x12#\n" +
+	"\rresource_type\x18\x04 \x01(\tR\fresourceType\x12\x1f\n" +
+	"\vresource_id\x18\x05 \x01(\tR\n" +
+	"resourceId\x12\x16\n" +
+	"\x06action\x18\x06 \x01(\tR\x06action\x12\x14\n" +
+	"\x05since\x18\a \x01(\tR\x05since\x12\x14\n" +
+	"\x05until\x18\b \x01(\tR\x05until\"p\n" +
 	"\x14ListAuditLogResponse\x120\n" +
 	"\aentries\x18\x01 \x03(\v2\x16.ameliso.v1.AuditEntryR\aentries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xcb\x18\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x82\x01\n" +
+	"\x15ListStrategiesRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x14\n" +
+	"\x05query\x18\x02 \x01(\tR\x05query\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"\x9e\x01\n" +
+	"\x16ListStrategiesResponse\x12;\n" +
+	"\n" +
+	"strategies\x18\x01 \x03(\v2\x1b.ameliso.v1.TestingStrategyR\n" +
+	"strategies\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
+	"\vtotal_count\x18\x03 \x01(\x05R\n" +
+	"totalCount\"N\n" +
+	"\x12GetStrategyRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
+	"\vstrategy_id\x18\x02 \x01(\tR\n" +
+	"strategyId\"N\n" +
+	"\x13GetStrategyResponse\x127\n" +
+	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"\x9b\x01\n" +
+	"\x15CreateStrategyRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
+	"\vstrategy_id\x18\x02 \x01(\tR\n" +
+	"strategyId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x12\n" +
+	"\x04tags\x18\x05 \x03(\tR\x04tags\"Q\n" +
+	"\x16CreateStrategyResponse\x127\n" +
+	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"\xb2\x01\n" +
+	"\x15UpdateStrategyRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
+	"\vstrategy_id\x18\x02 \x01(\tR\n" +
+	"strategyId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x12\n" +
+	"\x04tags\x18\x05 \x03(\tR\x04tags\x12\x15\n" +
+	"\x06new_id\x18\x06 \x01(\tR\x05newId\"Q\n" +
+	"\x16UpdateStrategyResponse\x127\n" +
+	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"Q\n" +
+	"\x15DeleteStrategyRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
+	"\vstrategy_id\x18\x02 \x01(\tR\n" +
+	"strategyId\"\x18\n" +
+	"\x16DeleteStrategyResponse\"R\n" +
+	"\x16RestoreStrategyRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
+	"\vstrategy_id\x18\x02 \x01(\tR\n" +
+	"strategyId\"\x19\n" +
+	"\x17RestoreStrategyResponse\"1\n" +
+	"\x16ListPermissionsRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\"W\n" +
+	"\x17ListPermissionsResponse\x12<\n" +
+	"\vpermissions\x18\x01 \x03(\v2\x1a.ameliso.v1.RepoPermissionR\vpermissions\"W\n" +
+	"\x14AddPermissionRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\"i\n" +
+	"\x15AddPermissionResponse\x12:\n" +
+	"\n" +
+	"permission\x18\x01 \x01(\v2\x1a.ameliso.v1.RepoPermissionR\n" +
+	"permission\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"F\n" +
+	"\x17RemovePermissionRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"\x1a\n" +
+	"\x18RemovePermissionResponse2\xd9!\n" +
 	"\x0eAmelisoService\x12H\n" +
 	"\tListCases\x12\x1c.ameliso.v1.ListCasesRequest\x1a\x1d.ameliso.v1.ListCasesResponse\x12B\n" +
 	"\aGetCase\x12\x1a.ameliso.v1.GetCaseRequest\x1a\x1b.ameliso.v1.GetCaseResponse\x12W\n" +
@@ -5225,8 +6885,21 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x10ListRepositories\x12#.ameliso.v1.ListRepositoriesRequest\x1a$.ameliso.v1.ListRepositoriesResponse\x12W\n" +
 	"\x0eSyncRepository\x12!.ameliso.v1.SyncRepositoryRequest\x1a\".ameliso.v1.SyncRepositoryResponse\x12]\n" +
 	"\x10RemoveRepository\x12#.ameliso.v1.RemoveRepositoryRequest\x1a$.ameliso.v1.RemoveRepositoryResponse\x12]\n" +
-	"\x10RotateRepoApiKey\x12#.ameliso.v1.RotateRepoApiKeyRequest\x1a$.ameliso.v1.RotateRepoApiKeyResponse\x12Q\n" +
-	"\fListAuditLog\x12\x1f.ameliso.v1.ListAuditLogRequest\x1a .ameliso.v1.ListAuditLogResponseB0Z.github.com/tupe12334/ameliso/generated;amelisob\x06proto3"
+	"\x10RotateRepoApiKey\x12#.ameliso.v1.RotateRepoApiKeyRequest\x1a$.ameliso.v1.RotateRepoApiKeyResponse\x12W\n" +
+	"\x0eListRepoTokens\x12!.ameliso.v1.ListRepoTokensRequest\x1a\".ameliso.v1.ListRepoTokensResponse\x12Z\n" +
+	"\x0fCreateRepoToken\x12\".ameliso.v1.CreateRepoTokenRequest\x1a#.ameliso.v1.CreateRepoTokenResponse\x12Z\n" +
+	"\x0fDeleteRepoToken\x12\".ameliso.v1.DeleteRepoTokenRequest\x1a#.ameliso.v1.DeleteRepoTokenResponse\x12Z\n" +
+	"\x0fUpdateRepoToken\x12\".ameliso.v1.UpdateRepoTokenRequest\x1a#.ameliso.v1.UpdateRepoTokenResponse\x12Q\n" +
+	"\fListAuditLog\x12\x1f.ameliso.v1.ListAuditLogRequest\x1a .ameliso.v1.ListAuditLogResponse\x12W\n" +
+	"\x0eListStrategies\x12!.ameliso.v1.ListStrategiesRequest\x1a\".ameliso.v1.ListStrategiesResponse\x12N\n" +
+	"\vGetStrategy\x12\x1e.ameliso.v1.GetStrategyRequest\x1a\x1f.ameliso.v1.GetStrategyResponse\x12W\n" +
+	"\x0eCreateStrategy\x12!.ameliso.v1.CreateStrategyRequest\x1a\".ameliso.v1.CreateStrategyResponse\x12W\n" +
+	"\x0eUpdateStrategy\x12!.ameliso.v1.UpdateStrategyRequest\x1a\".ameliso.v1.UpdateStrategyResponse\x12W\n" +
+	"\x0eDeleteStrategy\x12!.ameliso.v1.DeleteStrategyRequest\x1a\".ameliso.v1.DeleteStrategyResponse\x12Z\n" +
+	"\x0fRestoreStrategy\x12\".ameliso.v1.RestoreStrategyRequest\x1a#.ameliso.v1.RestoreStrategyResponse\x12Z\n" +
+	"\x0fListPermissions\x12\".ameliso.v1.ListPermissionsRequest\x1a#.ameliso.v1.ListPermissionsResponse\x12T\n" +
+	"\rAddPermission\x12 .ameliso.v1.AddPermissionRequest\x1a!.ameliso.v1.AddPermissionResponse\x12]\n" +
+	"\x10RemovePermission\x12#.ameliso.v1.RemovePermissionRequest\x1a$.ameliso.v1.RemovePermissionResponseB0Z.github.com/tupe12334/ameliso/generated;amelisob\x06proto3"
 
 var (
 	file_ameliso_v1_service_proto_rawDescOnce sync.Once
@@ -5240,7 +6913,7 @@ func file_ameliso_v1_service_proto_rawDescGZIP() []byte {
 	return file_ameliso_v1_service_proto_rawDescData
 }
 
-var file_ameliso_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 80)
+var file_ameliso_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 106)
 var file_ameliso_v1_service_proto_goTypes = []any{
 	(*ListCasesRequest)(nil),             // 0: ameliso.v1.ListCasesRequest
 	(*ListCasesResponse)(nil),            // 1: ameliso.v1.ListCasesResponse
@@ -5320,154 +6993,219 @@ var file_ameliso_v1_service_proto_goTypes = []any{
 	(*RemoveRepositoryResponse)(nil),     // 75: ameliso.v1.RemoveRepositoryResponse
 	(*RotateRepoApiKeyRequest)(nil),      // 76: ameliso.v1.RotateRepoApiKeyRequest
 	(*RotateRepoApiKeyResponse)(nil),     // 77: ameliso.v1.RotateRepoApiKeyResponse
-	(*ListAuditLogRequest)(nil),          // 78: ameliso.v1.ListAuditLogRequest
-	(*ListAuditLogResponse)(nil),         // 79: ameliso.v1.ListAuditLogResponse
-	(Priority)(0),                        // 80: ameliso.v1.Priority
-	(*Case)(nil),                         // 81: ameliso.v1.Case
-	(*Suite)(nil),                        // 82: ameliso.v1.Suite
-	(RunStatus)(0),                       // 83: ameliso.v1.RunStatus
-	(*RunMeta)(nil),                      // 84: ameliso.v1.RunMeta
-	(*Run)(nil),                          // 85: ameliso.v1.Run
-	(ResultStatus)(0),                    // 86: ameliso.v1.ResultStatus
-	(*CaseResult)(nil),                   // 87: ameliso.v1.CaseResult
-	(*CoverageEntry)(nil),                // 88: ameliso.v1.CoverageEntry
-	(*AffectedCase)(nil),                 // 89: ameliso.v1.AffectedCase
-	(*Repository)(nil),                   // 90: ameliso.v1.Repository
-	(*AuditEntry)(nil),                   // 91: ameliso.v1.AuditEntry
+	(*ListRepoTokensRequest)(nil),        // 78: ameliso.v1.ListRepoTokensRequest
+	(*ListRepoTokensResponse)(nil),       // 79: ameliso.v1.ListRepoTokensResponse
+	(*CreateRepoTokenRequest)(nil),       // 80: ameliso.v1.CreateRepoTokenRequest
+	(*CreateRepoTokenResponse)(nil),      // 81: ameliso.v1.CreateRepoTokenResponse
+	(*DeleteRepoTokenRequest)(nil),       // 82: ameliso.v1.DeleteRepoTokenRequest
+	(*DeleteRepoTokenResponse)(nil),      // 83: ameliso.v1.DeleteRepoTokenResponse
+	(*UpdateRepoTokenRequest)(nil),       // 84: ameliso.v1.UpdateRepoTokenRequest
+	(*UpdateRepoTokenResponse)(nil),      // 85: ameliso.v1.UpdateRepoTokenResponse
+	(*ListAuditLogRequest)(nil),          // 86: ameliso.v1.ListAuditLogRequest
+	(*ListAuditLogResponse)(nil),         // 87: ameliso.v1.ListAuditLogResponse
+	(*ListStrategiesRequest)(nil),        // 88: ameliso.v1.ListStrategiesRequest
+	(*ListStrategiesResponse)(nil),       // 89: ameliso.v1.ListStrategiesResponse
+	(*GetStrategyRequest)(nil),           // 90: ameliso.v1.GetStrategyRequest
+	(*GetStrategyResponse)(nil),          // 91: ameliso.v1.GetStrategyResponse
+	(*CreateStrategyRequest)(nil),        // 92: ameliso.v1.CreateStrategyRequest
+	(*CreateStrategyResponse)(nil),       // 93: ameliso.v1.CreateStrategyResponse
+	(*UpdateStrategyRequest)(nil),        // 94: ameliso.v1.UpdateStrategyRequest
+	(*UpdateStrategyResponse)(nil),       // 95: ameliso.v1.UpdateStrategyResponse
+	(*DeleteStrategyRequest)(nil),        // 96: ameliso.v1.DeleteStrategyRequest
+	(*DeleteStrategyResponse)(nil),       // 97: ameliso.v1.DeleteStrategyResponse
+	(*RestoreStrategyRequest)(nil),       // 98: ameliso.v1.RestoreStrategyRequest
+	(*RestoreStrategyResponse)(nil),      // 99: ameliso.v1.RestoreStrategyResponse
+	(*ListPermissionsRequest)(nil),       // 100: ameliso.v1.ListPermissionsRequest
+	(*ListPermissionsResponse)(nil),      // 101: ameliso.v1.ListPermissionsResponse
+	(*AddPermissionRequest)(nil),         // 102: ameliso.v1.AddPermissionRequest
+	(*AddPermissionResponse)(nil),        // 103: ameliso.v1.AddPermissionResponse
+	(*RemovePermissionRequest)(nil),      // 104: ameliso.v1.RemovePermissionRequest
+	(*RemovePermissionResponse)(nil),     // 105: ameliso.v1.RemovePermissionResponse
+	(Priority)(0),                        // 106: ameliso.v1.Priority
+	(*Case)(nil),                         // 107: ameliso.v1.Case
+	(*Suite)(nil),                        // 108: ameliso.v1.Suite
+	(RunStatus)(0),                       // 109: ameliso.v1.RunStatus
+	(*RunMeta)(nil),                      // 110: ameliso.v1.RunMeta
+	(*Run)(nil),                          // 111: ameliso.v1.Run
+	(ResultStatus)(0),                    // 112: ameliso.v1.ResultStatus
+	(*CaseResult)(nil),                   // 113: ameliso.v1.CaseResult
+	(*CoverageEntry)(nil),                // 114: ameliso.v1.CoverageEntry
+	(*AffectedCase)(nil),                 // 115: ameliso.v1.AffectedCase
+	(*Repository)(nil),                   // 116: ameliso.v1.Repository
+	(*RepoToken)(nil),                    // 117: ameliso.v1.RepoToken
+	(*AuditEntry)(nil),                   // 118: ameliso.v1.AuditEntry
+	(*TestingStrategy)(nil),              // 119: ameliso.v1.TestingStrategy
+	(*RepoPermission)(nil),               // 120: ameliso.v1.RepoPermission
 }
 var file_ameliso_v1_service_proto_depIdxs = []int32{
-	80, // 0: ameliso.v1.ListCasesRequest.priority:type_name -> ameliso.v1.Priority
-	81, // 1: ameliso.v1.ListCasesResponse.cases:type_name -> ameliso.v1.Case
-	81, // 2: ameliso.v1.GetCaseResponse.case:type_name -> ameliso.v1.Case
-	4,  // 3: ameliso.v1.GetCaseHistoryResponse.entries:type_name -> ameliso.v1.CaseHistoryEntry
-	80, // 4: ameliso.v1.CreateCaseRequest.priority:type_name -> ameliso.v1.Priority
-	81, // 5: ameliso.v1.CreateCaseResponse.case:type_name -> ameliso.v1.Case
-	80, // 6: ameliso.v1.BulkCaseEntry.priority:type_name -> ameliso.v1.Priority
-	9,  // 7: ameliso.v1.BulkCreateCasesRequest.cases:type_name -> ameliso.v1.BulkCaseEntry
-	81, // 8: ameliso.v1.BulkCreateCasesResponse.cases:type_name -> ameliso.v1.Case
-	53, // 9: ameliso.v1.BulkCreateCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
-	80, // 10: ameliso.v1.UpdateCaseRequest.priority:type_name -> ameliso.v1.Priority
-	81, // 11: ameliso.v1.UpdateCaseResponse.case:type_name -> ameliso.v1.Case
-	80, // 12: ameliso.v1.BulkUpdateEntry.priority:type_name -> ameliso.v1.Priority
-	14, // 13: ameliso.v1.BulkUpdateCasesRequest.cases:type_name -> ameliso.v1.BulkUpdateEntry
-	81, // 14: ameliso.v1.BulkUpdateCasesResponse.cases:type_name -> ameliso.v1.Case
-	82, // 15: ameliso.v1.ListSuitesResponse.suites:type_name -> ameliso.v1.Suite
-	82, // 16: ameliso.v1.GetSuiteResponse.suite:type_name -> ameliso.v1.Suite
-	82, // 17: ameliso.v1.CreateSuiteResponse.suite:type_name -> ameliso.v1.Suite
-	82, // 18: ameliso.v1.UpdateSuiteResponse.suite:type_name -> ameliso.v1.Suite
-	83, // 19: ameliso.v1.ListRunsRequest.status:type_name -> ameliso.v1.RunStatus
-	84, // 20: ameliso.v1.ListRunsResponse.runs:type_name -> ameliso.v1.RunMeta
-	85, // 21: ameliso.v1.GetRunResponse.run:type_name -> ameliso.v1.Run
-	81, // 22: ameliso.v1.GetRunResponse.cases:type_name -> ameliso.v1.Case
-	84, // 23: ameliso.v1.CreateRunResponse.run:type_name -> ameliso.v1.RunMeta
-	53, // 24: ameliso.v1.CreateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
-	86, // 25: ameliso.v1.RecordResultRequest.status:type_name -> ameliso.v1.ResultStatus
-	87, // 26: ameliso.v1.RecordResultResponse.result:type_name -> ameliso.v1.CaseResult
-	53, // 27: ameliso.v1.RecordResultResponse.pending:type_name -> ameliso.v1.PendingEntry
-	86, // 28: ameliso.v1.BulkResultEntry.status:type_name -> ameliso.v1.ResultStatus
-	43, // 29: ameliso.v1.BulkRecordResultsRequest.results:type_name -> ameliso.v1.BulkResultEntry
-	87, // 30: ameliso.v1.BulkRecordResultsResponse.results:type_name -> ameliso.v1.CaseResult
-	53, // 31: ameliso.v1.BulkRecordResultsResponse.pending:type_name -> ameliso.v1.PendingEntry
-	83, // 32: ameliso.v1.FinalizeRunRequest.status:type_name -> ameliso.v1.RunStatus
-	84, // 33: ameliso.v1.FinalizeRunResponse.run:type_name -> ameliso.v1.RunMeta
-	87, // 34: ameliso.v1.FinalizeRunResponse.results:type_name -> ameliso.v1.CaseResult
-	80, // 35: ameliso.v1.GetPendingCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
-	81, // 36: ameliso.v1.PendingEntry.case:type_name -> ameliso.v1.Case
-	86, // 37: ameliso.v1.PendingEntry.latest_status:type_name -> ameliso.v1.ResultStatus
-	81, // 38: ameliso.v1.GetPendingCasesResponse.cases:type_name -> ameliso.v1.Case
-	88, // 39: ameliso.v1.GetPendingCasesResponse.entries:type_name -> ameliso.v1.CoverageEntry
-	53, // 40: ameliso.v1.GetPendingCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
-	84, // 41: ameliso.v1.UpdateRunResponse.run:type_name -> ameliso.v1.RunMeta
-	53, // 42: ameliso.v1.UpdateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
-	86, // 43: ameliso.v1.GetCoverageReportRequest.status_filter:type_name -> ameliso.v1.ResultStatus
-	88, // 44: ameliso.v1.GetCoverageReportResponse.entries:type_name -> ameliso.v1.CoverageEntry
-	80, // 45: ameliso.v1.GetAffectedCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
-	89, // 46: ameliso.v1.GetAffectedCasesResponse.cases:type_name -> ameliso.v1.AffectedCase
-	62, // 47: ameliso.v1.GetRepoStatusResponse.active_runs:type_name -> ameliso.v1.ActiveRunStatus
-	84, // 48: ameliso.v1.GetRepoStatusResponse.last_completed_run:type_name -> ameliso.v1.RunMeta
-	90, // 49: ameliso.v1.HandleGitHubCallbackResponse.repositories:type_name -> ameliso.v1.Repository
-	90, // 50: ameliso.v1.ListRepositoriesResponse.repositories:type_name -> ameliso.v1.Repository
-	90, // 51: ameliso.v1.SyncRepositoryResponse.repository:type_name -> ameliso.v1.Repository
-	91, // 52: ameliso.v1.ListAuditLogResponse.entries:type_name -> ameliso.v1.AuditEntry
-	0,  // 53: ameliso.v1.AmelisoService.ListCases:input_type -> ameliso.v1.ListCasesRequest
-	2,  // 54: ameliso.v1.AmelisoService.GetCase:input_type -> ameliso.v1.GetCaseRequest
-	5,  // 55: ameliso.v1.AmelisoService.GetCaseHistory:input_type -> ameliso.v1.GetCaseHistoryRequest
-	7,  // 56: ameliso.v1.AmelisoService.CreateCase:input_type -> ameliso.v1.CreateCaseRequest
-	10, // 57: ameliso.v1.AmelisoService.BulkCreateCases:input_type -> ameliso.v1.BulkCreateCasesRequest
-	12, // 58: ameliso.v1.AmelisoService.UpdateCase:input_type -> ameliso.v1.UpdateCaseRequest
-	15, // 59: ameliso.v1.AmelisoService.BulkUpdateCases:input_type -> ameliso.v1.BulkUpdateCasesRequest
-	17, // 60: ameliso.v1.AmelisoService.DeleteCase:input_type -> ameliso.v1.DeleteCaseRequest
-	19, // 61: ameliso.v1.AmelisoService.BulkDeleteCases:input_type -> ameliso.v1.BulkDeleteCasesRequest
-	21, // 62: ameliso.v1.AmelisoService.RestoreCase:input_type -> ameliso.v1.RestoreCaseRequest
-	23, // 63: ameliso.v1.AmelisoService.ListSuites:input_type -> ameliso.v1.ListSuitesRequest
-	25, // 64: ameliso.v1.AmelisoService.GetSuite:input_type -> ameliso.v1.GetSuiteRequest
-	27, // 65: ameliso.v1.AmelisoService.CreateSuite:input_type -> ameliso.v1.CreateSuiteRequest
-	29, // 66: ameliso.v1.AmelisoService.UpdateSuite:input_type -> ameliso.v1.UpdateSuiteRequest
-	31, // 67: ameliso.v1.AmelisoService.DeleteSuite:input_type -> ameliso.v1.DeleteSuiteRequest
-	33, // 68: ameliso.v1.AmelisoService.RestoreSuite:input_type -> ameliso.v1.RestoreSuiteRequest
-	35, // 69: ameliso.v1.AmelisoService.ListRuns:input_type -> ameliso.v1.ListRunsRequest
-	37, // 70: ameliso.v1.AmelisoService.GetRun:input_type -> ameliso.v1.GetRunRequest
-	39, // 71: ameliso.v1.AmelisoService.CreateRun:input_type -> ameliso.v1.CreateRunRequest
-	41, // 72: ameliso.v1.AmelisoService.RecordResult:input_type -> ameliso.v1.RecordResultRequest
-	44, // 73: ameliso.v1.AmelisoService.BulkRecordResults:input_type -> ameliso.v1.BulkRecordResultsRequest
-	46, // 74: ameliso.v1.AmelisoService.FinalizeRun:input_type -> ameliso.v1.FinalizeRunRequest
-	48, // 75: ameliso.v1.AmelisoService.DeleteRun:input_type -> ameliso.v1.DeleteRunRequest
-	50, // 76: ameliso.v1.AmelisoService.RestoreRun:input_type -> ameliso.v1.RestoreRunRequest
-	52, // 77: ameliso.v1.AmelisoService.GetPendingCases:input_type -> ameliso.v1.GetPendingCasesRequest
-	55, // 78: ameliso.v1.AmelisoService.UpdateRun:input_type -> ameliso.v1.UpdateRunRequest
-	57, // 79: ameliso.v1.AmelisoService.GetCoverageReport:input_type -> ameliso.v1.GetCoverageReportRequest
-	59, // 80: ameliso.v1.AmelisoService.GetAffectedCases:input_type -> ameliso.v1.GetAffectedCasesRequest
-	61, // 81: ameliso.v1.AmelisoService.GetRepoStatus:input_type -> ameliso.v1.GetRepoStatusRequest
-	64, // 82: ameliso.v1.AmelisoService.GetTesterSuggestions:input_type -> ameliso.v1.GetTesterSuggestionsRequest
-	66, // 83: ameliso.v1.AmelisoService.GetGitHubInstallUrl:input_type -> ameliso.v1.GetGitHubInstallUrlRequest
-	68, // 84: ameliso.v1.AmelisoService.HandleGitHubCallback:input_type -> ameliso.v1.HandleGitHubCallbackRequest
-	70, // 85: ameliso.v1.AmelisoService.ListRepositories:input_type -> ameliso.v1.ListRepositoriesRequest
-	72, // 86: ameliso.v1.AmelisoService.SyncRepository:input_type -> ameliso.v1.SyncRepositoryRequest
-	74, // 87: ameliso.v1.AmelisoService.RemoveRepository:input_type -> ameliso.v1.RemoveRepositoryRequest
-	76, // 88: ameliso.v1.AmelisoService.RotateRepoApiKey:input_type -> ameliso.v1.RotateRepoApiKeyRequest
-	78, // 89: ameliso.v1.AmelisoService.ListAuditLog:input_type -> ameliso.v1.ListAuditLogRequest
-	1,  // 90: ameliso.v1.AmelisoService.ListCases:output_type -> ameliso.v1.ListCasesResponse
-	3,  // 91: ameliso.v1.AmelisoService.GetCase:output_type -> ameliso.v1.GetCaseResponse
-	6,  // 92: ameliso.v1.AmelisoService.GetCaseHistory:output_type -> ameliso.v1.GetCaseHistoryResponse
-	8,  // 93: ameliso.v1.AmelisoService.CreateCase:output_type -> ameliso.v1.CreateCaseResponse
-	11, // 94: ameliso.v1.AmelisoService.BulkCreateCases:output_type -> ameliso.v1.BulkCreateCasesResponse
-	13, // 95: ameliso.v1.AmelisoService.UpdateCase:output_type -> ameliso.v1.UpdateCaseResponse
-	16, // 96: ameliso.v1.AmelisoService.BulkUpdateCases:output_type -> ameliso.v1.BulkUpdateCasesResponse
-	18, // 97: ameliso.v1.AmelisoService.DeleteCase:output_type -> ameliso.v1.DeleteCaseResponse
-	20, // 98: ameliso.v1.AmelisoService.BulkDeleteCases:output_type -> ameliso.v1.BulkDeleteCasesResponse
-	22, // 99: ameliso.v1.AmelisoService.RestoreCase:output_type -> ameliso.v1.RestoreCaseResponse
-	24, // 100: ameliso.v1.AmelisoService.ListSuites:output_type -> ameliso.v1.ListSuitesResponse
-	26, // 101: ameliso.v1.AmelisoService.GetSuite:output_type -> ameliso.v1.GetSuiteResponse
-	28, // 102: ameliso.v1.AmelisoService.CreateSuite:output_type -> ameliso.v1.CreateSuiteResponse
-	30, // 103: ameliso.v1.AmelisoService.UpdateSuite:output_type -> ameliso.v1.UpdateSuiteResponse
-	32, // 104: ameliso.v1.AmelisoService.DeleteSuite:output_type -> ameliso.v1.DeleteSuiteResponse
-	34, // 105: ameliso.v1.AmelisoService.RestoreSuite:output_type -> ameliso.v1.RestoreSuiteResponse
-	36, // 106: ameliso.v1.AmelisoService.ListRuns:output_type -> ameliso.v1.ListRunsResponse
-	38, // 107: ameliso.v1.AmelisoService.GetRun:output_type -> ameliso.v1.GetRunResponse
-	40, // 108: ameliso.v1.AmelisoService.CreateRun:output_type -> ameliso.v1.CreateRunResponse
-	42, // 109: ameliso.v1.AmelisoService.RecordResult:output_type -> ameliso.v1.RecordResultResponse
-	45, // 110: ameliso.v1.AmelisoService.BulkRecordResults:output_type -> ameliso.v1.BulkRecordResultsResponse
-	47, // 111: ameliso.v1.AmelisoService.FinalizeRun:output_type -> ameliso.v1.FinalizeRunResponse
-	49, // 112: ameliso.v1.AmelisoService.DeleteRun:output_type -> ameliso.v1.DeleteRunResponse
-	51, // 113: ameliso.v1.AmelisoService.RestoreRun:output_type -> ameliso.v1.RestoreRunResponse
-	54, // 114: ameliso.v1.AmelisoService.GetPendingCases:output_type -> ameliso.v1.GetPendingCasesResponse
-	56, // 115: ameliso.v1.AmelisoService.UpdateRun:output_type -> ameliso.v1.UpdateRunResponse
-	58, // 116: ameliso.v1.AmelisoService.GetCoverageReport:output_type -> ameliso.v1.GetCoverageReportResponse
-	60, // 117: ameliso.v1.AmelisoService.GetAffectedCases:output_type -> ameliso.v1.GetAffectedCasesResponse
-	63, // 118: ameliso.v1.AmelisoService.GetRepoStatus:output_type -> ameliso.v1.GetRepoStatusResponse
-	65, // 119: ameliso.v1.AmelisoService.GetTesterSuggestions:output_type -> ameliso.v1.GetTesterSuggestionsResponse
-	67, // 120: ameliso.v1.AmelisoService.GetGitHubInstallUrl:output_type -> ameliso.v1.GetGitHubInstallUrlResponse
-	69, // 121: ameliso.v1.AmelisoService.HandleGitHubCallback:output_type -> ameliso.v1.HandleGitHubCallbackResponse
-	71, // 122: ameliso.v1.AmelisoService.ListRepositories:output_type -> ameliso.v1.ListRepositoriesResponse
-	73, // 123: ameliso.v1.AmelisoService.SyncRepository:output_type -> ameliso.v1.SyncRepositoryResponse
-	75, // 124: ameliso.v1.AmelisoService.RemoveRepository:output_type -> ameliso.v1.RemoveRepositoryResponse
-	77, // 125: ameliso.v1.AmelisoService.RotateRepoApiKey:output_type -> ameliso.v1.RotateRepoApiKeyResponse
-	79, // 126: ameliso.v1.AmelisoService.ListAuditLog:output_type -> ameliso.v1.ListAuditLogResponse
-	90, // [90:127] is the sub-list for method output_type
-	53, // [53:90] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	106, // 0: ameliso.v1.ListCasesRequest.priority:type_name -> ameliso.v1.Priority
+	107, // 1: ameliso.v1.ListCasesResponse.cases:type_name -> ameliso.v1.Case
+	107, // 2: ameliso.v1.GetCaseResponse.case:type_name -> ameliso.v1.Case
+	4,   // 3: ameliso.v1.GetCaseHistoryResponse.entries:type_name -> ameliso.v1.CaseHistoryEntry
+	106, // 4: ameliso.v1.CreateCaseRequest.priority:type_name -> ameliso.v1.Priority
+	107, // 5: ameliso.v1.CreateCaseResponse.case:type_name -> ameliso.v1.Case
+	106, // 6: ameliso.v1.BulkCaseEntry.priority:type_name -> ameliso.v1.Priority
+	9,   // 7: ameliso.v1.BulkCreateCasesRequest.cases:type_name -> ameliso.v1.BulkCaseEntry
+	107, // 8: ameliso.v1.BulkCreateCasesResponse.cases:type_name -> ameliso.v1.Case
+	53,  // 9: ameliso.v1.BulkCreateCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
+	106, // 10: ameliso.v1.UpdateCaseRequest.priority:type_name -> ameliso.v1.Priority
+	107, // 11: ameliso.v1.UpdateCaseResponse.case:type_name -> ameliso.v1.Case
+	106, // 12: ameliso.v1.BulkUpdateEntry.priority:type_name -> ameliso.v1.Priority
+	14,  // 13: ameliso.v1.BulkUpdateCasesRequest.cases:type_name -> ameliso.v1.BulkUpdateEntry
+	107, // 14: ameliso.v1.BulkUpdateCasesResponse.cases:type_name -> ameliso.v1.Case
+	108, // 15: ameliso.v1.ListSuitesResponse.suites:type_name -> ameliso.v1.Suite
+	108, // 16: ameliso.v1.GetSuiteResponse.suite:type_name -> ameliso.v1.Suite
+	108, // 17: ameliso.v1.CreateSuiteResponse.suite:type_name -> ameliso.v1.Suite
+	108, // 18: ameliso.v1.UpdateSuiteResponse.suite:type_name -> ameliso.v1.Suite
+	109, // 19: ameliso.v1.ListRunsRequest.status:type_name -> ameliso.v1.RunStatus
+	110, // 20: ameliso.v1.ListRunsResponse.runs:type_name -> ameliso.v1.RunMeta
+	111, // 21: ameliso.v1.GetRunResponse.run:type_name -> ameliso.v1.Run
+	107, // 22: ameliso.v1.GetRunResponse.cases:type_name -> ameliso.v1.Case
+	110, // 23: ameliso.v1.CreateRunResponse.run:type_name -> ameliso.v1.RunMeta
+	53,  // 24: ameliso.v1.CreateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
+	112, // 25: ameliso.v1.RecordResultRequest.status:type_name -> ameliso.v1.ResultStatus
+	113, // 26: ameliso.v1.RecordResultResponse.result:type_name -> ameliso.v1.CaseResult
+	53,  // 27: ameliso.v1.RecordResultResponse.pending:type_name -> ameliso.v1.PendingEntry
+	112, // 28: ameliso.v1.BulkResultEntry.status:type_name -> ameliso.v1.ResultStatus
+	43,  // 29: ameliso.v1.BulkRecordResultsRequest.results:type_name -> ameliso.v1.BulkResultEntry
+	113, // 30: ameliso.v1.BulkRecordResultsResponse.results:type_name -> ameliso.v1.CaseResult
+	53,  // 31: ameliso.v1.BulkRecordResultsResponse.pending:type_name -> ameliso.v1.PendingEntry
+	109, // 32: ameliso.v1.FinalizeRunRequest.status:type_name -> ameliso.v1.RunStatus
+	110, // 33: ameliso.v1.FinalizeRunResponse.run:type_name -> ameliso.v1.RunMeta
+	113, // 34: ameliso.v1.FinalizeRunResponse.results:type_name -> ameliso.v1.CaseResult
+	106, // 35: ameliso.v1.GetPendingCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
+	107, // 36: ameliso.v1.PendingEntry.case:type_name -> ameliso.v1.Case
+	112, // 37: ameliso.v1.PendingEntry.latest_status:type_name -> ameliso.v1.ResultStatus
+	107, // 38: ameliso.v1.GetPendingCasesResponse.cases:type_name -> ameliso.v1.Case
+	114, // 39: ameliso.v1.GetPendingCasesResponse.entries:type_name -> ameliso.v1.CoverageEntry
+	53,  // 40: ameliso.v1.GetPendingCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
+	110, // 41: ameliso.v1.UpdateRunResponse.run:type_name -> ameliso.v1.RunMeta
+	53,  // 42: ameliso.v1.UpdateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
+	112, // 43: ameliso.v1.GetCoverageReportRequest.status_filter:type_name -> ameliso.v1.ResultStatus
+	106, // 44: ameliso.v1.GetCoverageReportRequest.priority_filter:type_name -> ameliso.v1.Priority
+	114, // 45: ameliso.v1.GetCoverageReportResponse.entries:type_name -> ameliso.v1.CoverageEntry
+	106, // 46: ameliso.v1.GetAffectedCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
+	115, // 47: ameliso.v1.GetAffectedCasesResponse.cases:type_name -> ameliso.v1.AffectedCase
+	62,  // 48: ameliso.v1.GetRepoStatusResponse.active_runs:type_name -> ameliso.v1.ActiveRunStatus
+	110, // 49: ameliso.v1.GetRepoStatusResponse.last_completed_run:type_name -> ameliso.v1.RunMeta
+	116, // 50: ameliso.v1.HandleGitHubCallbackResponse.repositories:type_name -> ameliso.v1.Repository
+	116, // 51: ameliso.v1.ListRepositoriesResponse.repositories:type_name -> ameliso.v1.Repository
+	116, // 52: ameliso.v1.SyncRepositoryResponse.repository:type_name -> ameliso.v1.Repository
+	117, // 53: ameliso.v1.ListRepoTokensResponse.tokens:type_name -> ameliso.v1.RepoToken
+	117, // 54: ameliso.v1.CreateRepoTokenResponse.token:type_name -> ameliso.v1.RepoToken
+	117, // 55: ameliso.v1.UpdateRepoTokenResponse.token:type_name -> ameliso.v1.RepoToken
+	118, // 56: ameliso.v1.ListAuditLogResponse.entries:type_name -> ameliso.v1.AuditEntry
+	119, // 57: ameliso.v1.ListStrategiesResponse.strategies:type_name -> ameliso.v1.TestingStrategy
+	119, // 58: ameliso.v1.GetStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
+	119, // 59: ameliso.v1.CreateStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
+	119, // 60: ameliso.v1.UpdateStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
+	120, // 61: ameliso.v1.ListPermissionsResponse.permissions:type_name -> ameliso.v1.RepoPermission
+	120, // 62: ameliso.v1.AddPermissionResponse.permission:type_name -> ameliso.v1.RepoPermission
+	0,   // 63: ameliso.v1.AmelisoService.ListCases:input_type -> ameliso.v1.ListCasesRequest
+	2,   // 64: ameliso.v1.AmelisoService.GetCase:input_type -> ameliso.v1.GetCaseRequest
+	5,   // 65: ameliso.v1.AmelisoService.GetCaseHistory:input_type -> ameliso.v1.GetCaseHistoryRequest
+	7,   // 66: ameliso.v1.AmelisoService.CreateCase:input_type -> ameliso.v1.CreateCaseRequest
+	10,  // 67: ameliso.v1.AmelisoService.BulkCreateCases:input_type -> ameliso.v1.BulkCreateCasesRequest
+	12,  // 68: ameliso.v1.AmelisoService.UpdateCase:input_type -> ameliso.v1.UpdateCaseRequest
+	15,  // 69: ameliso.v1.AmelisoService.BulkUpdateCases:input_type -> ameliso.v1.BulkUpdateCasesRequest
+	17,  // 70: ameliso.v1.AmelisoService.DeleteCase:input_type -> ameliso.v1.DeleteCaseRequest
+	19,  // 71: ameliso.v1.AmelisoService.BulkDeleteCases:input_type -> ameliso.v1.BulkDeleteCasesRequest
+	21,  // 72: ameliso.v1.AmelisoService.RestoreCase:input_type -> ameliso.v1.RestoreCaseRequest
+	23,  // 73: ameliso.v1.AmelisoService.ListSuites:input_type -> ameliso.v1.ListSuitesRequest
+	25,  // 74: ameliso.v1.AmelisoService.GetSuite:input_type -> ameliso.v1.GetSuiteRequest
+	27,  // 75: ameliso.v1.AmelisoService.CreateSuite:input_type -> ameliso.v1.CreateSuiteRequest
+	29,  // 76: ameliso.v1.AmelisoService.UpdateSuite:input_type -> ameliso.v1.UpdateSuiteRequest
+	31,  // 77: ameliso.v1.AmelisoService.DeleteSuite:input_type -> ameliso.v1.DeleteSuiteRequest
+	33,  // 78: ameliso.v1.AmelisoService.RestoreSuite:input_type -> ameliso.v1.RestoreSuiteRequest
+	35,  // 79: ameliso.v1.AmelisoService.ListRuns:input_type -> ameliso.v1.ListRunsRequest
+	37,  // 80: ameliso.v1.AmelisoService.GetRun:input_type -> ameliso.v1.GetRunRequest
+	39,  // 81: ameliso.v1.AmelisoService.CreateRun:input_type -> ameliso.v1.CreateRunRequest
+	41,  // 82: ameliso.v1.AmelisoService.RecordResult:input_type -> ameliso.v1.RecordResultRequest
+	44,  // 83: ameliso.v1.AmelisoService.BulkRecordResults:input_type -> ameliso.v1.BulkRecordResultsRequest
+	46,  // 84: ameliso.v1.AmelisoService.FinalizeRun:input_type -> ameliso.v1.FinalizeRunRequest
+	48,  // 85: ameliso.v1.AmelisoService.DeleteRun:input_type -> ameliso.v1.DeleteRunRequest
+	50,  // 86: ameliso.v1.AmelisoService.RestoreRun:input_type -> ameliso.v1.RestoreRunRequest
+	52,  // 87: ameliso.v1.AmelisoService.GetPendingCases:input_type -> ameliso.v1.GetPendingCasesRequest
+	55,  // 88: ameliso.v1.AmelisoService.UpdateRun:input_type -> ameliso.v1.UpdateRunRequest
+	57,  // 89: ameliso.v1.AmelisoService.GetCoverageReport:input_type -> ameliso.v1.GetCoverageReportRequest
+	59,  // 90: ameliso.v1.AmelisoService.GetAffectedCases:input_type -> ameliso.v1.GetAffectedCasesRequest
+	61,  // 91: ameliso.v1.AmelisoService.GetRepoStatus:input_type -> ameliso.v1.GetRepoStatusRequest
+	64,  // 92: ameliso.v1.AmelisoService.GetTesterSuggestions:input_type -> ameliso.v1.GetTesterSuggestionsRequest
+	66,  // 93: ameliso.v1.AmelisoService.GetGitHubInstallUrl:input_type -> ameliso.v1.GetGitHubInstallUrlRequest
+	68,  // 94: ameliso.v1.AmelisoService.HandleGitHubCallback:input_type -> ameliso.v1.HandleGitHubCallbackRequest
+	70,  // 95: ameliso.v1.AmelisoService.ListRepositories:input_type -> ameliso.v1.ListRepositoriesRequest
+	72,  // 96: ameliso.v1.AmelisoService.SyncRepository:input_type -> ameliso.v1.SyncRepositoryRequest
+	74,  // 97: ameliso.v1.AmelisoService.RemoveRepository:input_type -> ameliso.v1.RemoveRepositoryRequest
+	76,  // 98: ameliso.v1.AmelisoService.RotateRepoApiKey:input_type -> ameliso.v1.RotateRepoApiKeyRequest
+	78,  // 99: ameliso.v1.AmelisoService.ListRepoTokens:input_type -> ameliso.v1.ListRepoTokensRequest
+	80,  // 100: ameliso.v1.AmelisoService.CreateRepoToken:input_type -> ameliso.v1.CreateRepoTokenRequest
+	82,  // 101: ameliso.v1.AmelisoService.DeleteRepoToken:input_type -> ameliso.v1.DeleteRepoTokenRequest
+	84,  // 102: ameliso.v1.AmelisoService.UpdateRepoToken:input_type -> ameliso.v1.UpdateRepoTokenRequest
+	86,  // 103: ameliso.v1.AmelisoService.ListAuditLog:input_type -> ameliso.v1.ListAuditLogRequest
+	88,  // 104: ameliso.v1.AmelisoService.ListStrategies:input_type -> ameliso.v1.ListStrategiesRequest
+	90,  // 105: ameliso.v1.AmelisoService.GetStrategy:input_type -> ameliso.v1.GetStrategyRequest
+	92,  // 106: ameliso.v1.AmelisoService.CreateStrategy:input_type -> ameliso.v1.CreateStrategyRequest
+	94,  // 107: ameliso.v1.AmelisoService.UpdateStrategy:input_type -> ameliso.v1.UpdateStrategyRequest
+	96,  // 108: ameliso.v1.AmelisoService.DeleteStrategy:input_type -> ameliso.v1.DeleteStrategyRequest
+	98,  // 109: ameliso.v1.AmelisoService.RestoreStrategy:input_type -> ameliso.v1.RestoreStrategyRequest
+	100, // 110: ameliso.v1.AmelisoService.ListPermissions:input_type -> ameliso.v1.ListPermissionsRequest
+	102, // 111: ameliso.v1.AmelisoService.AddPermission:input_type -> ameliso.v1.AddPermissionRequest
+	104, // 112: ameliso.v1.AmelisoService.RemovePermission:input_type -> ameliso.v1.RemovePermissionRequest
+	1,   // 113: ameliso.v1.AmelisoService.ListCases:output_type -> ameliso.v1.ListCasesResponse
+	3,   // 114: ameliso.v1.AmelisoService.GetCase:output_type -> ameliso.v1.GetCaseResponse
+	6,   // 115: ameliso.v1.AmelisoService.GetCaseHistory:output_type -> ameliso.v1.GetCaseHistoryResponse
+	8,   // 116: ameliso.v1.AmelisoService.CreateCase:output_type -> ameliso.v1.CreateCaseResponse
+	11,  // 117: ameliso.v1.AmelisoService.BulkCreateCases:output_type -> ameliso.v1.BulkCreateCasesResponse
+	13,  // 118: ameliso.v1.AmelisoService.UpdateCase:output_type -> ameliso.v1.UpdateCaseResponse
+	16,  // 119: ameliso.v1.AmelisoService.BulkUpdateCases:output_type -> ameliso.v1.BulkUpdateCasesResponse
+	18,  // 120: ameliso.v1.AmelisoService.DeleteCase:output_type -> ameliso.v1.DeleteCaseResponse
+	20,  // 121: ameliso.v1.AmelisoService.BulkDeleteCases:output_type -> ameliso.v1.BulkDeleteCasesResponse
+	22,  // 122: ameliso.v1.AmelisoService.RestoreCase:output_type -> ameliso.v1.RestoreCaseResponse
+	24,  // 123: ameliso.v1.AmelisoService.ListSuites:output_type -> ameliso.v1.ListSuitesResponse
+	26,  // 124: ameliso.v1.AmelisoService.GetSuite:output_type -> ameliso.v1.GetSuiteResponse
+	28,  // 125: ameliso.v1.AmelisoService.CreateSuite:output_type -> ameliso.v1.CreateSuiteResponse
+	30,  // 126: ameliso.v1.AmelisoService.UpdateSuite:output_type -> ameliso.v1.UpdateSuiteResponse
+	32,  // 127: ameliso.v1.AmelisoService.DeleteSuite:output_type -> ameliso.v1.DeleteSuiteResponse
+	34,  // 128: ameliso.v1.AmelisoService.RestoreSuite:output_type -> ameliso.v1.RestoreSuiteResponse
+	36,  // 129: ameliso.v1.AmelisoService.ListRuns:output_type -> ameliso.v1.ListRunsResponse
+	38,  // 130: ameliso.v1.AmelisoService.GetRun:output_type -> ameliso.v1.GetRunResponse
+	40,  // 131: ameliso.v1.AmelisoService.CreateRun:output_type -> ameliso.v1.CreateRunResponse
+	42,  // 132: ameliso.v1.AmelisoService.RecordResult:output_type -> ameliso.v1.RecordResultResponse
+	45,  // 133: ameliso.v1.AmelisoService.BulkRecordResults:output_type -> ameliso.v1.BulkRecordResultsResponse
+	47,  // 134: ameliso.v1.AmelisoService.FinalizeRun:output_type -> ameliso.v1.FinalizeRunResponse
+	49,  // 135: ameliso.v1.AmelisoService.DeleteRun:output_type -> ameliso.v1.DeleteRunResponse
+	51,  // 136: ameliso.v1.AmelisoService.RestoreRun:output_type -> ameliso.v1.RestoreRunResponse
+	54,  // 137: ameliso.v1.AmelisoService.GetPendingCases:output_type -> ameliso.v1.GetPendingCasesResponse
+	56,  // 138: ameliso.v1.AmelisoService.UpdateRun:output_type -> ameliso.v1.UpdateRunResponse
+	58,  // 139: ameliso.v1.AmelisoService.GetCoverageReport:output_type -> ameliso.v1.GetCoverageReportResponse
+	60,  // 140: ameliso.v1.AmelisoService.GetAffectedCases:output_type -> ameliso.v1.GetAffectedCasesResponse
+	63,  // 141: ameliso.v1.AmelisoService.GetRepoStatus:output_type -> ameliso.v1.GetRepoStatusResponse
+	65,  // 142: ameliso.v1.AmelisoService.GetTesterSuggestions:output_type -> ameliso.v1.GetTesterSuggestionsResponse
+	67,  // 143: ameliso.v1.AmelisoService.GetGitHubInstallUrl:output_type -> ameliso.v1.GetGitHubInstallUrlResponse
+	69,  // 144: ameliso.v1.AmelisoService.HandleGitHubCallback:output_type -> ameliso.v1.HandleGitHubCallbackResponse
+	71,  // 145: ameliso.v1.AmelisoService.ListRepositories:output_type -> ameliso.v1.ListRepositoriesResponse
+	73,  // 146: ameliso.v1.AmelisoService.SyncRepository:output_type -> ameliso.v1.SyncRepositoryResponse
+	75,  // 147: ameliso.v1.AmelisoService.RemoveRepository:output_type -> ameliso.v1.RemoveRepositoryResponse
+	77,  // 148: ameliso.v1.AmelisoService.RotateRepoApiKey:output_type -> ameliso.v1.RotateRepoApiKeyResponse
+	79,  // 149: ameliso.v1.AmelisoService.ListRepoTokens:output_type -> ameliso.v1.ListRepoTokensResponse
+	81,  // 150: ameliso.v1.AmelisoService.CreateRepoToken:output_type -> ameliso.v1.CreateRepoTokenResponse
+	83,  // 151: ameliso.v1.AmelisoService.DeleteRepoToken:output_type -> ameliso.v1.DeleteRepoTokenResponse
+	85,  // 152: ameliso.v1.AmelisoService.UpdateRepoToken:output_type -> ameliso.v1.UpdateRepoTokenResponse
+	87,  // 153: ameliso.v1.AmelisoService.ListAuditLog:output_type -> ameliso.v1.ListAuditLogResponse
+	89,  // 154: ameliso.v1.AmelisoService.ListStrategies:output_type -> ameliso.v1.ListStrategiesResponse
+	91,  // 155: ameliso.v1.AmelisoService.GetStrategy:output_type -> ameliso.v1.GetStrategyResponse
+	93,  // 156: ameliso.v1.AmelisoService.CreateStrategy:output_type -> ameliso.v1.CreateStrategyResponse
+	95,  // 157: ameliso.v1.AmelisoService.UpdateStrategy:output_type -> ameliso.v1.UpdateStrategyResponse
+	97,  // 158: ameliso.v1.AmelisoService.DeleteStrategy:output_type -> ameliso.v1.DeleteStrategyResponse
+	99,  // 159: ameliso.v1.AmelisoService.RestoreStrategy:output_type -> ameliso.v1.RestoreStrategyResponse
+	101, // 160: ameliso.v1.AmelisoService.ListPermissions:output_type -> ameliso.v1.ListPermissionsResponse
+	103, // 161: ameliso.v1.AmelisoService.AddPermission:output_type -> ameliso.v1.AddPermissionResponse
+	105, // 162: ameliso.v1.AmelisoService.RemovePermission:output_type -> ameliso.v1.RemovePermissionResponse
+	113, // [113:163] is the sub-list for method output_type
+	63,  // [63:113] is the sub-list for method input_type
+	63,  // [63:63] is the sub-list for extension type_name
+	63,  // [63:63] is the sub-list for extension extendee
+	0,   // [0:63] is the sub-list for field type_name
 }
 
 func init() { file_ameliso_v1_service_proto_init() }
@@ -5483,7 +7221,7 @@ func file_ameliso_v1_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_service_proto_rawDesc), len(file_ameliso_v1_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   80,
+			NumMessages:   106,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
