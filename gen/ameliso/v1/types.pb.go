@@ -196,7 +196,9 @@ type Case struct {
 	// needs full case content (e.g. ListCases, GetCase, GetPendingCases).
 	Body string `protobuf:"bytes,8,opt,name=body,proto3" json:"body,omitempty"`
 	// IDs of testing strategies linked to this case.
-	StrategyIds   []string `protobuf:"bytes,9,rep,name=strategy_ids,json=strategyIds,proto3" json:"strategy_ids,omitempty"`
+	StrategyIds []string `protobuf:"bytes,9,rep,name=strategy_ids,json=strategyIds,proto3" json:"strategy_ids,omitempty"`
+	// When true, this case can be executed and validated by an AI agent.
+	AiRunnable    bool `protobuf:"varint,10,opt,name=ai_runnable,json=aiRunnable,proto3" json:"ai_runnable,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -292,6 +294,13 @@ func (x *Case) GetStrategyIds() []string {
 		return x.StrategyIds
 	}
 	return nil
+}
+
+func (x *Case) GetAiRunnable() bool {
+	if x != nil {
+		return x.AiRunnable
+	}
+	return false
 }
 
 type TestingStrategy struct {
@@ -1260,12 +1269,72 @@ func (x *SuiteCoverageSummary) GetCoveragePct() int32 {
 	return 0
 }
 
+type FlakyCaseSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CasePath      string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	FlipCount     int32                  `protobuf:"varint,2,opt,name=flip_count,json=flipCount,proto3" json:"flip_count,omitempty"`
+	LastFlipSha   string                 `protobuf:"bytes,3,opt,name=last_flip_sha,json=lastFlipSha,proto3" json:"last_flip_sha,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FlakyCaseSummary) Reset() {
+	*x = FlakyCaseSummary{}
+	mi := &file_ameliso_v1_types_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FlakyCaseSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FlakyCaseSummary) ProtoMessage() {}
+
+func (x *FlakyCaseSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_types_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FlakyCaseSummary.ProtoReflect.Descriptor instead.
+func (*FlakyCaseSummary) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *FlakyCaseSummary) GetCasePath() string {
+	if x != nil {
+		return x.CasePath
+	}
+	return ""
+}
+
+func (x *FlakyCaseSummary) GetFlipCount() int32 {
+	if x != nil {
+		return x.FlipCount
+	}
+	return 0
+}
+
+func (x *FlakyCaseSummary) GetLastFlipSha() string {
+	if x != nil {
+		return x.LastFlipSha
+	}
+	return ""
+}
+
 var File_ameliso_v1_types_proto protoreflect.FileDescriptor
 
 const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"\x16ameliso/v1/types.proto\x12\n" +
-	"ameliso.v1\"\xf7\x01\n" +
+	"ameliso.v1\"\x98\x02\n" +
 	"\x04Case\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -1277,7 +1346,10 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\a \x01(\tR\tupdatedAt\x12\x12\n" +
 	"\x04body\x18\b \x01(\tR\x04body\x12!\n" +
-	"\fstrategy_ids\x18\t \x03(\tR\vstrategyIds\"\xc8\x01\n" +
+	"\fstrategy_ids\x18\t \x03(\tR\vstrategyIds\x12\x1f\n" +
+	"\vai_runnable\x18\n" +
+	" \x01(\bR\n" +
+	"aiRunnable\"\xc8\x01\n" +
 	"\x0fTestingStrategy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1370,7 +1442,12 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\vtotal_cases\x18\x02 \x01(\x05R\n" +
 	"totalCases\x12#\n" +
 	"\rcovered_cases\x18\x03 \x01(\x05R\fcoveredCases\x12!\n" +
-	"\fcoverage_pct\x18\x04 \x01(\x05R\vcoveragePct*u\n" +
+	"\fcoverage_pct\x18\x04 \x01(\x05R\vcoveragePct\"r\n" +
+	"\x10FlakyCaseSummary\x12\x1b\n" +
+	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x12\x1d\n" +
+	"\n" +
+	"flip_count\x18\x02 \x01(\x05R\tflipCount\x12\"\n" +
+	"\rlast_flip_sha\x18\x03 \x01(\tR\vlastFlipSha*u\n" +
 	"\tRunStatus\x12\x1a\n" +
 	"\x16RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16RUN_STATUS_IN_PROGRESS\x10\x01\x12\x18\n" +
@@ -1402,7 +1479,7 @@ func file_ameliso_v1_types_proto_rawDescGZIP() []byte {
 }
 
 var file_ameliso_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_ameliso_v1_types_proto_goTypes = []any{
 	(RunStatus)(0),               // 0: ameliso.v1.RunStatus
 	(ResultStatus)(0),            // 1: ameliso.v1.ResultStatus
@@ -1420,6 +1497,7 @@ var file_ameliso_v1_types_proto_goTypes = []any{
 	(*AuditEntry)(nil),           // 13: ameliso.v1.AuditEntry
 	(*Repository)(nil),           // 14: ameliso.v1.Repository
 	(*SuiteCoverageSummary)(nil), // 15: ameliso.v1.SuiteCoverageSummary
+	(*FlakyCaseSummary)(nil),     // 16: ameliso.v1.FlakyCaseSummary
 }
 var file_ameliso_v1_types_proto_depIdxs = []int32{
 	0, // 0: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
@@ -1448,7 +1526,7 @@ func file_ameliso_v1_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_types_proto_rawDesc), len(file_ameliso_v1_types_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -48,6 +48,7 @@ const (
 	AmelisoService_GetCoverageReport_FullMethodName    = "/ameliso.v1.AmelisoService/GetCoverageReport"
 	AmelisoService_GetAffectedCases_FullMethodName     = "/ameliso.v1.AmelisoService/GetAffectedCases"
 	AmelisoService_GetRepoStatus_FullMethodName        = "/ameliso.v1.AmelisoService/GetRepoStatus"
+	AmelisoService_CompareRuns_FullMethodName          = "/ameliso.v1.AmelisoService/CompareRuns"
 	AmelisoService_GetTesterSuggestions_FullMethodName = "/ameliso.v1.AmelisoService/GetTesterSuggestions"
 	AmelisoService_GetGitHubInstallUrl_FullMethodName  = "/ameliso.v1.AmelisoService/GetGitHubInstallUrl"
 	AmelisoService_HandleGitHubCallback_FullMethodName = "/ameliso.v1.AmelisoService/HandleGitHubCallback"
@@ -150,6 +151,8 @@ type AmelisoServiceClient interface {
 	GetAffectedCases(ctx context.Context, in *GetAffectedCasesRequest, opts ...grpc.CallOption) (*GetAffectedCasesResponse, error)
 	// Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
 	GetRepoStatus(ctx context.Context, in *GetRepoStatusRequest, opts ...grpc.CallOption) (*GetRepoStatusResponse, error)
+	// Structured diff between two runs: regressions, fixes, new/removed cases, unchanged count.
+	CompareRuns(ctx context.Context, in *CompareRunsRequest, opts ...grpc.CallOption) (*CompareRunsResponse, error)
 	// --- Testers ---
 	// Returns suggested tester names from run history and GitHub contributors.
 	GetTesterSuggestions(ctx context.Context, in *GetTesterSuggestionsRequest, opts ...grpc.CallOption) (*GetTesterSuggestionsResponse, error)
@@ -477,6 +480,16 @@ func (c *amelisoServiceClient) GetRepoStatus(ctx context.Context, in *GetRepoSta
 	return out, nil
 }
 
+func (c *amelisoServiceClient) CompareRuns(ctx context.Context, in *CompareRunsRequest, opts ...grpc.CallOption) (*CompareRunsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompareRunsResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_CompareRuns_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) GetTesterSuggestions(ctx context.Context, in *GetTesterSuggestionsRequest, opts ...grpc.CallOption) (*GetTesterSuggestionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetTesterSuggestionsResponse)
@@ -766,6 +779,8 @@ type AmelisoServiceServer interface {
 	GetAffectedCases(context.Context, *GetAffectedCasesRequest) (*GetAffectedCasesResponse, error)
 	// Aggregate snapshot: case counts by priority, coverage counts, suite/run totals, active runs with pending counts.
 	GetRepoStatus(context.Context, *GetRepoStatusRequest) (*GetRepoStatusResponse, error)
+	// Structured diff between two runs: regressions, fixes, new/removed cases, unchanged count.
+	CompareRuns(context.Context, *CompareRunsRequest) (*CompareRunsResponse, error)
 	// --- Testers ---
 	// Returns suggested tester names from run history and GitHub contributors.
 	GetTesterSuggestions(context.Context, *GetTesterSuggestionsRequest) (*GetTesterSuggestionsResponse, error)
@@ -889,6 +904,9 @@ func (UnimplementedAmelisoServiceServer) GetAffectedCases(context.Context, *GetA
 }
 func (UnimplementedAmelisoServiceServer) GetRepoStatus(context.Context, *GetRepoStatusRequest) (*GetRepoStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRepoStatus not implemented")
+}
+func (UnimplementedAmelisoServiceServer) CompareRuns(context.Context, *CompareRunsRequest) (*CompareRunsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompareRuns not implemented")
 }
 func (UnimplementedAmelisoServiceServer) GetTesterSuggestions(context.Context, *GetTesterSuggestionsRequest) (*GetTesterSuggestionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTesterSuggestions not implemented")
@@ -1496,6 +1514,24 @@ func _AmelisoService_GetRepoStatus_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_CompareRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompareRunsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).CompareRuns(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_CompareRuns_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).CompareRuns(ctx, req.(*CompareRunsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_GetTesterSuggestions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetTesterSuggestionsRequest)
 	if err := dec(in); err != nil {
@@ -1996,6 +2032,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRepoStatus",
 			Handler:    _AmelisoService_GetRepoStatus_Handler,
+		},
+		{
+			MethodName: "CompareRuns",
+			Handler:    _AmelisoService_CompareRuns_Handler,
 		},
 		{
 			MethodName: "GetTesterSuggestions",
