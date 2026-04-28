@@ -14,12 +14,27 @@ import (
 	amelisomcp "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1/amelisomcp"
 )
 
+// bearerCreds attaches `authorization: Bearer <token>` to every RPC. Used to
+// carry an Ameliso personal access token (AMELISO_TOKEN) to the server so the
+// gRPC call is authenticated as the human running the MCP client.
+type bearerCreds struct{ token string }
+
+func (b bearerCreds) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return map[string]string{"authorization": "Bearer " + b.token}, nil
+}
+
+func (bearerCreds) RequireTransportSecurity() bool { return false }
+
 func main() {
 	addr := os.Getenv("AMELISO_GRPC_ADDR")
 	if addr == "" {
 		addr = "localhost:50052"
 	}
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	if token := os.Getenv("AMELISO_TOKEN"); token != "" {
+		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(bearerCreds{token: token}))
+	}
+	conn, err := grpc.NewClient(addr, dialOpts...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ameliso-mcp: grpc dial: %v\n", err)
 		os.Exit(1)
