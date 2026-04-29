@@ -60,6 +60,10 @@ const (
 	AmelisoService_CreateRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/CreateRepoToken"
 	AmelisoService_DeleteRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/DeleteRepoToken"
 	AmelisoService_UpdateRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/UpdateRepoToken"
+	AmelisoService_CreateUserToken_FullMethodName      = "/ameliso.v1.AmelisoService/CreateUserToken"
+	AmelisoService_ListUserTokens_FullMethodName       = "/ameliso.v1.AmelisoService/ListUserTokens"
+	AmelisoService_RevokeUserToken_FullMethodName      = "/ameliso.v1.AmelisoService/RevokeUserToken"
+	AmelisoService_RotateUserToken_FullMethodName      = "/ameliso.v1.AmelisoService/RotateUserToken"
 	AmelisoService_ListAuditLog_FullMethodName         = "/ameliso.v1.AmelisoService/ListAuditLog"
 	AmelisoService_ListStrategies_FullMethodName       = "/ameliso.v1.AmelisoService/ListStrategies"
 	AmelisoService_GetStrategy_FullMethodName          = "/ameliso.v1.AmelisoService/GetStrategy"
@@ -70,6 +74,7 @@ const (
 	AmelisoService_ListPermissions_FullMethodName      = "/ameliso.v1.AmelisoService/ListPermissions"
 	AmelisoService_AddPermission_FullMethodName        = "/ameliso.v1.AmelisoService/AddPermission"
 	AmelisoService_RemovePermission_FullMethodName     = "/ameliso.v1.AmelisoService/RemovePermission"
+	AmelisoService_WhoAmI_FullMethodName               = "/ameliso.v1.AmelisoService/WhoAmI"
 )
 
 // AmelisoServiceClient is the client API for AmelisoService service.
@@ -168,6 +173,16 @@ type AmelisoServiceClient interface {
 	CreateRepoToken(ctx context.Context, in *CreateRepoTokenRequest, opts ...grpc.CallOption) (*CreateRepoTokenResponse, error)
 	DeleteRepoToken(ctx context.Context, in *DeleteRepoTokenRequest, opts ...grpc.CallOption) (*DeleteRepoTokenResponse, error)
 	UpdateRepoToken(ctx context.Context, in *UpdateRepoTokenRequest, opts ...grpc.CallOption) (*UpdateRepoTokenResponse, error)
+	// --- User-scoped personal access tokens (PATs) ---
+	// Mint, list, and revoke user-bound API tokens for CLI / MCP authentication.
+	// Authn: requires an Auth0 JWT — operates on the JWT-resolved user.
+	CreateUserToken(ctx context.Context, in *CreateUserTokenRequest, opts ...grpc.CallOption) (*CreateUserTokenResponse, error)
+	ListUserTokens(ctx context.Context, in *ListUserTokensRequest, opts ...grpc.CallOption) (*ListUserTokensResponse, error)
+	RevokeUserToken(ctx context.Context, in *RevokeUserTokenRequest, opts ...grpc.CallOption) (*RevokeUserTokenResponse, error)
+	// Atomically revoke an existing personal access token and mint a fresh
+	// one with the same name + expiry. Returns the new token + its plaintext
+	// secret (shown ONCE).
+	RotateUserToken(ctx context.Context, in *RotateUserTokenRequest, opts ...grpc.CallOption) (*RotateUserTokenResponse, error)
 	// Append-only log of destructive actions (delete case/run/suite).
 	ListAuditLog(ctx context.Context, in *ListAuditLogRequest, opts ...grpc.CallOption) (*ListAuditLogResponse, error)
 	// --- Testing Strategies ---
@@ -180,6 +195,11 @@ type AmelisoServiceClient interface {
 	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
 	AddPermission(ctx context.Context, in *AddPermissionRequest, opts ...grpc.CallOption) (*AddPermissionResponse, error)
 	RemovePermission(ctx context.Context, in *RemovePermissionRequest, opts ...grpc.CallOption) (*RemovePermissionResponse, error)
+	// --- Account ---
+	// Returns the user resolved from the Bearer credential (Auth0 JWT or PAT).
+	// Lets the web UI render the signed-in user's info and pre-fill audit-log
+	// "my actions" filters without exposing the raw token.
+	WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error)
 }
 
 type amelisoServiceClient struct {
@@ -600,6 +620,46 @@ func (c *amelisoServiceClient) UpdateRepoToken(ctx context.Context, in *UpdateRe
 	return out, nil
 }
 
+func (c *amelisoServiceClient) CreateUserToken(ctx context.Context, in *CreateUserTokenRequest, opts ...grpc.CallOption) (*CreateUserTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateUserTokenResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_CreateUserToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) ListUserTokens(ctx context.Context, in *ListUserTokensRequest, opts ...grpc.CallOption) (*ListUserTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserTokensResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListUserTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) RevokeUserToken(ctx context.Context, in *RevokeUserTokenRequest, opts ...grpc.CallOption) (*RevokeUserTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeUserTokenResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RevokeUserToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) RotateUserToken(ctx context.Context, in *RotateUserTokenRequest, opts ...grpc.CallOption) (*RotateUserTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RotateUserTokenResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RotateUserToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) ListAuditLog(ctx context.Context, in *ListAuditLogRequest, opts ...grpc.CallOption) (*ListAuditLogResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAuditLogResponse)
@@ -694,6 +754,16 @@ func (c *amelisoServiceClient) RemovePermission(ctx context.Context, in *RemoveP
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RemovePermissionResponse)
 	err := c.cc.Invoke(ctx, AmelisoService_RemovePermission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WhoAmIResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_WhoAmI_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -796,6 +866,16 @@ type AmelisoServiceServer interface {
 	CreateRepoToken(context.Context, *CreateRepoTokenRequest) (*CreateRepoTokenResponse, error)
 	DeleteRepoToken(context.Context, *DeleteRepoTokenRequest) (*DeleteRepoTokenResponse, error)
 	UpdateRepoToken(context.Context, *UpdateRepoTokenRequest) (*UpdateRepoTokenResponse, error)
+	// --- User-scoped personal access tokens (PATs) ---
+	// Mint, list, and revoke user-bound API tokens for CLI / MCP authentication.
+	// Authn: requires an Auth0 JWT — operates on the JWT-resolved user.
+	CreateUserToken(context.Context, *CreateUserTokenRequest) (*CreateUserTokenResponse, error)
+	ListUserTokens(context.Context, *ListUserTokensRequest) (*ListUserTokensResponse, error)
+	RevokeUserToken(context.Context, *RevokeUserTokenRequest) (*RevokeUserTokenResponse, error)
+	// Atomically revoke an existing personal access token and mint a fresh
+	// one with the same name + expiry. Returns the new token + its plaintext
+	// secret (shown ONCE).
+	RotateUserToken(context.Context, *RotateUserTokenRequest) (*RotateUserTokenResponse, error)
 	// Append-only log of destructive actions (delete case/run/suite).
 	ListAuditLog(context.Context, *ListAuditLogRequest) (*ListAuditLogResponse, error)
 	// --- Testing Strategies ---
@@ -808,6 +888,11 @@ type AmelisoServiceServer interface {
 	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
 	AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionResponse, error)
 	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error)
+	// --- Account ---
+	// Returns the user resolved from the Bearer credential (Auth0 JWT or PAT).
+	// Lets the web UI render the signed-in user's info and pre-fill audit-log
+	// "my actions" filters without exposing the raw token.
+	WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error)
 	mustEmbedUnimplementedAmelisoServiceServer()
 }
 
@@ -941,6 +1026,18 @@ func (UnimplementedAmelisoServiceServer) DeleteRepoToken(context.Context, *Delet
 func (UnimplementedAmelisoServiceServer) UpdateRepoToken(context.Context, *UpdateRepoTokenRequest) (*UpdateRepoTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateRepoToken not implemented")
 }
+func (UnimplementedAmelisoServiceServer) CreateUserToken(context.Context, *CreateUserTokenRequest) (*CreateUserTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateUserToken not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ListUserTokens(context.Context, *ListUserTokensRequest) (*ListUserTokensResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserTokens not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RevokeUserToken(context.Context, *RevokeUserTokenRequest) (*RevokeUserTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeUserToken not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RotateUserToken(context.Context, *RotateUserTokenRequest) (*RotateUserTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RotateUserToken not implemented")
+}
 func (UnimplementedAmelisoServiceServer) ListAuditLog(context.Context, *ListAuditLogRequest) (*ListAuditLogResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAuditLog not implemented")
 }
@@ -970,6 +1067,9 @@ func (UnimplementedAmelisoServiceServer) AddPermission(context.Context, *AddPerm
 }
 func (UnimplementedAmelisoServiceServer) RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemovePermission not implemented")
+}
+func (UnimplementedAmelisoServiceServer) WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WhoAmI not implemented")
 }
 func (UnimplementedAmelisoServiceServer) mustEmbedUnimplementedAmelisoServiceServer() {}
 func (UnimplementedAmelisoServiceServer) testEmbeddedByValue()                        {}
@@ -1730,6 +1830,78 @@ func _AmelisoService_UpdateRepoToken_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_CreateUserToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).CreateUserToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_CreateUserToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).CreateUserToken(ctx, req.(*CreateUserTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_ListUserTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListUserTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListUserTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListUserTokens(ctx, req.(*ListUserTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_RevokeUserToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeUserTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RevokeUserToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RevokeUserToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RevokeUserToken(ctx, req.(*RevokeUserTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_RotateUserToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RotateUserTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RotateUserToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RotateUserToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RotateUserToken(ctx, req.(*RotateUserTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_ListAuditLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListAuditLogRequest)
 	if err := dec(in); err != nil {
@@ -1910,6 +2082,24 @@ func _AmelisoService_RemovePermission_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_WhoAmI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WhoAmIRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).WhoAmI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_WhoAmI_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).WhoAmI(ctx, req.(*WhoAmIRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AmelisoService_ServiceDesc is the grpc.ServiceDesc for AmelisoService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2082,6 +2272,22 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AmelisoService_UpdateRepoToken_Handler,
 		},
 		{
+			MethodName: "CreateUserToken",
+			Handler:    _AmelisoService_CreateUserToken_Handler,
+		},
+		{
+			MethodName: "ListUserTokens",
+			Handler:    _AmelisoService_ListUserTokens_Handler,
+		},
+		{
+			MethodName: "RevokeUserToken",
+			Handler:    _AmelisoService_RevokeUserToken_Handler,
+		},
+		{
+			MethodName: "RotateUserToken",
+			Handler:    _AmelisoService_RotateUserToken_Handler,
+		},
+		{
 			MethodName: "ListAuditLog",
 			Handler:    _AmelisoService_ListAuditLog_Handler,
 		},
@@ -2120,6 +2326,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemovePermission",
 			Handler:    _AmelisoService_RemovePermission_Handler,
+		},
+		{
+			MethodName: "WhoAmI",
+			Handler:    _AmelisoService_WhoAmI_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

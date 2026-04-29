@@ -198,7 +198,17 @@ type Case struct {
 	// IDs of testing strategies linked to this case.
 	StrategyIds []string `protobuf:"bytes,9,rep,name=strategy_ids,json=strategyIds,proto3" json:"strategy_ids,omitempty"`
 	// When true, this case can be executed and validated by an AI agent.
-	AiRunnable    bool `protobuf:"varint,10,opt,name=ai_runnable,json=aiRunnable,proto3" json:"ai_runnable,omitempty"`
+	AiRunnable bool `protobuf:"varint,10,opt,name=ai_runnable,json=aiRunnable,proto3" json:"ai_runnable,omitempty"`
+	// Case slugs that must pass before this case is run. Used to model test
+	// ordering constraints (e.g. checkout requires login). Empty = no prerequisites.
+	Prerequisites []string `protobuf:"bytes,11,rep,name=prerequisites,proto3" json:"prerequisites,omitempty"`
+	// Server-formatted relative timestamps (e.g. "2h ago", "3 days ago", "Apr 25, 2026").
+	FormattedCreatedAt string `protobuf:"bytes,12,opt,name=formatted_created_at,json=formattedCreatedAt,proto3" json:"formatted_created_at,omitempty"`
+	FormattedUpdatedAt string `protobuf:"bytes,13,opt,name=formatted_updated_at,json=formattedUpdatedAt,proto3" json:"formatted_updated_at,omitempty"`
+	// Lifecycle status: "draft" = work-in-progress (excluded from runs by default),
+	// "published" = approved (default for existing cases). Empty string treated as
+	// "published" for backwards compatibility.
+	Status        string `protobuf:"bytes,14,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -301,6 +311,34 @@ func (x *Case) GetAiRunnable() bool {
 		return x.AiRunnable
 	}
 	return false
+}
+
+func (x *Case) GetPrerequisites() []string {
+	if x != nil {
+		return x.Prerequisites
+	}
+	return nil
+}
+
+func (x *Case) GetFormattedCreatedAt() string {
+	if x != nil {
+		return x.FormattedCreatedAt
+	}
+	return ""
+}
+
+func (x *Case) GetFormattedUpdatedAt() string {
+	if x != nil {
+		return x.FormattedUpdatedAt
+	}
+	return ""
+}
+
+func (x *Case) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
 }
 
 type TestingStrategy struct {
@@ -605,12 +643,14 @@ type RunMeta struct {
 	CommitSha string `protobuf:"bytes,7,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
 	// Result counts — populated by ListRuns and FinalizeRun so agents can
 	// read pass/fail outcomes without a separate GetRun call.
-	Passed        int32  `protobuf:"varint,8,opt,name=passed,proto3" json:"passed,omitempty"`
-	Failed        int32  `protobuf:"varint,9,opt,name=failed,proto3" json:"failed,omitempty"`
-	Blocked       int32  `protobuf:"varint,10,opt,name=blocked,proto3" json:"blocked,omitempty"`
-	Skipped       int32  `protobuf:"varint,11,opt,name=skipped,proto3" json:"skipped,omitempty"`
-	Total         int32  `protobuf:"varint,12,opt,name=total,proto3" json:"total,omitempty"`
-	Description   string `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty"`
+	Passed      int32  `protobuf:"varint,8,opt,name=passed,proto3" json:"passed,omitempty"`
+	Failed      int32  `protobuf:"varint,9,opt,name=failed,proto3" json:"failed,omitempty"`
+	Blocked     int32  `protobuf:"varint,10,opt,name=blocked,proto3" json:"blocked,omitempty"`
+	Skipped     int32  `protobuf:"varint,11,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	Total       int32  `protobuf:"varint,12,opt,name=total,proto3" json:"total,omitempty"`
+	Description string `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty"`
+	// Server-formatted relative timestamp (e.g. "2h ago", "3 days ago", "Apr 25, 2026").
+	FormattedDate string `protobuf:"bytes,14,opt,name=formatted_date,json=formattedDate,proto3" json:"formatted_date,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -732,6 +772,13 @@ func (x *RunMeta) GetTotal() int32 {
 func (x *RunMeta) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *RunMeta) GetFormattedDate() string {
+	if x != nil {
+		return x.FormattedDate
 	}
 	return ""
 }
@@ -1033,12 +1080,34 @@ func (x *AffectedCase) GetBody() string {
 }
 
 type AuditEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Action        string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`                                 // "delete"
-	ResourceType  string                 `protobuf:"bytes,3,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"` // "case", "run", "suite"
-	ResourceId    string                 `protobuf:"bytes,4,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`       // case_path, run_id, or slug
-	CreatedAt     string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`          // ISO-8601 timestamp
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Id           int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action       string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`                                 // "create" | "delete" | "restore"
+	ResourceType string                 `protobuf:"bytes,3,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"` // "case", "run", "suite", "strategy"
+	ResourceId   string                 `protobuf:"bytes,4,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`       // case_path, run_id, or slug
+	CreatedAt    string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`          // ISO-8601 timestamp
+	// Server-formatted relative timestamp (e.g. "2h ago", "3 days ago", "Apr 25, 2026").
+	FormattedCreatedAt string `protobuf:"bytes,6,opt,name=formatted_created_at,json=formattedCreatedAt,proto3" json:"formatted_created_at,omitempty"`
+	// Auth0-resolved user UUID (string form). Empty when the request was made
+	// with an opaque API key or no JWT was presented.
+	UserId string `protobuf:"bytes,7,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// x-request-id header value (or server-generated UUID) — correlates this
+	// audit row with the originating gRPC request and downstream traces.
+	RequestId string `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// "success" or "error". Empty for legacy rows recorded before the
+	// outcome column was introduced.
+	Outcome string `protobuf:"bytes,9,opt,name=outcome,proto3" json:"outcome,omitempty"`
+	// Short machine-readable code (e.g. "invalid_argument", "permission_denied")
+	// when outcome == "error". Empty otherwise.
+	ErrorCode string `protobuf:"bytes,10,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	// Client IP address as captured by the server interceptor. Empty when the
+	// transport did not expose one (e.g. unix socket).
+	Ip string `protobuf:"bytes,11,opt,name=ip,proto3" json:"ip,omitempty"`
+	// User-Agent header value as sent by the client. Empty when not provided.
+	UserAgent string `protobuf:"bytes,12,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	// Free-form JSON payload captured at audit time (jsonb in DB). Encoded as a
+	// compact JSON string. Empty when the row had no payload.
+	PayloadJson   string `protobuf:"bytes,13,opt,name=payload_json,json=payloadJson,proto3" json:"payload_json,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1108,6 +1177,62 @@ func (x *AuditEntry) GetCreatedAt() string {
 	return ""
 }
 
+func (x *AuditEntry) GetFormattedCreatedAt() string {
+	if x != nil {
+		return x.FormattedCreatedAt
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetOutcome() string {
+	if x != nil {
+		return x.Outcome
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetIp() string {
+	if x != nil {
+		return x.Ip
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetUserAgent() string {
+	if x != nil {
+		return x.UserAgent
+	}
+	return ""
+}
+
+func (x *AuditEntry) GetPayloadJson() string {
+	if x != nil {
+		return x.PayloadJson
+	}
+	return ""
+}
+
 // A GitHub repository connected via the GitHub App installation.
 type Repository struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -1118,8 +1243,16 @@ type Repository struct {
 	InstallationId string                 `protobuf:"bytes,6,opt,name=installation_id,json=installationId,proto3" json:"installation_id,omitempty"`
 	AddedAt        string                 `protobuf:"bytes,8,opt,name=added_at,json=addedAt,proto3" json:"added_at,omitempty"`
 	ApiKey         string                 `protobuf:"bytes,9,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Storage backend (#162). One of "github", "testmo".
+	AdapterKind string `protobuf:"bytes,10,opt,name=adapter_kind,json=adapterKind,proto3" json:"adapter_kind,omitempty"`
+	// ISO-8601 timestamp of the last successful SyncRepository, or empty.
+	LastSyncedAt string `protobuf:"bytes,11,opt,name=last_synced_at,json=lastSyncedAt,proto3" json:"last_synced_at,omitempty"`
+	// ISO-8601 timestamp of the last *failed* background mirror push, or empty.
+	LastFailureAt string `protobuf:"bytes,12,opt,name=last_failure_at,json=lastFailureAt,proto3" json:"last_failure_at,omitempty"`
+	// Human-readable reason for the last failure, or empty when healthy.
+	LastFailureReason string `protobuf:"bytes,13,opt,name=last_failure_reason,json=lastFailureReason,proto3" json:"last_failure_reason,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Repository) Reset() {
@@ -1197,6 +1330,34 @@ func (x *Repository) GetAddedAt() string {
 func (x *Repository) GetApiKey() string {
 	if x != nil {
 		return x.ApiKey
+	}
+	return ""
+}
+
+func (x *Repository) GetAdapterKind() string {
+	if x != nil {
+		return x.AdapterKind
+	}
+	return ""
+}
+
+func (x *Repository) GetLastSyncedAt() string {
+	if x != nil {
+		return x.LastSyncedAt
+	}
+	return ""
+}
+
+func (x *Repository) GetLastFailureAt() string {
+	if x != nil {
+		return x.LastFailureAt
+	}
+	return ""
+}
+
+func (x *Repository) GetLastFailureReason() string {
+	if x != nil {
+		return x.LastFailureReason
 	}
 	return ""
 }
@@ -1334,7 +1495,7 @@ var File_ameliso_v1_types_proto protoreflect.FileDescriptor
 const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"\x16ameliso/v1/types.proto\x12\n" +
-	"ameliso.v1\"\x98\x02\n" +
+	"ameliso.v1\"\xba\x03\n" +
 	"\x04Case\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -1349,7 +1510,11 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\fstrategy_ids\x18\t \x03(\tR\vstrategyIds\x12\x1f\n" +
 	"\vai_runnable\x18\n" +
 	" \x01(\bR\n" +
-	"aiRunnable\"\xc8\x01\n" +
+	"aiRunnable\x12$\n" +
+	"\rprerequisites\x18\v \x03(\tR\rprerequisites\x120\n" +
+	"\x14formatted_created_at\x18\f \x01(\tR\x12formattedCreatedAt\x120\n" +
+	"\x14formatted_updated_at\x18\r \x01(\tR\x12formattedUpdatedAt\x12\x16\n" +
+	"\x06status\x18\x0e \x01(\tR\x06status\"\xc8\x01\n" +
 	"\x0fTestingStrategy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1376,7 +1541,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05cases\x18\x04 \x03(\tR\x05cases\"\xe9\x02\n" +
+	"\x05cases\x18\x04 \x03(\tR\x05cases\"\x90\x03\n" +
 	"\aRunMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x18\n" +
@@ -1392,7 +1557,8 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	" \x01(\x05R\ablocked\x12\x18\n" +
 	"\askipped\x18\v \x01(\x05R\askipped\x12\x14\n" +
 	"\x05total\x18\f \x01(\x05R\x05total\x12 \n" +
-	"\vdescription\x18\r \x01(\tR\vdescription\"\xd6\x01\n" +
+	"\vdescription\x18\r \x01(\tR\vdescription\x12%\n" +
+	"\x0eformatted_date\x18\x0e \x01(\tR\rformattedDate\"\xd6\x01\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
@@ -1417,7 +1583,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12=\n" +
 	"\rlatest_status\x18\x03 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\flatestStatus\x12\x12\n" +
-	"\x04body\x18\x04 \x01(\tR\x04body\"\x99\x01\n" +
+	"\x04body\x18\x04 \x01(\tR\x04body\"\x8e\x03\n" +
 	"\n" +
 	"AuditEntry\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x16\n" +
@@ -1426,7 +1592,19 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\vresource_id\x18\x04 \x01(\tR\n" +
 	"resourceId\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xe5\x01\n" +
+	"created_at\x18\x05 \x01(\tR\tcreatedAt\x120\n" +
+	"\x14formatted_created_at\x18\x06 \x01(\tR\x12formattedCreatedAt\x12\x17\n" +
+	"\auser_id\x18\a \x01(\tR\x06userId\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\b \x01(\tR\trequestId\x12\x18\n" +
+	"\aoutcome\x18\t \x01(\tR\aoutcome\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\n" +
+	" \x01(\tR\terrorCode\x12\x0e\n" +
+	"\x02ip\x18\v \x01(\tR\x02ip\x12\x1d\n" +
+	"\n" +
+	"user_agent\x18\f \x01(\tR\tuserAgent\x12!\n" +
+	"\fpayload_json\x18\r \x01(\tR\vpayloadJson\"\x86\x03\n" +
 	"\n" +
 	"Repository\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -1435,7 +1613,12 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\bhtml_url\x18\x04 \x01(\tR\ahtmlUrl\x12'\n" +
 	"\x0finstallation_id\x18\x06 \x01(\tR\x0einstallationId\x12\x19\n" +
 	"\badded_at\x18\b \x01(\tR\aaddedAt\x12\x17\n" +
-	"\aapi_key\x18\t \x01(\tR\x06apiKeyJ\x04\b\x05\x10\x06J\x04\b\a\x10\bR\n" +
+	"\aapi_key\x18\t \x01(\tR\x06apiKey\x12!\n" +
+	"\fadapter_kind\x18\n" +
+	" \x01(\tR\vadapterKind\x12$\n" +
+	"\x0elast_synced_at\x18\v \x01(\tR\flastSyncedAt\x12&\n" +
+	"\x0flast_failure_at\x18\f \x01(\tR\rlastFailureAt\x12.\n" +
+	"\x13last_failure_reason\x18\r \x01(\tR\x11lastFailureReasonJ\x04\b\x05\x10\x06J\x04\b\a\x10\bR\n" +
 	"local_pathR\x06cloned\"\x93\x01\n" +
 	"\x14SuiteCoverageSummary\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x1f\n" +
