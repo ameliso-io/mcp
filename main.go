@@ -69,6 +69,15 @@ func main() {
 		localauth.DefaultAuth0Audience = auth0Audience
 	}
 
+	if len(os.Args) == 2 && os.Args[1] == "--logout" {
+		if err := localauth.DeleteToken(); err != nil {
+			fmt.Fprintf(os.Stderr, "ameliso-mcp: logout: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Fprintln(os.Stderr, "ameliso-mcp: logged out")
+		return
+	}
+
 	addr := os.Getenv("AMELISO_GRPC_ADDR")
 	if addr == "" {
 		addr = "localhost:50052"
