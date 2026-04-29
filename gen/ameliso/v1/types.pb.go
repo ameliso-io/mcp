@@ -433,6 +433,106 @@ func (x *TestingStrategy) GetDeletedAt() string {
 	return ""
 }
 
+type RunTemplate struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title             string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description       string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	SuiteIds          []string               `protobuf:"bytes,4,rep,name=suite_ids,json=suiteIds,proto3" json:"suite_ids,omitempty"`
+	DefaultStrategyId string                 `protobuf:"bytes,5,opt,name=default_strategy_id,json=defaultStrategyId,proto3" json:"default_strategy_id,omitempty"`
+	Tags              []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
+	CreatedAt         string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt         string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *RunTemplate) Reset() {
+	*x = RunTemplate{}
+	mi := &file_ameliso_v1_types_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunTemplate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunTemplate) ProtoMessage() {}
+
+func (x *RunTemplate) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_types_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunTemplate.ProtoReflect.Descriptor instead.
+func (*RunTemplate) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RunTemplate) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RunTemplate) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *RunTemplate) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *RunTemplate) GetSuiteIds() []string {
+	if x != nil {
+		return x.SuiteIds
+	}
+	return nil
+}
+
+func (x *RunTemplate) GetDefaultStrategyId() string {
+	if x != nil {
+		return x.DefaultStrategyId
+	}
+	return ""
+}
+
+func (x *RunTemplate) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *RunTemplate) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *RunTemplate) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
 type RepoPermission struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -443,7 +543,7 @@ type RepoPermission struct {
 
 func (x *RepoPermission) Reset() {
 	*x = RepoPermission{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[2]
+	mi := &file_ameliso_v1_types_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -455,7 +555,7 @@ func (x *RepoPermission) String() string {
 func (*RepoPermission) ProtoMessage() {}
 
 func (x *RepoPermission) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[2]
+	mi := &file_ameliso_v1_types_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -468,7 +568,7 @@ func (x *RepoPermission) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepoPermission.ProtoReflect.Descriptor instead.
 func (*RepoPermission) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{2}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RepoPermission) GetName() string {
@@ -498,7 +598,7 @@ type RepoToken struct {
 
 func (x *RepoToken) Reset() {
 	*x = RepoToken{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[3]
+	mi := &file_ameliso_v1_types_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -510,7 +610,7 @@ func (x *RepoToken) String() string {
 func (*RepoToken) ProtoMessage() {}
 
 func (x *RepoToken) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[3]
+	mi := &file_ameliso_v1_types_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -523,7 +623,7 @@ func (x *RepoToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepoToken.ProtoReflect.Descriptor instead.
 func (*RepoToken) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{3}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RepoToken) GetToken() string {
@@ -573,7 +673,7 @@ type Suite struct {
 
 func (x *Suite) Reset() {
 	*x = Suite{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[4]
+	mi := &file_ameliso_v1_types_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -585,7 +685,7 @@ func (x *Suite) String() string {
 func (*Suite) ProtoMessage() {}
 
 func (x *Suite) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[4]
+	mi := &file_ameliso_v1_types_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -598,7 +698,7 @@ func (x *Suite) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Suite.ProtoReflect.Descriptor instead.
 func (*Suite) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{4}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Suite) GetSlug() string {
@@ -659,7 +759,7 @@ type RunMeta struct {
 
 func (x *RunMeta) Reset() {
 	*x = RunMeta{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[5]
+	mi := &file_ameliso_v1_types_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +771,7 @@ func (x *RunMeta) String() string {
 func (*RunMeta) ProtoMessage() {}
 
 func (x *RunMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[5]
+	mi := &file_ameliso_v1_types_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +784,7 @@ func (x *RunMeta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunMeta.ProtoReflect.Descriptor instead.
 func (*RunMeta) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{5}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RunMeta) GetId() string {
@@ -802,14 +902,16 @@ type CaseResult struct {
 	// Execution time in milliseconds. 0 means not recorded.
 	DurationMs int64 `protobuf:"varint,5,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
 	// Free-form failure category (e.g. "assertion", "timeout", "crash"). Empty when not set.
-	ErrorType     string `protobuf:"bytes,6,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
+	ErrorType string `protobuf:"bytes,6,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
+	// ID of the testing strategy used to execute this case. Empty when not recorded.
+	StrategyId    string `protobuf:"bytes,7,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CaseResult) Reset() {
 	*x = CaseResult{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[6]
+	mi := &file_ameliso_v1_types_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -821,7 +923,7 @@ func (x *CaseResult) String() string {
 func (*CaseResult) ProtoMessage() {}
 
 func (x *CaseResult) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[6]
+	mi := &file_ameliso_v1_types_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -834,7 +936,7 @@ func (x *CaseResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CaseResult.ProtoReflect.Descriptor instead.
 func (*CaseResult) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{6}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CaseResult) GetCasePath() string {
@@ -879,6 +981,13 @@ func (x *CaseResult) GetErrorType() string {
 	return ""
 }
 
+func (x *CaseResult) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
 type Run struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *RunMeta               `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
@@ -889,7 +998,7 @@ type Run struct {
 
 func (x *Run) Reset() {
 	*x = Run{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[7]
+	mi := &file_ameliso_v1_types_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -901,7 +1010,7 @@ func (x *Run) String() string {
 func (*Run) ProtoMessage() {}
 
 func (x *Run) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[7]
+	mi := &file_ameliso_v1_types_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -914,7 +1023,7 @@ func (x *Run) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Run.ProtoReflect.Descriptor instead.
 func (*Run) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{7}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Run) GetMeta() *RunMeta {
@@ -947,7 +1056,7 @@ type CoverageEntry struct {
 
 func (x *CoverageEntry) Reset() {
 	*x = CoverageEntry{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[8]
+	mi := &file_ameliso_v1_types_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -959,7 +1068,7 @@ func (x *CoverageEntry) String() string {
 func (*CoverageEntry) ProtoMessage() {}
 
 func (x *CoverageEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[8]
+	mi := &file_ameliso_v1_types_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -972,7 +1081,7 @@ func (x *CoverageEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CoverageEntry.ProtoReflect.Descriptor instead.
 func (*CoverageEntry) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{8}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CoverageEntry) GetCase() *Case {
@@ -1032,7 +1141,7 @@ type AffectedCase struct {
 
 func (x *AffectedCase) Reset() {
 	*x = AffectedCase{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[9]
+	mi := &file_ameliso_v1_types_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1044,7 +1153,7 @@ func (x *AffectedCase) String() string {
 func (*AffectedCase) ProtoMessage() {}
 
 func (x *AffectedCase) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[9]
+	mi := &file_ameliso_v1_types_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1057,7 +1166,7 @@ func (x *AffectedCase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCase.ProtoReflect.Descriptor instead.
 func (*AffectedCase) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{9}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *AffectedCase) GetCase() *Case {
@@ -1123,7 +1232,7 @@ type AuditEntry struct {
 
 func (x *AuditEntry) Reset() {
 	*x = AuditEntry{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[10]
+	mi := &file_ameliso_v1_types_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1135,7 +1244,7 @@ func (x *AuditEntry) String() string {
 func (*AuditEntry) ProtoMessage() {}
 
 func (x *AuditEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[10]
+	mi := &file_ameliso_v1_types_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1148,7 +1257,7 @@ func (x *AuditEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuditEntry.ProtoReflect.Descriptor instead.
 func (*AuditEntry) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{10}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AuditEntry) GetId() int64 {
@@ -1266,7 +1375,7 @@ type Repository struct {
 
 func (x *Repository) Reset() {
 	*x = Repository{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[11]
+	mi := &file_ameliso_v1_types_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1278,7 +1387,7 @@ func (x *Repository) String() string {
 func (*Repository) ProtoMessage() {}
 
 func (x *Repository) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[11]
+	mi := &file_ameliso_v1_types_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1291,7 +1400,7 @@ func (x *Repository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Repository.ProtoReflect.Descriptor instead.
 func (*Repository) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{11}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Repository) GetId() string {
@@ -1383,7 +1492,7 @@ type SuiteCoverageSummary struct {
 
 func (x *SuiteCoverageSummary) Reset() {
 	*x = SuiteCoverageSummary{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[12]
+	mi := &file_ameliso_v1_types_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1395,7 +1504,7 @@ func (x *SuiteCoverageSummary) String() string {
 func (*SuiteCoverageSummary) ProtoMessage() {}
 
 func (x *SuiteCoverageSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[12]
+	mi := &file_ameliso_v1_types_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1408,7 +1517,7 @@ func (x *SuiteCoverageSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuiteCoverageSummary.ProtoReflect.Descriptor instead.
 func (*SuiteCoverageSummary) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{12}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SuiteCoverageSummary) GetSlug() string {
@@ -1450,7 +1559,7 @@ type FlakyCaseSummary struct {
 
 func (x *FlakyCaseSummary) Reset() {
 	*x = FlakyCaseSummary{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[13]
+	mi := &file_ameliso_v1_types_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1462,7 +1571,7 @@ func (x *FlakyCaseSummary) String() string {
 func (*FlakyCaseSummary) ProtoMessage() {}
 
 func (x *FlakyCaseSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[13]
+	mi := &file_ameliso_v1_types_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1475,7 +1584,7 @@ func (x *FlakyCaseSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlakyCaseSummary.ProtoReflect.Descriptor instead.
 func (*FlakyCaseSummary) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{13}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *FlakyCaseSummary) GetCasePath() string {
@@ -1534,7 +1643,18 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x06 \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"deleted_at\x18\a \x01(\tR\tdeletedAt\"8\n" +
+	"deleted_at\x18\a \x01(\tR\tdeletedAt\"\xf4\x01\n" +
+	"\vRunTemplate\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1b\n" +
+	"\tsuite_ids\x18\x04 \x03(\tR\bsuiteIds\x12.\n" +
+	"\x13default_strategy_id\x18\x05 \x01(\tR\x11defaultStrategyId\x12\x12\n" +
+	"\x04tags\x18\x06 \x03(\tR\x04tags\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\b \x01(\tR\tupdatedAt\"8\n" +
 	"\x0eRepoPermission\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\"\x87\x01\n" +
@@ -1569,7 +1689,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\vdescription\x18\r \x01(\tR\vdescription\x12%\n" +
 	"\x0eformatted_date\x18\x0e \x01(\tR\rformattedDate\x12\x1f\n" +
 	"\vassignee_id\x18\x0f \x01(\tR\n" +
-	"assigneeId\"\xd6\x01\n" +
+	"assigneeId\"\xf7\x01\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
@@ -1579,7 +1699,9 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\vduration_ms\x18\x05 \x01(\x03R\n" +
 	"durationMs\x12\x1d\n" +
 	"\n" +
-	"error_type\x18\x06 \x01(\tR\terrorType\"`\n" +
+	"error_type\x18\x06 \x01(\tR\terrorType\x12\x1f\n" +
+	"\vstrategy_id\x18\a \x01(\tR\n" +
+	"strategyId\"`\n" +
 	"\x03Run\x12'\n" +
 	"\x04meta\x18\x01 \x01(\v2\x13.ameliso.v1.RunMetaR\x04meta\x120\n" +
 	"\aresults\x18\x02 \x03(\v2\x16.ameliso.v1.CaseResultR\aresults\"\xf5\x01\n" +
@@ -1673,40 +1795,41 @@ func file_ameliso_v1_types_proto_rawDescGZIP() []byte {
 }
 
 var file_ameliso_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_ameliso_v1_types_proto_goTypes = []any{
 	(RunStatus)(0),               // 0: ameliso.v1.RunStatus
 	(ResultStatus)(0),            // 1: ameliso.v1.ResultStatus
 	(Priority)(0),                // 2: ameliso.v1.Priority
 	(*Case)(nil),                 // 3: ameliso.v1.Case
 	(*TestingStrategy)(nil),      // 4: ameliso.v1.TestingStrategy
-	(*RepoPermission)(nil),       // 5: ameliso.v1.RepoPermission
-	(*RepoToken)(nil),            // 6: ameliso.v1.RepoToken
-	(*Suite)(nil),                // 7: ameliso.v1.Suite
-	(*RunMeta)(nil),              // 8: ameliso.v1.RunMeta
-	(*CaseResult)(nil),           // 9: ameliso.v1.CaseResult
-	(*Run)(nil),                  // 10: ameliso.v1.Run
-	(*CoverageEntry)(nil),        // 11: ameliso.v1.CoverageEntry
-	(*AffectedCase)(nil),         // 12: ameliso.v1.AffectedCase
-	(*AuditEntry)(nil),           // 13: ameliso.v1.AuditEntry
-	(*Repository)(nil),           // 14: ameliso.v1.Repository
-	(*SuiteCoverageSummary)(nil), // 15: ameliso.v1.SuiteCoverageSummary
-	(*FlakyCaseSummary)(nil),     // 16: ameliso.v1.FlakyCaseSummary
+	(*RunTemplate)(nil),          // 5: ameliso.v1.RunTemplate
+	(*RepoPermission)(nil),       // 6: ameliso.v1.RepoPermission
+	(*RepoToken)(nil),            // 7: ameliso.v1.RepoToken
+	(*Suite)(nil),                // 8: ameliso.v1.Suite
+	(*RunMeta)(nil),              // 9: ameliso.v1.RunMeta
+	(*CaseResult)(nil),           // 10: ameliso.v1.CaseResult
+	(*Run)(nil),                  // 11: ameliso.v1.Run
+	(*CoverageEntry)(nil),        // 12: ameliso.v1.CoverageEntry
+	(*AffectedCase)(nil),         // 13: ameliso.v1.AffectedCase
+	(*AuditEntry)(nil),           // 14: ameliso.v1.AuditEntry
+	(*Repository)(nil),           // 15: ameliso.v1.Repository
+	(*SuiteCoverageSummary)(nil), // 16: ameliso.v1.SuiteCoverageSummary
+	(*FlakyCaseSummary)(nil),     // 17: ameliso.v1.FlakyCaseSummary
 }
 var file_ameliso_v1_types_proto_depIdxs = []int32{
-	0, // 0: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
-	1, // 1: ameliso.v1.CaseResult.status:type_name -> ameliso.v1.ResultStatus
-	8, // 2: ameliso.v1.Run.meta:type_name -> ameliso.v1.RunMeta
-	9, // 3: ameliso.v1.Run.results:type_name -> ameliso.v1.CaseResult
-	3, // 4: ameliso.v1.CoverageEntry.case:type_name -> ameliso.v1.Case
-	1, // 5: ameliso.v1.CoverageEntry.latest_status:type_name -> ameliso.v1.ResultStatus
-	3, // 6: ameliso.v1.AffectedCase.case:type_name -> ameliso.v1.Case
-	1, // 7: ameliso.v1.AffectedCase.latest_status:type_name -> ameliso.v1.ResultStatus
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	0,  // 0: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
+	1,  // 1: ameliso.v1.CaseResult.status:type_name -> ameliso.v1.ResultStatus
+	9,  // 2: ameliso.v1.Run.meta:type_name -> ameliso.v1.RunMeta
+	10, // 3: ameliso.v1.Run.results:type_name -> ameliso.v1.CaseResult
+	3,  // 4: ameliso.v1.CoverageEntry.case:type_name -> ameliso.v1.Case
+	1,  // 5: ameliso.v1.CoverageEntry.latest_status:type_name -> ameliso.v1.ResultStatus
+	3,  // 6: ameliso.v1.AffectedCase.case:type_name -> ameliso.v1.Case
+	1,  // 7: ameliso.v1.AffectedCase.latest_status:type_name -> ameliso.v1.ResultStatus
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_ameliso_v1_types_proto_init() }
@@ -1720,7 +1843,7 @@ func file_ameliso_v1_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_types_proto_rawDesc), len(file_ameliso_v1_types_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   14,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

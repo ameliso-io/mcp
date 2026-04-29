@@ -72,6 +72,11 @@ const (
 	AmelisoService_UpdateStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/UpdateStrategy"
 	AmelisoService_DeleteStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/DeleteStrategy"
 	AmelisoService_RestoreStrategy_FullMethodName      = "/ameliso.v1.AmelisoService/RestoreStrategy"
+	AmelisoService_ListRunTemplates_FullMethodName     = "/ameliso.v1.AmelisoService/ListRunTemplates"
+	AmelisoService_GetRunTemplate_FullMethodName       = "/ameliso.v1.AmelisoService/GetRunTemplate"
+	AmelisoService_CreateRunTemplate_FullMethodName    = "/ameliso.v1.AmelisoService/CreateRunTemplate"
+	AmelisoService_UpdateRunTemplate_FullMethodName    = "/ameliso.v1.AmelisoService/UpdateRunTemplate"
+	AmelisoService_DeleteRunTemplate_FullMethodName    = "/ameliso.v1.AmelisoService/DeleteRunTemplate"
 	AmelisoService_ListPermissions_FullMethodName      = "/ameliso.v1.AmelisoService/ListPermissions"
 	AmelisoService_AddPermission_FullMethodName        = "/ameliso.v1.AmelisoService/AddPermission"
 	AmelisoService_RemovePermission_FullMethodName     = "/ameliso.v1.AmelisoService/RemovePermission"
@@ -196,6 +201,12 @@ type AmelisoServiceClient interface {
 	UpdateStrategy(ctx context.Context, in *UpdateStrategyRequest, opts ...grpc.CallOption) (*UpdateStrategyResponse, error)
 	DeleteStrategy(ctx context.Context, in *DeleteStrategyRequest, opts ...grpc.CallOption) (*DeleteStrategyResponse, error)
 	RestoreStrategy(ctx context.Context, in *RestoreStrategyRequest, opts ...grpc.CallOption) (*RestoreStrategyResponse, error)
+	// --- Run Templates ---
+	ListRunTemplates(ctx context.Context, in *ListRunTemplatesRequest, opts ...grpc.CallOption) (*ListRunTemplatesResponse, error)
+	GetRunTemplate(ctx context.Context, in *GetRunTemplateRequest, opts ...grpc.CallOption) (*GetRunTemplateResponse, error)
+	CreateRunTemplate(ctx context.Context, in *CreateRunTemplateRequest, opts ...grpc.CallOption) (*CreateRunTemplateResponse, error)
+	UpdateRunTemplate(ctx context.Context, in *UpdateRunTemplateRequest, opts ...grpc.CallOption) (*UpdateRunTemplateResponse, error)
+	DeleteRunTemplate(ctx context.Context, in *DeleteRunTemplateRequest, opts ...grpc.CallOption) (*DeleteRunTemplateResponse, error)
 	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
 	AddPermission(ctx context.Context, in *AddPermissionRequest, opts ...grpc.CallOption) (*AddPermissionResponse, error)
 	RemovePermission(ctx context.Context, in *RemovePermissionRequest, opts ...grpc.CallOption) (*RemovePermissionResponse, error)
@@ -744,6 +755,56 @@ func (c *amelisoServiceClient) RestoreStrategy(ctx context.Context, in *RestoreS
 	return out, nil
 }
 
+func (c *amelisoServiceClient) ListRunTemplates(ctx context.Context, in *ListRunTemplatesRequest, opts ...grpc.CallOption) (*ListRunTemplatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRunTemplatesResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListRunTemplates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) GetRunTemplate(ctx context.Context, in *GetRunTemplateRequest, opts ...grpc.CallOption) (*GetRunTemplateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRunTemplateResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_GetRunTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) CreateRunTemplate(ctx context.Context, in *CreateRunTemplateRequest, opts ...grpc.CallOption) (*CreateRunTemplateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateRunTemplateResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_CreateRunTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) UpdateRunTemplate(ctx context.Context, in *UpdateRunTemplateRequest, opts ...grpc.CallOption) (*UpdateRunTemplateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateRunTemplateResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_UpdateRunTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) DeleteRunTemplate(ctx context.Context, in *DeleteRunTemplateRequest, opts ...grpc.CallOption) (*DeleteRunTemplateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteRunTemplateResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_DeleteRunTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPermissionsResponse)
@@ -902,6 +963,12 @@ type AmelisoServiceServer interface {
 	UpdateStrategy(context.Context, *UpdateStrategyRequest) (*UpdateStrategyResponse, error)
 	DeleteStrategy(context.Context, *DeleteStrategyRequest) (*DeleteStrategyResponse, error)
 	RestoreStrategy(context.Context, *RestoreStrategyRequest) (*RestoreStrategyResponse, error)
+	// --- Run Templates ---
+	ListRunTemplates(context.Context, *ListRunTemplatesRequest) (*ListRunTemplatesResponse, error)
+	GetRunTemplate(context.Context, *GetRunTemplateRequest) (*GetRunTemplateResponse, error)
+	CreateRunTemplate(context.Context, *CreateRunTemplateRequest) (*CreateRunTemplateResponse, error)
+	UpdateRunTemplate(context.Context, *UpdateRunTemplateRequest) (*UpdateRunTemplateResponse, error)
+	DeleteRunTemplate(context.Context, *DeleteRunTemplateRequest) (*DeleteRunTemplateResponse, error)
 	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
 	AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionResponse, error)
 	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error)
@@ -1078,6 +1145,21 @@ func (UnimplementedAmelisoServiceServer) DeleteStrategy(context.Context, *Delete
 }
 func (UnimplementedAmelisoServiceServer) RestoreStrategy(context.Context, *RestoreStrategyRequest) (*RestoreStrategyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RestoreStrategy not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ListRunTemplates(context.Context, *ListRunTemplatesRequest) (*ListRunTemplatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRunTemplates not implemented")
+}
+func (UnimplementedAmelisoServiceServer) GetRunTemplate(context.Context, *GetRunTemplateRequest) (*GetRunTemplateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRunTemplate not implemented")
+}
+func (UnimplementedAmelisoServiceServer) CreateRunTemplate(context.Context, *CreateRunTemplateRequest) (*CreateRunTemplateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateRunTemplate not implemented")
+}
+func (UnimplementedAmelisoServiceServer) UpdateRunTemplate(context.Context, *UpdateRunTemplateRequest) (*UpdateRunTemplateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRunTemplate not implemented")
+}
+func (UnimplementedAmelisoServiceServer) DeleteRunTemplate(context.Context, *DeleteRunTemplateRequest) (*DeleteRunTemplateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteRunTemplate not implemented")
 }
 func (UnimplementedAmelisoServiceServer) ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPermissions not implemented")
@@ -2066,6 +2148,96 @@ func _AmelisoService_RestoreStrategy_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_ListRunTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRunTemplatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListRunTemplates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListRunTemplates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListRunTemplates(ctx, req.(*ListRunTemplatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_GetRunTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRunTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).GetRunTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_GetRunTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).GetRunTemplate(ctx, req.(*GetRunTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_CreateRunTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRunTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).CreateRunTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_CreateRunTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).CreateRunTemplate(ctx, req.(*CreateRunTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_UpdateRunTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRunTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).UpdateRunTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_UpdateRunTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).UpdateRunTemplate(ctx, req.(*UpdateRunTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_DeleteRunTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRunTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).DeleteRunTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_DeleteRunTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).DeleteRunTemplate(ctx, req.(*DeleteRunTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_ListPermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPermissionsRequest)
 	if err := dec(in); err != nil {
@@ -2356,6 +2528,26 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RestoreStrategy",
 			Handler:    _AmelisoService_RestoreStrategy_Handler,
+		},
+		{
+			MethodName: "ListRunTemplates",
+			Handler:    _AmelisoService_ListRunTemplates_Handler,
+		},
+		{
+			MethodName: "GetRunTemplate",
+			Handler:    _AmelisoService_GetRunTemplate_Handler,
+		},
+		{
+			MethodName: "CreateRunTemplate",
+			Handler:    _AmelisoService_CreateRunTemplate_Handler,
+		},
+		{
+			MethodName: "UpdateRunTemplate",
+			Handler:    _AmelisoService_UpdateRunTemplate_Handler,
+		},
+		{
+			MethodName: "DeleteRunTemplate",
+			Handler:    _AmelisoService_DeleteRunTemplate_Handler,
 		},
 		{
 			MethodName: "ListPermissions",
