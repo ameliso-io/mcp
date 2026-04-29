@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -27,7 +28,7 @@ var (
 const userTokenPrefix = "am_pat_"
 
 // dynamicBearerCreds attaches `authorization: Bearer <token>` to every RPC
-// and allows the token to be swapped at runtime (e.g. after ameliso_login).
+// and allows the token to be swapped at runtime (e.g. after ameliso_login_poll succeeds).
 type dynamicBearerCreds struct {
 	token atomic.Value // stores string
 }
@@ -46,12 +47,10 @@ func (c *dynamicBearerCreds) GetRequestMetadata(context.Context, ...string) (map
 
 func (c *dynamicBearerCreds) RequireTransportSecurity() bool { return false }
 
-// grpcMinter exchanges an Auth0 access token for an Ameliso PAT by calling
-// CreateUserToken on a temporary gRPC connection authenticated with the Auth0 JWT.
+// grpcMinter exchanges an Auth0 access token for an Ameliso PAT.
 type grpcMinter struct{ addr string }
 
 func (m *grpcMinter) MintToken(ctx context.Context, auth0AccessToken string) (string, error) {
-	// Temporary connection authenticated with the Auth0 JWT (not the PAT).
 	tmpCreds := newDynamicBearerCreds(auth0AccessToken)
 	conn, err := grpc.NewClient(
 		m.addr,
@@ -77,34 +76,75 @@ type noParams struct{}
 func registerAuthTools(raw *mcp.Server, addr string, creds *dynamicBearerCreds) {
 	minter := &grpcMinter{addr: addr}
 
+	// pending holds an in-progress device flow between ameliso_login and ameliso_login_poll calls.
+	var (
+		pendingMu sync.Mutex
+		pending   *localauth.PendingLogin
+	)
+
 	mcp.AddTool(raw, &mcp.Tool{
-		Name:        "ameliso_login",
-		Description: "Log in to Ameliso via browser. Runs the Auth0 Device Authorization Flow, mints a personal access token, and saves it to the OS keychain. Updates the current session immediately — no reconnect needed.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ noParams) (*mcp.CallToolResult, any, error) {
-		// Force a fresh login regardless of any cached token.
-		if err := localauth.DeleteToken(); err != nil {
-			return nil, nil, fmt.Errorf("clearing existing token: %w", err)
-		}
-		token, err := localauth.EnsureToken(ctx, minter)
+		Name: "ameliso_login",
+		Description: "Start an Ameliso login flow. Opens the user's browser and returns a " +
+			"verification URL and code to display. After showing the user the URL, call " +
+			"ameliso_login_poll repeatedly (every 5 seconds) until it reports success.",
+	}, func(_ context.Context, _ *mcp.CallToolRequest, _ noParams) (*mcp.CallToolResult, any, error) {
+		p, err := localauth.StartLogin()
 		if err != nil {
-			return nil, nil, fmt.Errorf("login: %w", err)
+			return nil, nil, fmt.Errorf("starting login: %w", err)
 		}
-		creds.set(token)
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: "Logged in successfully. Token saved to keychain."}},
-		}, nil, nil
+		pendingMu.Lock()
+		pending = p
+		pendingMu.Unlock()
+
+		msg := fmt.Sprintf(
+			"Browser opened. Ask the user to visit:\n\n  %s\n\nOr go to %s and enter code: %s\n\nThen call ameliso_login_poll every %s until it reports success.",
+			p.VerificationURIComplete, p.VerificationURI, p.UserCode, p.Interval(),
+		)
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}}, nil, nil
 	})
 
 	mcp.AddTool(raw, &mcp.Tool{
-		Name:        "ameliso_logout",
-		Description: "Log out from Ameliso by deleting the stored token from the OS keychain and file fallback. The current session's token remains active until it expires or is revoked via the Ameliso dashboard.",
+		Name: "ameliso_login_poll",
+		Description: "Poll for completion of an in-progress Ameliso login flow started by ameliso_login. " +
+			"Returns 'pending' if the user has not yet authenticated, or 'success' once done. " +
+			"Call once every 5 seconds until success.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ noParams) (*mcp.CallToolResult, any, error) {
+		pendingMu.Lock()
+		p := pending
+		pendingMu.Unlock()
+
+		if p == nil {
+			return nil, nil, fmt.Errorf("no login in progress; call ameliso_login first")
+		}
+
+		pat, done, err := p.Poll(ctx, minter)
+		if err != nil {
+			pendingMu.Lock()
+			pending = nil
+			pendingMu.Unlock()
+			return nil, nil, err
+		}
+		if !done {
+			return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "pending"}}}, nil, nil
+		}
+
+		creds.set(pat)
+		pendingMu.Lock()
+		pending = nil
+		pendingMu.Unlock()
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "success: logged in and token saved to keychain"}}}, nil, nil
+	})
+
+	mcp.AddTool(raw, &mcp.Tool{
+		Name: "ameliso_logout",
+		Description: "Log out from Ameliso by deleting the stored token from the OS keychain " +
+			"and file fallback. Call ameliso_login to authenticate again.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, _ noParams) (*mcp.CallToolResult, any, error) {
 		if err := localauth.DeleteToken(); err != nil {
 			return nil, nil, fmt.Errorf("logout: %w", err)
 		}
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: "Logged out. Stored token removed from keychain."}},
-		}, nil, nil
+		creds.set("")
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "Logged out. Stored token removed from keychain."}}}, nil, nil
 	})
 }
 
@@ -121,14 +161,11 @@ func main() {
 		addr = "localhost:50052"
 	}
 
-	ctx := context.Background()
-	token, err := localauth.EnsureToken(ctx, &grpcMinter{addr: addr})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "ameliso-mcp: auth: %v\n", err)
-		os.Exit(1)
-	}
-
+	// Non-interactive: read stored token from env/keychain/file.
+	// If none found, start unauthenticated — the LLM should call ameliso_login.
+	token, _ := localauth.ReadToken()
 	creds := newDynamicBearerCreds(token)
+
 	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -144,7 +181,7 @@ func main() {
 	amelisomcp.ForwardToAmelisoServiceClient(s, pb.NewAmelisoServiceClient(conn))
 	registerAuthTools(raw, addr, creds)
 
-	if err := raw.Run(ctx, &mcp.StdioTransport{}); err != nil {
+	if err := raw.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		fmt.Fprintf(os.Stderr, "ameliso-mcp: %v\n", err)
 	}
 }
