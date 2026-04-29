@@ -17,11 +17,10 @@ import (
 	amelisomcp "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1/amelisomcp"
 )
 
-// auth0ClientID and auth0Audience are set via -ldflags in release builds.
-var (
-	auth0ClientID = ""
-	auth0Audience = ""
-)
+// apiURL is the base URL of the Ameliso HTTP API, set via -ldflags in release
+// builds (e.g. https://api.ameliso.io). Override at runtime via AMELISO_API_URL.
+// If empty, defaults to http://localhost:8080 (local dev).
+var apiURL = ""
 
 // userTokenPrefix is the expected prefix for Ameliso personal access tokens.
 // Kept here to surface drift from the server-side constant via TestUserTokenPrefixIsAmPat.
@@ -73,7 +72,7 @@ func (m *grpcMinter) MintToken(ctx context.Context, auth0AccessToken string) (st
 
 type noParams struct{}
 
-func registerAuthTools(raw *mcp.Server, addr string, creds *dynamicBearerCreds) {
+func registerAuthTools(raw *mcp.Server, addr string, apiBaseURL string, creds *dynamicBearerCreds) {
 	minter := &grpcMinter{addr: addr}
 
 	// pending holds an in-progress device flow between ameliso_login and ameliso_login_poll calls.
@@ -88,6 +87,10 @@ func registerAuthTools(raw *mcp.Server, addr string, creds *dynamicBearerCreds) 
 			"verification URL and code to display. After showing the user the URL, call " +
 			"ameliso_login_poll repeatedly (every 5 seconds) until it reports success.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, _ noParams) (*mcp.CallToolResult, any, error) {
+		// Fetch Auth0 config from server; non-fatal if server unreachable
+		// (env vars / ldflags defaults act as fallback).
+		_ = localauth.FetchAuthConfig(apiBaseURL)
+
 		p, err := localauth.StartLogin()
 		if err != nil {
 			return nil, nil, fmt.Errorf("starting login: %w", err)
@@ -148,14 +151,17 @@ func registerAuthTools(raw *mcp.Server, addr string, creds *dynamicBearerCreds) 
 	})
 }
 
-func main() {
-	if auth0ClientID != "" {
-		localauth.DefaultAuth0ClientID = auth0ClientID
+func resolveAPIURL() string {
+	if v := os.Getenv("AMELISO_API_URL"); v != "" {
+		return v
 	}
-	if auth0Audience != "" {
-		localauth.DefaultAuth0Audience = auth0Audience
+	if apiURL != "" {
+		return apiURL
 	}
+	return "http://localhost:8080"
+}
 
+func main() {
 	addr := os.Getenv("AMELISO_GRPC_ADDR")
 	if addr == "" {
 		addr = "localhost:50052"
@@ -179,7 +185,7 @@ func main() {
 
 	raw, s := gosdk.NewServer("ameliso", "1.0.0")
 	amelisomcp.ForwardToAmelisoServiceClient(s, pb.NewAmelisoServiceClient(conn))
-	registerAuthTools(raw, addr, creds)
+	registerAuthTools(raw, addr, resolveAPIURL(), creds)
 
 	if err := raw.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		fmt.Fprintf(os.Stderr, "ameliso-mcp: %v\n", err)
