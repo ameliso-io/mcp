@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestBearerCredsAttachesAuthorizationHeader(t *testing.T) {
-	creds := bearerCreds{token: "am_pat_deadbeef"}
+func TestDynamicBearerCredsAttachesAuthorizationHeader(t *testing.T) {
+	creds := newDynamicBearerCreds("am_pat_deadbeef")
 	md, err := creds.GetRequestMetadata(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -17,10 +17,22 @@ func TestBearerCredsAttachesAuthorizationHeader(t *testing.T) {
 	}
 }
 
-func TestBearerCredsAllowsInsecureTransport(t *testing.T) {
+func TestDynamicBearerCredsTokenSwap(t *testing.T) {
+	creds := newDynamicBearerCreds("am_pat_old")
+	creds.set("am_pat_new")
+	md, err := creds.GetRequestMetadata(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := md["authorization"]; got != "Bearer am_pat_new" {
+		t.Fatalf("after swap: authorization header = %q, want Bearer am_pat_new", got)
+	}
+}
+
+func TestDynamicBearerCredsAllowsInsecureTransport(t *testing.T) {
 	// MCP runs over a local insecure connection by default; require_transport_security
 	// would refuse to attach the Bearer in that case.
-	creds := bearerCreds{}
+	creds := newDynamicBearerCreds("")
 	if creds.RequireTransportSecurity() {
 		t.Fatal("RequireTransportSecurity should be false for stdio MCP")
 	}
