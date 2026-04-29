@@ -19,68 +19,76 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AmelisoService_ListCases_FullMethodName            = "/ameliso.v1.AmelisoService/ListCases"
-	AmelisoService_GetCase_FullMethodName              = "/ameliso.v1.AmelisoService/GetCase"
-	AmelisoService_GetCaseHistory_FullMethodName       = "/ameliso.v1.AmelisoService/GetCaseHistory"
-	AmelisoService_CreateCase_FullMethodName           = "/ameliso.v1.AmelisoService/CreateCase"
-	AmelisoService_BulkCreateCases_FullMethodName      = "/ameliso.v1.AmelisoService/BulkCreateCases"
-	AmelisoService_UpdateCase_FullMethodName           = "/ameliso.v1.AmelisoService/UpdateCase"
-	AmelisoService_BulkUpdateCases_FullMethodName      = "/ameliso.v1.AmelisoService/BulkUpdateCases"
-	AmelisoService_DeleteCase_FullMethodName           = "/ameliso.v1.AmelisoService/DeleteCase"
-	AmelisoService_BulkDeleteCases_FullMethodName      = "/ameliso.v1.AmelisoService/BulkDeleteCases"
-	AmelisoService_RestoreCase_FullMethodName          = "/ameliso.v1.AmelisoService/RestoreCase"
-	AmelisoService_ListSuites_FullMethodName           = "/ameliso.v1.AmelisoService/ListSuites"
-	AmelisoService_GetSuite_FullMethodName             = "/ameliso.v1.AmelisoService/GetSuite"
-	AmelisoService_CreateSuite_FullMethodName          = "/ameliso.v1.AmelisoService/CreateSuite"
-	AmelisoService_UpdateSuite_FullMethodName          = "/ameliso.v1.AmelisoService/UpdateSuite"
-	AmelisoService_DeleteSuite_FullMethodName          = "/ameliso.v1.AmelisoService/DeleteSuite"
-	AmelisoService_RestoreSuite_FullMethodName         = "/ameliso.v1.AmelisoService/RestoreSuite"
-	AmelisoService_ListRuns_FullMethodName             = "/ameliso.v1.AmelisoService/ListRuns"
-	AmelisoService_GetRun_FullMethodName               = "/ameliso.v1.AmelisoService/GetRun"
-	AmelisoService_CreateRun_FullMethodName            = "/ameliso.v1.AmelisoService/CreateRun"
-	AmelisoService_RecordResult_FullMethodName         = "/ameliso.v1.AmelisoService/RecordResult"
-	AmelisoService_BulkRecordResults_FullMethodName    = "/ameliso.v1.AmelisoService/BulkRecordResults"
-	AmelisoService_FinalizeRun_FullMethodName          = "/ameliso.v1.AmelisoService/FinalizeRun"
-	AmelisoService_DeleteRun_FullMethodName            = "/ameliso.v1.AmelisoService/DeleteRun"
-	AmelisoService_RestoreRun_FullMethodName           = "/ameliso.v1.AmelisoService/RestoreRun"
-	AmelisoService_GetPendingCases_FullMethodName      = "/ameliso.v1.AmelisoService/GetPendingCases"
-	AmelisoService_UpdateRun_FullMethodName            = "/ameliso.v1.AmelisoService/UpdateRun"
-	AmelisoService_ClaimRun_FullMethodName             = "/ameliso.v1.AmelisoService/ClaimRun"
-	AmelisoService_GetCoverageReport_FullMethodName    = "/ameliso.v1.AmelisoService/GetCoverageReport"
-	AmelisoService_GetAffectedCases_FullMethodName     = "/ameliso.v1.AmelisoService/GetAffectedCases"
-	AmelisoService_GetRepoStatus_FullMethodName        = "/ameliso.v1.AmelisoService/GetRepoStatus"
-	AmelisoService_CompareRuns_FullMethodName          = "/ameliso.v1.AmelisoService/CompareRuns"
-	AmelisoService_GetTesterSuggestions_FullMethodName = "/ameliso.v1.AmelisoService/GetTesterSuggestions"
-	AmelisoService_GetGitHubInstallUrl_FullMethodName  = "/ameliso.v1.AmelisoService/GetGitHubInstallUrl"
-	AmelisoService_HandleGitHubCallback_FullMethodName = "/ameliso.v1.AmelisoService/HandleGitHubCallback"
-	AmelisoService_ListRepositories_FullMethodName     = "/ameliso.v1.AmelisoService/ListRepositories"
-	AmelisoService_SyncRepository_FullMethodName       = "/ameliso.v1.AmelisoService/SyncRepository"
-	AmelisoService_RemoveRepository_FullMethodName     = "/ameliso.v1.AmelisoService/RemoveRepository"
-	AmelisoService_RotateRepoApiKey_FullMethodName     = "/ameliso.v1.AmelisoService/RotateRepoApiKey"
-	AmelisoService_ListRepoTokens_FullMethodName       = "/ameliso.v1.AmelisoService/ListRepoTokens"
-	AmelisoService_CreateRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/CreateRepoToken"
-	AmelisoService_DeleteRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/DeleteRepoToken"
-	AmelisoService_UpdateRepoToken_FullMethodName      = "/ameliso.v1.AmelisoService/UpdateRepoToken"
-	AmelisoService_CreateUserToken_FullMethodName      = "/ameliso.v1.AmelisoService/CreateUserToken"
-	AmelisoService_ListUserTokens_FullMethodName       = "/ameliso.v1.AmelisoService/ListUserTokens"
-	AmelisoService_RevokeUserToken_FullMethodName      = "/ameliso.v1.AmelisoService/RevokeUserToken"
-	AmelisoService_RotateUserToken_FullMethodName      = "/ameliso.v1.AmelisoService/RotateUserToken"
-	AmelisoService_ListAuditLog_FullMethodName         = "/ameliso.v1.AmelisoService/ListAuditLog"
-	AmelisoService_ListStrategies_FullMethodName       = "/ameliso.v1.AmelisoService/ListStrategies"
-	AmelisoService_GetStrategy_FullMethodName          = "/ameliso.v1.AmelisoService/GetStrategy"
-	AmelisoService_CreateStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/CreateStrategy"
-	AmelisoService_UpdateStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/UpdateStrategy"
-	AmelisoService_DeleteStrategy_FullMethodName       = "/ameliso.v1.AmelisoService/DeleteStrategy"
-	AmelisoService_RestoreStrategy_FullMethodName      = "/ameliso.v1.AmelisoService/RestoreStrategy"
-	AmelisoService_ListRunTemplates_FullMethodName     = "/ameliso.v1.AmelisoService/ListRunTemplates"
-	AmelisoService_GetRunTemplate_FullMethodName       = "/ameliso.v1.AmelisoService/GetRunTemplate"
-	AmelisoService_CreateRunTemplate_FullMethodName    = "/ameliso.v1.AmelisoService/CreateRunTemplate"
-	AmelisoService_UpdateRunTemplate_FullMethodName    = "/ameliso.v1.AmelisoService/UpdateRunTemplate"
-	AmelisoService_DeleteRunTemplate_FullMethodName    = "/ameliso.v1.AmelisoService/DeleteRunTemplate"
-	AmelisoService_ListPermissions_FullMethodName      = "/ameliso.v1.AmelisoService/ListPermissions"
-	AmelisoService_AddPermission_FullMethodName        = "/ameliso.v1.AmelisoService/AddPermission"
-	AmelisoService_RemovePermission_FullMethodName     = "/ameliso.v1.AmelisoService/RemovePermission"
-	AmelisoService_WhoAmI_FullMethodName               = "/ameliso.v1.AmelisoService/WhoAmI"
+	AmelisoService_ListCases_FullMethodName                     = "/ameliso.v1.AmelisoService/ListCases"
+	AmelisoService_GetCase_FullMethodName                       = "/ameliso.v1.AmelisoService/GetCase"
+	AmelisoService_GetCaseHistory_FullMethodName                = "/ameliso.v1.AmelisoService/GetCaseHistory"
+	AmelisoService_GetCaseGitHistory_FullMethodName             = "/ameliso.v1.AmelisoService/GetCaseGitHistory"
+	AmelisoService_CreateCase_FullMethodName                    = "/ameliso.v1.AmelisoService/CreateCase"
+	AmelisoService_BulkCreateCases_FullMethodName               = "/ameliso.v1.AmelisoService/BulkCreateCases"
+	AmelisoService_UpdateCase_FullMethodName                    = "/ameliso.v1.AmelisoService/UpdateCase"
+	AmelisoService_BulkUpdateCases_FullMethodName               = "/ameliso.v1.AmelisoService/BulkUpdateCases"
+	AmelisoService_DeleteCase_FullMethodName                    = "/ameliso.v1.AmelisoService/DeleteCase"
+	AmelisoService_BulkDeleteCases_FullMethodName               = "/ameliso.v1.AmelisoService/BulkDeleteCases"
+	AmelisoService_RestoreCase_FullMethodName                   = "/ameliso.v1.AmelisoService/RestoreCase"
+	AmelisoService_ListSuites_FullMethodName                    = "/ameliso.v1.AmelisoService/ListSuites"
+	AmelisoService_GetSuite_FullMethodName                      = "/ameliso.v1.AmelisoService/GetSuite"
+	AmelisoService_CreateSuite_FullMethodName                   = "/ameliso.v1.AmelisoService/CreateSuite"
+	AmelisoService_UpdateSuite_FullMethodName                   = "/ameliso.v1.AmelisoService/UpdateSuite"
+	AmelisoService_DeleteSuite_FullMethodName                   = "/ameliso.v1.AmelisoService/DeleteSuite"
+	AmelisoService_RestoreSuite_FullMethodName                  = "/ameliso.v1.AmelisoService/RestoreSuite"
+	AmelisoService_ListRuns_FullMethodName                      = "/ameliso.v1.AmelisoService/ListRuns"
+	AmelisoService_GetRun_FullMethodName                        = "/ameliso.v1.AmelisoService/GetRun"
+	AmelisoService_CreateRun_FullMethodName                     = "/ameliso.v1.AmelisoService/CreateRun"
+	AmelisoService_RecordResult_FullMethodName                  = "/ameliso.v1.AmelisoService/RecordResult"
+	AmelisoService_BulkRecordResults_FullMethodName             = "/ameliso.v1.AmelisoService/BulkRecordResults"
+	AmelisoService_FinalizeRun_FullMethodName                   = "/ameliso.v1.AmelisoService/FinalizeRun"
+	AmelisoService_DeleteRun_FullMethodName                     = "/ameliso.v1.AmelisoService/DeleteRun"
+	AmelisoService_RestoreRun_FullMethodName                    = "/ameliso.v1.AmelisoService/RestoreRun"
+	AmelisoService_GetPendingCases_FullMethodName               = "/ameliso.v1.AmelisoService/GetPendingCases"
+	AmelisoService_UpdateRun_FullMethodName                     = "/ameliso.v1.AmelisoService/UpdateRun"
+	AmelisoService_ClaimRun_FullMethodName                      = "/ameliso.v1.AmelisoService/ClaimRun"
+	AmelisoService_GetCoverageReport_FullMethodName             = "/ameliso.v1.AmelisoService/GetCoverageReport"
+	AmelisoService_GetRunTrendMetrics_FullMethodName            = "/ameliso.v1.AmelisoService/GetRunTrendMetrics"
+	AmelisoService_GetFlakyCases_FullMethodName                 = "/ameliso.v1.AmelisoService/GetFlakyCases"
+	AmelisoService_GetAffectedCases_FullMethodName              = "/ameliso.v1.AmelisoService/GetAffectedCases"
+	AmelisoService_GetRepoStatus_FullMethodName                 = "/ameliso.v1.AmelisoService/GetRepoStatus"
+	AmelisoService_CompareRuns_FullMethodName                   = "/ameliso.v1.AmelisoService/CompareRuns"
+	AmelisoService_GetTesterSuggestions_FullMethodName          = "/ameliso.v1.AmelisoService/GetTesterSuggestions"
+	AmelisoService_GetGitHubInstallUrl_FullMethodName           = "/ameliso.v1.AmelisoService/GetGitHubInstallUrl"
+	AmelisoService_HandleGitHubCallback_FullMethodName          = "/ameliso.v1.AmelisoService/HandleGitHubCallback"
+	AmelisoService_ListRepositories_FullMethodName              = "/ameliso.v1.AmelisoService/ListRepositories"
+	AmelisoService_SyncRepository_FullMethodName                = "/ameliso.v1.AmelisoService/SyncRepository"
+	AmelisoService_RemoveRepository_FullMethodName              = "/ameliso.v1.AmelisoService/RemoveRepository"
+	AmelisoService_RotateRepoApiKey_FullMethodName              = "/ameliso.v1.AmelisoService/RotateRepoApiKey"
+	AmelisoService_ListRepoTokens_FullMethodName                = "/ameliso.v1.AmelisoService/ListRepoTokens"
+	AmelisoService_CreateRepoToken_FullMethodName               = "/ameliso.v1.AmelisoService/CreateRepoToken"
+	AmelisoService_DeleteRepoToken_FullMethodName               = "/ameliso.v1.AmelisoService/DeleteRepoToken"
+	AmelisoService_UpdateRepoToken_FullMethodName               = "/ameliso.v1.AmelisoService/UpdateRepoToken"
+	AmelisoService_CreateUserToken_FullMethodName               = "/ameliso.v1.AmelisoService/CreateUserToken"
+	AmelisoService_ListUserTokens_FullMethodName                = "/ameliso.v1.AmelisoService/ListUserTokens"
+	AmelisoService_RevokeUserToken_FullMethodName               = "/ameliso.v1.AmelisoService/RevokeUserToken"
+	AmelisoService_RotateUserToken_FullMethodName               = "/ameliso.v1.AmelisoService/RotateUserToken"
+	AmelisoService_ListAuditLog_FullMethodName                  = "/ameliso.v1.AmelisoService/ListAuditLog"
+	AmelisoService_ListStrategies_FullMethodName                = "/ameliso.v1.AmelisoService/ListStrategies"
+	AmelisoService_GetStrategy_FullMethodName                   = "/ameliso.v1.AmelisoService/GetStrategy"
+	AmelisoService_CreateStrategy_FullMethodName                = "/ameliso.v1.AmelisoService/CreateStrategy"
+	AmelisoService_UpdateStrategy_FullMethodName                = "/ameliso.v1.AmelisoService/UpdateStrategy"
+	AmelisoService_DeleteStrategy_FullMethodName                = "/ameliso.v1.AmelisoService/DeleteStrategy"
+	AmelisoService_RestoreStrategy_FullMethodName               = "/ameliso.v1.AmelisoService/RestoreStrategy"
+	AmelisoService_ListRunTemplates_FullMethodName              = "/ameliso.v1.AmelisoService/ListRunTemplates"
+	AmelisoService_GetRunTemplate_FullMethodName                = "/ameliso.v1.AmelisoService/GetRunTemplate"
+	AmelisoService_CreateRunTemplate_FullMethodName             = "/ameliso.v1.AmelisoService/CreateRunTemplate"
+	AmelisoService_UpdateRunTemplate_FullMethodName             = "/ameliso.v1.AmelisoService/UpdateRunTemplate"
+	AmelisoService_DeleteRunTemplate_FullMethodName             = "/ameliso.v1.AmelisoService/DeleteRunTemplate"
+	AmelisoService_ListOutboundWebhooks_FullMethodName          = "/ameliso.v1.AmelisoService/ListOutboundWebhooks"
+	AmelisoService_CreateOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/CreateOutboundWebhook"
+	AmelisoService_UpdateOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/UpdateOutboundWebhook"
+	AmelisoService_DeleteOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/DeleteOutboundWebhook"
+	AmelisoService_ListOutboundWebhookDeliveries_FullMethodName = "/ameliso.v1.AmelisoService/ListOutboundWebhookDeliveries"
+	AmelisoService_ListPermissions_FullMethodName               = "/ameliso.v1.AmelisoService/ListPermissions"
+	AmelisoService_AddPermission_FullMethodName                 = "/ameliso.v1.AmelisoService/AddPermission"
+	AmelisoService_RemovePermission_FullMethodName              = "/ameliso.v1.AmelisoService/RemovePermission"
+	AmelisoService_WhoAmI_FullMethodName                        = "/ameliso.v1.AmelisoService/WhoAmI"
 )
 
 // AmelisoServiceClient is the client API for AmelisoService service.
@@ -128,6 +136,7 @@ type AmelisoServiceClient interface {
 	ListCases(ctx context.Context, in *ListCasesRequest, opts ...grpc.CallOption) (*ListCasesResponse, error)
 	GetCase(ctx context.Context, in *GetCaseRequest, opts ...grpc.CallOption) (*GetCaseResponse, error)
 	GetCaseHistory(ctx context.Context, in *GetCaseHistoryRequest, opts ...grpc.CallOption) (*GetCaseHistoryResponse, error)
+	GetCaseGitHistory(ctx context.Context, in *GetCaseGitHistoryRequest, opts ...grpc.CallOption) (*GetCaseGitHistoryResponse, error)
 	CreateCase(ctx context.Context, in *CreateCaseRequest, opts ...grpc.CallOption) (*CreateCaseResponse, error)
 	BulkCreateCases(ctx context.Context, in *BulkCreateCasesRequest, opts ...grpc.CallOption) (*BulkCreateCasesResponse, error)
 	UpdateCase(ctx context.Context, in *UpdateCaseRequest, opts ...grpc.CallOption) (*UpdateCaseResponse, error)
@@ -160,6 +169,10 @@ type AmelisoServiceClient interface {
 	// --- Reports ---
 	// Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
 	GetCoverageReport(ctx context.Context, in *GetCoverageReportRequest, opts ...grpc.CallOption) (*GetCoverageReportResponse, error)
+	// Pass-rate trend over a date range, per-day breakdown, and flaky case list.
+	GetRunTrendMetrics(ctx context.Context, in *GetRunTrendMetricsRequest, opts ...grpc.CallOption) (*GetRunTrendMetricsResponse, error)
+	// Top flaky cases by flip count, with configurable lookback and suite filter.
+	GetFlakyCases(ctx context.Context, in *GetFlakyCasesRequest, opts ...grpc.CallOption) (*GetFlakyCasesResponse, error)
 	// Return cases affected by source changes since since_ref (uses GitHub compare API).
 	// Sorted failed/never first then by priority — same ordering as GetPendingCases.
 	GetAffectedCases(ctx context.Context, in *GetAffectedCasesRequest, opts ...grpc.CallOption) (*GetAffectedCasesResponse, error)
@@ -207,6 +220,12 @@ type AmelisoServiceClient interface {
 	CreateRunTemplate(ctx context.Context, in *CreateRunTemplateRequest, opts ...grpc.CallOption) (*CreateRunTemplateResponse, error)
 	UpdateRunTemplate(ctx context.Context, in *UpdateRunTemplateRequest, opts ...grpc.CallOption) (*UpdateRunTemplateResponse, error)
 	DeleteRunTemplate(ctx context.Context, in *DeleteRunTemplateRequest, opts ...grpc.CallOption) (*DeleteRunTemplateResponse, error)
+	// --- Outbound Webhooks ---
+	ListOutboundWebhooks(ctx context.Context, in *ListOutboundWebhooksRequest, opts ...grpc.CallOption) (*ListOutboundWebhooksResponse, error)
+	CreateOutboundWebhook(ctx context.Context, in *CreateOutboundWebhookRequest, opts ...grpc.CallOption) (*CreateOutboundWebhookResponse, error)
+	UpdateOutboundWebhook(ctx context.Context, in *UpdateOutboundWebhookRequest, opts ...grpc.CallOption) (*UpdateOutboundWebhookResponse, error)
+	DeleteOutboundWebhook(ctx context.Context, in *DeleteOutboundWebhookRequest, opts ...grpc.CallOption) (*DeleteOutboundWebhookResponse, error)
+	ListOutboundWebhookDeliveries(ctx context.Context, in *ListOutboundWebhookDeliveriesRequest, opts ...grpc.CallOption) (*ListOutboundWebhookDeliveriesResponse, error)
 	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
 	AddPermission(ctx context.Context, in *AddPermissionRequest, opts ...grpc.CallOption) (*AddPermissionResponse, error)
 	RemovePermission(ctx context.Context, in *RemovePermissionRequest, opts ...grpc.CallOption) (*RemovePermissionResponse, error)
@@ -249,6 +268,16 @@ func (c *amelisoServiceClient) GetCaseHistory(ctx context.Context, in *GetCaseHi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCaseHistoryResponse)
 	err := c.cc.Invoke(ctx, AmelisoService_GetCaseHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) GetCaseGitHistory(ctx context.Context, in *GetCaseGitHistoryRequest, opts ...grpc.CallOption) (*GetCaseGitHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCaseGitHistoryResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_GetCaseGitHistory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -499,6 +528,26 @@ func (c *amelisoServiceClient) GetCoverageReport(ctx context.Context, in *GetCov
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCoverageReportResponse)
 	err := c.cc.Invoke(ctx, AmelisoService_GetCoverageReport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) GetRunTrendMetrics(ctx context.Context, in *GetRunTrendMetricsRequest, opts ...grpc.CallOption) (*GetRunTrendMetricsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRunTrendMetricsResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_GetRunTrendMetrics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) GetFlakyCases(ctx context.Context, in *GetFlakyCasesRequest, opts ...grpc.CallOption) (*GetFlakyCasesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFlakyCasesResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_GetFlakyCases_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -805,6 +854,56 @@ func (c *amelisoServiceClient) DeleteRunTemplate(ctx context.Context, in *Delete
 	return out, nil
 }
 
+func (c *amelisoServiceClient) ListOutboundWebhooks(ctx context.Context, in *ListOutboundWebhooksRequest, opts ...grpc.CallOption) (*ListOutboundWebhooksResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOutboundWebhooksResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListOutboundWebhooks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) CreateOutboundWebhook(ctx context.Context, in *CreateOutboundWebhookRequest, opts ...grpc.CallOption) (*CreateOutboundWebhookResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateOutboundWebhookResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_CreateOutboundWebhook_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) UpdateOutboundWebhook(ctx context.Context, in *UpdateOutboundWebhookRequest, opts ...grpc.CallOption) (*UpdateOutboundWebhookResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateOutboundWebhookResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_UpdateOutboundWebhook_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) DeleteOutboundWebhook(ctx context.Context, in *DeleteOutboundWebhookRequest, opts ...grpc.CallOption) (*DeleteOutboundWebhookResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteOutboundWebhookResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_DeleteOutboundWebhook_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) ListOutboundWebhookDeliveries(ctx context.Context, in *ListOutboundWebhookDeliveriesRequest, opts ...grpc.CallOption) (*ListOutboundWebhookDeliveriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOutboundWebhookDeliveriesResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ListOutboundWebhookDeliveries_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPermissionsResponse)
@@ -890,6 +989,7 @@ type AmelisoServiceServer interface {
 	ListCases(context.Context, *ListCasesRequest) (*ListCasesResponse, error)
 	GetCase(context.Context, *GetCaseRequest) (*GetCaseResponse, error)
 	GetCaseHistory(context.Context, *GetCaseHistoryRequest) (*GetCaseHistoryResponse, error)
+	GetCaseGitHistory(context.Context, *GetCaseGitHistoryRequest) (*GetCaseGitHistoryResponse, error)
 	CreateCase(context.Context, *CreateCaseRequest) (*CreateCaseResponse, error)
 	BulkCreateCases(context.Context, *BulkCreateCasesRequest) (*BulkCreateCasesResponse, error)
 	UpdateCase(context.Context, *UpdateCaseRequest) (*UpdateCaseResponse, error)
@@ -922,6 +1022,10 @@ type AmelisoServiceServer interface {
 	// --- Reports ---
 	// Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
 	GetCoverageReport(context.Context, *GetCoverageReportRequest) (*GetCoverageReportResponse, error)
+	// Pass-rate trend over a date range, per-day breakdown, and flaky case list.
+	GetRunTrendMetrics(context.Context, *GetRunTrendMetricsRequest) (*GetRunTrendMetricsResponse, error)
+	// Top flaky cases by flip count, with configurable lookback and suite filter.
+	GetFlakyCases(context.Context, *GetFlakyCasesRequest) (*GetFlakyCasesResponse, error)
 	// Return cases affected by source changes since since_ref (uses GitHub compare API).
 	// Sorted failed/never first then by priority — same ordering as GetPendingCases.
 	GetAffectedCases(context.Context, *GetAffectedCasesRequest) (*GetAffectedCasesResponse, error)
@@ -969,6 +1073,12 @@ type AmelisoServiceServer interface {
 	CreateRunTemplate(context.Context, *CreateRunTemplateRequest) (*CreateRunTemplateResponse, error)
 	UpdateRunTemplate(context.Context, *UpdateRunTemplateRequest) (*UpdateRunTemplateResponse, error)
 	DeleteRunTemplate(context.Context, *DeleteRunTemplateRequest) (*DeleteRunTemplateResponse, error)
+	// --- Outbound Webhooks ---
+	ListOutboundWebhooks(context.Context, *ListOutboundWebhooksRequest) (*ListOutboundWebhooksResponse, error)
+	CreateOutboundWebhook(context.Context, *CreateOutboundWebhookRequest) (*CreateOutboundWebhookResponse, error)
+	UpdateOutboundWebhook(context.Context, *UpdateOutboundWebhookRequest) (*UpdateOutboundWebhookResponse, error)
+	DeleteOutboundWebhook(context.Context, *DeleteOutboundWebhookRequest) (*DeleteOutboundWebhookResponse, error)
+	ListOutboundWebhookDeliveries(context.Context, *ListOutboundWebhookDeliveriesRequest) (*ListOutboundWebhookDeliveriesResponse, error)
 	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
 	AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionResponse, error)
 	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error)
@@ -995,6 +1105,9 @@ func (UnimplementedAmelisoServiceServer) GetCase(context.Context, *GetCaseReques
 }
 func (UnimplementedAmelisoServiceServer) GetCaseHistory(context.Context, *GetCaseHistoryRequest) (*GetCaseHistoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCaseHistory not implemented")
+}
+func (UnimplementedAmelisoServiceServer) GetCaseGitHistory(context.Context, *GetCaseGitHistoryRequest) (*GetCaseGitHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCaseGitHistory not implemented")
 }
 func (UnimplementedAmelisoServiceServer) CreateCase(context.Context, *CreateCaseRequest) (*CreateCaseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateCase not implemented")
@@ -1070,6 +1183,12 @@ func (UnimplementedAmelisoServiceServer) ClaimRun(context.Context, *ClaimRunRequ
 }
 func (UnimplementedAmelisoServiceServer) GetCoverageReport(context.Context, *GetCoverageReportRequest) (*GetCoverageReportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCoverageReport not implemented")
+}
+func (UnimplementedAmelisoServiceServer) GetRunTrendMetrics(context.Context, *GetRunTrendMetricsRequest) (*GetRunTrendMetricsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRunTrendMetrics not implemented")
+}
+func (UnimplementedAmelisoServiceServer) GetFlakyCases(context.Context, *GetFlakyCasesRequest) (*GetFlakyCasesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFlakyCases not implemented")
 }
 func (UnimplementedAmelisoServiceServer) GetAffectedCases(context.Context, *GetAffectedCasesRequest) (*GetAffectedCasesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAffectedCases not implemented")
@@ -1161,6 +1280,21 @@ func (UnimplementedAmelisoServiceServer) UpdateRunTemplate(context.Context, *Upd
 func (UnimplementedAmelisoServiceServer) DeleteRunTemplate(context.Context, *DeleteRunTemplateRequest) (*DeleteRunTemplateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteRunTemplate not implemented")
 }
+func (UnimplementedAmelisoServiceServer) ListOutboundWebhooks(context.Context, *ListOutboundWebhooksRequest) (*ListOutboundWebhooksResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListOutboundWebhooks not implemented")
+}
+func (UnimplementedAmelisoServiceServer) CreateOutboundWebhook(context.Context, *CreateOutboundWebhookRequest) (*CreateOutboundWebhookResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateOutboundWebhook not implemented")
+}
+func (UnimplementedAmelisoServiceServer) UpdateOutboundWebhook(context.Context, *UpdateOutboundWebhookRequest) (*UpdateOutboundWebhookResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateOutboundWebhook not implemented")
+}
+func (UnimplementedAmelisoServiceServer) DeleteOutboundWebhook(context.Context, *DeleteOutboundWebhookRequest) (*DeleteOutboundWebhookResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteOutboundWebhook not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ListOutboundWebhookDeliveries(context.Context, *ListOutboundWebhookDeliveriesRequest) (*ListOutboundWebhookDeliveriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListOutboundWebhookDeliveries not implemented")
+}
 func (UnimplementedAmelisoServiceServer) ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPermissions not implemented")
 }
@@ -1244,6 +1378,24 @@ func _AmelisoService_GetCaseHistory_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AmelisoServiceServer).GetCaseHistory(ctx, req.(*GetCaseHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_GetCaseGitHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCaseGitHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).GetCaseGitHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_GetCaseGitHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).GetCaseGitHistory(ctx, req.(*GetCaseGitHistoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1694,6 +1846,42 @@ func _AmelisoService_GetCoverageReport_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AmelisoServiceServer).GetCoverageReport(ctx, req.(*GetCoverageReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_GetRunTrendMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRunTrendMetricsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).GetRunTrendMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_GetRunTrendMetrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).GetRunTrendMetrics(ctx, req.(*GetRunTrendMetricsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_GetFlakyCases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFlakyCasesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).GetFlakyCases(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_GetFlakyCases_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).GetFlakyCases(ctx, req.(*GetFlakyCasesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2238,6 +2426,96 @@ func _AmelisoService_DeleteRunTemplate_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_ListOutboundWebhooks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOutboundWebhooksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListOutboundWebhooks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListOutboundWebhooks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListOutboundWebhooks(ctx, req.(*ListOutboundWebhooksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_CreateOutboundWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateOutboundWebhookRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).CreateOutboundWebhook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_CreateOutboundWebhook_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).CreateOutboundWebhook(ctx, req.(*CreateOutboundWebhookRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_UpdateOutboundWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateOutboundWebhookRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).UpdateOutboundWebhook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_UpdateOutboundWebhook_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).UpdateOutboundWebhook(ctx, req.(*UpdateOutboundWebhookRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_DeleteOutboundWebhook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteOutboundWebhookRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).DeleteOutboundWebhook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_DeleteOutboundWebhook_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).DeleteOutboundWebhook(ctx, req.(*DeleteOutboundWebhookRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_ListOutboundWebhookDeliveries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOutboundWebhookDeliveriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ListOutboundWebhookDeliveries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ListOutboundWebhookDeliveries_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ListOutboundWebhookDeliveries(ctx, req.(*ListOutboundWebhookDeliveriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_ListPermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPermissionsRequest)
 	if err := dec(in); err != nil {
@@ -2328,6 +2606,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCaseHistory",
 			Handler:    _AmelisoService_GetCaseHistory_Handler,
+		},
+		{
+			MethodName: "GetCaseGitHistory",
+			Handler:    _AmelisoService_GetCaseGitHistory_Handler,
 		},
 		{
 			MethodName: "CreateCase",
@@ -2428,6 +2710,14 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCoverageReport",
 			Handler:    _AmelisoService_GetCoverageReport_Handler,
+		},
+		{
+			MethodName: "GetRunTrendMetrics",
+			Handler:    _AmelisoService_GetRunTrendMetrics_Handler,
+		},
+		{
+			MethodName: "GetFlakyCases",
+			Handler:    _AmelisoService_GetFlakyCases_Handler,
 		},
 		{
 			MethodName: "GetAffectedCases",
@@ -2548,6 +2838,26 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteRunTemplate",
 			Handler:    _AmelisoService_DeleteRunTemplate_Handler,
+		},
+		{
+			MethodName: "ListOutboundWebhooks",
+			Handler:    _AmelisoService_ListOutboundWebhooks_Handler,
+		},
+		{
+			MethodName: "CreateOutboundWebhook",
+			Handler:    _AmelisoService_CreateOutboundWebhook_Handler,
+		},
+		{
+			MethodName: "UpdateOutboundWebhook",
+			Handler:    _AmelisoService_UpdateOutboundWebhook_Handler,
+		},
+		{
+			MethodName: "DeleteOutboundWebhook",
+			Handler:    _AmelisoService_DeleteOutboundWebhook_Handler,
+		},
+		{
+			MethodName: "ListOutboundWebhookDeliveries",
+			Handler:    _AmelisoService_ListOutboundWebhookDeliveries_Handler,
 		},
 		{
 			MethodName: "ListPermissions",

@@ -518,6 +518,111 @@ func (x *GetCaseHistoryResponse) GetTotalCount() int32 {
 	return 0
 }
 
+type GetCaseGitHistoryRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	RepoId   string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	CasePath string                 `protobuf:"bytes,2,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	// 0 = use default (20)
+	Limit         int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCaseGitHistoryRequest) Reset() {
+	*x = GetCaseGitHistoryRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCaseGitHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCaseGitHistoryRequest) ProtoMessage() {}
+
+func (x *GetCaseGitHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCaseGitHistoryRequest.ProtoReflect.Descriptor instead.
+func (*GetCaseGitHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetCaseGitHistoryRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *GetCaseGitHistoryRequest) GetCasePath() string {
+	if x != nil {
+		return x.CasePath
+	}
+	return ""
+}
+
+func (x *GetCaseGitHistoryRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type GetCaseGitHistoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Commits       []*CaseGitCommit       `protobuf:"bytes,1,rep,name=commits,proto3" json:"commits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCaseGitHistoryResponse) Reset() {
+	*x = GetCaseGitHistoryResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCaseGitHistoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCaseGitHistoryResponse) ProtoMessage() {}
+
+func (x *GetCaseGitHistoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCaseGitHistoryResponse.ProtoReflect.Descriptor instead.
+func (*GetCaseGitHistoryResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetCaseGitHistoryResponse) GetCommits() []*CaseGitCommit {
+	if x != nil {
+		return x.Commits
+	}
+	return nil
+}
+
 type CreateCaseRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	RepoId      string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
@@ -537,7 +642,7 @@ type CreateCaseRequest struct {
 
 func (x *CreateCaseRequest) Reset() {
 	*x = CreateCaseRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[7]
+	mi := &file_ameliso_v1_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -549,7 +654,7 @@ func (x *CreateCaseRequest) String() string {
 func (*CreateCaseRequest) ProtoMessage() {}
 
 func (x *CreateCaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[7]
+	mi := &file_ameliso_v1_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -562,7 +667,7 @@ func (x *CreateCaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCaseRequest.ProtoReflect.Descriptor instead.
 func (*CreateCaseRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{7}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CreateCaseRequest) GetRepoId() string {
@@ -645,7 +750,7 @@ type CreateCaseResponse struct {
 
 func (x *CreateCaseResponse) Reset() {
 	*x = CreateCaseResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[8]
+	mi := &file_ameliso_v1_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +762,7 @@ func (x *CreateCaseResponse) String() string {
 func (*CreateCaseResponse) ProtoMessage() {}
 
 func (x *CreateCaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[8]
+	mi := &file_ameliso_v1_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +775,7 @@ func (x *CreateCaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCaseResponse.ProtoReflect.Descriptor instead.
 func (*CreateCaseResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{8}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreateCaseResponse) GetCase() *Case {
@@ -701,7 +806,7 @@ type BulkCaseEntry struct {
 
 func (x *BulkCaseEntry) Reset() {
 	*x = BulkCaseEntry{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[9]
+	mi := &file_ameliso_v1_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -713,7 +818,7 @@ func (x *BulkCaseEntry) String() string {
 func (*BulkCaseEntry) ProtoMessage() {}
 
 func (x *BulkCaseEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[9]
+	mi := &file_ameliso_v1_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,7 +831,7 @@ func (x *BulkCaseEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkCaseEntry.ProtoReflect.Descriptor instead.
 func (*BulkCaseEntry) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{9}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *BulkCaseEntry) GetCasePath() string {
@@ -789,7 +894,7 @@ type BulkCreateCasesRequest struct {
 
 func (x *BulkCreateCasesRequest) Reset() {
 	*x = BulkCreateCasesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[10]
+	mi := &file_ameliso_v1_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -801,7 +906,7 @@ func (x *BulkCreateCasesRequest) String() string {
 func (*BulkCreateCasesRequest) ProtoMessage() {}
 
 func (x *BulkCreateCasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[10]
+	mi := &file_ameliso_v1_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -814,7 +919,7 @@ func (x *BulkCreateCasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkCreateCasesRequest.ProtoReflect.Descriptor instead.
 func (*BulkCreateCasesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{10}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *BulkCreateCasesRequest) GetRepoId() string {
@@ -862,7 +967,7 @@ type BulkCreateCasesResponse struct {
 
 func (x *BulkCreateCasesResponse) Reset() {
 	*x = BulkCreateCasesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[11]
+	mi := &file_ameliso_v1_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -874,7 +979,7 @@ func (x *BulkCreateCasesResponse) String() string {
 func (*BulkCreateCasesResponse) ProtoMessage() {}
 
 func (x *BulkCreateCasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[11]
+	mi := &file_ameliso_v1_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -887,7 +992,7 @@ func (x *BulkCreateCasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkCreateCasesResponse.ProtoReflect.Descriptor instead.
 func (*BulkCreateCasesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{11}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *BulkCreateCasesResponse) GetCases() []*Case {
@@ -950,7 +1055,7 @@ type UpdateCaseRequest struct {
 
 func (x *UpdateCaseRequest) Reset() {
 	*x = UpdateCaseRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[12]
+	mi := &file_ameliso_v1_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -962,7 +1067,7 @@ func (x *UpdateCaseRequest) String() string {
 func (*UpdateCaseRequest) ProtoMessage() {}
 
 func (x *UpdateCaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[12]
+	mi := &file_ameliso_v1_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -975,7 +1080,7 @@ func (x *UpdateCaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCaseRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{12}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UpdateCaseRequest) GetRepoId() string {
@@ -1078,7 +1183,7 @@ type UpdateCaseResponse struct {
 
 func (x *UpdateCaseResponse) Reset() {
 	*x = UpdateCaseResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[13]
+	mi := &file_ameliso_v1_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1090,7 +1195,7 @@ func (x *UpdateCaseResponse) String() string {
 func (*UpdateCaseResponse) ProtoMessage() {}
 
 func (x *UpdateCaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[13]
+	mi := &file_ameliso_v1_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1103,7 +1208,7 @@ func (x *UpdateCaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCaseResponse.ProtoReflect.Descriptor instead.
 func (*UpdateCaseResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{13}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UpdateCaseResponse) GetCase() *Case {
@@ -1127,7 +1232,7 @@ type BulkUpdateEntry struct {
 
 func (x *BulkUpdateEntry) Reset() {
 	*x = BulkUpdateEntry{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[14]
+	mi := &file_ameliso_v1_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1139,7 +1244,7 @@ func (x *BulkUpdateEntry) String() string {
 func (*BulkUpdateEntry) ProtoMessage() {}
 
 func (x *BulkUpdateEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[14]
+	mi := &file_ameliso_v1_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1152,7 +1257,7 @@ func (x *BulkUpdateEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkUpdateEntry.ProtoReflect.Descriptor instead.
 func (*BulkUpdateEntry) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{14}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *BulkUpdateEntry) GetCasePath() string {
@@ -1207,7 +1312,7 @@ type BulkUpdateCasesRequest struct {
 
 func (x *BulkUpdateCasesRequest) Reset() {
 	*x = BulkUpdateCasesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[15]
+	mi := &file_ameliso_v1_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1219,7 +1324,7 @@ func (x *BulkUpdateCasesRequest) String() string {
 func (*BulkUpdateCasesRequest) ProtoMessage() {}
 
 func (x *BulkUpdateCasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[15]
+	mi := &file_ameliso_v1_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1232,7 +1337,7 @@ func (x *BulkUpdateCasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkUpdateCasesRequest.ProtoReflect.Descriptor instead.
 func (*BulkUpdateCasesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{15}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *BulkUpdateCasesRequest) GetRepoId() string {
@@ -1258,7 +1363,7 @@ type BulkUpdateCasesResponse struct {
 
 func (x *BulkUpdateCasesResponse) Reset() {
 	*x = BulkUpdateCasesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[16]
+	mi := &file_ameliso_v1_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1270,7 +1375,7 @@ func (x *BulkUpdateCasesResponse) String() string {
 func (*BulkUpdateCasesResponse) ProtoMessage() {}
 
 func (x *BulkUpdateCasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[16]
+	mi := &file_ameliso_v1_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1283,7 +1388,7 @@ func (x *BulkUpdateCasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkUpdateCasesResponse.ProtoReflect.Descriptor instead.
 func (*BulkUpdateCasesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{16}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *BulkUpdateCasesResponse) GetCases() []*Case {
@@ -1303,7 +1408,7 @@ type DeleteCaseRequest struct {
 
 func (x *DeleteCaseRequest) Reset() {
 	*x = DeleteCaseRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[17]
+	mi := &file_ameliso_v1_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1315,7 +1420,7 @@ func (x *DeleteCaseRequest) String() string {
 func (*DeleteCaseRequest) ProtoMessage() {}
 
 func (x *DeleteCaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[17]
+	mi := &file_ameliso_v1_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1328,7 +1433,7 @@ func (x *DeleteCaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCaseRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCaseRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{17}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DeleteCaseRequest) GetRepoId() string {
@@ -1354,7 +1459,7 @@ type DeleteCaseResponse struct {
 
 func (x *DeleteCaseResponse) Reset() {
 	*x = DeleteCaseResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[18]
+	mi := &file_ameliso_v1_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1366,7 +1471,7 @@ func (x *DeleteCaseResponse) String() string {
 func (*DeleteCaseResponse) ProtoMessage() {}
 
 func (x *DeleteCaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[18]
+	mi := &file_ameliso_v1_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1484,7 @@ func (x *DeleteCaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCaseResponse.ProtoReflect.Descriptor instead.
 func (*DeleteCaseResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{18}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DeleteCaseResponse) GetFilePath() string {
@@ -1399,7 +1504,7 @@ type BulkDeleteCasesRequest struct {
 
 func (x *BulkDeleteCasesRequest) Reset() {
 	*x = BulkDeleteCasesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[19]
+	mi := &file_ameliso_v1_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1411,7 +1516,7 @@ func (x *BulkDeleteCasesRequest) String() string {
 func (*BulkDeleteCasesRequest) ProtoMessage() {}
 
 func (x *BulkDeleteCasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[19]
+	mi := &file_ameliso_v1_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1424,7 +1529,7 @@ func (x *BulkDeleteCasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkDeleteCasesRequest.ProtoReflect.Descriptor instead.
 func (*BulkDeleteCasesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{19}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *BulkDeleteCasesRequest) GetRepoId() string {
@@ -1450,7 +1555,7 @@ type BulkDeleteCasesResponse struct {
 
 func (x *BulkDeleteCasesResponse) Reset() {
 	*x = BulkDeleteCasesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[20]
+	mi := &file_ameliso_v1_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1462,7 +1567,7 @@ func (x *BulkDeleteCasesResponse) String() string {
 func (*BulkDeleteCasesResponse) ProtoMessage() {}
 
 func (x *BulkDeleteCasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[20]
+	mi := &file_ameliso_v1_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1475,7 +1580,7 @@ func (x *BulkDeleteCasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkDeleteCasesResponse.ProtoReflect.Descriptor instead.
 func (*BulkDeleteCasesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{20}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *BulkDeleteCasesResponse) GetFilePaths() []string {
@@ -1495,7 +1600,7 @@ type RestoreCaseRequest struct {
 
 func (x *RestoreCaseRequest) Reset() {
 	*x = RestoreCaseRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[21]
+	mi := &file_ameliso_v1_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1507,7 +1612,7 @@ func (x *RestoreCaseRequest) String() string {
 func (*RestoreCaseRequest) ProtoMessage() {}
 
 func (x *RestoreCaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[21]
+	mi := &file_ameliso_v1_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1520,7 +1625,7 @@ func (x *RestoreCaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreCaseRequest.ProtoReflect.Descriptor instead.
 func (*RestoreCaseRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{21}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *RestoreCaseRequest) GetRepoId() string {
@@ -1545,7 +1650,7 @@ type RestoreCaseResponse struct {
 
 func (x *RestoreCaseResponse) Reset() {
 	*x = RestoreCaseResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[22]
+	mi := &file_ameliso_v1_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1557,7 +1662,7 @@ func (x *RestoreCaseResponse) String() string {
 func (*RestoreCaseResponse) ProtoMessage() {}
 
 func (x *RestoreCaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[22]
+	mi := &file_ameliso_v1_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1570,7 +1675,7 @@ func (x *RestoreCaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreCaseResponse.ProtoReflect.Descriptor instead.
 func (*RestoreCaseResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{22}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{24}
 }
 
 type ListSuitesRequest struct {
@@ -1587,7 +1692,7 @@ type ListSuitesRequest struct {
 
 func (x *ListSuitesRequest) Reset() {
 	*x = ListSuitesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[23]
+	mi := &file_ameliso_v1_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1599,7 +1704,7 @@ func (x *ListSuitesRequest) String() string {
 func (*ListSuitesRequest) ProtoMessage() {}
 
 func (x *ListSuitesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[23]
+	mi := &file_ameliso_v1_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1612,7 +1717,7 @@ func (x *ListSuitesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSuitesRequest.ProtoReflect.Descriptor instead.
 func (*ListSuitesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{23}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListSuitesRequest) GetRepoId() string {
@@ -1654,7 +1759,7 @@ type ListSuitesResponse struct {
 
 func (x *ListSuitesResponse) Reset() {
 	*x = ListSuitesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[24]
+	mi := &file_ameliso_v1_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1666,7 +1771,7 @@ func (x *ListSuitesResponse) String() string {
 func (*ListSuitesResponse) ProtoMessage() {}
 
 func (x *ListSuitesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[24]
+	mi := &file_ameliso_v1_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1679,7 +1784,7 @@ func (x *ListSuitesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSuitesResponse.ProtoReflect.Descriptor instead.
 func (*ListSuitesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{24}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListSuitesResponse) GetSuites() []*Suite {
@@ -1713,7 +1818,7 @@ type GetSuiteRequest struct {
 
 func (x *GetSuiteRequest) Reset() {
 	*x = GetSuiteRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[25]
+	mi := &file_ameliso_v1_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1725,7 +1830,7 @@ func (x *GetSuiteRequest) String() string {
 func (*GetSuiteRequest) ProtoMessage() {}
 
 func (x *GetSuiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[25]
+	mi := &file_ameliso_v1_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1738,7 +1843,7 @@ func (x *GetSuiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSuiteRequest.ProtoReflect.Descriptor instead.
 func (*GetSuiteRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{25}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *GetSuiteRequest) GetRepoId() string {
@@ -1764,7 +1869,7 @@ type GetSuiteResponse struct {
 
 func (x *GetSuiteResponse) Reset() {
 	*x = GetSuiteResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[26]
+	mi := &file_ameliso_v1_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1776,7 +1881,7 @@ func (x *GetSuiteResponse) String() string {
 func (*GetSuiteResponse) ProtoMessage() {}
 
 func (x *GetSuiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[26]
+	mi := &file_ameliso_v1_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1789,7 +1894,7 @@ func (x *GetSuiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSuiteResponse.ProtoReflect.Descriptor instead.
 func (*GetSuiteResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{26}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *GetSuiteResponse) GetSuite() *Suite {
@@ -1812,7 +1917,7 @@ type CreateSuiteRequest struct {
 
 func (x *CreateSuiteRequest) Reset() {
 	*x = CreateSuiteRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[27]
+	mi := &file_ameliso_v1_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1824,7 +1929,7 @@ func (x *CreateSuiteRequest) String() string {
 func (*CreateSuiteRequest) ProtoMessage() {}
 
 func (x *CreateSuiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[27]
+	mi := &file_ameliso_v1_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1837,7 +1942,7 @@ func (x *CreateSuiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSuiteRequest.ProtoReflect.Descriptor instead.
 func (*CreateSuiteRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{27}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *CreateSuiteRequest) GetRepoId() string {
@@ -1885,7 +1990,7 @@ type CreateSuiteResponse struct {
 
 func (x *CreateSuiteResponse) Reset() {
 	*x = CreateSuiteResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[28]
+	mi := &file_ameliso_v1_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1897,7 +2002,7 @@ func (x *CreateSuiteResponse) String() string {
 func (*CreateSuiteResponse) ProtoMessage() {}
 
 func (x *CreateSuiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[28]
+	mi := &file_ameliso_v1_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1910,7 +2015,7 @@ func (x *CreateSuiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSuiteResponse.ProtoReflect.Descriptor instead.
 func (*CreateSuiteResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{28}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *CreateSuiteResponse) GetSuite() *Suite {
@@ -1944,7 +2049,7 @@ type UpdateSuiteRequest struct {
 
 func (x *UpdateSuiteRequest) Reset() {
 	*x = UpdateSuiteRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[29]
+	mi := &file_ameliso_v1_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1956,7 +2061,7 @@ func (x *UpdateSuiteRequest) String() string {
 func (*UpdateSuiteRequest) ProtoMessage() {}
 
 func (x *UpdateSuiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[29]
+	mi := &file_ameliso_v1_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1969,7 +2074,7 @@ func (x *UpdateSuiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSuiteRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSuiteRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{29}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *UpdateSuiteRequest) GetRepoId() string {
@@ -2030,7 +2135,7 @@ type UpdateSuiteResponse struct {
 
 func (x *UpdateSuiteResponse) Reset() {
 	*x = UpdateSuiteResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[30]
+	mi := &file_ameliso_v1_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2042,7 +2147,7 @@ func (x *UpdateSuiteResponse) String() string {
 func (*UpdateSuiteResponse) ProtoMessage() {}
 
 func (x *UpdateSuiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[30]
+	mi := &file_ameliso_v1_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2055,7 +2160,7 @@ func (x *UpdateSuiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSuiteResponse.ProtoReflect.Descriptor instead.
 func (*UpdateSuiteResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{30}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *UpdateSuiteResponse) GetSuite() *Suite {
@@ -2075,7 +2180,7 @@ type DeleteSuiteRequest struct {
 
 func (x *DeleteSuiteRequest) Reset() {
 	*x = DeleteSuiteRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[31]
+	mi := &file_ameliso_v1_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2087,7 +2192,7 @@ func (x *DeleteSuiteRequest) String() string {
 func (*DeleteSuiteRequest) ProtoMessage() {}
 
 func (x *DeleteSuiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[31]
+	mi := &file_ameliso_v1_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2100,7 +2205,7 @@ func (x *DeleteSuiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSuiteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSuiteRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{31}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *DeleteSuiteRequest) GetRepoId() string {
@@ -2126,7 +2231,7 @@ type DeleteSuiteResponse struct {
 
 func (x *DeleteSuiteResponse) Reset() {
 	*x = DeleteSuiteResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[32]
+	mi := &file_ameliso_v1_service_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2138,7 +2243,7 @@ func (x *DeleteSuiteResponse) String() string {
 func (*DeleteSuiteResponse) ProtoMessage() {}
 
 func (x *DeleteSuiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[32]
+	mi := &file_ameliso_v1_service_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2151,7 +2256,7 @@ func (x *DeleteSuiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSuiteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteSuiteResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{32}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *DeleteSuiteResponse) GetFilePath() string {
@@ -2171,7 +2276,7 @@ type RestoreSuiteRequest struct {
 
 func (x *RestoreSuiteRequest) Reset() {
 	*x = RestoreSuiteRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[33]
+	mi := &file_ameliso_v1_service_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2183,7 +2288,7 @@ func (x *RestoreSuiteRequest) String() string {
 func (*RestoreSuiteRequest) ProtoMessage() {}
 
 func (x *RestoreSuiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[33]
+	mi := &file_ameliso_v1_service_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2196,7 +2301,7 @@ func (x *RestoreSuiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreSuiteRequest.ProtoReflect.Descriptor instead.
 func (*RestoreSuiteRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{33}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *RestoreSuiteRequest) GetRepoId() string {
@@ -2221,7 +2326,7 @@ type RestoreSuiteResponse struct {
 
 func (x *RestoreSuiteResponse) Reset() {
 	*x = RestoreSuiteResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[34]
+	mi := &file_ameliso_v1_service_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2233,7 +2338,7 @@ func (x *RestoreSuiteResponse) String() string {
 func (*RestoreSuiteResponse) ProtoMessage() {}
 
 func (x *RestoreSuiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[34]
+	mi := &file_ameliso_v1_service_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2246,7 +2351,7 @@ func (x *RestoreSuiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreSuiteResponse.ProtoReflect.Descriptor instead.
 func (*RestoreSuiteResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{34}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{36}
 }
 
 type ListRunsRequest struct {
@@ -2266,7 +2371,7 @@ type ListRunsRequest struct {
 
 func (x *ListRunsRequest) Reset() {
 	*x = ListRunsRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[35]
+	mi := &file_ameliso_v1_service_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2278,7 +2383,7 @@ func (x *ListRunsRequest) String() string {
 func (*ListRunsRequest) ProtoMessage() {}
 
 func (x *ListRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[35]
+	mi := &file_ameliso_v1_service_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2291,7 +2396,7 @@ func (x *ListRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunsRequest.ProtoReflect.Descriptor instead.
 func (*ListRunsRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{35}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ListRunsRequest) GetRepoId() string {
@@ -2347,7 +2452,7 @@ type ListRunsResponse struct {
 
 func (x *ListRunsResponse) Reset() {
 	*x = ListRunsResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[36]
+	mi := &file_ameliso_v1_service_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2359,7 +2464,7 @@ func (x *ListRunsResponse) String() string {
 func (*ListRunsResponse) ProtoMessage() {}
 
 func (x *ListRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[36]
+	mi := &file_ameliso_v1_service_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2372,7 +2477,7 @@ func (x *ListRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunsResponse.ProtoReflect.Descriptor instead.
 func (*ListRunsResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{36}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ListRunsResponse) GetRuns() []*RunMeta {
@@ -2409,7 +2514,7 @@ type GetRunRequest struct {
 
 func (x *GetRunRequest) Reset() {
 	*x = GetRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[37]
+	mi := &file_ameliso_v1_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2421,7 +2526,7 @@ func (x *GetRunRequest) String() string {
 func (*GetRunRequest) ProtoMessage() {}
 
 func (x *GetRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[37]
+	mi := &file_ameliso_v1_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2434,7 +2539,7 @@ func (x *GetRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunRequest.ProtoReflect.Descriptor instead.
 func (*GetRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{37}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetRunRequest) GetRepoId() string {
@@ -2478,7 +2583,7 @@ type GetRunResponse struct {
 
 func (x *GetRunResponse) Reset() {
 	*x = GetRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[38]
+	mi := &file_ameliso_v1_service_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2490,7 +2595,7 @@ func (x *GetRunResponse) String() string {
 func (*GetRunResponse) ProtoMessage() {}
 
 func (x *GetRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[38]
+	mi := &file_ameliso_v1_service_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2503,7 +2608,7 @@ func (x *GetRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunResponse.ProtoReflect.Descriptor instead.
 func (*GetRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{38}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *GetRunResponse) GetRun() *Run {
@@ -2562,7 +2667,7 @@ type CreateRunRequest struct {
 
 func (x *CreateRunRequest) Reset() {
 	*x = CreateRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[39]
+	mi := &file_ameliso_v1_service_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2574,7 +2679,7 @@ func (x *CreateRunRequest) String() string {
 func (*CreateRunRequest) ProtoMessage() {}
 
 func (x *CreateRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[39]
+	mi := &file_ameliso_v1_service_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2587,7 +2692,7 @@ func (x *CreateRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRunRequest.ProtoReflect.Descriptor instead.
 func (*CreateRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{39}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *CreateRunRequest) GetRepoId() string {
@@ -2688,7 +2793,7 @@ type CreateRunResponse struct {
 
 func (x *CreateRunResponse) Reset() {
 	*x = CreateRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[40]
+	mi := &file_ameliso_v1_service_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2700,7 +2805,7 @@ func (x *CreateRunResponse) String() string {
 func (*CreateRunResponse) ProtoMessage() {}
 
 func (x *CreateRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[40]
+	mi := &file_ameliso_v1_service_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2713,7 +2818,7 @@ func (x *CreateRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRunResponse.ProtoReflect.Descriptor instead.
 func (*CreateRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{40}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *CreateRunResponse) GetRun() *RunMeta {
@@ -2770,7 +2875,7 @@ type RecordResultRequest struct {
 
 func (x *RecordResultRequest) Reset() {
 	*x = RecordResultRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[41]
+	mi := &file_ameliso_v1_service_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2782,7 +2887,7 @@ func (x *RecordResultRequest) String() string {
 func (*RecordResultRequest) ProtoMessage() {}
 
 func (x *RecordResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[41]
+	mi := &file_ameliso_v1_service_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2795,7 +2900,7 @@ func (x *RecordResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordResultRequest.ProtoReflect.Descriptor instead.
 func (*RecordResultRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{41}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *RecordResultRequest) GetRepoId() string {
@@ -2868,7 +2973,7 @@ type RecordResultResponse struct {
 
 func (x *RecordResultResponse) Reset() {
 	*x = RecordResultResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[42]
+	mi := &file_ameliso_v1_service_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2880,7 +2985,7 @@ func (x *RecordResultResponse) String() string {
 func (*RecordResultResponse) ProtoMessage() {}
 
 func (x *RecordResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[42]
+	mi := &file_ameliso_v1_service_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2893,7 +2998,7 @@ func (x *RecordResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordResultResponse.ProtoReflect.Descriptor instead.
 func (*RecordResultResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{42}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *RecordResultResponse) GetResult() *CaseResult {
@@ -2941,7 +3046,7 @@ type BulkResultEntry struct {
 
 func (x *BulkResultEntry) Reset() {
 	*x = BulkResultEntry{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[43]
+	mi := &file_ameliso_v1_service_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2953,7 +3058,7 @@ func (x *BulkResultEntry) String() string {
 func (*BulkResultEntry) ProtoMessage() {}
 
 func (x *BulkResultEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[43]
+	mi := &file_ameliso_v1_service_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2966,7 +3071,7 @@ func (x *BulkResultEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkResultEntry.ProtoReflect.Descriptor instead.
 func (*BulkResultEntry) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{43}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *BulkResultEntry) GetCasePath() string {
@@ -3026,7 +3131,7 @@ type BulkRecordResultsRequest struct {
 
 func (x *BulkRecordResultsRequest) Reset() {
 	*x = BulkRecordResultsRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[44]
+	mi := &file_ameliso_v1_service_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3038,7 +3143,7 @@ func (x *BulkRecordResultsRequest) String() string {
 func (*BulkRecordResultsRequest) ProtoMessage() {}
 
 func (x *BulkRecordResultsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[44]
+	mi := &file_ameliso_v1_service_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3051,7 +3156,7 @@ func (x *BulkRecordResultsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkRecordResultsRequest.ProtoReflect.Descriptor instead.
 func (*BulkRecordResultsRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{44}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *BulkRecordResultsRequest) GetRepoId() string {
@@ -3096,7 +3201,7 @@ type BulkRecordResultsResponse struct {
 
 func (x *BulkRecordResultsResponse) Reset() {
 	*x = BulkRecordResultsResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[45]
+	mi := &file_ameliso_v1_service_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3108,7 +3213,7 @@ func (x *BulkRecordResultsResponse) String() string {
 func (*BulkRecordResultsResponse) ProtoMessage() {}
 
 func (x *BulkRecordResultsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[45]
+	mi := &file_ameliso_v1_service_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3121,7 +3226,7 @@ func (x *BulkRecordResultsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkRecordResultsResponse.ProtoReflect.Descriptor instead.
 func (*BulkRecordResultsResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{45}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *BulkRecordResultsResponse) GetResults() []*CaseResult {
@@ -3165,7 +3270,7 @@ type FinalizeRunRequest struct {
 
 func (x *FinalizeRunRequest) Reset() {
 	*x = FinalizeRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[46]
+	mi := &file_ameliso_v1_service_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3177,7 +3282,7 @@ func (x *FinalizeRunRequest) String() string {
 func (*FinalizeRunRequest) ProtoMessage() {}
 
 func (x *FinalizeRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[46]
+	mi := &file_ameliso_v1_service_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3190,7 +3295,7 @@ func (x *FinalizeRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FinalizeRunRequest.ProtoReflect.Descriptor instead.
 func (*FinalizeRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{46}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *FinalizeRunRequest) GetRepoId() string {
@@ -3226,7 +3331,7 @@ type FinalizeRunResponse struct {
 
 func (x *FinalizeRunResponse) Reset() {
 	*x = FinalizeRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[47]
+	mi := &file_ameliso_v1_service_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3238,7 +3343,7 @@ func (x *FinalizeRunResponse) String() string {
 func (*FinalizeRunResponse) ProtoMessage() {}
 
 func (x *FinalizeRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[47]
+	mi := &file_ameliso_v1_service_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3251,7 +3356,7 @@ func (x *FinalizeRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FinalizeRunResponse.ProtoReflect.Descriptor instead.
 func (*FinalizeRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{47}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *FinalizeRunResponse) GetRun() *RunMeta {
@@ -3278,7 +3383,7 @@ type DeleteRunRequest struct {
 
 func (x *DeleteRunRequest) Reset() {
 	*x = DeleteRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[48]
+	mi := &file_ameliso_v1_service_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3290,7 +3395,7 @@ func (x *DeleteRunRequest) String() string {
 func (*DeleteRunRequest) ProtoMessage() {}
 
 func (x *DeleteRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[48]
+	mi := &file_ameliso_v1_service_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3303,7 +3408,7 @@ func (x *DeleteRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRunRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{48}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *DeleteRunRequest) GetRepoId() string {
@@ -3329,7 +3434,7 @@ type DeleteRunResponse struct {
 
 func (x *DeleteRunResponse) Reset() {
 	*x = DeleteRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[49]
+	mi := &file_ameliso_v1_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3341,7 +3446,7 @@ func (x *DeleteRunResponse) String() string {
 func (*DeleteRunResponse) ProtoMessage() {}
 
 func (x *DeleteRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[49]
+	mi := &file_ameliso_v1_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3354,7 +3459,7 @@ func (x *DeleteRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRunResponse.ProtoReflect.Descriptor instead.
 func (*DeleteRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{49}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *DeleteRunResponse) GetDirPath() string {
@@ -3374,7 +3479,7 @@ type RestoreRunRequest struct {
 
 func (x *RestoreRunRequest) Reset() {
 	*x = RestoreRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[50]
+	mi := &file_ameliso_v1_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3386,7 +3491,7 @@ func (x *RestoreRunRequest) String() string {
 func (*RestoreRunRequest) ProtoMessage() {}
 
 func (x *RestoreRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[50]
+	mi := &file_ameliso_v1_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3399,7 +3504,7 @@ func (x *RestoreRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreRunRequest.ProtoReflect.Descriptor instead.
 func (*RestoreRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{50}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *RestoreRunRequest) GetRepoId() string {
@@ -3424,7 +3529,7 @@ type RestoreRunResponse struct {
 
 func (x *RestoreRunResponse) Reset() {
 	*x = RestoreRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[51]
+	mi := &file_ameliso_v1_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3436,7 +3541,7 @@ func (x *RestoreRunResponse) String() string {
 func (*RestoreRunResponse) ProtoMessage() {}
 
 func (x *RestoreRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[51]
+	mi := &file_ameliso_v1_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3449,7 +3554,7 @@ func (x *RestoreRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreRunResponse.ProtoReflect.Descriptor instead.
 func (*RestoreRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{51}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{53}
 }
 
 type GetPendingCasesRequest struct {
@@ -3468,7 +3573,7 @@ type GetPendingCasesRequest struct {
 
 func (x *GetPendingCasesRequest) Reset() {
 	*x = GetPendingCasesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[52]
+	mi := &file_ameliso_v1_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3480,7 +3585,7 @@ func (x *GetPendingCasesRequest) String() string {
 func (*GetPendingCasesRequest) ProtoMessage() {}
 
 func (x *GetPendingCasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[52]
+	mi := &file_ameliso_v1_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3493,7 +3598,7 @@ func (x *GetPendingCasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPendingCasesRequest.ProtoReflect.Descriptor instead.
 func (*GetPendingCasesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{52}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *GetPendingCasesRequest) GetRepoId() string {
@@ -3549,7 +3654,7 @@ type PendingEntry struct {
 
 func (x *PendingEntry) Reset() {
 	*x = PendingEntry{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[53]
+	mi := &file_ameliso_v1_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3561,7 +3666,7 @@ func (x *PendingEntry) String() string {
 func (*PendingEntry) ProtoMessage() {}
 
 func (x *PendingEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[53]
+	mi := &file_ameliso_v1_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3574,7 +3679,7 @@ func (x *PendingEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingEntry.ProtoReflect.Descriptor instead.
 func (*PendingEntry) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{53}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *PendingEntry) GetCase() *Case {
@@ -3622,7 +3727,7 @@ type GetPendingCasesResponse struct {
 
 func (x *GetPendingCasesResponse) Reset() {
 	*x = GetPendingCasesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[54]
+	mi := &file_ameliso_v1_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3634,7 +3739,7 @@ func (x *GetPendingCasesResponse) String() string {
 func (*GetPendingCasesResponse) ProtoMessage() {}
 
 func (x *GetPendingCasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[54]
+	mi := &file_ameliso_v1_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3647,7 +3752,7 @@ func (x *GetPendingCasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPendingCasesResponse.ProtoReflect.Descriptor instead.
 func (*GetPendingCasesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{54}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *GetPendingCasesResponse) GetCases() []*Case {
@@ -3710,7 +3815,7 @@ type UpdateRunRequest struct {
 
 func (x *UpdateRunRequest) Reset() {
 	*x = UpdateRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[55]
+	mi := &file_ameliso_v1_service_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3722,7 +3827,7 @@ func (x *UpdateRunRequest) String() string {
 func (*UpdateRunRequest) ProtoMessage() {}
 
 func (x *UpdateRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[55]
+	mi := &file_ameliso_v1_service_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3735,7 +3840,7 @@ func (x *UpdateRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRunRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{55}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *UpdateRunRequest) GetRepoId() string {
@@ -3807,7 +3912,7 @@ type UpdateRunResponse struct {
 
 func (x *UpdateRunResponse) Reset() {
 	*x = UpdateRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[56]
+	mi := &file_ameliso_v1_service_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3819,7 +3924,7 @@ func (x *UpdateRunResponse) String() string {
 func (*UpdateRunResponse) ProtoMessage() {}
 
 func (x *UpdateRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[56]
+	mi := &file_ameliso_v1_service_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3832,7 +3937,7 @@ func (x *UpdateRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRunResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{56}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *UpdateRunResponse) GetRun() *RunMeta {
@@ -3866,7 +3971,7 @@ type ClaimRunRequest struct {
 
 func (x *ClaimRunRequest) Reset() {
 	*x = ClaimRunRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[57]
+	mi := &file_ameliso_v1_service_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3878,7 +3983,7 @@ func (x *ClaimRunRequest) String() string {
 func (*ClaimRunRequest) ProtoMessage() {}
 
 func (x *ClaimRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[57]
+	mi := &file_ameliso_v1_service_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3891,7 +3996,7 @@ func (x *ClaimRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimRunRequest.ProtoReflect.Descriptor instead.
 func (*ClaimRunRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{57}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *ClaimRunRequest) GetRepoId() string {
@@ -3917,7 +4022,7 @@ type ClaimRunResponse struct {
 
 func (x *ClaimRunResponse) Reset() {
 	*x = ClaimRunResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[58]
+	mi := &file_ameliso_v1_service_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3929,7 +4034,7 @@ func (x *ClaimRunResponse) String() string {
 func (*ClaimRunResponse) ProtoMessage() {}
 
 func (x *ClaimRunResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[58]
+	mi := &file_ameliso_v1_service_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3942,7 +4047,7 @@ func (x *ClaimRunResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimRunResponse.ProtoReflect.Descriptor instead.
 func (*ClaimRunResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{58}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *ClaimRunResponse) GetRun() *RunMeta {
@@ -3968,7 +4073,7 @@ type GetCoverageReportRequest struct {
 
 func (x *GetCoverageReportRequest) Reset() {
 	*x = GetCoverageReportRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[59]
+	mi := &file_ameliso_v1_service_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3980,7 +4085,7 @@ func (x *GetCoverageReportRequest) String() string {
 func (*GetCoverageReportRequest) ProtoMessage() {}
 
 func (x *GetCoverageReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[59]
+	mi := &file_ameliso_v1_service_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3993,7 +4098,7 @@ func (x *GetCoverageReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCoverageReportRequest.ProtoReflect.Descriptor instead.
 func (*GetCoverageReportRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{59}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *GetCoverageReportRequest) GetRepoId() string {
@@ -4041,7 +4146,7 @@ type GetCoverageReportResponse struct {
 
 func (x *GetCoverageReportResponse) Reset() {
 	*x = GetCoverageReportResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[60]
+	mi := &file_ameliso_v1_service_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4053,7 +4158,7 @@ func (x *GetCoverageReportResponse) String() string {
 func (*GetCoverageReportResponse) ProtoMessage() {}
 
 func (x *GetCoverageReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[60]
+	mi := &file_ameliso_v1_service_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4066,7 +4171,7 @@ func (x *GetCoverageReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCoverageReportResponse.ProtoReflect.Descriptor instead.
 func (*GetCoverageReportResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{60}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *GetCoverageReportResponse) GetEntries() []*CoverageEntry {
@@ -4081,6 +4186,134 @@ func (x *GetCoverageReportResponse) GetRunCount() int32 {
 		return x.RunCount
 	}
 	return 0
+}
+
+type GetRunTrendMetricsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StartDate     string                 `protobuf:"bytes,2,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"`
+	EndDate       string                 `protobuf:"bytes,3,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
+	SuiteFilter   string                 `protobuf:"bytes,4,opt,name=suite_filter,json=suiteFilter,proto3" json:"suite_filter,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRunTrendMetricsRequest) Reset() {
+	*x = GetRunTrendMetricsRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRunTrendMetricsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRunTrendMetricsRequest) ProtoMessage() {}
+
+func (x *GetRunTrendMetricsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRunTrendMetricsRequest.ProtoReflect.Descriptor instead.
+func (*GetRunTrendMetricsRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *GetRunTrendMetricsRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *GetRunTrendMetricsRequest) GetStartDate() string {
+	if x != nil {
+		return x.StartDate
+	}
+	return ""
+}
+
+func (x *GetRunTrendMetricsRequest) GetEndDate() string {
+	if x != nil {
+		return x.EndDate
+	}
+	return ""
+}
+
+func (x *GetRunTrendMetricsRequest) GetSuiteFilter() string {
+	if x != nil {
+		return x.SuiteFilter
+	}
+	return ""
+}
+
+type GetRunTrendMetricsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Points        []*RunTrendPoint       `protobuf:"bytes,1,rep,name=points,proto3" json:"points,omitempty"`
+	Funnel        *RunCompletionFunnel   `protobuf:"bytes,2,opt,name=funnel,proto3" json:"funnel,omitempty"`
+	FlakyCases    []*FlakyCaseSummary    `protobuf:"bytes,3,rep,name=flaky_cases,json=flakyCases,proto3" json:"flaky_cases,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRunTrendMetricsResponse) Reset() {
+	*x = GetRunTrendMetricsResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRunTrendMetricsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRunTrendMetricsResponse) ProtoMessage() {}
+
+func (x *GetRunTrendMetricsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRunTrendMetricsResponse.ProtoReflect.Descriptor instead.
+func (*GetRunTrendMetricsResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *GetRunTrendMetricsResponse) GetPoints() []*RunTrendPoint {
+	if x != nil {
+		return x.Points
+	}
+	return nil
+}
+
+func (x *GetRunTrendMetricsResponse) GetFunnel() *RunCompletionFunnel {
+	if x != nil {
+		return x.Funnel
+	}
+	return nil
+}
+
+func (x *GetRunTrendMetricsResponse) GetFlakyCases() []*FlakyCaseSummary {
+	if x != nil {
+		return x.FlakyCases
+	}
+	return nil
 }
 
 type GetAffectedCasesRequest struct {
@@ -4100,7 +4333,7 @@ type GetAffectedCasesRequest struct {
 
 func (x *GetAffectedCasesRequest) Reset() {
 	*x = GetAffectedCasesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[61]
+	mi := &file_ameliso_v1_service_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4112,7 +4345,7 @@ func (x *GetAffectedCasesRequest) String() string {
 func (*GetAffectedCasesRequest) ProtoMessage() {}
 
 func (x *GetAffectedCasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[61]
+	mi := &file_ameliso_v1_service_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4125,7 +4358,7 @@ func (x *GetAffectedCasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAffectedCasesRequest.ProtoReflect.Descriptor instead.
 func (*GetAffectedCasesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{61}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetAffectedCasesRequest) GetRepoId() string {
@@ -4177,7 +4410,7 @@ type GetAffectedCasesResponse struct {
 
 func (x *GetAffectedCasesResponse) Reset() {
 	*x = GetAffectedCasesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[62]
+	mi := &file_ameliso_v1_service_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4189,7 +4422,7 @@ func (x *GetAffectedCasesResponse) String() string {
 func (*GetAffectedCasesResponse) ProtoMessage() {}
 
 func (x *GetAffectedCasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[62]
+	mi := &file_ameliso_v1_service_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4202,7 +4435,7 @@ func (x *GetAffectedCasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAffectedCasesResponse.ProtoReflect.Descriptor instead.
 func (*GetAffectedCasesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{62}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *GetAffectedCasesResponse) GetCases() []*AffectedCase {
@@ -4235,7 +4468,7 @@ type GetRepoStatusRequest struct {
 
 func (x *GetRepoStatusRequest) Reset() {
 	*x = GetRepoStatusRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[63]
+	mi := &file_ameliso_v1_service_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4247,7 +4480,7 @@ func (x *GetRepoStatusRequest) String() string {
 func (*GetRepoStatusRequest) ProtoMessage() {}
 
 func (x *GetRepoStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[63]
+	mi := &file_ameliso_v1_service_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4260,7 +4493,7 @@ func (x *GetRepoStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRepoStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetRepoStatusRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{63}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *GetRepoStatusRequest) GetRepoId() string {
@@ -4288,7 +4521,7 @@ type ActiveRunStatus struct {
 
 func (x *ActiveRunStatus) Reset() {
 	*x = ActiveRunStatus{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[64]
+	mi := &file_ameliso_v1_service_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4300,7 +4533,7 @@ func (x *ActiveRunStatus) String() string {
 func (*ActiveRunStatus) ProtoMessage() {}
 
 func (x *ActiveRunStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[64]
+	mi := &file_ameliso_v1_service_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4313,7 +4546,7 @@ func (x *ActiveRunStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActiveRunStatus.ProtoReflect.Descriptor instead.
 func (*ActiveRunStatus) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{64}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *ActiveRunStatus) GetRunId() string {
@@ -4413,7 +4646,7 @@ type GetRepoStatusResponse struct {
 
 func (x *GetRepoStatusResponse) Reset() {
 	*x = GetRepoStatusResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[65]
+	mi := &file_ameliso_v1_service_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4425,7 +4658,7 @@ func (x *GetRepoStatusResponse) String() string {
 func (*GetRepoStatusResponse) ProtoMessage() {}
 
 func (x *GetRepoStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[65]
+	mi := &file_ameliso_v1_service_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4438,7 +4671,7 @@ func (x *GetRepoStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRepoStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetRepoStatusResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{65}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *GetRepoStatusResponse) GetTotalCases() int32 {
@@ -4585,7 +4818,7 @@ type CompareRunsRequest struct {
 
 func (x *CompareRunsRequest) Reset() {
 	*x = CompareRunsRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[66]
+	mi := &file_ameliso_v1_service_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4597,7 +4830,7 @@ func (x *CompareRunsRequest) String() string {
 func (*CompareRunsRequest) ProtoMessage() {}
 
 func (x *CompareRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[66]
+	mi := &file_ameliso_v1_service_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4610,7 +4843,7 @@ func (x *CompareRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareRunsRequest.ProtoReflect.Descriptor instead.
 func (*CompareRunsRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{66}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *CompareRunsRequest) GetRepoId() string {
@@ -4645,7 +4878,7 @@ type RunCaseDiff struct {
 
 func (x *RunCaseDiff) Reset() {
 	*x = RunCaseDiff{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[67]
+	mi := &file_ameliso_v1_service_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4657,7 +4890,7 @@ func (x *RunCaseDiff) String() string {
 func (*RunCaseDiff) ProtoMessage() {}
 
 func (x *RunCaseDiff) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[67]
+	mi := &file_ameliso_v1_service_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4670,7 +4903,7 @@ func (x *RunCaseDiff) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCaseDiff.ProtoReflect.Descriptor instead.
 func (*RunCaseDiff) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{67}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *RunCaseDiff) GetCasePath() string {
@@ -4712,7 +4945,7 @@ type CompareRunsResponse struct {
 
 func (x *CompareRunsResponse) Reset() {
 	*x = CompareRunsResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[68]
+	mi := &file_ameliso_v1_service_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4724,7 +4957,7 @@ func (x *CompareRunsResponse) String() string {
 func (*CompareRunsResponse) ProtoMessage() {}
 
 func (x *CompareRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[68]
+	mi := &file_ameliso_v1_service_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4737,7 +4970,7 @@ func (x *CompareRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareRunsResponse.ProtoReflect.Descriptor instead.
 func (*CompareRunsResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{68}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *CompareRunsResponse) GetRegressions() []*RunCaseDiff {
@@ -4784,7 +5017,7 @@ type GetTesterSuggestionsRequest struct {
 
 func (x *GetTesterSuggestionsRequest) Reset() {
 	*x = GetTesterSuggestionsRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[69]
+	mi := &file_ameliso_v1_service_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4796,7 +5029,7 @@ func (x *GetTesterSuggestionsRequest) String() string {
 func (*GetTesterSuggestionsRequest) ProtoMessage() {}
 
 func (x *GetTesterSuggestionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[69]
+	mi := &file_ameliso_v1_service_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4809,7 +5042,7 @@ func (x *GetTesterSuggestionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTesterSuggestionsRequest.ProtoReflect.Descriptor instead.
 func (*GetTesterSuggestionsRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{69}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *GetTesterSuggestionsRequest) GetRepoId() string {
@@ -4828,7 +5061,7 @@ type GetTesterSuggestionsResponse struct {
 
 func (x *GetTesterSuggestionsResponse) Reset() {
 	*x = GetTesterSuggestionsResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[70]
+	mi := &file_ameliso_v1_service_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4840,7 +5073,7 @@ func (x *GetTesterSuggestionsResponse) String() string {
 func (*GetTesterSuggestionsResponse) ProtoMessage() {}
 
 func (x *GetTesterSuggestionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[70]
+	mi := &file_ameliso_v1_service_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4853,7 +5086,7 @@ func (x *GetTesterSuggestionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTesterSuggestionsResponse.ProtoReflect.Descriptor instead.
 func (*GetTesterSuggestionsResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{70}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *GetTesterSuggestionsResponse) GetSuggestions() []string {
@@ -4871,7 +5104,7 @@ type GetGitHubInstallUrlRequest struct {
 
 func (x *GetGitHubInstallUrlRequest) Reset() {
 	*x = GetGitHubInstallUrlRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[71]
+	mi := &file_ameliso_v1_service_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4883,7 +5116,7 @@ func (x *GetGitHubInstallUrlRequest) String() string {
 func (*GetGitHubInstallUrlRequest) ProtoMessage() {}
 
 func (x *GetGitHubInstallUrlRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[71]
+	mi := &file_ameliso_v1_service_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4896,7 +5129,7 @@ func (x *GetGitHubInstallUrlRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGitHubInstallUrlRequest.ProtoReflect.Descriptor instead.
 func (*GetGitHubInstallUrlRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{71}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{75}
 }
 
 type GetGitHubInstallUrlResponse struct {
@@ -4909,7 +5142,7 @@ type GetGitHubInstallUrlResponse struct {
 
 func (x *GetGitHubInstallUrlResponse) Reset() {
 	*x = GetGitHubInstallUrlResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[72]
+	mi := &file_ameliso_v1_service_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4921,7 +5154,7 @@ func (x *GetGitHubInstallUrlResponse) String() string {
 func (*GetGitHubInstallUrlResponse) ProtoMessage() {}
 
 func (x *GetGitHubInstallUrlResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[72]
+	mi := &file_ameliso_v1_service_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4934,7 +5167,7 @@ func (x *GetGitHubInstallUrlResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGitHubInstallUrlResponse.ProtoReflect.Descriptor instead.
 func (*GetGitHubInstallUrlResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{72}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *GetGitHubInstallUrlResponse) GetUrl() string {
@@ -4960,7 +5193,7 @@ type HandleGitHubCallbackRequest struct {
 
 func (x *HandleGitHubCallbackRequest) Reset() {
 	*x = HandleGitHubCallbackRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[73]
+	mi := &file_ameliso_v1_service_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4972,7 +5205,7 @@ func (x *HandleGitHubCallbackRequest) String() string {
 func (*HandleGitHubCallbackRequest) ProtoMessage() {}
 
 func (x *HandleGitHubCallbackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[73]
+	mi := &file_ameliso_v1_service_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4985,7 +5218,7 @@ func (x *HandleGitHubCallbackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HandleGitHubCallbackRequest.ProtoReflect.Descriptor instead.
 func (*HandleGitHubCallbackRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{73}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *HandleGitHubCallbackRequest) GetInstallationId() string {
@@ -5004,7 +5237,7 @@ type HandleGitHubCallbackResponse struct {
 
 func (x *HandleGitHubCallbackResponse) Reset() {
 	*x = HandleGitHubCallbackResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[74]
+	mi := &file_ameliso_v1_service_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5016,7 +5249,7 @@ func (x *HandleGitHubCallbackResponse) String() string {
 func (*HandleGitHubCallbackResponse) ProtoMessage() {}
 
 func (x *HandleGitHubCallbackResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[74]
+	mi := &file_ameliso_v1_service_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5029,7 +5262,7 @@ func (x *HandleGitHubCallbackResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HandleGitHubCallbackResponse.ProtoReflect.Descriptor instead.
 func (*HandleGitHubCallbackResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{74}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *HandleGitHubCallbackResponse) GetRepositories() []*Repository {
@@ -5047,7 +5280,7 @@ type ListRepositoriesRequest struct {
 
 func (x *ListRepositoriesRequest) Reset() {
 	*x = ListRepositoriesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[75]
+	mi := &file_ameliso_v1_service_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5059,7 +5292,7 @@ func (x *ListRepositoriesRequest) String() string {
 func (*ListRepositoriesRequest) ProtoMessage() {}
 
 func (x *ListRepositoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[75]
+	mi := &file_ameliso_v1_service_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5072,7 +5305,7 @@ func (x *ListRepositoriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRepositoriesRequest.ProtoReflect.Descriptor instead.
 func (*ListRepositoriesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{75}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{79}
 }
 
 type ListRepositoriesResponse struct {
@@ -5084,7 +5317,7 @@ type ListRepositoriesResponse struct {
 
 func (x *ListRepositoriesResponse) Reset() {
 	*x = ListRepositoriesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[76]
+	mi := &file_ameliso_v1_service_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5096,7 +5329,7 @@ func (x *ListRepositoriesResponse) String() string {
 func (*ListRepositoriesResponse) ProtoMessage() {}
 
 func (x *ListRepositoriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[76]
+	mi := &file_ameliso_v1_service_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5109,7 +5342,7 @@ func (x *ListRepositoriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRepositoriesResponse.ProtoReflect.Descriptor instead.
 func (*ListRepositoriesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{76}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *ListRepositoriesResponse) GetRepositories() []*Repository {
@@ -5128,7 +5361,7 @@ type SyncRepositoryRequest struct {
 
 func (x *SyncRepositoryRequest) Reset() {
 	*x = SyncRepositoryRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[77]
+	mi := &file_ameliso_v1_service_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5140,7 +5373,7 @@ func (x *SyncRepositoryRequest) String() string {
 func (*SyncRepositoryRequest) ProtoMessage() {}
 
 func (x *SyncRepositoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[77]
+	mi := &file_ameliso_v1_service_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5153,7 +5386,7 @@ func (x *SyncRepositoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRepositoryRequest.ProtoReflect.Descriptor instead.
 func (*SyncRepositoryRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{77}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *SyncRepositoryRequest) GetId() string {
@@ -5172,7 +5405,7 @@ type SyncRepositoryResponse struct {
 
 func (x *SyncRepositoryResponse) Reset() {
 	*x = SyncRepositoryResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[78]
+	mi := &file_ameliso_v1_service_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5184,7 +5417,7 @@ func (x *SyncRepositoryResponse) String() string {
 func (*SyncRepositoryResponse) ProtoMessage() {}
 
 func (x *SyncRepositoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[78]
+	mi := &file_ameliso_v1_service_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5197,7 +5430,7 @@ func (x *SyncRepositoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRepositoryResponse.ProtoReflect.Descriptor instead.
 func (*SyncRepositoryResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{78}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *SyncRepositoryResponse) GetRepository() *Repository {
@@ -5216,7 +5449,7 @@ type RemoveRepositoryRequest struct {
 
 func (x *RemoveRepositoryRequest) Reset() {
 	*x = RemoveRepositoryRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[79]
+	mi := &file_ameliso_v1_service_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5228,7 +5461,7 @@ func (x *RemoveRepositoryRequest) String() string {
 func (*RemoveRepositoryRequest) ProtoMessage() {}
 
 func (x *RemoveRepositoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[79]
+	mi := &file_ameliso_v1_service_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5241,7 +5474,7 @@ func (x *RemoveRepositoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveRepositoryRequest.ProtoReflect.Descriptor instead.
 func (*RemoveRepositoryRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{79}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *RemoveRepositoryRequest) GetId() string {
@@ -5259,7 +5492,7 @@ type RemoveRepositoryResponse struct {
 
 func (x *RemoveRepositoryResponse) Reset() {
 	*x = RemoveRepositoryResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[80]
+	mi := &file_ameliso_v1_service_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5271,7 +5504,7 @@ func (x *RemoveRepositoryResponse) String() string {
 func (*RemoveRepositoryResponse) ProtoMessage() {}
 
 func (x *RemoveRepositoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[80]
+	mi := &file_ameliso_v1_service_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5284,7 +5517,7 @@ func (x *RemoveRepositoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveRepositoryResponse.ProtoReflect.Descriptor instead.
 func (*RemoveRepositoryResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{80}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{84}
 }
 
 type RotateRepoApiKeyRequest struct {
@@ -5296,7 +5529,7 @@ type RotateRepoApiKeyRequest struct {
 
 func (x *RotateRepoApiKeyRequest) Reset() {
 	*x = RotateRepoApiKeyRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[81]
+	mi := &file_ameliso_v1_service_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5308,7 +5541,7 @@ func (x *RotateRepoApiKeyRequest) String() string {
 func (*RotateRepoApiKeyRequest) ProtoMessage() {}
 
 func (x *RotateRepoApiKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[81]
+	mi := &file_ameliso_v1_service_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5321,7 +5554,7 @@ func (x *RotateRepoApiKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateRepoApiKeyRequest.ProtoReflect.Descriptor instead.
 func (*RotateRepoApiKeyRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{81}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *RotateRepoApiKeyRequest) GetRepoId() string {
@@ -5340,7 +5573,7 @@ type RotateRepoApiKeyResponse struct {
 
 func (x *RotateRepoApiKeyResponse) Reset() {
 	*x = RotateRepoApiKeyResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[82]
+	mi := &file_ameliso_v1_service_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5352,7 +5585,7 @@ func (x *RotateRepoApiKeyResponse) String() string {
 func (*RotateRepoApiKeyResponse) ProtoMessage() {}
 
 func (x *RotateRepoApiKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[82]
+	mi := &file_ameliso_v1_service_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5365,7 +5598,7 @@ func (x *RotateRepoApiKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateRepoApiKeyResponse.ProtoReflect.Descriptor instead.
 func (*RotateRepoApiKeyResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{82}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *RotateRepoApiKeyResponse) GetApiKey() string {
@@ -5384,7 +5617,7 @@ type ListRepoTokensRequest struct {
 
 func (x *ListRepoTokensRequest) Reset() {
 	*x = ListRepoTokensRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[83]
+	mi := &file_ameliso_v1_service_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5396,7 +5629,7 @@ func (x *ListRepoTokensRequest) String() string {
 func (*ListRepoTokensRequest) ProtoMessage() {}
 
 func (x *ListRepoTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[83]
+	mi := &file_ameliso_v1_service_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5409,7 +5642,7 @@ func (x *ListRepoTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRepoTokensRequest.ProtoReflect.Descriptor instead.
 func (*ListRepoTokensRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{83}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *ListRepoTokensRequest) GetRepoId() string {
@@ -5428,7 +5661,7 @@ type ListRepoTokensResponse struct {
 
 func (x *ListRepoTokensResponse) Reset() {
 	*x = ListRepoTokensResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[84]
+	mi := &file_ameliso_v1_service_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5440,7 +5673,7 @@ func (x *ListRepoTokensResponse) String() string {
 func (*ListRepoTokensResponse) ProtoMessage() {}
 
 func (x *ListRepoTokensResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[84]
+	mi := &file_ameliso_v1_service_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5453,7 +5686,7 @@ func (x *ListRepoTokensResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRepoTokensResponse.ProtoReflect.Descriptor instead.
 func (*ListRepoTokensResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{84}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *ListRepoTokensResponse) GetTokens() []*RepoToken {
@@ -5475,7 +5708,7 @@ type CreateRepoTokenRequest struct {
 
 func (x *CreateRepoTokenRequest) Reset() {
 	*x = CreateRepoTokenRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[85]
+	mi := &file_ameliso_v1_service_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5487,7 +5720,7 @@ func (x *CreateRepoTokenRequest) String() string {
 func (*CreateRepoTokenRequest) ProtoMessage() {}
 
 func (x *CreateRepoTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[85]
+	mi := &file_ameliso_v1_service_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5500,7 +5733,7 @@ func (x *CreateRepoTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRepoTokenRequest.ProtoReflect.Descriptor instead.
 func (*CreateRepoTokenRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{85}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *CreateRepoTokenRequest) GetRepoId() string {
@@ -5540,7 +5773,7 @@ type CreateRepoTokenResponse struct {
 
 func (x *CreateRepoTokenResponse) Reset() {
 	*x = CreateRepoTokenResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[86]
+	mi := &file_ameliso_v1_service_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5552,7 +5785,7 @@ func (x *CreateRepoTokenResponse) String() string {
 func (*CreateRepoTokenResponse) ProtoMessage() {}
 
 func (x *CreateRepoTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[86]
+	mi := &file_ameliso_v1_service_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5565,7 +5798,7 @@ func (x *CreateRepoTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRepoTokenResponse.ProtoReflect.Descriptor instead.
 func (*CreateRepoTokenResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{86}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *CreateRepoTokenResponse) GetToken() *RepoToken {
@@ -5585,7 +5818,7 @@ type DeleteRepoTokenRequest struct {
 
 func (x *DeleteRepoTokenRequest) Reset() {
 	*x = DeleteRepoTokenRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[87]
+	mi := &file_ameliso_v1_service_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5597,7 +5830,7 @@ func (x *DeleteRepoTokenRequest) String() string {
 func (*DeleteRepoTokenRequest) ProtoMessage() {}
 
 func (x *DeleteRepoTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[87]
+	mi := &file_ameliso_v1_service_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5610,7 +5843,7 @@ func (x *DeleteRepoTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRepoTokenRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRepoTokenRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{87}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *DeleteRepoTokenRequest) GetRepoId() string {
@@ -5635,7 +5868,7 @@ type DeleteRepoTokenResponse struct {
 
 func (x *DeleteRepoTokenResponse) Reset() {
 	*x = DeleteRepoTokenResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[88]
+	mi := &file_ameliso_v1_service_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5647,7 +5880,7 @@ func (x *DeleteRepoTokenResponse) String() string {
 func (*DeleteRepoTokenResponse) ProtoMessage() {}
 
 func (x *DeleteRepoTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[88]
+	mi := &file_ameliso_v1_service_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5660,7 +5893,7 @@ func (x *DeleteRepoTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRepoTokenResponse.ProtoReflect.Descriptor instead.
 func (*DeleteRepoTokenResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{88}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{92}
 }
 
 type UpdateRepoTokenRequest struct {
@@ -5674,7 +5907,7 @@ type UpdateRepoTokenRequest struct {
 
 func (x *UpdateRepoTokenRequest) Reset() {
 	*x = UpdateRepoTokenRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[89]
+	mi := &file_ameliso_v1_service_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5686,7 +5919,7 @@ func (x *UpdateRepoTokenRequest) String() string {
 func (*UpdateRepoTokenRequest) ProtoMessage() {}
 
 func (x *UpdateRepoTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[89]
+	mi := &file_ameliso_v1_service_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5699,7 +5932,7 @@ func (x *UpdateRepoTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRepoTokenRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRepoTokenRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{89}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *UpdateRepoTokenRequest) GetRepoId() string {
@@ -5732,7 +5965,7 @@ type UpdateRepoTokenResponse struct {
 
 func (x *UpdateRepoTokenResponse) Reset() {
 	*x = UpdateRepoTokenResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[90]
+	mi := &file_ameliso_v1_service_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5744,7 +5977,7 @@ func (x *UpdateRepoTokenResponse) String() string {
 func (*UpdateRepoTokenResponse) ProtoMessage() {}
 
 func (x *UpdateRepoTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[90]
+	mi := &file_ameliso_v1_service_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5757,7 +5990,7 @@ func (x *UpdateRepoTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRepoTokenResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRepoTokenResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{90}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *UpdateRepoTokenResponse) GetToken() *RepoToken {
@@ -5781,7 +6014,7 @@ type UserToken struct {
 
 func (x *UserToken) Reset() {
 	*x = UserToken{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[91]
+	mi := &file_ameliso_v1_service_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5793,7 +6026,7 @@ func (x *UserToken) String() string {
 func (*UserToken) ProtoMessage() {}
 
 func (x *UserToken) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[91]
+	mi := &file_ameliso_v1_service_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5806,7 +6039,7 @@ func (x *UserToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserToken.ProtoReflect.Descriptor instead.
 func (*UserToken) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{91}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *UserToken) GetId() string {
@@ -5861,7 +6094,7 @@ type CreateUserTokenRequest struct {
 
 func (x *CreateUserTokenRequest) Reset() {
 	*x = CreateUserTokenRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[92]
+	mi := &file_ameliso_v1_service_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5873,7 +6106,7 @@ func (x *CreateUserTokenRequest) String() string {
 func (*CreateUserTokenRequest) ProtoMessage() {}
 
 func (x *CreateUserTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[92]
+	mi := &file_ameliso_v1_service_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5886,7 +6119,7 @@ func (x *CreateUserTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserTokenRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserTokenRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{92}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *CreateUserTokenRequest) GetName() string {
@@ -5914,7 +6147,7 @@ type CreateUserTokenResponse struct {
 
 func (x *CreateUserTokenResponse) Reset() {
 	*x = CreateUserTokenResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[93]
+	mi := &file_ameliso_v1_service_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5926,7 +6159,7 @@ func (x *CreateUserTokenResponse) String() string {
 func (*CreateUserTokenResponse) ProtoMessage() {}
 
 func (x *CreateUserTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[93]
+	mi := &file_ameliso_v1_service_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5939,7 +6172,7 @@ func (x *CreateUserTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserTokenResponse.ProtoReflect.Descriptor instead.
 func (*CreateUserTokenResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{93}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *CreateUserTokenResponse) GetToken() *UserToken {
@@ -5964,7 +6197,7 @@ type ListUserTokensRequest struct {
 
 func (x *ListUserTokensRequest) Reset() {
 	*x = ListUserTokensRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[94]
+	mi := &file_ameliso_v1_service_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5976,7 +6209,7 @@ func (x *ListUserTokensRequest) String() string {
 func (*ListUserTokensRequest) ProtoMessage() {}
 
 func (x *ListUserTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[94]
+	mi := &file_ameliso_v1_service_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5989,7 +6222,7 @@ func (x *ListUserTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserTokensRequest.ProtoReflect.Descriptor instead.
 func (*ListUserTokensRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{94}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{98}
 }
 
 type ListUserTokensResponse struct {
@@ -6001,7 +6234,7 @@ type ListUserTokensResponse struct {
 
 func (x *ListUserTokensResponse) Reset() {
 	*x = ListUserTokensResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[95]
+	mi := &file_ameliso_v1_service_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6013,7 +6246,7 @@ func (x *ListUserTokensResponse) String() string {
 func (*ListUserTokensResponse) ProtoMessage() {}
 
 func (x *ListUserTokensResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[95]
+	mi := &file_ameliso_v1_service_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6026,7 +6259,7 @@ func (x *ListUserTokensResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUserTokensResponse.ProtoReflect.Descriptor instead.
 func (*ListUserTokensResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{95}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *ListUserTokensResponse) GetTokens() []*UserToken {
@@ -6045,7 +6278,7 @@ type RevokeUserTokenRequest struct {
 
 func (x *RevokeUserTokenRequest) Reset() {
 	*x = RevokeUserTokenRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[96]
+	mi := &file_ameliso_v1_service_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6057,7 +6290,7 @@ func (x *RevokeUserTokenRequest) String() string {
 func (*RevokeUserTokenRequest) ProtoMessage() {}
 
 func (x *RevokeUserTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[96]
+	mi := &file_ameliso_v1_service_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6070,7 +6303,7 @@ func (x *RevokeUserTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeUserTokenRequest.ProtoReflect.Descriptor instead.
 func (*RevokeUserTokenRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{96}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *RevokeUserTokenRequest) GetId() string {
@@ -6088,7 +6321,7 @@ type RevokeUserTokenResponse struct {
 
 func (x *RevokeUserTokenResponse) Reset() {
 	*x = RevokeUserTokenResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[97]
+	mi := &file_ameliso_v1_service_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6100,7 +6333,7 @@ func (x *RevokeUserTokenResponse) String() string {
 func (*RevokeUserTokenResponse) ProtoMessage() {}
 
 func (x *RevokeUserTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[97]
+	mi := &file_ameliso_v1_service_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6113,7 +6346,7 @@ func (x *RevokeUserTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeUserTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeUserTokenResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{97}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{101}
 }
 
 type RotateUserTokenRequest struct {
@@ -6127,7 +6360,7 @@ type RotateUserTokenRequest struct {
 
 func (x *RotateUserTokenRequest) Reset() {
 	*x = RotateUserTokenRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[98]
+	mi := &file_ameliso_v1_service_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6139,7 +6372,7 @@ func (x *RotateUserTokenRequest) String() string {
 func (*RotateUserTokenRequest) ProtoMessage() {}
 
 func (x *RotateUserTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[98]
+	mi := &file_ameliso_v1_service_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6152,7 +6385,7 @@ func (x *RotateUserTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateUserTokenRequest.ProtoReflect.Descriptor instead.
 func (*RotateUserTokenRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{98}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *RotateUserTokenRequest) GetId() string {
@@ -6173,7 +6406,7 @@ type RotateUserTokenResponse struct {
 
 func (x *RotateUserTokenResponse) Reset() {
 	*x = RotateUserTokenResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[99]
+	mi := &file_ameliso_v1_service_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6185,7 +6418,7 @@ func (x *RotateUserTokenResponse) String() string {
 func (*RotateUserTokenResponse) ProtoMessage() {}
 
 func (x *RotateUserTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[99]
+	mi := &file_ameliso_v1_service_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6198,7 +6431,7 @@ func (x *RotateUserTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateUserTokenResponse.ProtoReflect.Descriptor instead.
 func (*RotateUserTokenResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{99}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *RotateUserTokenResponse) GetToken() *UserToken {
@@ -6236,7 +6469,7 @@ type ListAuditLogRequest struct {
 
 func (x *ListAuditLogRequest) Reset() {
 	*x = ListAuditLogRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[100]
+	mi := &file_ameliso_v1_service_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6248,7 +6481,7 @@ func (x *ListAuditLogRequest) String() string {
 func (*ListAuditLogRequest) ProtoMessage() {}
 
 func (x *ListAuditLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[100]
+	mi := &file_ameliso_v1_service_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6261,7 +6494,7 @@ func (x *ListAuditLogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditLogRequest.ProtoReflect.Descriptor instead.
 func (*ListAuditLogRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{100}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *ListAuditLogRequest) GetRepoId() string {
@@ -6344,7 +6577,7 @@ type ListAuditLogResponse struct {
 
 func (x *ListAuditLogResponse) Reset() {
 	*x = ListAuditLogResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[101]
+	mi := &file_ameliso_v1_service_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6356,7 +6589,7 @@ func (x *ListAuditLogResponse) String() string {
 func (*ListAuditLogResponse) ProtoMessage() {}
 
 func (x *ListAuditLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[101]
+	mi := &file_ameliso_v1_service_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6369,7 +6602,7 @@ func (x *ListAuditLogResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditLogResponse.ProtoReflect.Descriptor instead.
 func (*ListAuditLogResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{101}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *ListAuditLogResponse) GetEntries() []*AuditEntry {
@@ -6400,7 +6633,7 @@ type ListStrategiesRequest struct {
 
 func (x *ListStrategiesRequest) Reset() {
 	*x = ListStrategiesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[102]
+	mi := &file_ameliso_v1_service_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6412,7 +6645,7 @@ func (x *ListStrategiesRequest) String() string {
 func (*ListStrategiesRequest) ProtoMessage() {}
 
 func (x *ListStrategiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[102]
+	mi := &file_ameliso_v1_service_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6425,7 +6658,7 @@ func (x *ListStrategiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListStrategiesRequest.ProtoReflect.Descriptor instead.
 func (*ListStrategiesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{102}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *ListStrategiesRequest) GetRepoId() string {
@@ -6467,7 +6700,7 @@ type ListStrategiesResponse struct {
 
 func (x *ListStrategiesResponse) Reset() {
 	*x = ListStrategiesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[103]
+	mi := &file_ameliso_v1_service_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6479,7 +6712,7 @@ func (x *ListStrategiesResponse) String() string {
 func (*ListStrategiesResponse) ProtoMessage() {}
 
 func (x *ListStrategiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[103]
+	mi := &file_ameliso_v1_service_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6492,7 +6725,7 @@ func (x *ListStrategiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListStrategiesResponse.ProtoReflect.Descriptor instead.
 func (*ListStrategiesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{103}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *ListStrategiesResponse) GetStrategies() []*TestingStrategy {
@@ -6526,7 +6759,7 @@ type GetStrategyRequest struct {
 
 func (x *GetStrategyRequest) Reset() {
 	*x = GetStrategyRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[104]
+	mi := &file_ameliso_v1_service_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6538,7 +6771,7 @@ func (x *GetStrategyRequest) String() string {
 func (*GetStrategyRequest) ProtoMessage() {}
 
 func (x *GetStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[104]
+	mi := &file_ameliso_v1_service_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6551,7 +6784,7 @@ func (x *GetStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStrategyRequest.ProtoReflect.Descriptor instead.
 func (*GetStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{104}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *GetStrategyRequest) GetRepoId() string {
@@ -6577,7 +6810,7 @@ type GetStrategyResponse struct {
 
 func (x *GetStrategyResponse) Reset() {
 	*x = GetStrategyResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[105]
+	mi := &file_ameliso_v1_service_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6589,7 +6822,7 @@ func (x *GetStrategyResponse) String() string {
 func (*GetStrategyResponse) ProtoMessage() {}
 
 func (x *GetStrategyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[105]
+	mi := &file_ameliso_v1_service_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6602,7 +6835,7 @@ func (x *GetStrategyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStrategyResponse.ProtoReflect.Descriptor instead.
 func (*GetStrategyResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{105}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *GetStrategyResponse) GetStrategy() *TestingStrategy {
@@ -6626,7 +6859,7 @@ type CreateStrategyRequest struct {
 
 func (x *CreateStrategyRequest) Reset() {
 	*x = CreateStrategyRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[106]
+	mi := &file_ameliso_v1_service_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6638,7 +6871,7 @@ func (x *CreateStrategyRequest) String() string {
 func (*CreateStrategyRequest) ProtoMessage() {}
 
 func (x *CreateStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[106]
+	mi := &file_ameliso_v1_service_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6651,7 +6884,7 @@ func (x *CreateStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateStrategyRequest.ProtoReflect.Descriptor instead.
 func (*CreateStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{106}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *CreateStrategyRequest) GetRepoId() string {
@@ -6705,7 +6938,7 @@ type CreateStrategyResponse struct {
 
 func (x *CreateStrategyResponse) Reset() {
 	*x = CreateStrategyResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[107]
+	mi := &file_ameliso_v1_service_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6717,7 +6950,7 @@ func (x *CreateStrategyResponse) String() string {
 func (*CreateStrategyResponse) ProtoMessage() {}
 
 func (x *CreateStrategyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[107]
+	mi := &file_ameliso_v1_service_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6730,7 +6963,7 @@ func (x *CreateStrategyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateStrategyResponse.ProtoReflect.Descriptor instead.
 func (*CreateStrategyResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{107}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *CreateStrategyResponse) GetStrategy() *TestingStrategy {
@@ -6755,7 +6988,7 @@ type UpdateStrategyRequest struct {
 
 func (x *UpdateStrategyRequest) Reset() {
 	*x = UpdateStrategyRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[108]
+	mi := &file_ameliso_v1_service_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6767,7 +7000,7 @@ func (x *UpdateStrategyRequest) String() string {
 func (*UpdateStrategyRequest) ProtoMessage() {}
 
 func (x *UpdateStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[108]
+	mi := &file_ameliso_v1_service_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6780,7 +7013,7 @@ func (x *UpdateStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateStrategyRequest.ProtoReflect.Descriptor instead.
 func (*UpdateStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{108}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *UpdateStrategyRequest) GetRepoId() string {
@@ -6841,7 +7074,7 @@ type UpdateStrategyResponse struct {
 
 func (x *UpdateStrategyResponse) Reset() {
 	*x = UpdateStrategyResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[109]
+	mi := &file_ameliso_v1_service_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6853,7 +7086,7 @@ func (x *UpdateStrategyResponse) String() string {
 func (*UpdateStrategyResponse) ProtoMessage() {}
 
 func (x *UpdateStrategyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[109]
+	mi := &file_ameliso_v1_service_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6866,7 +7099,7 @@ func (x *UpdateStrategyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateStrategyResponse.ProtoReflect.Descriptor instead.
 func (*UpdateStrategyResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{109}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *UpdateStrategyResponse) GetStrategy() *TestingStrategy {
@@ -6886,7 +7119,7 @@ type DeleteStrategyRequest struct {
 
 func (x *DeleteStrategyRequest) Reset() {
 	*x = DeleteStrategyRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[110]
+	mi := &file_ameliso_v1_service_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6898,7 +7131,7 @@ func (x *DeleteStrategyRequest) String() string {
 func (*DeleteStrategyRequest) ProtoMessage() {}
 
 func (x *DeleteStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[110]
+	mi := &file_ameliso_v1_service_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6911,7 +7144,7 @@ func (x *DeleteStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteStrategyRequest.ProtoReflect.Descriptor instead.
 func (*DeleteStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{110}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *DeleteStrategyRequest) GetRepoId() string {
@@ -6936,7 +7169,7 @@ type DeleteStrategyResponse struct {
 
 func (x *DeleteStrategyResponse) Reset() {
 	*x = DeleteStrategyResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[111]
+	mi := &file_ameliso_v1_service_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6948,7 +7181,7 @@ func (x *DeleteStrategyResponse) String() string {
 func (*DeleteStrategyResponse) ProtoMessage() {}
 
 func (x *DeleteStrategyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[111]
+	mi := &file_ameliso_v1_service_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6961,7 +7194,7 @@ func (x *DeleteStrategyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteStrategyResponse.ProtoReflect.Descriptor instead.
 func (*DeleteStrategyResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{111}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{115}
 }
 
 type RestoreStrategyRequest struct {
@@ -6974,7 +7207,7 @@ type RestoreStrategyRequest struct {
 
 func (x *RestoreStrategyRequest) Reset() {
 	*x = RestoreStrategyRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[112]
+	mi := &file_ameliso_v1_service_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6986,7 +7219,7 @@ func (x *RestoreStrategyRequest) String() string {
 func (*RestoreStrategyRequest) ProtoMessage() {}
 
 func (x *RestoreStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[112]
+	mi := &file_ameliso_v1_service_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6999,7 +7232,7 @@ func (x *RestoreStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreStrategyRequest.ProtoReflect.Descriptor instead.
 func (*RestoreStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{112}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *RestoreStrategyRequest) GetRepoId() string {
@@ -7024,7 +7257,7 @@ type RestoreStrategyResponse struct {
 
 func (x *RestoreStrategyResponse) Reset() {
 	*x = RestoreStrategyResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[113]
+	mi := &file_ameliso_v1_service_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7036,7 +7269,7 @@ func (x *RestoreStrategyResponse) String() string {
 func (*RestoreStrategyResponse) ProtoMessage() {}
 
 func (x *RestoreStrategyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[113]
+	mi := &file_ameliso_v1_service_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7049,7 +7282,7 @@ func (x *RestoreStrategyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreStrategyResponse.ProtoReflect.Descriptor instead.
 func (*RestoreStrategyResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{113}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{117}
 }
 
 type ListRunTemplatesRequest struct {
@@ -7061,7 +7294,7 @@ type ListRunTemplatesRequest struct {
 
 func (x *ListRunTemplatesRequest) Reset() {
 	*x = ListRunTemplatesRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[114]
+	mi := &file_ameliso_v1_service_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7073,7 +7306,7 @@ func (x *ListRunTemplatesRequest) String() string {
 func (*ListRunTemplatesRequest) ProtoMessage() {}
 
 func (x *ListRunTemplatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[114]
+	mi := &file_ameliso_v1_service_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7086,7 +7319,7 @@ func (x *ListRunTemplatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunTemplatesRequest.ProtoReflect.Descriptor instead.
 func (*ListRunTemplatesRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{114}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *ListRunTemplatesRequest) GetRepoId() string {
@@ -7105,7 +7338,7 @@ type ListRunTemplatesResponse struct {
 
 func (x *ListRunTemplatesResponse) Reset() {
 	*x = ListRunTemplatesResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[115]
+	mi := &file_ameliso_v1_service_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7117,7 +7350,7 @@ func (x *ListRunTemplatesResponse) String() string {
 func (*ListRunTemplatesResponse) ProtoMessage() {}
 
 func (x *ListRunTemplatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[115]
+	mi := &file_ameliso_v1_service_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7130,7 +7363,7 @@ func (x *ListRunTemplatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRunTemplatesResponse.ProtoReflect.Descriptor instead.
 func (*ListRunTemplatesResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{115}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *ListRunTemplatesResponse) GetTemplates() []*RunTemplate {
@@ -7150,7 +7383,7 @@ type GetRunTemplateRequest struct {
 
 func (x *GetRunTemplateRequest) Reset() {
 	*x = GetRunTemplateRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[116]
+	mi := &file_ameliso_v1_service_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7162,7 +7395,7 @@ func (x *GetRunTemplateRequest) String() string {
 func (*GetRunTemplateRequest) ProtoMessage() {}
 
 func (x *GetRunTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[116]
+	mi := &file_ameliso_v1_service_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7175,7 +7408,7 @@ func (x *GetRunTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunTemplateRequest.ProtoReflect.Descriptor instead.
 func (*GetRunTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{116}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *GetRunTemplateRequest) GetRepoId() string {
@@ -7201,7 +7434,7 @@ type GetRunTemplateResponse struct {
 
 func (x *GetRunTemplateResponse) Reset() {
 	*x = GetRunTemplateResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[117]
+	mi := &file_ameliso_v1_service_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7213,7 +7446,7 @@ func (x *GetRunTemplateResponse) String() string {
 func (*GetRunTemplateResponse) ProtoMessage() {}
 
 func (x *GetRunTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[117]
+	mi := &file_ameliso_v1_service_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7226,7 +7459,7 @@ func (x *GetRunTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunTemplateResponse.ProtoReflect.Descriptor instead.
 func (*GetRunTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{117}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *GetRunTemplateResponse) GetTemplate() *RunTemplate {
@@ -7251,7 +7484,7 @@ type CreateRunTemplateRequest struct {
 
 func (x *CreateRunTemplateRequest) Reset() {
 	*x = CreateRunTemplateRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[118]
+	mi := &file_ameliso_v1_service_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7263,7 +7496,7 @@ func (x *CreateRunTemplateRequest) String() string {
 func (*CreateRunTemplateRequest) ProtoMessage() {}
 
 func (x *CreateRunTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[118]
+	mi := &file_ameliso_v1_service_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7276,7 +7509,7 @@ func (x *CreateRunTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRunTemplateRequest.ProtoReflect.Descriptor instead.
 func (*CreateRunTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{118}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *CreateRunTemplateRequest) GetRepoId() string {
@@ -7337,7 +7570,7 @@ type CreateRunTemplateResponse struct {
 
 func (x *CreateRunTemplateResponse) Reset() {
 	*x = CreateRunTemplateResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[119]
+	mi := &file_ameliso_v1_service_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7349,7 +7582,7 @@ func (x *CreateRunTemplateResponse) String() string {
 func (*CreateRunTemplateResponse) ProtoMessage() {}
 
 func (x *CreateRunTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[119]
+	mi := &file_ameliso_v1_service_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7362,7 +7595,7 @@ func (x *CreateRunTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRunTemplateResponse.ProtoReflect.Descriptor instead.
 func (*CreateRunTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{119}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *CreateRunTemplateResponse) GetTemplate() *RunTemplate {
@@ -7387,7 +7620,7 @@ type UpdateRunTemplateRequest struct {
 
 func (x *UpdateRunTemplateRequest) Reset() {
 	*x = UpdateRunTemplateRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[120]
+	mi := &file_ameliso_v1_service_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7399,7 +7632,7 @@ func (x *UpdateRunTemplateRequest) String() string {
 func (*UpdateRunTemplateRequest) ProtoMessage() {}
 
 func (x *UpdateRunTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[120]
+	mi := &file_ameliso_v1_service_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7412,7 +7645,7 @@ func (x *UpdateRunTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRunTemplateRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRunTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{120}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *UpdateRunTemplateRequest) GetRepoId() string {
@@ -7473,7 +7706,7 @@ type UpdateRunTemplateResponse struct {
 
 func (x *UpdateRunTemplateResponse) Reset() {
 	*x = UpdateRunTemplateResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[121]
+	mi := &file_ameliso_v1_service_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7485,7 +7718,7 @@ func (x *UpdateRunTemplateResponse) String() string {
 func (*UpdateRunTemplateResponse) ProtoMessage() {}
 
 func (x *UpdateRunTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[121]
+	mi := &file_ameliso_v1_service_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7498,7 +7731,7 @@ func (x *UpdateRunTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRunTemplateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRunTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{121}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *UpdateRunTemplateResponse) GetTemplate() *RunTemplate {
@@ -7518,7 +7751,7 @@ type DeleteRunTemplateRequest struct {
 
 func (x *DeleteRunTemplateRequest) Reset() {
 	*x = DeleteRunTemplateRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[122]
+	mi := &file_ameliso_v1_service_proto_msgTypes[126]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7530,7 +7763,7 @@ func (x *DeleteRunTemplateRequest) String() string {
 func (*DeleteRunTemplateRequest) ProtoMessage() {}
 
 func (x *DeleteRunTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[122]
+	mi := &file_ameliso_v1_service_proto_msgTypes[126]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7543,7 +7776,7 @@ func (x *DeleteRunTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRunTemplateRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRunTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{122}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *DeleteRunTemplateRequest) GetRepoId() string {
@@ -7568,7 +7801,7 @@ type DeleteRunTemplateResponse struct {
 
 func (x *DeleteRunTemplateResponse) Reset() {
 	*x = DeleteRunTemplateResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[123]
+	mi := &file_ameliso_v1_service_proto_msgTypes[127]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7580,7 +7813,7 @@ func (x *DeleteRunTemplateResponse) String() string {
 func (*DeleteRunTemplateResponse) ProtoMessage() {}
 
 func (x *DeleteRunTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[123]
+	mi := &file_ameliso_v1_service_proto_msgTypes[127]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7593,7 +7826,7 @@ func (x *DeleteRunTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRunTemplateResponse.ProtoReflect.Descriptor instead.
 func (*DeleteRunTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{123}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{127}
 }
 
 type ListPermissionsRequest struct {
@@ -7605,7 +7838,7 @@ type ListPermissionsRequest struct {
 
 func (x *ListPermissionsRequest) Reset() {
 	*x = ListPermissionsRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[124]
+	mi := &file_ameliso_v1_service_proto_msgTypes[128]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7617,7 +7850,7 @@ func (x *ListPermissionsRequest) String() string {
 func (*ListPermissionsRequest) ProtoMessage() {}
 
 func (x *ListPermissionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[124]
+	mi := &file_ameliso_v1_service_proto_msgTypes[128]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7630,7 +7863,7 @@ func (x *ListPermissionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPermissionsRequest.ProtoReflect.Descriptor instead.
 func (*ListPermissionsRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{124}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *ListPermissionsRequest) GetRepoId() string {
@@ -7649,7 +7882,7 @@ type ListPermissionsResponse struct {
 
 func (x *ListPermissionsResponse) Reset() {
 	*x = ListPermissionsResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[125]
+	mi := &file_ameliso_v1_service_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7661,7 +7894,7 @@ func (x *ListPermissionsResponse) String() string {
 func (*ListPermissionsResponse) ProtoMessage() {}
 
 func (x *ListPermissionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[125]
+	mi := &file_ameliso_v1_service_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7674,7 +7907,7 @@ func (x *ListPermissionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPermissionsResponse.ProtoReflect.Descriptor instead.
 func (*ListPermissionsResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{125}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *ListPermissionsResponse) GetPermissions() []*RepoPermission {
@@ -7695,7 +7928,7 @@ type AddPermissionRequest struct {
 
 func (x *AddPermissionRequest) Reset() {
 	*x = AddPermissionRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[126]
+	mi := &file_ameliso_v1_service_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7707,7 +7940,7 @@ func (x *AddPermissionRequest) String() string {
 func (*AddPermissionRequest) ProtoMessage() {}
 
 func (x *AddPermissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[126]
+	mi := &file_ameliso_v1_service_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7720,7 +7953,7 @@ func (x *AddPermissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddPermissionRequest.ProtoReflect.Descriptor instead.
 func (*AddPermissionRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{126}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *AddPermissionRequest) GetRepoId() string {
@@ -7754,7 +7987,7 @@ type AddPermissionResponse struct {
 
 func (x *AddPermissionResponse) Reset() {
 	*x = AddPermissionResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[127]
+	mi := &file_ameliso_v1_service_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7766,7 +7999,7 @@ func (x *AddPermissionResponse) String() string {
 func (*AddPermissionResponse) ProtoMessage() {}
 
 func (x *AddPermissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[127]
+	mi := &file_ameliso_v1_service_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7779,7 +8012,7 @@ func (x *AddPermissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddPermissionResponse.ProtoReflect.Descriptor instead.
 func (*AddPermissionResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{127}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *AddPermissionResponse) GetPermission() *RepoPermission {
@@ -7806,7 +8039,7 @@ type RemovePermissionRequest struct {
 
 func (x *RemovePermissionRequest) Reset() {
 	*x = RemovePermissionRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[128]
+	mi := &file_ameliso_v1_service_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7818,7 +8051,7 @@ func (x *RemovePermissionRequest) String() string {
 func (*RemovePermissionRequest) ProtoMessage() {}
 
 func (x *RemovePermissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[128]
+	mi := &file_ameliso_v1_service_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7831,7 +8064,7 @@ func (x *RemovePermissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemovePermissionRequest.ProtoReflect.Descriptor instead.
 func (*RemovePermissionRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{128}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *RemovePermissionRequest) GetRepoId() string {
@@ -7856,7 +8089,7 @@ type RemovePermissionResponse struct {
 
 func (x *RemovePermissionResponse) Reset() {
 	*x = RemovePermissionResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[129]
+	mi := &file_ameliso_v1_service_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7868,7 +8101,7 @@ func (x *RemovePermissionResponse) String() string {
 func (*RemovePermissionResponse) ProtoMessage() {}
 
 func (x *RemovePermissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[129]
+	mi := &file_ameliso_v1_service_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7881,7 +8114,7 @@ func (x *RemovePermissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemovePermissionResponse.ProtoReflect.Descriptor instead.
 func (*RemovePermissionResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{129}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{133}
 }
 
 type WhoAmIRequest struct {
@@ -7892,7 +8125,7 @@ type WhoAmIRequest struct {
 
 func (x *WhoAmIRequest) Reset() {
 	*x = WhoAmIRequest{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[130]
+	mi := &file_ameliso_v1_service_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7904,7 +8137,7 @@ func (x *WhoAmIRequest) String() string {
 func (*WhoAmIRequest) ProtoMessage() {}
 
 func (x *WhoAmIRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[130]
+	mi := &file_ameliso_v1_service_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7917,7 +8150,7 @@ func (x *WhoAmIRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WhoAmIRequest.ProtoReflect.Descriptor instead.
 func (*WhoAmIRequest) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{130}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{134}
 }
 
 type WhoAmIResponse struct {
@@ -7935,7 +8168,7 @@ type WhoAmIResponse struct {
 
 func (x *WhoAmIResponse) Reset() {
 	*x = WhoAmIResponse{}
-	mi := &file_ameliso_v1_service_proto_msgTypes[131]
+	mi := &file_ameliso_v1_service_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7947,7 +8180,7 @@ func (x *WhoAmIResponse) String() string {
 func (*WhoAmIResponse) ProtoMessage() {}
 
 func (x *WhoAmIResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_service_proto_msgTypes[131]
+	mi := &file_ameliso_v1_service_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7960,7 +8193,7 @@ func (x *WhoAmIResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WhoAmIResponse.ProtoReflect.Descriptor instead.
 func (*WhoAmIResponse) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{131}
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *WhoAmIResponse) GetUserId() string {
@@ -7989,6 +8222,623 @@ func (x *WhoAmIResponse) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+type GetFlakyCasesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	DaysLookback  int32                  `protobuf:"varint,2,opt,name=days_lookback,json=daysLookback,proto3" json:"days_lookback,omitempty"`
+	Suite         string                 `protobuf:"bytes,3,opt,name=suite,proto3" json:"suite,omitempty"`
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFlakyCasesRequest) Reset() {
+	*x = GetFlakyCasesRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[136]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFlakyCasesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFlakyCasesRequest) ProtoMessage() {}
+
+func (x *GetFlakyCasesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[136]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFlakyCasesRequest.ProtoReflect.Descriptor instead.
+func (*GetFlakyCasesRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{136}
+}
+
+func (x *GetFlakyCasesRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *GetFlakyCasesRequest) GetDaysLookback() int32 {
+	if x != nil {
+		return x.DaysLookback
+	}
+	return 0
+}
+
+func (x *GetFlakyCasesRequest) GetSuite() string {
+	if x != nil {
+		return x.Suite
+	}
+	return ""
+}
+
+func (x *GetFlakyCasesRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type GetFlakyCasesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cases         []*FlakyCaseSummary    `protobuf:"bytes,1,rep,name=cases,proto3" json:"cases,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFlakyCasesResponse) Reset() {
+	*x = GetFlakyCasesResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[137]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFlakyCasesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFlakyCasesResponse) ProtoMessage() {}
+
+func (x *GetFlakyCasesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[137]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFlakyCasesResponse.ProtoReflect.Descriptor instead.
+func (*GetFlakyCasesResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{137}
+}
+
+func (x *GetFlakyCasesResponse) GetCases() []*FlakyCaseSummary {
+	if x != nil {
+		return x.Cases
+	}
+	return nil
+}
+
+// --- Outbound Webhooks ---
+type ListOutboundWebhooksRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOutboundWebhooksRequest) Reset() {
+	*x = ListOutboundWebhooksRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[138]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOutboundWebhooksRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOutboundWebhooksRequest) ProtoMessage() {}
+
+func (x *ListOutboundWebhooksRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[138]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOutboundWebhooksRequest.ProtoReflect.Descriptor instead.
+func (*ListOutboundWebhooksRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{138}
+}
+
+func (x *ListOutboundWebhooksRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+type ListOutboundWebhooksResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Webhooks      []*OutboundWebhook     `protobuf:"bytes,1,rep,name=webhooks,proto3" json:"webhooks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOutboundWebhooksResponse) Reset() {
+	*x = ListOutboundWebhooksResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[139]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOutboundWebhooksResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOutboundWebhooksResponse) ProtoMessage() {}
+
+func (x *ListOutboundWebhooksResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[139]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOutboundWebhooksResponse.ProtoReflect.Descriptor instead.
+func (*ListOutboundWebhooksResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{139}
+}
+
+func (x *ListOutboundWebhooksResponse) GetWebhooks() []*OutboundWebhook {
+	if x != nil {
+		return x.Webhooks
+	}
+	return nil
+}
+
+type CreateOutboundWebhookRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	Secret        string                 `protobuf:"bytes,3,opt,name=secret,proto3" json:"secret,omitempty"`
+	EventTypes    []string               `protobuf:"bytes,4,rep,name=event_types,json=eventTypes,proto3" json:"event_types,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateOutboundWebhookRequest) Reset() {
+	*x = CreateOutboundWebhookRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[140]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateOutboundWebhookRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateOutboundWebhookRequest) ProtoMessage() {}
+
+func (x *CreateOutboundWebhookRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[140]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateOutboundWebhookRequest.ProtoReflect.Descriptor instead.
+func (*CreateOutboundWebhookRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{140}
+}
+
+func (x *CreateOutboundWebhookRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *CreateOutboundWebhookRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *CreateOutboundWebhookRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *CreateOutboundWebhookRequest) GetEventTypes() []string {
+	if x != nil {
+		return x.EventTypes
+	}
+	return nil
+}
+
+type CreateOutboundWebhookResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Webhook       *OutboundWebhook       `protobuf:"bytes,1,opt,name=webhook,proto3" json:"webhook,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateOutboundWebhookResponse) Reset() {
+	*x = CreateOutboundWebhookResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[141]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateOutboundWebhookResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateOutboundWebhookResponse) ProtoMessage() {}
+
+func (x *CreateOutboundWebhookResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[141]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateOutboundWebhookResponse.ProtoReflect.Descriptor instead.
+func (*CreateOutboundWebhookResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{141}
+}
+
+func (x *CreateOutboundWebhookResponse) GetWebhook() *OutboundWebhook {
+	if x != nil {
+		return x.Webhook
+	}
+	return nil
+}
+
+type UpdateOutboundWebhookRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Url           string                 `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	Secret        string                 `protobuf:"bytes,4,opt,name=secret,proto3" json:"secret,omitempty"`
+	EventTypes    []string               `protobuf:"bytes,5,rep,name=event_types,json=eventTypes,proto3" json:"event_types,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateOutboundWebhookRequest) Reset() {
+	*x = UpdateOutboundWebhookRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[142]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateOutboundWebhookRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateOutboundWebhookRequest) ProtoMessage() {}
+
+func (x *UpdateOutboundWebhookRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[142]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateOutboundWebhookRequest.ProtoReflect.Descriptor instead.
+func (*UpdateOutboundWebhookRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{142}
+}
+
+func (x *UpdateOutboundWebhookRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *UpdateOutboundWebhookRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateOutboundWebhookRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *UpdateOutboundWebhookRequest) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *UpdateOutboundWebhookRequest) GetEventTypes() []string {
+	if x != nil {
+		return x.EventTypes
+	}
+	return nil
+}
+
+type UpdateOutboundWebhookResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Webhook       *OutboundWebhook       `protobuf:"bytes,1,opt,name=webhook,proto3" json:"webhook,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateOutboundWebhookResponse) Reset() {
+	*x = UpdateOutboundWebhookResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[143]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateOutboundWebhookResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateOutboundWebhookResponse) ProtoMessage() {}
+
+func (x *UpdateOutboundWebhookResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[143]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateOutboundWebhookResponse.ProtoReflect.Descriptor instead.
+func (*UpdateOutboundWebhookResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{143}
+}
+
+func (x *UpdateOutboundWebhookResponse) GetWebhook() *OutboundWebhook {
+	if x != nil {
+		return x.Webhook
+	}
+	return nil
+}
+
+type DeleteOutboundWebhookRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteOutboundWebhookRequest) Reset() {
+	*x = DeleteOutboundWebhookRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[144]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteOutboundWebhookRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteOutboundWebhookRequest) ProtoMessage() {}
+
+func (x *DeleteOutboundWebhookRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[144]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteOutboundWebhookRequest.ProtoReflect.Descriptor instead.
+func (*DeleteOutboundWebhookRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{144}
+}
+
+func (x *DeleteOutboundWebhookRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *DeleteOutboundWebhookRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type DeleteOutboundWebhookResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteOutboundWebhookResponse) Reset() {
+	*x = DeleteOutboundWebhookResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[145]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteOutboundWebhookResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteOutboundWebhookResponse) ProtoMessage() {}
+
+func (x *DeleteOutboundWebhookResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[145]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteOutboundWebhookResponse.ProtoReflect.Descriptor instead.
+func (*DeleteOutboundWebhookResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{145}
+}
+
+type ListOutboundWebhookDeliveriesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOutboundWebhookDeliveriesRequest) Reset() {
+	*x = ListOutboundWebhookDeliveriesRequest{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[146]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOutboundWebhookDeliveriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOutboundWebhookDeliveriesRequest) ProtoMessage() {}
+
+func (x *ListOutboundWebhookDeliveriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[146]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOutboundWebhookDeliveriesRequest.ProtoReflect.Descriptor instead.
+func (*ListOutboundWebhookDeliveriesRequest) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{146}
+}
+
+func (x *ListOutboundWebhookDeliveriesRequest) GetRepoId() string {
+	if x != nil {
+		return x.RepoId
+	}
+	return ""
+}
+
+func (x *ListOutboundWebhookDeliveriesRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListOutboundWebhookDeliveriesResponse struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Deliveries    []*OutboundWebhookDelivery `protobuf:"bytes,1,rep,name=deliveries,proto3" json:"deliveries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOutboundWebhookDeliveriesResponse) Reset() {
+	*x = ListOutboundWebhookDeliveriesResponse{}
+	mi := &file_ameliso_v1_service_proto_msgTypes[147]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOutboundWebhookDeliveriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOutboundWebhookDeliveriesResponse) ProtoMessage() {}
+
+func (x *ListOutboundWebhookDeliveriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_service_proto_msgTypes[147]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOutboundWebhookDeliveriesResponse.ProtoReflect.Descriptor instead.
+func (*ListOutboundWebhookDeliveriesResponse) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_service_proto_rawDescGZIP(), []int{147}
+}
+
+func (x *ListOutboundWebhookDeliveriesResponse) GetDeliveries() []*OutboundWebhookDelivery {
+	if x != nil {
+		return x.Deliveries
+	}
+	return nil
 }
 
 var File_ameliso_v1_service_proto protoreflect.FileDescriptor
@@ -8038,7 +8888,13 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\aentries\x18\x01 \x03(\v2\x1c.ameliso.v1.CaseHistoryEntryR\aentries\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x05R\n" +
-	"totalCount\"\xb7\x02\n" +
+	"totalCount\"f\n" +
+	"\x18GetCaseGitHistoryRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
+	"\tcase_path\x18\x02 \x01(\tR\bcasePath\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"P\n" +
+	"\x19GetCaseGitHistoryResponse\x123\n" +
+	"\acommits\x18\x01 \x03(\v2\x19.ameliso.v1.CaseGitCommitR\acommits\"\xb7\x02\n" +
 	"\x11CreateCaseRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tcase_path\x18\x02 \x01(\tR\bcasePath\x12\x14\n" +
@@ -8313,7 +9169,18 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"flaky_only\x18\x05 \x01(\bR\tflakyOnly\"m\n" +
 	"\x19GetCoverageReportResponse\x123\n" +
 	"\aentries\x18\x01 \x03(\v2\x19.ameliso.v1.CoverageEntryR\aentries\x12\x1b\n" +
-	"\trun_count\x18\x02 \x01(\x05R\brunCount\"\xc7\x01\n" +
+	"\trun_count\x18\x02 \x01(\x05R\brunCount\"\x91\x01\n" +
+	"\x19GetRunTrendMetricsRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x02 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x03 \x01(\tR\aendDate\x12!\n" +
+	"\fsuite_filter\x18\x04 \x01(\tR\vsuiteFilter\"\xc7\x01\n" +
+	"\x1aGetRunTrendMetricsResponse\x121\n" +
+	"\x06points\x18\x01 \x03(\v2\x19.ameliso.v1.RunTrendPointR\x06points\x127\n" +
+	"\x06funnel\x18\x02 \x01(\v2\x1f.ameliso.v1.RunCompletionFunnelR\x06funnel\x12=\n" +
+	"\vflaky_cases\x18\x03 \x03(\v2\x1c.ameliso.v1.FlakyCaseSummaryR\n" +
+	"flakyCases\"\xc7\x01\n" +
 	"\x17GetAffectedCasesRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1b\n" +
 	"\tsince_ref\x18\x02 \x01(\tR\bsinceRef\x12#\n" +
@@ -8585,11 +9452,51 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1b\n" +
 	"\tauth0_sub\x18\x02 \x01(\tR\bauth0Sub\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
-	"\x04name\x18\x04 \x01(\tR\x04name2\xfc)\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\"\x80\x01\n" +
+	"\x14GetFlakyCasesRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12#\n" +
+	"\rdays_lookback\x18\x02 \x01(\x05R\fdaysLookback\x12\x14\n" +
+	"\x05suite\x18\x03 \x01(\tR\x05suite\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\"K\n" +
+	"\x15GetFlakyCasesResponse\x122\n" +
+	"\x05cases\x18\x01 \x03(\v2\x1c.ameliso.v1.FlakyCaseSummaryR\x05cases\"6\n" +
+	"\x1bListOutboundWebhooksRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\"W\n" +
+	"\x1cListOutboundWebhooksResponse\x127\n" +
+	"\bwebhooks\x18\x01 \x03(\v2\x1b.ameliso.v1.OutboundWebhookR\bwebhooks\"\x82\x01\n" +
+	"\x1cCreateOutboundWebhookRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12\x16\n" +
+	"\x06secret\x18\x03 \x01(\tR\x06secret\x12\x1f\n" +
+	"\vevent_types\x18\x04 \x03(\tR\n" +
+	"eventTypes\"V\n" +
+	"\x1dCreateOutboundWebhookResponse\x125\n" +
+	"\awebhook\x18\x01 \x01(\v2\x1b.ameliso.v1.OutboundWebhookR\awebhook\"\x92\x01\n" +
+	"\x1cUpdateOutboundWebhookRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x12\x16\n" +
+	"\x06secret\x18\x04 \x01(\tR\x06secret\x12\x1f\n" +
+	"\vevent_types\x18\x05 \x03(\tR\n" +
+	"eventTypes\"V\n" +
+	"\x1dUpdateOutboundWebhookResponse\x125\n" +
+	"\awebhook\x18\x01 \x01(\v2\x1b.ameliso.v1.OutboundWebhookR\awebhook\"G\n" +
+	"\x1cDeleteOutboundWebhookRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\"\x1f\n" +
+	"\x1dDeleteOutboundWebhookResponse\"U\n" +
+	"$ListOutboundWebhookDeliveriesRequest\x12\x17\n" +
+	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"l\n" +
+	"%ListOutboundWebhookDeliveriesResponse\x12C\n" +
+	"\n" +
+	"deliveries\x18\x01 \x03(\v2#.ameliso.v1.OutboundWebhookDeliveryR\n" +
+	"deliveries2\xd50\n" +
 	"\x0eAmelisoService\x12H\n" +
 	"\tListCases\x12\x1c.ameliso.v1.ListCasesRequest\x1a\x1d.ameliso.v1.ListCasesResponse\x12B\n" +
 	"\aGetCase\x12\x1a.ameliso.v1.GetCaseRequest\x1a\x1b.ameliso.v1.GetCaseResponse\x12W\n" +
-	"\x0eGetCaseHistory\x12!.ameliso.v1.GetCaseHistoryRequest\x1a\".ameliso.v1.GetCaseHistoryResponse\x12K\n" +
+	"\x0eGetCaseHistory\x12!.ameliso.v1.GetCaseHistoryRequest\x1a\".ameliso.v1.GetCaseHistoryResponse\x12`\n" +
+	"\x11GetCaseGitHistory\x12$.ameliso.v1.GetCaseGitHistoryRequest\x1a%.ameliso.v1.GetCaseGitHistoryResponse\x12K\n" +
 	"\n" +
 	"CreateCase\x12\x1d.ameliso.v1.CreateCaseRequest\x1a\x1e.ameliso.v1.CreateCaseResponse\x12Z\n" +
 	"\x0fBulkCreateCases\x12\".ameliso.v1.BulkCreateCasesRequest\x1a#.ameliso.v1.BulkCreateCasesResponse\x12K\n" +
@@ -8619,7 +9526,9 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x0fGetPendingCases\x12\".ameliso.v1.GetPendingCasesRequest\x1a#.ameliso.v1.GetPendingCasesResponse\x12H\n" +
 	"\tUpdateRun\x12\x1c.ameliso.v1.UpdateRunRequest\x1a\x1d.ameliso.v1.UpdateRunResponse\x12E\n" +
 	"\bClaimRun\x12\x1b.ameliso.v1.ClaimRunRequest\x1a\x1c.ameliso.v1.ClaimRunResponse\x12`\n" +
-	"\x11GetCoverageReport\x12$.ameliso.v1.GetCoverageReportRequest\x1a%.ameliso.v1.GetCoverageReportResponse\x12]\n" +
+	"\x11GetCoverageReport\x12$.ameliso.v1.GetCoverageReportRequest\x1a%.ameliso.v1.GetCoverageReportResponse\x12c\n" +
+	"\x12GetRunTrendMetrics\x12%.ameliso.v1.GetRunTrendMetricsRequest\x1a&.ameliso.v1.GetRunTrendMetricsResponse\x12T\n" +
+	"\rGetFlakyCases\x12 .ameliso.v1.GetFlakyCasesRequest\x1a!.ameliso.v1.GetFlakyCasesResponse\x12]\n" +
 	"\x10GetAffectedCases\x12#.ameliso.v1.GetAffectedCasesRequest\x1a$.ameliso.v1.GetAffectedCasesResponse\x12T\n" +
 	"\rGetRepoStatus\x12 .ameliso.v1.GetRepoStatusRequest\x1a!.ameliso.v1.GetRepoStatusResponse\x12N\n" +
 	"\vCompareRuns\x12\x1e.ameliso.v1.CompareRunsRequest\x1a\x1f.ameliso.v1.CompareRunsResponse\x12i\n" +
@@ -8649,7 +9558,12 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x0eGetRunTemplate\x12!.ameliso.v1.GetRunTemplateRequest\x1a\".ameliso.v1.GetRunTemplateResponse\x12`\n" +
 	"\x11CreateRunTemplate\x12$.ameliso.v1.CreateRunTemplateRequest\x1a%.ameliso.v1.CreateRunTemplateResponse\x12`\n" +
 	"\x11UpdateRunTemplate\x12$.ameliso.v1.UpdateRunTemplateRequest\x1a%.ameliso.v1.UpdateRunTemplateResponse\x12`\n" +
-	"\x11DeleteRunTemplate\x12$.ameliso.v1.DeleteRunTemplateRequest\x1a%.ameliso.v1.DeleteRunTemplateResponse\x12Z\n" +
+	"\x11DeleteRunTemplate\x12$.ameliso.v1.DeleteRunTemplateRequest\x1a%.ameliso.v1.DeleteRunTemplateResponse\x12i\n" +
+	"\x14ListOutboundWebhooks\x12'.ameliso.v1.ListOutboundWebhooksRequest\x1a(.ameliso.v1.ListOutboundWebhooksResponse\x12l\n" +
+	"\x15CreateOutboundWebhook\x12(.ameliso.v1.CreateOutboundWebhookRequest\x1a).ameliso.v1.CreateOutboundWebhookResponse\x12l\n" +
+	"\x15UpdateOutboundWebhook\x12(.ameliso.v1.UpdateOutboundWebhookRequest\x1a).ameliso.v1.UpdateOutboundWebhookResponse\x12l\n" +
+	"\x15DeleteOutboundWebhook\x12(.ameliso.v1.DeleteOutboundWebhookRequest\x1a).ameliso.v1.DeleteOutboundWebhookResponse\x12\x84\x01\n" +
+	"\x1dListOutboundWebhookDeliveries\x120.ameliso.v1.ListOutboundWebhookDeliveriesRequest\x1a1.ameliso.v1.ListOutboundWebhookDeliveriesResponse\x12Z\n" +
 	"\x0fListPermissions\x12\".ameliso.v1.ListPermissionsRequest\x1a#.ameliso.v1.ListPermissionsResponse\x12T\n" +
 	"\rAddPermission\x12 .ameliso.v1.AddPermissionRequest\x1a!.ameliso.v1.AddPermissionResponse\x12]\n" +
 	"\x10RemovePermission\x12#.ameliso.v1.RemovePermissionRequest\x1a$.ameliso.v1.RemovePermissionResponse\x12?\n" +
@@ -8667,364 +9581,410 @@ func file_ameliso_v1_service_proto_rawDescGZIP() []byte {
 	return file_ameliso_v1_service_proto_rawDescData
 }
 
-var file_ameliso_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 132)
+var file_ameliso_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 148)
 var file_ameliso_v1_service_proto_goTypes = []any{
-	(*ListCasesRequest)(nil),             // 0: ameliso.v1.ListCasesRequest
-	(*ListCasesResponse)(nil),            // 1: ameliso.v1.ListCasesResponse
-	(*GetCaseRequest)(nil),               // 2: ameliso.v1.GetCaseRequest
-	(*GetCaseResponse)(nil),              // 3: ameliso.v1.GetCaseResponse
-	(*CaseHistoryEntry)(nil),             // 4: ameliso.v1.CaseHistoryEntry
-	(*GetCaseHistoryRequest)(nil),        // 5: ameliso.v1.GetCaseHistoryRequest
-	(*GetCaseHistoryResponse)(nil),       // 6: ameliso.v1.GetCaseHistoryResponse
-	(*CreateCaseRequest)(nil),            // 7: ameliso.v1.CreateCaseRequest
-	(*CreateCaseResponse)(nil),           // 8: ameliso.v1.CreateCaseResponse
-	(*BulkCaseEntry)(nil),                // 9: ameliso.v1.BulkCaseEntry
-	(*BulkCreateCasesRequest)(nil),       // 10: ameliso.v1.BulkCreateCasesRequest
-	(*BulkCreateCasesResponse)(nil),      // 11: ameliso.v1.BulkCreateCasesResponse
-	(*UpdateCaseRequest)(nil),            // 12: ameliso.v1.UpdateCaseRequest
-	(*UpdateCaseResponse)(nil),           // 13: ameliso.v1.UpdateCaseResponse
-	(*BulkUpdateEntry)(nil),              // 14: ameliso.v1.BulkUpdateEntry
-	(*BulkUpdateCasesRequest)(nil),       // 15: ameliso.v1.BulkUpdateCasesRequest
-	(*BulkUpdateCasesResponse)(nil),      // 16: ameliso.v1.BulkUpdateCasesResponse
-	(*DeleteCaseRequest)(nil),            // 17: ameliso.v1.DeleteCaseRequest
-	(*DeleteCaseResponse)(nil),           // 18: ameliso.v1.DeleteCaseResponse
-	(*BulkDeleteCasesRequest)(nil),       // 19: ameliso.v1.BulkDeleteCasesRequest
-	(*BulkDeleteCasesResponse)(nil),      // 20: ameliso.v1.BulkDeleteCasesResponse
-	(*RestoreCaseRequest)(nil),           // 21: ameliso.v1.RestoreCaseRequest
-	(*RestoreCaseResponse)(nil),          // 22: ameliso.v1.RestoreCaseResponse
-	(*ListSuitesRequest)(nil),            // 23: ameliso.v1.ListSuitesRequest
-	(*ListSuitesResponse)(nil),           // 24: ameliso.v1.ListSuitesResponse
-	(*GetSuiteRequest)(nil),              // 25: ameliso.v1.GetSuiteRequest
-	(*GetSuiteResponse)(nil),             // 26: ameliso.v1.GetSuiteResponse
-	(*CreateSuiteRequest)(nil),           // 27: ameliso.v1.CreateSuiteRequest
-	(*CreateSuiteResponse)(nil),          // 28: ameliso.v1.CreateSuiteResponse
-	(*UpdateSuiteRequest)(nil),           // 29: ameliso.v1.UpdateSuiteRequest
-	(*UpdateSuiteResponse)(nil),          // 30: ameliso.v1.UpdateSuiteResponse
-	(*DeleteSuiteRequest)(nil),           // 31: ameliso.v1.DeleteSuiteRequest
-	(*DeleteSuiteResponse)(nil),          // 32: ameliso.v1.DeleteSuiteResponse
-	(*RestoreSuiteRequest)(nil),          // 33: ameliso.v1.RestoreSuiteRequest
-	(*RestoreSuiteResponse)(nil),         // 34: ameliso.v1.RestoreSuiteResponse
-	(*ListRunsRequest)(nil),              // 35: ameliso.v1.ListRunsRequest
-	(*ListRunsResponse)(nil),             // 36: ameliso.v1.ListRunsResponse
-	(*GetRunRequest)(nil),                // 37: ameliso.v1.GetRunRequest
-	(*GetRunResponse)(nil),               // 38: ameliso.v1.GetRunResponse
-	(*CreateRunRequest)(nil),             // 39: ameliso.v1.CreateRunRequest
-	(*CreateRunResponse)(nil),            // 40: ameliso.v1.CreateRunResponse
-	(*RecordResultRequest)(nil),          // 41: ameliso.v1.RecordResultRequest
-	(*RecordResultResponse)(nil),         // 42: ameliso.v1.RecordResultResponse
-	(*BulkResultEntry)(nil),              // 43: ameliso.v1.BulkResultEntry
-	(*BulkRecordResultsRequest)(nil),     // 44: ameliso.v1.BulkRecordResultsRequest
-	(*BulkRecordResultsResponse)(nil),    // 45: ameliso.v1.BulkRecordResultsResponse
-	(*FinalizeRunRequest)(nil),           // 46: ameliso.v1.FinalizeRunRequest
-	(*FinalizeRunResponse)(nil),          // 47: ameliso.v1.FinalizeRunResponse
-	(*DeleteRunRequest)(nil),             // 48: ameliso.v1.DeleteRunRequest
-	(*DeleteRunResponse)(nil),            // 49: ameliso.v1.DeleteRunResponse
-	(*RestoreRunRequest)(nil),            // 50: ameliso.v1.RestoreRunRequest
-	(*RestoreRunResponse)(nil),           // 51: ameliso.v1.RestoreRunResponse
-	(*GetPendingCasesRequest)(nil),       // 52: ameliso.v1.GetPendingCasesRequest
-	(*PendingEntry)(nil),                 // 53: ameliso.v1.PendingEntry
-	(*GetPendingCasesResponse)(nil),      // 54: ameliso.v1.GetPendingCasesResponse
-	(*UpdateRunRequest)(nil),             // 55: ameliso.v1.UpdateRunRequest
-	(*UpdateRunResponse)(nil),            // 56: ameliso.v1.UpdateRunResponse
-	(*ClaimRunRequest)(nil),              // 57: ameliso.v1.ClaimRunRequest
-	(*ClaimRunResponse)(nil),             // 58: ameliso.v1.ClaimRunResponse
-	(*GetCoverageReportRequest)(nil),     // 59: ameliso.v1.GetCoverageReportRequest
-	(*GetCoverageReportResponse)(nil),    // 60: ameliso.v1.GetCoverageReportResponse
-	(*GetAffectedCasesRequest)(nil),      // 61: ameliso.v1.GetAffectedCasesRequest
-	(*GetAffectedCasesResponse)(nil),     // 62: ameliso.v1.GetAffectedCasesResponse
-	(*GetRepoStatusRequest)(nil),         // 63: ameliso.v1.GetRepoStatusRequest
-	(*ActiveRunStatus)(nil),              // 64: ameliso.v1.ActiveRunStatus
-	(*GetRepoStatusResponse)(nil),        // 65: ameliso.v1.GetRepoStatusResponse
-	(*CompareRunsRequest)(nil),           // 66: ameliso.v1.CompareRunsRequest
-	(*RunCaseDiff)(nil),                  // 67: ameliso.v1.RunCaseDiff
-	(*CompareRunsResponse)(nil),          // 68: ameliso.v1.CompareRunsResponse
-	(*GetTesterSuggestionsRequest)(nil),  // 69: ameliso.v1.GetTesterSuggestionsRequest
-	(*GetTesterSuggestionsResponse)(nil), // 70: ameliso.v1.GetTesterSuggestionsResponse
-	(*GetGitHubInstallUrlRequest)(nil),   // 71: ameliso.v1.GetGitHubInstallUrlRequest
-	(*GetGitHubInstallUrlResponse)(nil),  // 72: ameliso.v1.GetGitHubInstallUrlResponse
-	(*HandleGitHubCallbackRequest)(nil),  // 73: ameliso.v1.HandleGitHubCallbackRequest
-	(*HandleGitHubCallbackResponse)(nil), // 74: ameliso.v1.HandleGitHubCallbackResponse
-	(*ListRepositoriesRequest)(nil),      // 75: ameliso.v1.ListRepositoriesRequest
-	(*ListRepositoriesResponse)(nil),     // 76: ameliso.v1.ListRepositoriesResponse
-	(*SyncRepositoryRequest)(nil),        // 77: ameliso.v1.SyncRepositoryRequest
-	(*SyncRepositoryResponse)(nil),       // 78: ameliso.v1.SyncRepositoryResponse
-	(*RemoveRepositoryRequest)(nil),      // 79: ameliso.v1.RemoveRepositoryRequest
-	(*RemoveRepositoryResponse)(nil),     // 80: ameliso.v1.RemoveRepositoryResponse
-	(*RotateRepoApiKeyRequest)(nil),      // 81: ameliso.v1.RotateRepoApiKeyRequest
-	(*RotateRepoApiKeyResponse)(nil),     // 82: ameliso.v1.RotateRepoApiKeyResponse
-	(*ListRepoTokensRequest)(nil),        // 83: ameliso.v1.ListRepoTokensRequest
-	(*ListRepoTokensResponse)(nil),       // 84: ameliso.v1.ListRepoTokensResponse
-	(*CreateRepoTokenRequest)(nil),       // 85: ameliso.v1.CreateRepoTokenRequest
-	(*CreateRepoTokenResponse)(nil),      // 86: ameliso.v1.CreateRepoTokenResponse
-	(*DeleteRepoTokenRequest)(nil),       // 87: ameliso.v1.DeleteRepoTokenRequest
-	(*DeleteRepoTokenResponse)(nil),      // 88: ameliso.v1.DeleteRepoTokenResponse
-	(*UpdateRepoTokenRequest)(nil),       // 89: ameliso.v1.UpdateRepoTokenRequest
-	(*UpdateRepoTokenResponse)(nil),      // 90: ameliso.v1.UpdateRepoTokenResponse
-	(*UserToken)(nil),                    // 91: ameliso.v1.UserToken
-	(*CreateUserTokenRequest)(nil),       // 92: ameliso.v1.CreateUserTokenRequest
-	(*CreateUserTokenResponse)(nil),      // 93: ameliso.v1.CreateUserTokenResponse
-	(*ListUserTokensRequest)(nil),        // 94: ameliso.v1.ListUserTokensRequest
-	(*ListUserTokensResponse)(nil),       // 95: ameliso.v1.ListUserTokensResponse
-	(*RevokeUserTokenRequest)(nil),       // 96: ameliso.v1.RevokeUserTokenRequest
-	(*RevokeUserTokenResponse)(nil),      // 97: ameliso.v1.RevokeUserTokenResponse
-	(*RotateUserTokenRequest)(nil),       // 98: ameliso.v1.RotateUserTokenRequest
-	(*RotateUserTokenResponse)(nil),      // 99: ameliso.v1.RotateUserTokenResponse
-	(*ListAuditLogRequest)(nil),          // 100: ameliso.v1.ListAuditLogRequest
-	(*ListAuditLogResponse)(nil),         // 101: ameliso.v1.ListAuditLogResponse
-	(*ListStrategiesRequest)(nil),        // 102: ameliso.v1.ListStrategiesRequest
-	(*ListStrategiesResponse)(nil),       // 103: ameliso.v1.ListStrategiesResponse
-	(*GetStrategyRequest)(nil),           // 104: ameliso.v1.GetStrategyRequest
-	(*GetStrategyResponse)(nil),          // 105: ameliso.v1.GetStrategyResponse
-	(*CreateStrategyRequest)(nil),        // 106: ameliso.v1.CreateStrategyRequest
-	(*CreateStrategyResponse)(nil),       // 107: ameliso.v1.CreateStrategyResponse
-	(*UpdateStrategyRequest)(nil),        // 108: ameliso.v1.UpdateStrategyRequest
-	(*UpdateStrategyResponse)(nil),       // 109: ameliso.v1.UpdateStrategyResponse
-	(*DeleteStrategyRequest)(nil),        // 110: ameliso.v1.DeleteStrategyRequest
-	(*DeleteStrategyResponse)(nil),       // 111: ameliso.v1.DeleteStrategyResponse
-	(*RestoreStrategyRequest)(nil),       // 112: ameliso.v1.RestoreStrategyRequest
-	(*RestoreStrategyResponse)(nil),      // 113: ameliso.v1.RestoreStrategyResponse
-	(*ListRunTemplatesRequest)(nil),      // 114: ameliso.v1.ListRunTemplatesRequest
-	(*ListRunTemplatesResponse)(nil),     // 115: ameliso.v1.ListRunTemplatesResponse
-	(*GetRunTemplateRequest)(nil),        // 116: ameliso.v1.GetRunTemplateRequest
-	(*GetRunTemplateResponse)(nil),       // 117: ameliso.v1.GetRunTemplateResponse
-	(*CreateRunTemplateRequest)(nil),     // 118: ameliso.v1.CreateRunTemplateRequest
-	(*CreateRunTemplateResponse)(nil),    // 119: ameliso.v1.CreateRunTemplateResponse
-	(*UpdateRunTemplateRequest)(nil),     // 120: ameliso.v1.UpdateRunTemplateRequest
-	(*UpdateRunTemplateResponse)(nil),    // 121: ameliso.v1.UpdateRunTemplateResponse
-	(*DeleteRunTemplateRequest)(nil),     // 122: ameliso.v1.DeleteRunTemplateRequest
-	(*DeleteRunTemplateResponse)(nil),    // 123: ameliso.v1.DeleteRunTemplateResponse
-	(*ListPermissionsRequest)(nil),       // 124: ameliso.v1.ListPermissionsRequest
-	(*ListPermissionsResponse)(nil),      // 125: ameliso.v1.ListPermissionsResponse
-	(*AddPermissionRequest)(nil),         // 126: ameliso.v1.AddPermissionRequest
-	(*AddPermissionResponse)(nil),        // 127: ameliso.v1.AddPermissionResponse
-	(*RemovePermissionRequest)(nil),      // 128: ameliso.v1.RemovePermissionRequest
-	(*RemovePermissionResponse)(nil),     // 129: ameliso.v1.RemovePermissionResponse
-	(*WhoAmIRequest)(nil),                // 130: ameliso.v1.WhoAmIRequest
-	(*WhoAmIResponse)(nil),               // 131: ameliso.v1.WhoAmIResponse
-	(Priority)(0),                        // 132: ameliso.v1.Priority
-	(*Case)(nil),                         // 133: ameliso.v1.Case
-	(*Suite)(nil),                        // 134: ameliso.v1.Suite
-	(RunStatus)(0),                       // 135: ameliso.v1.RunStatus
-	(*RunMeta)(nil),                      // 136: ameliso.v1.RunMeta
-	(*Run)(nil),                          // 137: ameliso.v1.Run
-	(ResultStatus)(0),                    // 138: ameliso.v1.ResultStatus
-	(*CaseResult)(nil),                   // 139: ameliso.v1.CaseResult
-	(*CoverageEntry)(nil),                // 140: ameliso.v1.CoverageEntry
-	(*AffectedCase)(nil),                 // 141: ameliso.v1.AffectedCase
-	(*SuiteCoverageSummary)(nil),         // 142: ameliso.v1.SuiteCoverageSummary
-	(*FlakyCaseSummary)(nil),             // 143: ameliso.v1.FlakyCaseSummary
-	(*Repository)(nil),                   // 144: ameliso.v1.Repository
-	(*RepoToken)(nil),                    // 145: ameliso.v1.RepoToken
-	(*AuditEntry)(nil),                   // 146: ameliso.v1.AuditEntry
-	(*TestingStrategy)(nil),              // 147: ameliso.v1.TestingStrategy
-	(*RunTemplate)(nil),                  // 148: ameliso.v1.RunTemplate
-	(*RepoPermission)(nil),               // 149: ameliso.v1.RepoPermission
+	(*ListCasesRequest)(nil),                      // 0: ameliso.v1.ListCasesRequest
+	(*ListCasesResponse)(nil),                     // 1: ameliso.v1.ListCasesResponse
+	(*GetCaseRequest)(nil),                        // 2: ameliso.v1.GetCaseRequest
+	(*GetCaseResponse)(nil),                       // 3: ameliso.v1.GetCaseResponse
+	(*CaseHistoryEntry)(nil),                      // 4: ameliso.v1.CaseHistoryEntry
+	(*GetCaseHistoryRequest)(nil),                 // 5: ameliso.v1.GetCaseHistoryRequest
+	(*GetCaseHistoryResponse)(nil),                // 6: ameliso.v1.GetCaseHistoryResponse
+	(*GetCaseGitHistoryRequest)(nil),              // 7: ameliso.v1.GetCaseGitHistoryRequest
+	(*GetCaseGitHistoryResponse)(nil),             // 8: ameliso.v1.GetCaseGitHistoryResponse
+	(*CreateCaseRequest)(nil),                     // 9: ameliso.v1.CreateCaseRequest
+	(*CreateCaseResponse)(nil),                    // 10: ameliso.v1.CreateCaseResponse
+	(*BulkCaseEntry)(nil),                         // 11: ameliso.v1.BulkCaseEntry
+	(*BulkCreateCasesRequest)(nil),                // 12: ameliso.v1.BulkCreateCasesRequest
+	(*BulkCreateCasesResponse)(nil),               // 13: ameliso.v1.BulkCreateCasesResponse
+	(*UpdateCaseRequest)(nil),                     // 14: ameliso.v1.UpdateCaseRequest
+	(*UpdateCaseResponse)(nil),                    // 15: ameliso.v1.UpdateCaseResponse
+	(*BulkUpdateEntry)(nil),                       // 16: ameliso.v1.BulkUpdateEntry
+	(*BulkUpdateCasesRequest)(nil),                // 17: ameliso.v1.BulkUpdateCasesRequest
+	(*BulkUpdateCasesResponse)(nil),               // 18: ameliso.v1.BulkUpdateCasesResponse
+	(*DeleteCaseRequest)(nil),                     // 19: ameliso.v1.DeleteCaseRequest
+	(*DeleteCaseResponse)(nil),                    // 20: ameliso.v1.DeleteCaseResponse
+	(*BulkDeleteCasesRequest)(nil),                // 21: ameliso.v1.BulkDeleteCasesRequest
+	(*BulkDeleteCasesResponse)(nil),               // 22: ameliso.v1.BulkDeleteCasesResponse
+	(*RestoreCaseRequest)(nil),                    // 23: ameliso.v1.RestoreCaseRequest
+	(*RestoreCaseResponse)(nil),                   // 24: ameliso.v1.RestoreCaseResponse
+	(*ListSuitesRequest)(nil),                     // 25: ameliso.v1.ListSuitesRequest
+	(*ListSuitesResponse)(nil),                    // 26: ameliso.v1.ListSuitesResponse
+	(*GetSuiteRequest)(nil),                       // 27: ameliso.v1.GetSuiteRequest
+	(*GetSuiteResponse)(nil),                      // 28: ameliso.v1.GetSuiteResponse
+	(*CreateSuiteRequest)(nil),                    // 29: ameliso.v1.CreateSuiteRequest
+	(*CreateSuiteResponse)(nil),                   // 30: ameliso.v1.CreateSuiteResponse
+	(*UpdateSuiteRequest)(nil),                    // 31: ameliso.v1.UpdateSuiteRequest
+	(*UpdateSuiteResponse)(nil),                   // 32: ameliso.v1.UpdateSuiteResponse
+	(*DeleteSuiteRequest)(nil),                    // 33: ameliso.v1.DeleteSuiteRequest
+	(*DeleteSuiteResponse)(nil),                   // 34: ameliso.v1.DeleteSuiteResponse
+	(*RestoreSuiteRequest)(nil),                   // 35: ameliso.v1.RestoreSuiteRequest
+	(*RestoreSuiteResponse)(nil),                  // 36: ameliso.v1.RestoreSuiteResponse
+	(*ListRunsRequest)(nil),                       // 37: ameliso.v1.ListRunsRequest
+	(*ListRunsResponse)(nil),                      // 38: ameliso.v1.ListRunsResponse
+	(*GetRunRequest)(nil),                         // 39: ameliso.v1.GetRunRequest
+	(*GetRunResponse)(nil),                        // 40: ameliso.v1.GetRunResponse
+	(*CreateRunRequest)(nil),                      // 41: ameliso.v1.CreateRunRequest
+	(*CreateRunResponse)(nil),                     // 42: ameliso.v1.CreateRunResponse
+	(*RecordResultRequest)(nil),                   // 43: ameliso.v1.RecordResultRequest
+	(*RecordResultResponse)(nil),                  // 44: ameliso.v1.RecordResultResponse
+	(*BulkResultEntry)(nil),                       // 45: ameliso.v1.BulkResultEntry
+	(*BulkRecordResultsRequest)(nil),              // 46: ameliso.v1.BulkRecordResultsRequest
+	(*BulkRecordResultsResponse)(nil),             // 47: ameliso.v1.BulkRecordResultsResponse
+	(*FinalizeRunRequest)(nil),                    // 48: ameliso.v1.FinalizeRunRequest
+	(*FinalizeRunResponse)(nil),                   // 49: ameliso.v1.FinalizeRunResponse
+	(*DeleteRunRequest)(nil),                      // 50: ameliso.v1.DeleteRunRequest
+	(*DeleteRunResponse)(nil),                     // 51: ameliso.v1.DeleteRunResponse
+	(*RestoreRunRequest)(nil),                     // 52: ameliso.v1.RestoreRunRequest
+	(*RestoreRunResponse)(nil),                    // 53: ameliso.v1.RestoreRunResponse
+	(*GetPendingCasesRequest)(nil),                // 54: ameliso.v1.GetPendingCasesRequest
+	(*PendingEntry)(nil),                          // 55: ameliso.v1.PendingEntry
+	(*GetPendingCasesResponse)(nil),               // 56: ameliso.v1.GetPendingCasesResponse
+	(*UpdateRunRequest)(nil),                      // 57: ameliso.v1.UpdateRunRequest
+	(*UpdateRunResponse)(nil),                     // 58: ameliso.v1.UpdateRunResponse
+	(*ClaimRunRequest)(nil),                       // 59: ameliso.v1.ClaimRunRequest
+	(*ClaimRunResponse)(nil),                      // 60: ameliso.v1.ClaimRunResponse
+	(*GetCoverageReportRequest)(nil),              // 61: ameliso.v1.GetCoverageReportRequest
+	(*GetCoverageReportResponse)(nil),             // 62: ameliso.v1.GetCoverageReportResponse
+	(*GetRunTrendMetricsRequest)(nil),             // 63: ameliso.v1.GetRunTrendMetricsRequest
+	(*GetRunTrendMetricsResponse)(nil),            // 64: ameliso.v1.GetRunTrendMetricsResponse
+	(*GetAffectedCasesRequest)(nil),               // 65: ameliso.v1.GetAffectedCasesRequest
+	(*GetAffectedCasesResponse)(nil),              // 66: ameliso.v1.GetAffectedCasesResponse
+	(*GetRepoStatusRequest)(nil),                  // 67: ameliso.v1.GetRepoStatusRequest
+	(*ActiveRunStatus)(nil),                       // 68: ameliso.v1.ActiveRunStatus
+	(*GetRepoStatusResponse)(nil),                 // 69: ameliso.v1.GetRepoStatusResponse
+	(*CompareRunsRequest)(nil),                    // 70: ameliso.v1.CompareRunsRequest
+	(*RunCaseDiff)(nil),                           // 71: ameliso.v1.RunCaseDiff
+	(*CompareRunsResponse)(nil),                   // 72: ameliso.v1.CompareRunsResponse
+	(*GetTesterSuggestionsRequest)(nil),           // 73: ameliso.v1.GetTesterSuggestionsRequest
+	(*GetTesterSuggestionsResponse)(nil),          // 74: ameliso.v1.GetTesterSuggestionsResponse
+	(*GetGitHubInstallUrlRequest)(nil),            // 75: ameliso.v1.GetGitHubInstallUrlRequest
+	(*GetGitHubInstallUrlResponse)(nil),           // 76: ameliso.v1.GetGitHubInstallUrlResponse
+	(*HandleGitHubCallbackRequest)(nil),           // 77: ameliso.v1.HandleGitHubCallbackRequest
+	(*HandleGitHubCallbackResponse)(nil),          // 78: ameliso.v1.HandleGitHubCallbackResponse
+	(*ListRepositoriesRequest)(nil),               // 79: ameliso.v1.ListRepositoriesRequest
+	(*ListRepositoriesResponse)(nil),              // 80: ameliso.v1.ListRepositoriesResponse
+	(*SyncRepositoryRequest)(nil),                 // 81: ameliso.v1.SyncRepositoryRequest
+	(*SyncRepositoryResponse)(nil),                // 82: ameliso.v1.SyncRepositoryResponse
+	(*RemoveRepositoryRequest)(nil),               // 83: ameliso.v1.RemoveRepositoryRequest
+	(*RemoveRepositoryResponse)(nil),              // 84: ameliso.v1.RemoveRepositoryResponse
+	(*RotateRepoApiKeyRequest)(nil),               // 85: ameliso.v1.RotateRepoApiKeyRequest
+	(*RotateRepoApiKeyResponse)(nil),              // 86: ameliso.v1.RotateRepoApiKeyResponse
+	(*ListRepoTokensRequest)(nil),                 // 87: ameliso.v1.ListRepoTokensRequest
+	(*ListRepoTokensResponse)(nil),                // 88: ameliso.v1.ListRepoTokensResponse
+	(*CreateRepoTokenRequest)(nil),                // 89: ameliso.v1.CreateRepoTokenRequest
+	(*CreateRepoTokenResponse)(nil),               // 90: ameliso.v1.CreateRepoTokenResponse
+	(*DeleteRepoTokenRequest)(nil),                // 91: ameliso.v1.DeleteRepoTokenRequest
+	(*DeleteRepoTokenResponse)(nil),               // 92: ameliso.v1.DeleteRepoTokenResponse
+	(*UpdateRepoTokenRequest)(nil),                // 93: ameliso.v1.UpdateRepoTokenRequest
+	(*UpdateRepoTokenResponse)(nil),               // 94: ameliso.v1.UpdateRepoTokenResponse
+	(*UserToken)(nil),                             // 95: ameliso.v1.UserToken
+	(*CreateUserTokenRequest)(nil),                // 96: ameliso.v1.CreateUserTokenRequest
+	(*CreateUserTokenResponse)(nil),               // 97: ameliso.v1.CreateUserTokenResponse
+	(*ListUserTokensRequest)(nil),                 // 98: ameliso.v1.ListUserTokensRequest
+	(*ListUserTokensResponse)(nil),                // 99: ameliso.v1.ListUserTokensResponse
+	(*RevokeUserTokenRequest)(nil),                // 100: ameliso.v1.RevokeUserTokenRequest
+	(*RevokeUserTokenResponse)(nil),               // 101: ameliso.v1.RevokeUserTokenResponse
+	(*RotateUserTokenRequest)(nil),                // 102: ameliso.v1.RotateUserTokenRequest
+	(*RotateUserTokenResponse)(nil),               // 103: ameliso.v1.RotateUserTokenResponse
+	(*ListAuditLogRequest)(nil),                   // 104: ameliso.v1.ListAuditLogRequest
+	(*ListAuditLogResponse)(nil),                  // 105: ameliso.v1.ListAuditLogResponse
+	(*ListStrategiesRequest)(nil),                 // 106: ameliso.v1.ListStrategiesRequest
+	(*ListStrategiesResponse)(nil),                // 107: ameliso.v1.ListStrategiesResponse
+	(*GetStrategyRequest)(nil),                    // 108: ameliso.v1.GetStrategyRequest
+	(*GetStrategyResponse)(nil),                   // 109: ameliso.v1.GetStrategyResponse
+	(*CreateStrategyRequest)(nil),                 // 110: ameliso.v1.CreateStrategyRequest
+	(*CreateStrategyResponse)(nil),                // 111: ameliso.v1.CreateStrategyResponse
+	(*UpdateStrategyRequest)(nil),                 // 112: ameliso.v1.UpdateStrategyRequest
+	(*UpdateStrategyResponse)(nil),                // 113: ameliso.v1.UpdateStrategyResponse
+	(*DeleteStrategyRequest)(nil),                 // 114: ameliso.v1.DeleteStrategyRequest
+	(*DeleteStrategyResponse)(nil),                // 115: ameliso.v1.DeleteStrategyResponse
+	(*RestoreStrategyRequest)(nil),                // 116: ameliso.v1.RestoreStrategyRequest
+	(*RestoreStrategyResponse)(nil),               // 117: ameliso.v1.RestoreStrategyResponse
+	(*ListRunTemplatesRequest)(nil),               // 118: ameliso.v1.ListRunTemplatesRequest
+	(*ListRunTemplatesResponse)(nil),              // 119: ameliso.v1.ListRunTemplatesResponse
+	(*GetRunTemplateRequest)(nil),                 // 120: ameliso.v1.GetRunTemplateRequest
+	(*GetRunTemplateResponse)(nil),                // 121: ameliso.v1.GetRunTemplateResponse
+	(*CreateRunTemplateRequest)(nil),              // 122: ameliso.v1.CreateRunTemplateRequest
+	(*CreateRunTemplateResponse)(nil),             // 123: ameliso.v1.CreateRunTemplateResponse
+	(*UpdateRunTemplateRequest)(nil),              // 124: ameliso.v1.UpdateRunTemplateRequest
+	(*UpdateRunTemplateResponse)(nil),             // 125: ameliso.v1.UpdateRunTemplateResponse
+	(*DeleteRunTemplateRequest)(nil),              // 126: ameliso.v1.DeleteRunTemplateRequest
+	(*DeleteRunTemplateResponse)(nil),             // 127: ameliso.v1.DeleteRunTemplateResponse
+	(*ListPermissionsRequest)(nil),                // 128: ameliso.v1.ListPermissionsRequest
+	(*ListPermissionsResponse)(nil),               // 129: ameliso.v1.ListPermissionsResponse
+	(*AddPermissionRequest)(nil),                  // 130: ameliso.v1.AddPermissionRequest
+	(*AddPermissionResponse)(nil),                 // 131: ameliso.v1.AddPermissionResponse
+	(*RemovePermissionRequest)(nil),               // 132: ameliso.v1.RemovePermissionRequest
+	(*RemovePermissionResponse)(nil),              // 133: ameliso.v1.RemovePermissionResponse
+	(*WhoAmIRequest)(nil),                         // 134: ameliso.v1.WhoAmIRequest
+	(*WhoAmIResponse)(nil),                        // 135: ameliso.v1.WhoAmIResponse
+	(*GetFlakyCasesRequest)(nil),                  // 136: ameliso.v1.GetFlakyCasesRequest
+	(*GetFlakyCasesResponse)(nil),                 // 137: ameliso.v1.GetFlakyCasesResponse
+	(*ListOutboundWebhooksRequest)(nil),           // 138: ameliso.v1.ListOutboundWebhooksRequest
+	(*ListOutboundWebhooksResponse)(nil),          // 139: ameliso.v1.ListOutboundWebhooksResponse
+	(*CreateOutboundWebhookRequest)(nil),          // 140: ameliso.v1.CreateOutboundWebhookRequest
+	(*CreateOutboundWebhookResponse)(nil),         // 141: ameliso.v1.CreateOutboundWebhookResponse
+	(*UpdateOutboundWebhookRequest)(nil),          // 142: ameliso.v1.UpdateOutboundWebhookRequest
+	(*UpdateOutboundWebhookResponse)(nil),         // 143: ameliso.v1.UpdateOutboundWebhookResponse
+	(*DeleteOutboundWebhookRequest)(nil),          // 144: ameliso.v1.DeleteOutboundWebhookRequest
+	(*DeleteOutboundWebhookResponse)(nil),         // 145: ameliso.v1.DeleteOutboundWebhookResponse
+	(*ListOutboundWebhookDeliveriesRequest)(nil),  // 146: ameliso.v1.ListOutboundWebhookDeliveriesRequest
+	(*ListOutboundWebhookDeliveriesResponse)(nil), // 147: ameliso.v1.ListOutboundWebhookDeliveriesResponse
+	(Priority)(0),                                 // 148: ameliso.v1.Priority
+	(*Case)(nil),                                  // 149: ameliso.v1.Case
+	(*CaseGitCommit)(nil),                         // 150: ameliso.v1.CaseGitCommit
+	(*Suite)(nil),                                 // 151: ameliso.v1.Suite
+	(RunStatus)(0),                                // 152: ameliso.v1.RunStatus
+	(*RunMeta)(nil),                               // 153: ameliso.v1.RunMeta
+	(*Run)(nil),                                   // 154: ameliso.v1.Run
+	(ResultStatus)(0),                             // 155: ameliso.v1.ResultStatus
+	(*CaseResult)(nil),                            // 156: ameliso.v1.CaseResult
+	(*CoverageEntry)(nil),                         // 157: ameliso.v1.CoverageEntry
+	(*RunTrendPoint)(nil),                         // 158: ameliso.v1.RunTrendPoint
+	(*RunCompletionFunnel)(nil),                   // 159: ameliso.v1.RunCompletionFunnel
+	(*FlakyCaseSummary)(nil),                      // 160: ameliso.v1.FlakyCaseSummary
+	(*AffectedCase)(nil),                          // 161: ameliso.v1.AffectedCase
+	(*SuiteCoverageSummary)(nil),                  // 162: ameliso.v1.SuiteCoverageSummary
+	(*Repository)(nil),                            // 163: ameliso.v1.Repository
+	(*RepoToken)(nil),                             // 164: ameliso.v1.RepoToken
+	(*AuditEntry)(nil),                            // 165: ameliso.v1.AuditEntry
+	(*TestingStrategy)(nil),                       // 166: ameliso.v1.TestingStrategy
+	(*RunTemplate)(nil),                           // 167: ameliso.v1.RunTemplate
+	(*RepoPermission)(nil),                        // 168: ameliso.v1.RepoPermission
+	(*OutboundWebhook)(nil),                       // 169: ameliso.v1.OutboundWebhook
+	(*OutboundWebhookDelivery)(nil),               // 170: ameliso.v1.OutboundWebhookDelivery
 }
 var file_ameliso_v1_service_proto_depIdxs = []int32{
-	132, // 0: ameliso.v1.ListCasesRequest.priority:type_name -> ameliso.v1.Priority
-	133, // 1: ameliso.v1.ListCasesResponse.cases:type_name -> ameliso.v1.Case
-	133, // 2: ameliso.v1.GetCaseResponse.case:type_name -> ameliso.v1.Case
+	148, // 0: ameliso.v1.ListCasesRequest.priority:type_name -> ameliso.v1.Priority
+	149, // 1: ameliso.v1.ListCasesResponse.cases:type_name -> ameliso.v1.Case
+	149, // 2: ameliso.v1.GetCaseResponse.case:type_name -> ameliso.v1.Case
 	4,   // 3: ameliso.v1.GetCaseHistoryResponse.entries:type_name -> ameliso.v1.CaseHistoryEntry
-	132, // 4: ameliso.v1.CreateCaseRequest.priority:type_name -> ameliso.v1.Priority
-	133, // 5: ameliso.v1.CreateCaseResponse.case:type_name -> ameliso.v1.Case
-	132, // 6: ameliso.v1.BulkCaseEntry.priority:type_name -> ameliso.v1.Priority
-	9,   // 7: ameliso.v1.BulkCreateCasesRequest.cases:type_name -> ameliso.v1.BulkCaseEntry
-	133, // 8: ameliso.v1.BulkCreateCasesResponse.cases:type_name -> ameliso.v1.Case
-	53,  // 9: ameliso.v1.BulkCreateCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
-	132, // 10: ameliso.v1.UpdateCaseRequest.priority:type_name -> ameliso.v1.Priority
-	133, // 11: ameliso.v1.UpdateCaseResponse.case:type_name -> ameliso.v1.Case
-	132, // 12: ameliso.v1.BulkUpdateEntry.priority:type_name -> ameliso.v1.Priority
-	14,  // 13: ameliso.v1.BulkUpdateCasesRequest.cases:type_name -> ameliso.v1.BulkUpdateEntry
-	133, // 14: ameliso.v1.BulkUpdateCasesResponse.cases:type_name -> ameliso.v1.Case
-	134, // 15: ameliso.v1.ListSuitesResponse.suites:type_name -> ameliso.v1.Suite
-	134, // 16: ameliso.v1.GetSuiteResponse.suite:type_name -> ameliso.v1.Suite
-	134, // 17: ameliso.v1.CreateSuiteResponse.suite:type_name -> ameliso.v1.Suite
-	134, // 18: ameliso.v1.UpdateSuiteResponse.suite:type_name -> ameliso.v1.Suite
-	135, // 19: ameliso.v1.ListRunsRequest.status:type_name -> ameliso.v1.RunStatus
-	136, // 20: ameliso.v1.ListRunsResponse.runs:type_name -> ameliso.v1.RunMeta
-	137, // 21: ameliso.v1.GetRunResponse.run:type_name -> ameliso.v1.Run
-	133, // 22: ameliso.v1.GetRunResponse.cases:type_name -> ameliso.v1.Case
-	136, // 23: ameliso.v1.CreateRunResponse.run:type_name -> ameliso.v1.RunMeta
-	53,  // 24: ameliso.v1.CreateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
-	138, // 25: ameliso.v1.RecordResultRequest.status:type_name -> ameliso.v1.ResultStatus
-	139, // 26: ameliso.v1.RecordResultResponse.result:type_name -> ameliso.v1.CaseResult
-	53,  // 27: ameliso.v1.RecordResultResponse.pending:type_name -> ameliso.v1.PendingEntry
-	138, // 28: ameliso.v1.BulkResultEntry.status:type_name -> ameliso.v1.ResultStatus
-	43,  // 29: ameliso.v1.BulkRecordResultsRequest.results:type_name -> ameliso.v1.BulkResultEntry
-	139, // 30: ameliso.v1.BulkRecordResultsResponse.results:type_name -> ameliso.v1.CaseResult
-	53,  // 31: ameliso.v1.BulkRecordResultsResponse.pending:type_name -> ameliso.v1.PendingEntry
-	135, // 32: ameliso.v1.FinalizeRunRequest.status:type_name -> ameliso.v1.RunStatus
-	136, // 33: ameliso.v1.FinalizeRunResponse.run:type_name -> ameliso.v1.RunMeta
-	139, // 34: ameliso.v1.FinalizeRunResponse.results:type_name -> ameliso.v1.CaseResult
-	132, // 35: ameliso.v1.GetPendingCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
-	133, // 36: ameliso.v1.PendingEntry.case:type_name -> ameliso.v1.Case
-	138, // 37: ameliso.v1.PendingEntry.latest_status:type_name -> ameliso.v1.ResultStatus
-	133, // 38: ameliso.v1.GetPendingCasesResponse.cases:type_name -> ameliso.v1.Case
-	140, // 39: ameliso.v1.GetPendingCasesResponse.entries:type_name -> ameliso.v1.CoverageEntry
-	53,  // 40: ameliso.v1.GetPendingCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
-	136, // 41: ameliso.v1.UpdateRunResponse.run:type_name -> ameliso.v1.RunMeta
-	53,  // 42: ameliso.v1.UpdateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
-	136, // 43: ameliso.v1.ClaimRunResponse.run:type_name -> ameliso.v1.RunMeta
-	138, // 44: ameliso.v1.GetCoverageReportRequest.status_filter:type_name -> ameliso.v1.ResultStatus
-	132, // 45: ameliso.v1.GetCoverageReportRequest.priority_filter:type_name -> ameliso.v1.Priority
-	140, // 46: ameliso.v1.GetCoverageReportResponse.entries:type_name -> ameliso.v1.CoverageEntry
-	132, // 47: ameliso.v1.GetAffectedCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
-	141, // 48: ameliso.v1.GetAffectedCasesResponse.cases:type_name -> ameliso.v1.AffectedCase
-	64,  // 49: ameliso.v1.GetRepoStatusResponse.active_runs:type_name -> ameliso.v1.ActiveRunStatus
-	136, // 50: ameliso.v1.GetRepoStatusResponse.last_completed_run:type_name -> ameliso.v1.RunMeta
-	142, // 51: ameliso.v1.GetRepoStatusResponse.suite_coverage:type_name -> ameliso.v1.SuiteCoverageSummary
-	143, // 52: ameliso.v1.GetRepoStatusResponse.flaky_cases:type_name -> ameliso.v1.FlakyCaseSummary
-	67,  // 53: ameliso.v1.CompareRunsResponse.regressions:type_name -> ameliso.v1.RunCaseDiff
-	67,  // 54: ameliso.v1.CompareRunsResponse.fixes:type_name -> ameliso.v1.RunCaseDiff
-	144, // 55: ameliso.v1.HandleGitHubCallbackResponse.repositories:type_name -> ameliso.v1.Repository
-	144, // 56: ameliso.v1.ListRepositoriesResponse.repositories:type_name -> ameliso.v1.Repository
-	144, // 57: ameliso.v1.SyncRepositoryResponse.repository:type_name -> ameliso.v1.Repository
-	145, // 58: ameliso.v1.ListRepoTokensResponse.tokens:type_name -> ameliso.v1.RepoToken
-	145, // 59: ameliso.v1.CreateRepoTokenResponse.token:type_name -> ameliso.v1.RepoToken
-	145, // 60: ameliso.v1.UpdateRepoTokenResponse.token:type_name -> ameliso.v1.RepoToken
-	91,  // 61: ameliso.v1.CreateUserTokenResponse.token:type_name -> ameliso.v1.UserToken
-	91,  // 62: ameliso.v1.ListUserTokensResponse.tokens:type_name -> ameliso.v1.UserToken
-	91,  // 63: ameliso.v1.RotateUserTokenResponse.token:type_name -> ameliso.v1.UserToken
-	146, // 64: ameliso.v1.ListAuditLogResponse.entries:type_name -> ameliso.v1.AuditEntry
-	147, // 65: ameliso.v1.ListStrategiesResponse.strategies:type_name -> ameliso.v1.TestingStrategy
-	147, // 66: ameliso.v1.GetStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
-	147, // 67: ameliso.v1.CreateStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
-	147, // 68: ameliso.v1.UpdateStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
-	148, // 69: ameliso.v1.ListRunTemplatesResponse.templates:type_name -> ameliso.v1.RunTemplate
-	148, // 70: ameliso.v1.GetRunTemplateResponse.template:type_name -> ameliso.v1.RunTemplate
-	148, // 71: ameliso.v1.CreateRunTemplateResponse.template:type_name -> ameliso.v1.RunTemplate
-	148, // 72: ameliso.v1.UpdateRunTemplateResponse.template:type_name -> ameliso.v1.RunTemplate
-	149, // 73: ameliso.v1.ListPermissionsResponse.permissions:type_name -> ameliso.v1.RepoPermission
-	149, // 74: ameliso.v1.AddPermissionResponse.permission:type_name -> ameliso.v1.RepoPermission
-	0,   // 75: ameliso.v1.AmelisoService.ListCases:input_type -> ameliso.v1.ListCasesRequest
-	2,   // 76: ameliso.v1.AmelisoService.GetCase:input_type -> ameliso.v1.GetCaseRequest
-	5,   // 77: ameliso.v1.AmelisoService.GetCaseHistory:input_type -> ameliso.v1.GetCaseHistoryRequest
-	7,   // 78: ameliso.v1.AmelisoService.CreateCase:input_type -> ameliso.v1.CreateCaseRequest
-	10,  // 79: ameliso.v1.AmelisoService.BulkCreateCases:input_type -> ameliso.v1.BulkCreateCasesRequest
-	12,  // 80: ameliso.v1.AmelisoService.UpdateCase:input_type -> ameliso.v1.UpdateCaseRequest
-	15,  // 81: ameliso.v1.AmelisoService.BulkUpdateCases:input_type -> ameliso.v1.BulkUpdateCasesRequest
-	17,  // 82: ameliso.v1.AmelisoService.DeleteCase:input_type -> ameliso.v1.DeleteCaseRequest
-	19,  // 83: ameliso.v1.AmelisoService.BulkDeleteCases:input_type -> ameliso.v1.BulkDeleteCasesRequest
-	21,  // 84: ameliso.v1.AmelisoService.RestoreCase:input_type -> ameliso.v1.RestoreCaseRequest
-	23,  // 85: ameliso.v1.AmelisoService.ListSuites:input_type -> ameliso.v1.ListSuitesRequest
-	25,  // 86: ameliso.v1.AmelisoService.GetSuite:input_type -> ameliso.v1.GetSuiteRequest
-	27,  // 87: ameliso.v1.AmelisoService.CreateSuite:input_type -> ameliso.v1.CreateSuiteRequest
-	29,  // 88: ameliso.v1.AmelisoService.UpdateSuite:input_type -> ameliso.v1.UpdateSuiteRequest
-	31,  // 89: ameliso.v1.AmelisoService.DeleteSuite:input_type -> ameliso.v1.DeleteSuiteRequest
-	33,  // 90: ameliso.v1.AmelisoService.RestoreSuite:input_type -> ameliso.v1.RestoreSuiteRequest
-	35,  // 91: ameliso.v1.AmelisoService.ListRuns:input_type -> ameliso.v1.ListRunsRequest
-	37,  // 92: ameliso.v1.AmelisoService.GetRun:input_type -> ameliso.v1.GetRunRequest
-	39,  // 93: ameliso.v1.AmelisoService.CreateRun:input_type -> ameliso.v1.CreateRunRequest
-	41,  // 94: ameliso.v1.AmelisoService.RecordResult:input_type -> ameliso.v1.RecordResultRequest
-	44,  // 95: ameliso.v1.AmelisoService.BulkRecordResults:input_type -> ameliso.v1.BulkRecordResultsRequest
-	46,  // 96: ameliso.v1.AmelisoService.FinalizeRun:input_type -> ameliso.v1.FinalizeRunRequest
-	48,  // 97: ameliso.v1.AmelisoService.DeleteRun:input_type -> ameliso.v1.DeleteRunRequest
-	50,  // 98: ameliso.v1.AmelisoService.RestoreRun:input_type -> ameliso.v1.RestoreRunRequest
-	52,  // 99: ameliso.v1.AmelisoService.GetPendingCases:input_type -> ameliso.v1.GetPendingCasesRequest
-	55,  // 100: ameliso.v1.AmelisoService.UpdateRun:input_type -> ameliso.v1.UpdateRunRequest
-	57,  // 101: ameliso.v1.AmelisoService.ClaimRun:input_type -> ameliso.v1.ClaimRunRequest
-	59,  // 102: ameliso.v1.AmelisoService.GetCoverageReport:input_type -> ameliso.v1.GetCoverageReportRequest
-	61,  // 103: ameliso.v1.AmelisoService.GetAffectedCases:input_type -> ameliso.v1.GetAffectedCasesRequest
-	63,  // 104: ameliso.v1.AmelisoService.GetRepoStatus:input_type -> ameliso.v1.GetRepoStatusRequest
-	66,  // 105: ameliso.v1.AmelisoService.CompareRuns:input_type -> ameliso.v1.CompareRunsRequest
-	69,  // 106: ameliso.v1.AmelisoService.GetTesterSuggestions:input_type -> ameliso.v1.GetTesterSuggestionsRequest
-	71,  // 107: ameliso.v1.AmelisoService.GetGitHubInstallUrl:input_type -> ameliso.v1.GetGitHubInstallUrlRequest
-	73,  // 108: ameliso.v1.AmelisoService.HandleGitHubCallback:input_type -> ameliso.v1.HandleGitHubCallbackRequest
-	75,  // 109: ameliso.v1.AmelisoService.ListRepositories:input_type -> ameliso.v1.ListRepositoriesRequest
-	77,  // 110: ameliso.v1.AmelisoService.SyncRepository:input_type -> ameliso.v1.SyncRepositoryRequest
-	79,  // 111: ameliso.v1.AmelisoService.RemoveRepository:input_type -> ameliso.v1.RemoveRepositoryRequest
-	81,  // 112: ameliso.v1.AmelisoService.RotateRepoApiKey:input_type -> ameliso.v1.RotateRepoApiKeyRequest
-	83,  // 113: ameliso.v1.AmelisoService.ListRepoTokens:input_type -> ameliso.v1.ListRepoTokensRequest
-	85,  // 114: ameliso.v1.AmelisoService.CreateRepoToken:input_type -> ameliso.v1.CreateRepoTokenRequest
-	87,  // 115: ameliso.v1.AmelisoService.DeleteRepoToken:input_type -> ameliso.v1.DeleteRepoTokenRequest
-	89,  // 116: ameliso.v1.AmelisoService.UpdateRepoToken:input_type -> ameliso.v1.UpdateRepoTokenRequest
-	92,  // 117: ameliso.v1.AmelisoService.CreateUserToken:input_type -> ameliso.v1.CreateUserTokenRequest
-	94,  // 118: ameliso.v1.AmelisoService.ListUserTokens:input_type -> ameliso.v1.ListUserTokensRequest
-	96,  // 119: ameliso.v1.AmelisoService.RevokeUserToken:input_type -> ameliso.v1.RevokeUserTokenRequest
-	98,  // 120: ameliso.v1.AmelisoService.RotateUserToken:input_type -> ameliso.v1.RotateUserTokenRequest
-	100, // 121: ameliso.v1.AmelisoService.ListAuditLog:input_type -> ameliso.v1.ListAuditLogRequest
-	102, // 122: ameliso.v1.AmelisoService.ListStrategies:input_type -> ameliso.v1.ListStrategiesRequest
-	104, // 123: ameliso.v1.AmelisoService.GetStrategy:input_type -> ameliso.v1.GetStrategyRequest
-	106, // 124: ameliso.v1.AmelisoService.CreateStrategy:input_type -> ameliso.v1.CreateStrategyRequest
-	108, // 125: ameliso.v1.AmelisoService.UpdateStrategy:input_type -> ameliso.v1.UpdateStrategyRequest
-	110, // 126: ameliso.v1.AmelisoService.DeleteStrategy:input_type -> ameliso.v1.DeleteStrategyRequest
-	112, // 127: ameliso.v1.AmelisoService.RestoreStrategy:input_type -> ameliso.v1.RestoreStrategyRequest
-	114, // 128: ameliso.v1.AmelisoService.ListRunTemplates:input_type -> ameliso.v1.ListRunTemplatesRequest
-	116, // 129: ameliso.v1.AmelisoService.GetRunTemplate:input_type -> ameliso.v1.GetRunTemplateRequest
-	118, // 130: ameliso.v1.AmelisoService.CreateRunTemplate:input_type -> ameliso.v1.CreateRunTemplateRequest
-	120, // 131: ameliso.v1.AmelisoService.UpdateRunTemplate:input_type -> ameliso.v1.UpdateRunTemplateRequest
-	122, // 132: ameliso.v1.AmelisoService.DeleteRunTemplate:input_type -> ameliso.v1.DeleteRunTemplateRequest
-	124, // 133: ameliso.v1.AmelisoService.ListPermissions:input_type -> ameliso.v1.ListPermissionsRequest
-	126, // 134: ameliso.v1.AmelisoService.AddPermission:input_type -> ameliso.v1.AddPermissionRequest
-	128, // 135: ameliso.v1.AmelisoService.RemovePermission:input_type -> ameliso.v1.RemovePermissionRequest
-	130, // 136: ameliso.v1.AmelisoService.WhoAmI:input_type -> ameliso.v1.WhoAmIRequest
-	1,   // 137: ameliso.v1.AmelisoService.ListCases:output_type -> ameliso.v1.ListCasesResponse
-	3,   // 138: ameliso.v1.AmelisoService.GetCase:output_type -> ameliso.v1.GetCaseResponse
-	6,   // 139: ameliso.v1.AmelisoService.GetCaseHistory:output_type -> ameliso.v1.GetCaseHistoryResponse
-	8,   // 140: ameliso.v1.AmelisoService.CreateCase:output_type -> ameliso.v1.CreateCaseResponse
-	11,  // 141: ameliso.v1.AmelisoService.BulkCreateCases:output_type -> ameliso.v1.BulkCreateCasesResponse
-	13,  // 142: ameliso.v1.AmelisoService.UpdateCase:output_type -> ameliso.v1.UpdateCaseResponse
-	16,  // 143: ameliso.v1.AmelisoService.BulkUpdateCases:output_type -> ameliso.v1.BulkUpdateCasesResponse
-	18,  // 144: ameliso.v1.AmelisoService.DeleteCase:output_type -> ameliso.v1.DeleteCaseResponse
-	20,  // 145: ameliso.v1.AmelisoService.BulkDeleteCases:output_type -> ameliso.v1.BulkDeleteCasesResponse
-	22,  // 146: ameliso.v1.AmelisoService.RestoreCase:output_type -> ameliso.v1.RestoreCaseResponse
-	24,  // 147: ameliso.v1.AmelisoService.ListSuites:output_type -> ameliso.v1.ListSuitesResponse
-	26,  // 148: ameliso.v1.AmelisoService.GetSuite:output_type -> ameliso.v1.GetSuiteResponse
-	28,  // 149: ameliso.v1.AmelisoService.CreateSuite:output_type -> ameliso.v1.CreateSuiteResponse
-	30,  // 150: ameliso.v1.AmelisoService.UpdateSuite:output_type -> ameliso.v1.UpdateSuiteResponse
-	32,  // 151: ameliso.v1.AmelisoService.DeleteSuite:output_type -> ameliso.v1.DeleteSuiteResponse
-	34,  // 152: ameliso.v1.AmelisoService.RestoreSuite:output_type -> ameliso.v1.RestoreSuiteResponse
-	36,  // 153: ameliso.v1.AmelisoService.ListRuns:output_type -> ameliso.v1.ListRunsResponse
-	38,  // 154: ameliso.v1.AmelisoService.GetRun:output_type -> ameliso.v1.GetRunResponse
-	40,  // 155: ameliso.v1.AmelisoService.CreateRun:output_type -> ameliso.v1.CreateRunResponse
-	42,  // 156: ameliso.v1.AmelisoService.RecordResult:output_type -> ameliso.v1.RecordResultResponse
-	45,  // 157: ameliso.v1.AmelisoService.BulkRecordResults:output_type -> ameliso.v1.BulkRecordResultsResponse
-	47,  // 158: ameliso.v1.AmelisoService.FinalizeRun:output_type -> ameliso.v1.FinalizeRunResponse
-	49,  // 159: ameliso.v1.AmelisoService.DeleteRun:output_type -> ameliso.v1.DeleteRunResponse
-	51,  // 160: ameliso.v1.AmelisoService.RestoreRun:output_type -> ameliso.v1.RestoreRunResponse
-	54,  // 161: ameliso.v1.AmelisoService.GetPendingCases:output_type -> ameliso.v1.GetPendingCasesResponse
-	56,  // 162: ameliso.v1.AmelisoService.UpdateRun:output_type -> ameliso.v1.UpdateRunResponse
-	58,  // 163: ameliso.v1.AmelisoService.ClaimRun:output_type -> ameliso.v1.ClaimRunResponse
-	60,  // 164: ameliso.v1.AmelisoService.GetCoverageReport:output_type -> ameliso.v1.GetCoverageReportResponse
-	62,  // 165: ameliso.v1.AmelisoService.GetAffectedCases:output_type -> ameliso.v1.GetAffectedCasesResponse
-	65,  // 166: ameliso.v1.AmelisoService.GetRepoStatus:output_type -> ameliso.v1.GetRepoStatusResponse
-	68,  // 167: ameliso.v1.AmelisoService.CompareRuns:output_type -> ameliso.v1.CompareRunsResponse
-	70,  // 168: ameliso.v1.AmelisoService.GetTesterSuggestions:output_type -> ameliso.v1.GetTesterSuggestionsResponse
-	72,  // 169: ameliso.v1.AmelisoService.GetGitHubInstallUrl:output_type -> ameliso.v1.GetGitHubInstallUrlResponse
-	74,  // 170: ameliso.v1.AmelisoService.HandleGitHubCallback:output_type -> ameliso.v1.HandleGitHubCallbackResponse
-	76,  // 171: ameliso.v1.AmelisoService.ListRepositories:output_type -> ameliso.v1.ListRepositoriesResponse
-	78,  // 172: ameliso.v1.AmelisoService.SyncRepository:output_type -> ameliso.v1.SyncRepositoryResponse
-	80,  // 173: ameliso.v1.AmelisoService.RemoveRepository:output_type -> ameliso.v1.RemoveRepositoryResponse
-	82,  // 174: ameliso.v1.AmelisoService.RotateRepoApiKey:output_type -> ameliso.v1.RotateRepoApiKeyResponse
-	84,  // 175: ameliso.v1.AmelisoService.ListRepoTokens:output_type -> ameliso.v1.ListRepoTokensResponse
-	86,  // 176: ameliso.v1.AmelisoService.CreateRepoToken:output_type -> ameliso.v1.CreateRepoTokenResponse
-	88,  // 177: ameliso.v1.AmelisoService.DeleteRepoToken:output_type -> ameliso.v1.DeleteRepoTokenResponse
-	90,  // 178: ameliso.v1.AmelisoService.UpdateRepoToken:output_type -> ameliso.v1.UpdateRepoTokenResponse
-	93,  // 179: ameliso.v1.AmelisoService.CreateUserToken:output_type -> ameliso.v1.CreateUserTokenResponse
-	95,  // 180: ameliso.v1.AmelisoService.ListUserTokens:output_type -> ameliso.v1.ListUserTokensResponse
-	97,  // 181: ameliso.v1.AmelisoService.RevokeUserToken:output_type -> ameliso.v1.RevokeUserTokenResponse
-	99,  // 182: ameliso.v1.AmelisoService.RotateUserToken:output_type -> ameliso.v1.RotateUserTokenResponse
-	101, // 183: ameliso.v1.AmelisoService.ListAuditLog:output_type -> ameliso.v1.ListAuditLogResponse
-	103, // 184: ameliso.v1.AmelisoService.ListStrategies:output_type -> ameliso.v1.ListStrategiesResponse
-	105, // 185: ameliso.v1.AmelisoService.GetStrategy:output_type -> ameliso.v1.GetStrategyResponse
-	107, // 186: ameliso.v1.AmelisoService.CreateStrategy:output_type -> ameliso.v1.CreateStrategyResponse
-	109, // 187: ameliso.v1.AmelisoService.UpdateStrategy:output_type -> ameliso.v1.UpdateStrategyResponse
-	111, // 188: ameliso.v1.AmelisoService.DeleteStrategy:output_type -> ameliso.v1.DeleteStrategyResponse
-	113, // 189: ameliso.v1.AmelisoService.RestoreStrategy:output_type -> ameliso.v1.RestoreStrategyResponse
-	115, // 190: ameliso.v1.AmelisoService.ListRunTemplates:output_type -> ameliso.v1.ListRunTemplatesResponse
-	117, // 191: ameliso.v1.AmelisoService.GetRunTemplate:output_type -> ameliso.v1.GetRunTemplateResponse
-	119, // 192: ameliso.v1.AmelisoService.CreateRunTemplate:output_type -> ameliso.v1.CreateRunTemplateResponse
-	121, // 193: ameliso.v1.AmelisoService.UpdateRunTemplate:output_type -> ameliso.v1.UpdateRunTemplateResponse
-	123, // 194: ameliso.v1.AmelisoService.DeleteRunTemplate:output_type -> ameliso.v1.DeleteRunTemplateResponse
-	125, // 195: ameliso.v1.AmelisoService.ListPermissions:output_type -> ameliso.v1.ListPermissionsResponse
-	127, // 196: ameliso.v1.AmelisoService.AddPermission:output_type -> ameliso.v1.AddPermissionResponse
-	129, // 197: ameliso.v1.AmelisoService.RemovePermission:output_type -> ameliso.v1.RemovePermissionResponse
-	131, // 198: ameliso.v1.AmelisoService.WhoAmI:output_type -> ameliso.v1.WhoAmIResponse
-	137, // [137:199] is the sub-list for method output_type
-	75,  // [75:137] is the sub-list for method input_type
-	75,  // [75:75] is the sub-list for extension type_name
-	75,  // [75:75] is the sub-list for extension extendee
-	0,   // [0:75] is the sub-list for field type_name
+	150, // 4: ameliso.v1.GetCaseGitHistoryResponse.commits:type_name -> ameliso.v1.CaseGitCommit
+	148, // 5: ameliso.v1.CreateCaseRequest.priority:type_name -> ameliso.v1.Priority
+	149, // 6: ameliso.v1.CreateCaseResponse.case:type_name -> ameliso.v1.Case
+	148, // 7: ameliso.v1.BulkCaseEntry.priority:type_name -> ameliso.v1.Priority
+	11,  // 8: ameliso.v1.BulkCreateCasesRequest.cases:type_name -> ameliso.v1.BulkCaseEntry
+	149, // 9: ameliso.v1.BulkCreateCasesResponse.cases:type_name -> ameliso.v1.Case
+	55,  // 10: ameliso.v1.BulkCreateCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
+	148, // 11: ameliso.v1.UpdateCaseRequest.priority:type_name -> ameliso.v1.Priority
+	149, // 12: ameliso.v1.UpdateCaseResponse.case:type_name -> ameliso.v1.Case
+	148, // 13: ameliso.v1.BulkUpdateEntry.priority:type_name -> ameliso.v1.Priority
+	16,  // 14: ameliso.v1.BulkUpdateCasesRequest.cases:type_name -> ameliso.v1.BulkUpdateEntry
+	149, // 15: ameliso.v1.BulkUpdateCasesResponse.cases:type_name -> ameliso.v1.Case
+	151, // 16: ameliso.v1.ListSuitesResponse.suites:type_name -> ameliso.v1.Suite
+	151, // 17: ameliso.v1.GetSuiteResponse.suite:type_name -> ameliso.v1.Suite
+	151, // 18: ameliso.v1.CreateSuiteResponse.suite:type_name -> ameliso.v1.Suite
+	151, // 19: ameliso.v1.UpdateSuiteResponse.suite:type_name -> ameliso.v1.Suite
+	152, // 20: ameliso.v1.ListRunsRequest.status:type_name -> ameliso.v1.RunStatus
+	153, // 21: ameliso.v1.ListRunsResponse.runs:type_name -> ameliso.v1.RunMeta
+	154, // 22: ameliso.v1.GetRunResponse.run:type_name -> ameliso.v1.Run
+	149, // 23: ameliso.v1.GetRunResponse.cases:type_name -> ameliso.v1.Case
+	153, // 24: ameliso.v1.CreateRunResponse.run:type_name -> ameliso.v1.RunMeta
+	55,  // 25: ameliso.v1.CreateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
+	155, // 26: ameliso.v1.RecordResultRequest.status:type_name -> ameliso.v1.ResultStatus
+	156, // 27: ameliso.v1.RecordResultResponse.result:type_name -> ameliso.v1.CaseResult
+	55,  // 28: ameliso.v1.RecordResultResponse.pending:type_name -> ameliso.v1.PendingEntry
+	155, // 29: ameliso.v1.BulkResultEntry.status:type_name -> ameliso.v1.ResultStatus
+	45,  // 30: ameliso.v1.BulkRecordResultsRequest.results:type_name -> ameliso.v1.BulkResultEntry
+	156, // 31: ameliso.v1.BulkRecordResultsResponse.results:type_name -> ameliso.v1.CaseResult
+	55,  // 32: ameliso.v1.BulkRecordResultsResponse.pending:type_name -> ameliso.v1.PendingEntry
+	152, // 33: ameliso.v1.FinalizeRunRequest.status:type_name -> ameliso.v1.RunStatus
+	153, // 34: ameliso.v1.FinalizeRunResponse.run:type_name -> ameliso.v1.RunMeta
+	156, // 35: ameliso.v1.FinalizeRunResponse.results:type_name -> ameliso.v1.CaseResult
+	148, // 36: ameliso.v1.GetPendingCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
+	149, // 37: ameliso.v1.PendingEntry.case:type_name -> ameliso.v1.Case
+	155, // 38: ameliso.v1.PendingEntry.latest_status:type_name -> ameliso.v1.ResultStatus
+	149, // 39: ameliso.v1.GetPendingCasesResponse.cases:type_name -> ameliso.v1.Case
+	157, // 40: ameliso.v1.GetPendingCasesResponse.entries:type_name -> ameliso.v1.CoverageEntry
+	55,  // 41: ameliso.v1.GetPendingCasesResponse.pending:type_name -> ameliso.v1.PendingEntry
+	153, // 42: ameliso.v1.UpdateRunResponse.run:type_name -> ameliso.v1.RunMeta
+	55,  // 43: ameliso.v1.UpdateRunResponse.pending:type_name -> ameliso.v1.PendingEntry
+	153, // 44: ameliso.v1.ClaimRunResponse.run:type_name -> ameliso.v1.RunMeta
+	155, // 45: ameliso.v1.GetCoverageReportRequest.status_filter:type_name -> ameliso.v1.ResultStatus
+	148, // 46: ameliso.v1.GetCoverageReportRequest.priority_filter:type_name -> ameliso.v1.Priority
+	157, // 47: ameliso.v1.GetCoverageReportResponse.entries:type_name -> ameliso.v1.CoverageEntry
+	158, // 48: ameliso.v1.GetRunTrendMetricsResponse.points:type_name -> ameliso.v1.RunTrendPoint
+	159, // 49: ameliso.v1.GetRunTrendMetricsResponse.funnel:type_name -> ameliso.v1.RunCompletionFunnel
+	160, // 50: ameliso.v1.GetRunTrendMetricsResponse.flaky_cases:type_name -> ameliso.v1.FlakyCaseSummary
+	148, // 51: ameliso.v1.GetAffectedCasesRequest.priority_filter:type_name -> ameliso.v1.Priority
+	161, // 52: ameliso.v1.GetAffectedCasesResponse.cases:type_name -> ameliso.v1.AffectedCase
+	68,  // 53: ameliso.v1.GetRepoStatusResponse.active_runs:type_name -> ameliso.v1.ActiveRunStatus
+	153, // 54: ameliso.v1.GetRepoStatusResponse.last_completed_run:type_name -> ameliso.v1.RunMeta
+	162, // 55: ameliso.v1.GetRepoStatusResponse.suite_coverage:type_name -> ameliso.v1.SuiteCoverageSummary
+	160, // 56: ameliso.v1.GetRepoStatusResponse.flaky_cases:type_name -> ameliso.v1.FlakyCaseSummary
+	71,  // 57: ameliso.v1.CompareRunsResponse.regressions:type_name -> ameliso.v1.RunCaseDiff
+	71,  // 58: ameliso.v1.CompareRunsResponse.fixes:type_name -> ameliso.v1.RunCaseDiff
+	163, // 59: ameliso.v1.HandleGitHubCallbackResponse.repositories:type_name -> ameliso.v1.Repository
+	163, // 60: ameliso.v1.ListRepositoriesResponse.repositories:type_name -> ameliso.v1.Repository
+	163, // 61: ameliso.v1.SyncRepositoryResponse.repository:type_name -> ameliso.v1.Repository
+	164, // 62: ameliso.v1.ListRepoTokensResponse.tokens:type_name -> ameliso.v1.RepoToken
+	164, // 63: ameliso.v1.CreateRepoTokenResponse.token:type_name -> ameliso.v1.RepoToken
+	164, // 64: ameliso.v1.UpdateRepoTokenResponse.token:type_name -> ameliso.v1.RepoToken
+	95,  // 65: ameliso.v1.CreateUserTokenResponse.token:type_name -> ameliso.v1.UserToken
+	95,  // 66: ameliso.v1.ListUserTokensResponse.tokens:type_name -> ameliso.v1.UserToken
+	95,  // 67: ameliso.v1.RotateUserTokenResponse.token:type_name -> ameliso.v1.UserToken
+	165, // 68: ameliso.v1.ListAuditLogResponse.entries:type_name -> ameliso.v1.AuditEntry
+	166, // 69: ameliso.v1.ListStrategiesResponse.strategies:type_name -> ameliso.v1.TestingStrategy
+	166, // 70: ameliso.v1.GetStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
+	166, // 71: ameliso.v1.CreateStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
+	166, // 72: ameliso.v1.UpdateStrategyResponse.strategy:type_name -> ameliso.v1.TestingStrategy
+	167, // 73: ameliso.v1.ListRunTemplatesResponse.templates:type_name -> ameliso.v1.RunTemplate
+	167, // 74: ameliso.v1.GetRunTemplateResponse.template:type_name -> ameliso.v1.RunTemplate
+	167, // 75: ameliso.v1.CreateRunTemplateResponse.template:type_name -> ameliso.v1.RunTemplate
+	167, // 76: ameliso.v1.UpdateRunTemplateResponse.template:type_name -> ameliso.v1.RunTemplate
+	168, // 77: ameliso.v1.ListPermissionsResponse.permissions:type_name -> ameliso.v1.RepoPermission
+	168, // 78: ameliso.v1.AddPermissionResponse.permission:type_name -> ameliso.v1.RepoPermission
+	160, // 79: ameliso.v1.GetFlakyCasesResponse.cases:type_name -> ameliso.v1.FlakyCaseSummary
+	169, // 80: ameliso.v1.ListOutboundWebhooksResponse.webhooks:type_name -> ameliso.v1.OutboundWebhook
+	169, // 81: ameliso.v1.CreateOutboundWebhookResponse.webhook:type_name -> ameliso.v1.OutboundWebhook
+	169, // 82: ameliso.v1.UpdateOutboundWebhookResponse.webhook:type_name -> ameliso.v1.OutboundWebhook
+	170, // 83: ameliso.v1.ListOutboundWebhookDeliveriesResponse.deliveries:type_name -> ameliso.v1.OutboundWebhookDelivery
+	0,   // 84: ameliso.v1.AmelisoService.ListCases:input_type -> ameliso.v1.ListCasesRequest
+	2,   // 85: ameliso.v1.AmelisoService.GetCase:input_type -> ameliso.v1.GetCaseRequest
+	5,   // 86: ameliso.v1.AmelisoService.GetCaseHistory:input_type -> ameliso.v1.GetCaseHistoryRequest
+	7,   // 87: ameliso.v1.AmelisoService.GetCaseGitHistory:input_type -> ameliso.v1.GetCaseGitHistoryRequest
+	9,   // 88: ameliso.v1.AmelisoService.CreateCase:input_type -> ameliso.v1.CreateCaseRequest
+	12,  // 89: ameliso.v1.AmelisoService.BulkCreateCases:input_type -> ameliso.v1.BulkCreateCasesRequest
+	14,  // 90: ameliso.v1.AmelisoService.UpdateCase:input_type -> ameliso.v1.UpdateCaseRequest
+	17,  // 91: ameliso.v1.AmelisoService.BulkUpdateCases:input_type -> ameliso.v1.BulkUpdateCasesRequest
+	19,  // 92: ameliso.v1.AmelisoService.DeleteCase:input_type -> ameliso.v1.DeleteCaseRequest
+	21,  // 93: ameliso.v1.AmelisoService.BulkDeleteCases:input_type -> ameliso.v1.BulkDeleteCasesRequest
+	23,  // 94: ameliso.v1.AmelisoService.RestoreCase:input_type -> ameliso.v1.RestoreCaseRequest
+	25,  // 95: ameliso.v1.AmelisoService.ListSuites:input_type -> ameliso.v1.ListSuitesRequest
+	27,  // 96: ameliso.v1.AmelisoService.GetSuite:input_type -> ameliso.v1.GetSuiteRequest
+	29,  // 97: ameliso.v1.AmelisoService.CreateSuite:input_type -> ameliso.v1.CreateSuiteRequest
+	31,  // 98: ameliso.v1.AmelisoService.UpdateSuite:input_type -> ameliso.v1.UpdateSuiteRequest
+	33,  // 99: ameliso.v1.AmelisoService.DeleteSuite:input_type -> ameliso.v1.DeleteSuiteRequest
+	35,  // 100: ameliso.v1.AmelisoService.RestoreSuite:input_type -> ameliso.v1.RestoreSuiteRequest
+	37,  // 101: ameliso.v1.AmelisoService.ListRuns:input_type -> ameliso.v1.ListRunsRequest
+	39,  // 102: ameliso.v1.AmelisoService.GetRun:input_type -> ameliso.v1.GetRunRequest
+	41,  // 103: ameliso.v1.AmelisoService.CreateRun:input_type -> ameliso.v1.CreateRunRequest
+	43,  // 104: ameliso.v1.AmelisoService.RecordResult:input_type -> ameliso.v1.RecordResultRequest
+	46,  // 105: ameliso.v1.AmelisoService.BulkRecordResults:input_type -> ameliso.v1.BulkRecordResultsRequest
+	48,  // 106: ameliso.v1.AmelisoService.FinalizeRun:input_type -> ameliso.v1.FinalizeRunRequest
+	50,  // 107: ameliso.v1.AmelisoService.DeleteRun:input_type -> ameliso.v1.DeleteRunRequest
+	52,  // 108: ameliso.v1.AmelisoService.RestoreRun:input_type -> ameliso.v1.RestoreRunRequest
+	54,  // 109: ameliso.v1.AmelisoService.GetPendingCases:input_type -> ameliso.v1.GetPendingCasesRequest
+	57,  // 110: ameliso.v1.AmelisoService.UpdateRun:input_type -> ameliso.v1.UpdateRunRequest
+	59,  // 111: ameliso.v1.AmelisoService.ClaimRun:input_type -> ameliso.v1.ClaimRunRequest
+	61,  // 112: ameliso.v1.AmelisoService.GetCoverageReport:input_type -> ameliso.v1.GetCoverageReportRequest
+	63,  // 113: ameliso.v1.AmelisoService.GetRunTrendMetrics:input_type -> ameliso.v1.GetRunTrendMetricsRequest
+	136, // 114: ameliso.v1.AmelisoService.GetFlakyCases:input_type -> ameliso.v1.GetFlakyCasesRequest
+	65,  // 115: ameliso.v1.AmelisoService.GetAffectedCases:input_type -> ameliso.v1.GetAffectedCasesRequest
+	67,  // 116: ameliso.v1.AmelisoService.GetRepoStatus:input_type -> ameliso.v1.GetRepoStatusRequest
+	70,  // 117: ameliso.v1.AmelisoService.CompareRuns:input_type -> ameliso.v1.CompareRunsRequest
+	73,  // 118: ameliso.v1.AmelisoService.GetTesterSuggestions:input_type -> ameliso.v1.GetTesterSuggestionsRequest
+	75,  // 119: ameliso.v1.AmelisoService.GetGitHubInstallUrl:input_type -> ameliso.v1.GetGitHubInstallUrlRequest
+	77,  // 120: ameliso.v1.AmelisoService.HandleGitHubCallback:input_type -> ameliso.v1.HandleGitHubCallbackRequest
+	79,  // 121: ameliso.v1.AmelisoService.ListRepositories:input_type -> ameliso.v1.ListRepositoriesRequest
+	81,  // 122: ameliso.v1.AmelisoService.SyncRepository:input_type -> ameliso.v1.SyncRepositoryRequest
+	83,  // 123: ameliso.v1.AmelisoService.RemoveRepository:input_type -> ameliso.v1.RemoveRepositoryRequest
+	85,  // 124: ameliso.v1.AmelisoService.RotateRepoApiKey:input_type -> ameliso.v1.RotateRepoApiKeyRequest
+	87,  // 125: ameliso.v1.AmelisoService.ListRepoTokens:input_type -> ameliso.v1.ListRepoTokensRequest
+	89,  // 126: ameliso.v1.AmelisoService.CreateRepoToken:input_type -> ameliso.v1.CreateRepoTokenRequest
+	91,  // 127: ameliso.v1.AmelisoService.DeleteRepoToken:input_type -> ameliso.v1.DeleteRepoTokenRequest
+	93,  // 128: ameliso.v1.AmelisoService.UpdateRepoToken:input_type -> ameliso.v1.UpdateRepoTokenRequest
+	96,  // 129: ameliso.v1.AmelisoService.CreateUserToken:input_type -> ameliso.v1.CreateUserTokenRequest
+	98,  // 130: ameliso.v1.AmelisoService.ListUserTokens:input_type -> ameliso.v1.ListUserTokensRequest
+	100, // 131: ameliso.v1.AmelisoService.RevokeUserToken:input_type -> ameliso.v1.RevokeUserTokenRequest
+	102, // 132: ameliso.v1.AmelisoService.RotateUserToken:input_type -> ameliso.v1.RotateUserTokenRequest
+	104, // 133: ameliso.v1.AmelisoService.ListAuditLog:input_type -> ameliso.v1.ListAuditLogRequest
+	106, // 134: ameliso.v1.AmelisoService.ListStrategies:input_type -> ameliso.v1.ListStrategiesRequest
+	108, // 135: ameliso.v1.AmelisoService.GetStrategy:input_type -> ameliso.v1.GetStrategyRequest
+	110, // 136: ameliso.v1.AmelisoService.CreateStrategy:input_type -> ameliso.v1.CreateStrategyRequest
+	112, // 137: ameliso.v1.AmelisoService.UpdateStrategy:input_type -> ameliso.v1.UpdateStrategyRequest
+	114, // 138: ameliso.v1.AmelisoService.DeleteStrategy:input_type -> ameliso.v1.DeleteStrategyRequest
+	116, // 139: ameliso.v1.AmelisoService.RestoreStrategy:input_type -> ameliso.v1.RestoreStrategyRequest
+	118, // 140: ameliso.v1.AmelisoService.ListRunTemplates:input_type -> ameliso.v1.ListRunTemplatesRequest
+	120, // 141: ameliso.v1.AmelisoService.GetRunTemplate:input_type -> ameliso.v1.GetRunTemplateRequest
+	122, // 142: ameliso.v1.AmelisoService.CreateRunTemplate:input_type -> ameliso.v1.CreateRunTemplateRequest
+	124, // 143: ameliso.v1.AmelisoService.UpdateRunTemplate:input_type -> ameliso.v1.UpdateRunTemplateRequest
+	126, // 144: ameliso.v1.AmelisoService.DeleteRunTemplate:input_type -> ameliso.v1.DeleteRunTemplateRequest
+	138, // 145: ameliso.v1.AmelisoService.ListOutboundWebhooks:input_type -> ameliso.v1.ListOutboundWebhooksRequest
+	140, // 146: ameliso.v1.AmelisoService.CreateOutboundWebhook:input_type -> ameliso.v1.CreateOutboundWebhookRequest
+	142, // 147: ameliso.v1.AmelisoService.UpdateOutboundWebhook:input_type -> ameliso.v1.UpdateOutboundWebhookRequest
+	144, // 148: ameliso.v1.AmelisoService.DeleteOutboundWebhook:input_type -> ameliso.v1.DeleteOutboundWebhookRequest
+	146, // 149: ameliso.v1.AmelisoService.ListOutboundWebhookDeliveries:input_type -> ameliso.v1.ListOutboundWebhookDeliveriesRequest
+	128, // 150: ameliso.v1.AmelisoService.ListPermissions:input_type -> ameliso.v1.ListPermissionsRequest
+	130, // 151: ameliso.v1.AmelisoService.AddPermission:input_type -> ameliso.v1.AddPermissionRequest
+	132, // 152: ameliso.v1.AmelisoService.RemovePermission:input_type -> ameliso.v1.RemovePermissionRequest
+	134, // 153: ameliso.v1.AmelisoService.WhoAmI:input_type -> ameliso.v1.WhoAmIRequest
+	1,   // 154: ameliso.v1.AmelisoService.ListCases:output_type -> ameliso.v1.ListCasesResponse
+	3,   // 155: ameliso.v1.AmelisoService.GetCase:output_type -> ameliso.v1.GetCaseResponse
+	6,   // 156: ameliso.v1.AmelisoService.GetCaseHistory:output_type -> ameliso.v1.GetCaseHistoryResponse
+	8,   // 157: ameliso.v1.AmelisoService.GetCaseGitHistory:output_type -> ameliso.v1.GetCaseGitHistoryResponse
+	10,  // 158: ameliso.v1.AmelisoService.CreateCase:output_type -> ameliso.v1.CreateCaseResponse
+	13,  // 159: ameliso.v1.AmelisoService.BulkCreateCases:output_type -> ameliso.v1.BulkCreateCasesResponse
+	15,  // 160: ameliso.v1.AmelisoService.UpdateCase:output_type -> ameliso.v1.UpdateCaseResponse
+	18,  // 161: ameliso.v1.AmelisoService.BulkUpdateCases:output_type -> ameliso.v1.BulkUpdateCasesResponse
+	20,  // 162: ameliso.v1.AmelisoService.DeleteCase:output_type -> ameliso.v1.DeleteCaseResponse
+	22,  // 163: ameliso.v1.AmelisoService.BulkDeleteCases:output_type -> ameliso.v1.BulkDeleteCasesResponse
+	24,  // 164: ameliso.v1.AmelisoService.RestoreCase:output_type -> ameliso.v1.RestoreCaseResponse
+	26,  // 165: ameliso.v1.AmelisoService.ListSuites:output_type -> ameliso.v1.ListSuitesResponse
+	28,  // 166: ameliso.v1.AmelisoService.GetSuite:output_type -> ameliso.v1.GetSuiteResponse
+	30,  // 167: ameliso.v1.AmelisoService.CreateSuite:output_type -> ameliso.v1.CreateSuiteResponse
+	32,  // 168: ameliso.v1.AmelisoService.UpdateSuite:output_type -> ameliso.v1.UpdateSuiteResponse
+	34,  // 169: ameliso.v1.AmelisoService.DeleteSuite:output_type -> ameliso.v1.DeleteSuiteResponse
+	36,  // 170: ameliso.v1.AmelisoService.RestoreSuite:output_type -> ameliso.v1.RestoreSuiteResponse
+	38,  // 171: ameliso.v1.AmelisoService.ListRuns:output_type -> ameliso.v1.ListRunsResponse
+	40,  // 172: ameliso.v1.AmelisoService.GetRun:output_type -> ameliso.v1.GetRunResponse
+	42,  // 173: ameliso.v1.AmelisoService.CreateRun:output_type -> ameliso.v1.CreateRunResponse
+	44,  // 174: ameliso.v1.AmelisoService.RecordResult:output_type -> ameliso.v1.RecordResultResponse
+	47,  // 175: ameliso.v1.AmelisoService.BulkRecordResults:output_type -> ameliso.v1.BulkRecordResultsResponse
+	49,  // 176: ameliso.v1.AmelisoService.FinalizeRun:output_type -> ameliso.v1.FinalizeRunResponse
+	51,  // 177: ameliso.v1.AmelisoService.DeleteRun:output_type -> ameliso.v1.DeleteRunResponse
+	53,  // 178: ameliso.v1.AmelisoService.RestoreRun:output_type -> ameliso.v1.RestoreRunResponse
+	56,  // 179: ameliso.v1.AmelisoService.GetPendingCases:output_type -> ameliso.v1.GetPendingCasesResponse
+	58,  // 180: ameliso.v1.AmelisoService.UpdateRun:output_type -> ameliso.v1.UpdateRunResponse
+	60,  // 181: ameliso.v1.AmelisoService.ClaimRun:output_type -> ameliso.v1.ClaimRunResponse
+	62,  // 182: ameliso.v1.AmelisoService.GetCoverageReport:output_type -> ameliso.v1.GetCoverageReportResponse
+	64,  // 183: ameliso.v1.AmelisoService.GetRunTrendMetrics:output_type -> ameliso.v1.GetRunTrendMetricsResponse
+	137, // 184: ameliso.v1.AmelisoService.GetFlakyCases:output_type -> ameliso.v1.GetFlakyCasesResponse
+	66,  // 185: ameliso.v1.AmelisoService.GetAffectedCases:output_type -> ameliso.v1.GetAffectedCasesResponse
+	69,  // 186: ameliso.v1.AmelisoService.GetRepoStatus:output_type -> ameliso.v1.GetRepoStatusResponse
+	72,  // 187: ameliso.v1.AmelisoService.CompareRuns:output_type -> ameliso.v1.CompareRunsResponse
+	74,  // 188: ameliso.v1.AmelisoService.GetTesterSuggestions:output_type -> ameliso.v1.GetTesterSuggestionsResponse
+	76,  // 189: ameliso.v1.AmelisoService.GetGitHubInstallUrl:output_type -> ameliso.v1.GetGitHubInstallUrlResponse
+	78,  // 190: ameliso.v1.AmelisoService.HandleGitHubCallback:output_type -> ameliso.v1.HandleGitHubCallbackResponse
+	80,  // 191: ameliso.v1.AmelisoService.ListRepositories:output_type -> ameliso.v1.ListRepositoriesResponse
+	82,  // 192: ameliso.v1.AmelisoService.SyncRepository:output_type -> ameliso.v1.SyncRepositoryResponse
+	84,  // 193: ameliso.v1.AmelisoService.RemoveRepository:output_type -> ameliso.v1.RemoveRepositoryResponse
+	86,  // 194: ameliso.v1.AmelisoService.RotateRepoApiKey:output_type -> ameliso.v1.RotateRepoApiKeyResponse
+	88,  // 195: ameliso.v1.AmelisoService.ListRepoTokens:output_type -> ameliso.v1.ListRepoTokensResponse
+	90,  // 196: ameliso.v1.AmelisoService.CreateRepoToken:output_type -> ameliso.v1.CreateRepoTokenResponse
+	92,  // 197: ameliso.v1.AmelisoService.DeleteRepoToken:output_type -> ameliso.v1.DeleteRepoTokenResponse
+	94,  // 198: ameliso.v1.AmelisoService.UpdateRepoToken:output_type -> ameliso.v1.UpdateRepoTokenResponse
+	97,  // 199: ameliso.v1.AmelisoService.CreateUserToken:output_type -> ameliso.v1.CreateUserTokenResponse
+	99,  // 200: ameliso.v1.AmelisoService.ListUserTokens:output_type -> ameliso.v1.ListUserTokensResponse
+	101, // 201: ameliso.v1.AmelisoService.RevokeUserToken:output_type -> ameliso.v1.RevokeUserTokenResponse
+	103, // 202: ameliso.v1.AmelisoService.RotateUserToken:output_type -> ameliso.v1.RotateUserTokenResponse
+	105, // 203: ameliso.v1.AmelisoService.ListAuditLog:output_type -> ameliso.v1.ListAuditLogResponse
+	107, // 204: ameliso.v1.AmelisoService.ListStrategies:output_type -> ameliso.v1.ListStrategiesResponse
+	109, // 205: ameliso.v1.AmelisoService.GetStrategy:output_type -> ameliso.v1.GetStrategyResponse
+	111, // 206: ameliso.v1.AmelisoService.CreateStrategy:output_type -> ameliso.v1.CreateStrategyResponse
+	113, // 207: ameliso.v1.AmelisoService.UpdateStrategy:output_type -> ameliso.v1.UpdateStrategyResponse
+	115, // 208: ameliso.v1.AmelisoService.DeleteStrategy:output_type -> ameliso.v1.DeleteStrategyResponse
+	117, // 209: ameliso.v1.AmelisoService.RestoreStrategy:output_type -> ameliso.v1.RestoreStrategyResponse
+	119, // 210: ameliso.v1.AmelisoService.ListRunTemplates:output_type -> ameliso.v1.ListRunTemplatesResponse
+	121, // 211: ameliso.v1.AmelisoService.GetRunTemplate:output_type -> ameliso.v1.GetRunTemplateResponse
+	123, // 212: ameliso.v1.AmelisoService.CreateRunTemplate:output_type -> ameliso.v1.CreateRunTemplateResponse
+	125, // 213: ameliso.v1.AmelisoService.UpdateRunTemplate:output_type -> ameliso.v1.UpdateRunTemplateResponse
+	127, // 214: ameliso.v1.AmelisoService.DeleteRunTemplate:output_type -> ameliso.v1.DeleteRunTemplateResponse
+	139, // 215: ameliso.v1.AmelisoService.ListOutboundWebhooks:output_type -> ameliso.v1.ListOutboundWebhooksResponse
+	141, // 216: ameliso.v1.AmelisoService.CreateOutboundWebhook:output_type -> ameliso.v1.CreateOutboundWebhookResponse
+	143, // 217: ameliso.v1.AmelisoService.UpdateOutboundWebhook:output_type -> ameliso.v1.UpdateOutboundWebhookResponse
+	145, // 218: ameliso.v1.AmelisoService.DeleteOutboundWebhook:output_type -> ameliso.v1.DeleteOutboundWebhookResponse
+	147, // 219: ameliso.v1.AmelisoService.ListOutboundWebhookDeliveries:output_type -> ameliso.v1.ListOutboundWebhookDeliveriesResponse
+	129, // 220: ameliso.v1.AmelisoService.ListPermissions:output_type -> ameliso.v1.ListPermissionsResponse
+	131, // 221: ameliso.v1.AmelisoService.AddPermission:output_type -> ameliso.v1.AddPermissionResponse
+	133, // 222: ameliso.v1.AmelisoService.RemovePermission:output_type -> ameliso.v1.RemovePermissionResponse
+	135, // 223: ameliso.v1.AmelisoService.WhoAmI:output_type -> ameliso.v1.WhoAmIResponse
+	154, // [154:224] is the sub-list for method output_type
+	84,  // [84:154] is the sub-list for method input_type
+	84,  // [84:84] is the sub-list for extension type_name
+	84,  // [84:84] is the sub-list for extension extendee
+	0,   // [0:84] is the sub-list for field type_name
 }
 
 func init() { file_ameliso_v1_service_proto_init() }
@@ -9033,17 +9993,17 @@ func file_ameliso_v1_service_proto_init() {
 		return
 	}
 	file_ameliso_v1_types_proto_init()
-	file_ameliso_v1_service_proto_msgTypes[12].OneofWrappers = []any{}
-	file_ameliso_v1_service_proto_msgTypes[55].OneofWrappers = []any{}
-	file_ameliso_v1_service_proto_msgTypes[85].OneofWrappers = []any{}
-	file_ameliso_v1_service_proto_msgTypes[92].OneofWrappers = []any{}
+	file_ameliso_v1_service_proto_msgTypes[14].OneofWrappers = []any{}
+	file_ameliso_v1_service_proto_msgTypes[57].OneofWrappers = []any{}
+	file_ameliso_v1_service_proto_msgTypes[89].OneofWrappers = []any{}
+	file_ameliso_v1_service_proto_msgTypes[96].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_service_proto_rawDesc), len(file_ameliso_v1_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   132,
+			NumMessages:   148,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
