@@ -651,6 +651,8 @@ type RunMeta struct {
 	Description string `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty"`
 	// Server-formatted relative timestamp (e.g. "2h ago", "3 days ago", "Apr 25, 2026").
 	FormattedDate string `protobuf:"bytes,14,opt,name=formatted_date,json=formattedDate,proto3" json:"formatted_date,omitempty"`
+	// User UUID of the agent or user who claimed this run; empty when unclaimed.
+	AssigneeId    string `protobuf:"bytes,15,opt,name=assignee_id,json=assigneeId,proto3" json:"assignee_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -779,6 +781,13 @@ func (x *RunMeta) GetDescription() string {
 func (x *RunMeta) GetFormattedDate() string {
 	if x != nil {
 		return x.FormattedDate
+	}
+	return ""
+}
+
+func (x *RunMeta) GetAssigneeId() string {
+	if x != nil {
+		return x.AssigneeId
 	}
 	return ""
 }
@@ -1541,7 +1550,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05cases\x18\x04 \x03(\tR\x05cases\"\x90\x03\n" +
+	"\x05cases\x18\x04 \x03(\tR\x05cases\"\xb1\x03\n" +
 	"\aRunMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x18\n" +
@@ -1558,7 +1567,9 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\askipped\x18\v \x01(\x05R\askipped\x12\x14\n" +
 	"\x05total\x18\f \x01(\x05R\x05total\x12 \n" +
 	"\vdescription\x18\r \x01(\tR\vdescription\x12%\n" +
-	"\x0eformatted_date\x18\x0e \x01(\tR\rformattedDate\"\xd6\x01\n" +
+	"\x0eformatted_date\x18\x0e \x01(\tR\rformattedDate\x12\x1f\n" +
+	"\vassignee_id\x18\x0f \x01(\tR\n" +
+	"assigneeId\"\xd6\x01\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +

@@ -45,6 +45,7 @@ const (
 	AmelisoService_RestoreRun_FullMethodName           = "/ameliso.v1.AmelisoService/RestoreRun"
 	AmelisoService_GetPendingCases_FullMethodName      = "/ameliso.v1.AmelisoService/GetPendingCases"
 	AmelisoService_UpdateRun_FullMethodName            = "/ameliso.v1.AmelisoService/UpdateRun"
+	AmelisoService_ClaimRun_FullMethodName             = "/ameliso.v1.AmelisoService/ClaimRun"
 	AmelisoService_GetCoverageReport_FullMethodName    = "/ameliso.v1.AmelisoService/GetCoverageReport"
 	AmelisoService_GetAffectedCases_FullMethodName     = "/ameliso.v1.AmelisoService/GetAffectedCases"
 	AmelisoService_GetRepoStatus_FullMethodName        = "/ameliso.v1.AmelisoService/GetRepoStatus"
@@ -148,6 +149,9 @@ type AmelisoServiceClient interface {
 	GetPendingCases(ctx context.Context, in *GetPendingCasesRequest, opts ...grpc.CallOption) (*GetPendingCasesResponse, error)
 	// Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
 	UpdateRun(ctx context.Context, in *UpdateRunRequest, opts ...grpc.CallOption) (*UpdateRunResponse, error)
+	// Atomically claim a run for the authenticated user. Only succeeds when the run is
+	// unclaimed or already claimed by the same user. Returns the updated run metadata.
+	ClaimRun(ctx context.Context, in *ClaimRunRequest, opts ...grpc.CallOption) (*ClaimRunResponse, error)
 	// --- Reports ---
 	// Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
 	GetCoverageReport(ctx context.Context, in *GetCoverageReportRequest, opts ...grpc.CallOption) (*GetCoverageReportResponse, error)
@@ -464,6 +468,16 @@ func (c *amelisoServiceClient) UpdateRun(ctx context.Context, in *UpdateRunReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateRunResponse)
 	err := c.cc.Invoke(ctx, AmelisoService_UpdateRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *amelisoServiceClient) ClaimRun(ctx context.Context, in *ClaimRunRequest, opts ...grpc.CallOption) (*ClaimRunResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClaimRunResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_ClaimRun_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -841,6 +855,9 @@ type AmelisoServiceServer interface {
 	GetPendingCases(context.Context, *GetPendingCasesRequest) (*GetPendingCasesResponse, error)
 	// Rename a run's slug (date prefix is preserved). Returns the updated run metadata.
 	UpdateRun(context.Context, *UpdateRunRequest) (*UpdateRunResponse, error)
+	// Atomically claim a run for the authenticated user. Only succeeds when the run is
+	// unclaimed or already claimed by the same user. Returns the updated run metadata.
+	ClaimRun(context.Context, *ClaimRunRequest) (*ClaimRunResponse, error)
 	// --- Reports ---
 	// Coverage for all cases; sorted failed/never first then by priority. Optional status_filter.
 	GetCoverageReport(context.Context, *GetCoverageReportRequest) (*GetCoverageReportResponse, error)
@@ -980,6 +997,9 @@ func (UnimplementedAmelisoServiceServer) GetPendingCases(context.Context, *GetPe
 }
 func (UnimplementedAmelisoServiceServer) UpdateRun(context.Context, *UpdateRunRequest) (*UpdateRunResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateRun not implemented")
+}
+func (UnimplementedAmelisoServiceServer) ClaimRun(context.Context, *ClaimRunRequest) (*ClaimRunResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClaimRun not implemented")
 }
 func (UnimplementedAmelisoServiceServer) GetCoverageReport(context.Context, *GetCoverageReportRequest) (*GetCoverageReportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCoverageReport not implemented")
@@ -1556,6 +1576,24 @@ func _AmelisoService_UpdateRun_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AmelisoServiceServer).UpdateRun(ctx, req.(*UpdateRunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AmelisoService_ClaimRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).ClaimRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_ClaimRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).ClaimRun(ctx, req.(*ClaimRunRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2210,6 +2248,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRun",
 			Handler:    _AmelisoService_UpdateRun_Handler,
+		},
+		{
+			MethodName: "ClaimRun",
+			Handler:    _AmelisoService_ClaimRun_Handler,
 		},
 		{
 			MethodName: "GetCoverageReport",
