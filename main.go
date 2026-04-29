@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/redpanda-data/protoc-gen-go-mcp/pkg/runtime/gosdk"
@@ -13,6 +14,8 @@ import (
 	pb "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1"
 	amelisomcp "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1/amelisomcp"
 )
+
+const userTokenPrefix = "am_pat_"
 
 // bearerCreds attaches `authorization: Bearer <token>` to every RPC. Used to
 // carry an Ameliso personal access token (AMELISO_TOKEN) to the server so the
@@ -32,6 +35,16 @@ func main() {
 	}
 	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if token := os.Getenv("AMELISO_TOKEN"); token != "" {
+		if !strings.HasPrefix(token, userTokenPrefix) {
+			fmt.Fprintf(
+				os.Stderr,
+				"ameliso-mcp: warning: AMELISO_TOKEN does not start with %q. "+
+					"Personal access tokens minted at /account/settings have this "+
+					"prefix; the server will reject anything else when Auth0 is "+
+					"configured.\n",
+				userTokenPrefix,
+			)
+		}
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(bearerCreds{token: token}))
 	}
 	conn, err := grpc.NewClient(addr, dialOpts...)
