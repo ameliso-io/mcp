@@ -342,16 +342,17 @@ func (x *Case) GetStatus() string {
 }
 
 type TestingStrategy struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Tags          []string               `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	DeletedAt     string                 `protobuf:"bytes,7,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description    string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Tags           []string               `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`
+	CreatedAt      string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt      string                 `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	DeletedAt      string                 `protobuf:"bytes,7,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
+	ExecutionHints string                 `protobuf:"bytes,8,opt,name=execution_hints,json=executionHints,proto3" json:"execution_hints,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TestingStrategy) Reset() {
@@ -429,6 +430,13 @@ func (x *TestingStrategy) GetUpdatedAt() string {
 func (x *TestingStrategy) GetDeletedAt() string {
 	if x != nil {
 		return x.DeletedAt
+	}
+	return ""
+}
+
+func (x *TestingStrategy) GetExecutionHints() string {
+	if x != nil {
+		return x.ExecutionHints
 	}
 	return ""
 }
@@ -1632,7 +1640,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\rprerequisites\x18\v \x03(\tR\rprerequisites\x120\n" +
 	"\x14formatted_created_at\x18\f \x01(\tR\x12formattedCreatedAt\x120\n" +
 	"\x14formatted_updated_at\x18\r \x01(\tR\x12formattedUpdatedAt\x12\x16\n" +
-	"\x06status\x18\x0e \x01(\tR\x06status\"\xc8\x01\n" +
+	"\x06status\x18\x0e \x01(\tR\x06status\"\xf1\x01\n" +
 	"\x0fTestingStrategy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1643,7 +1651,8 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x06 \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"deleted_at\x18\a \x01(\tR\tdeletedAt\"\xf4\x01\n" +
+	"deleted_at\x18\a \x01(\tR\tdeletedAt\x12'\n" +
+	"\x0fexecution_hints\x18\b \x01(\tR\x0eexecutionHints\"\xf4\x01\n" +
 	"\vRunTemplate\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +

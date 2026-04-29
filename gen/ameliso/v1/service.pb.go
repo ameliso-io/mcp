@@ -6613,14 +6613,15 @@ func (x *GetStrategyResponse) GetStrategy() *TestingStrategy {
 }
 
 type CreateStrategyRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Tags          []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RepoId         string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId     string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description    string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Tags           []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
+	ExecutionHints string                 `protobuf:"bytes,6,opt,name=execution_hints,json=executionHints,proto3" json:"execution_hints,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CreateStrategyRequest) Reset() {
@@ -6688,6 +6689,13 @@ func (x *CreateStrategyRequest) GetTags() []string {
 	return nil
 }
 
+func (x *CreateStrategyRequest) GetExecutionHints() string {
+	if x != nil {
+		return x.ExecutionHints
+	}
+	return ""
+}
+
 type CreateStrategyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Strategy      *TestingStrategy       `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
@@ -6733,15 +6741,16 @@ func (x *CreateStrategyResponse) GetStrategy() *TestingStrategy {
 }
 
 type UpdateStrategyRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RepoId        string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
-	StrategyId    string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Tags          []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
-	NewId         string                 `protobuf:"bytes,6,opt,name=new_id,json=newId,proto3" json:"new_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RepoId         string                 `protobuf:"bytes,1,opt,name=repo_id,json=repoId,proto3" json:"repo_id,omitempty"`
+	StrategyId     string                 `protobuf:"bytes,2,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description    string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Tags           []string               `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
+	NewId          string                 `protobuf:"bytes,6,opt,name=new_id,json=newId,proto3" json:"new_id,omitempty"`
+	ExecutionHints string                 `protobuf:"bytes,7,opt,name=execution_hints,json=executionHints,proto3" json:"execution_hints,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *UpdateStrategyRequest) Reset() {
@@ -6812,6 +6821,13 @@ func (x *UpdateStrategyRequest) GetTags() []string {
 func (x *UpdateStrategyRequest) GetNewId() string {
 	if x != nil {
 		return x.NewId
+	}
+	return ""
+}
+
+func (x *UpdateStrategyRequest) GetExecutionHints() string {
+	if x != nil {
+		return x.ExecutionHints
 	}
 	return ""
 }
@@ -8478,16 +8494,17 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\vstrategy_id\x18\x02 \x01(\tR\n" +
 	"strategyId\"N\n" +
 	"\x13GetStrategyResponse\x127\n" +
-	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"\x9b\x01\n" +
+	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"\xc4\x01\n" +
 	"\x15CreateStrategyRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
 	"\vstrategy_id\x18\x02 \x01(\tR\n" +
 	"strategyId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x12\n" +
-	"\x04tags\x18\x05 \x03(\tR\x04tags\"Q\n" +
+	"\x04tags\x18\x05 \x03(\tR\x04tags\x12'\n" +
+	"\x0fexecution_hints\x18\x06 \x01(\tR\x0eexecutionHints\"Q\n" +
 	"\x16CreateStrategyResponse\x127\n" +
-	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"\xb2\x01\n" +
+	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"\xdb\x01\n" +
 	"\x15UpdateStrategyRequest\x12\x17\n" +
 	"\arepo_id\x18\x01 \x01(\tR\x06repoId\x12\x1f\n" +
 	"\vstrategy_id\x18\x02 \x01(\tR\n" +
@@ -8495,7 +8512,8 @@ const file_ameliso_v1_service_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x12\n" +
 	"\x04tags\x18\x05 \x03(\tR\x04tags\x12\x15\n" +
-	"\x06new_id\x18\x06 \x01(\tR\x05newId\"Q\n" +
+	"\x06new_id\x18\x06 \x01(\tR\x05newId\x12'\n" +
+	"\x0fexecution_hints\x18\a \x01(\tR\x0eexecutionHints\"Q\n" +
 	"\x16UpdateStrategyResponse\x127\n" +
 	"\bstrategy\x18\x01 \x01(\v2\x1b.ameliso.v1.TestingStrategyR\bstrategy\"Q\n" +
 	"\x15DeleteStrategyRequest\x12\x17\n" +
