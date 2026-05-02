@@ -183,6 +183,61 @@ func (Priority) EnumDescriptor() ([]byte, []int) {
 	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{2}
 }
 
+type SyncStatus int32
+
+const (
+	SyncStatus_SYNC_STATUS_UNSPECIFIED SyncStatus = 0
+	SyncStatus_SYNC_STATUS_UNSYNCED    SyncStatus = 1
+	SyncStatus_SYNC_STATUS_SYNCING     SyncStatus = 2
+	SyncStatus_SYNC_STATUS_SYNCED      SyncStatus = 3
+	SyncStatus_SYNC_STATUS_FAILED      SyncStatus = 4
+)
+
+// Enum value maps for SyncStatus.
+var (
+	SyncStatus_name = map[int32]string{
+		0: "SYNC_STATUS_UNSPECIFIED",
+		1: "SYNC_STATUS_UNSYNCED",
+		2: "SYNC_STATUS_SYNCING",
+		3: "SYNC_STATUS_SYNCED",
+		4: "SYNC_STATUS_FAILED",
+	}
+	SyncStatus_value = map[string]int32{
+		"SYNC_STATUS_UNSPECIFIED": 0,
+		"SYNC_STATUS_UNSYNCED":    1,
+		"SYNC_STATUS_SYNCING":     2,
+		"SYNC_STATUS_SYNCED":      3,
+		"SYNC_STATUS_FAILED":      4,
+	}
+)
+
+func (x SyncStatus) Enum() *SyncStatus {
+	p := new(SyncStatus)
+	*p = x
+	return p
+}
+
+func (x SyncStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SyncStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_ameliso_v1_types_proto_enumTypes[3].Descriptor()
+}
+
+func (SyncStatus) Type() protoreflect.EnumType {
+	return &file_ameliso_v1_types_proto_enumTypes[3]
+}
+
+func (x SyncStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SyncStatus.Descriptor instead.
+func (SyncStatus) EnumDescriptor() ([]byte, []int) {
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{3}
+}
+
 type Case struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Path        string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
@@ -208,7 +263,9 @@ type Case struct {
 	// Lifecycle status: "draft" = work-in-progress (excluded from runs by default),
 	// "published" = approved (default for existing cases). Empty string treated as
 	// "published" for backwards compatibility.
-	Status        string `protobuf:"bytes,14,opt,name=status,proto3" json:"status,omitempty"`
+	Status        string     `protobuf:"bytes,14,opt,name=status,proto3" json:"status,omitempty"`
+	SyncStatus    SyncStatus `protobuf:"varint,15,opt,name=sync_status,json=syncStatus,proto3,enum=ameliso.v1.SyncStatus" json:"sync_status,omitempty"`
+	LastSyncError string     `protobuf:"bytes,16,opt,name=last_sync_error,json=lastSyncError,proto3" json:"last_sync_error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -337,6 +394,20 @@ func (x *Case) GetFormattedUpdatedAt() string {
 func (x *Case) GetStatus() string {
 	if x != nil {
 		return x.Status
+	}
+	return ""
+}
+
+func (x *Case) GetSyncStatus() SyncStatus {
+	if x != nil {
+		return x.SyncStatus
+	}
+	return SyncStatus_SYNC_STATUS_UNSPECIFIED
+}
+
+func (x *Case) GetLastSyncError() string {
+	if x != nil {
+		return x.LastSyncError
 	}
 	return ""
 }
@@ -670,13 +741,17 @@ func (x *RepoToken) GetExpiresAt() string {
 }
 
 type Suite struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Cases         []string               `protobuf:"bytes,4,rep,name=cases,proto3" json:"cases,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Slug        string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Cases       []string               `protobuf:"bytes,4,rep,name=cases,proto3" json:"cases,omitempty"`
+	// Default testing strategy applied when starting a run from this suite.
+	DefaultStrategyId string     `protobuf:"bytes,5,opt,name=default_strategy_id,json=defaultStrategyId,proto3" json:"default_strategy_id,omitempty"`
+	SyncStatus        SyncStatus `protobuf:"varint,6,opt,name=sync_status,json=syncStatus,proto3,enum=ameliso.v1.SyncStatus" json:"sync_status,omitempty"`
+	LastSyncError     string     `protobuf:"bytes,7,opt,name=last_sync_error,json=lastSyncError,proto3" json:"last_sync_error,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Suite) Reset() {
@@ -737,6 +812,27 @@ func (x *Suite) GetCases() []string {
 	return nil
 }
 
+func (x *Suite) GetDefaultStrategyId() string {
+	if x != nil {
+		return x.DefaultStrategyId
+	}
+	return ""
+}
+
+func (x *Suite) GetSyncStatus() SyncStatus {
+	if x != nil {
+		return x.SyncStatus
+	}
+	return SyncStatus_SYNC_STATUS_UNSPECIFIED
+}
+
+func (x *Suite) GetLastSyncError() string {
+	if x != nil {
+		return x.LastSyncError
+	}
+	return ""
+}
+
 type RunMeta struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -760,7 +856,13 @@ type RunMeta struct {
 	// Server-formatted relative timestamp (e.g. "2h ago", "3 days ago", "Apr 25, 2026").
 	FormattedDate string `protobuf:"bytes,14,opt,name=formatted_date,json=formattedDate,proto3" json:"formatted_date,omitempty"`
 	// User UUID of the agent or user who claimed this run; empty when unclaimed.
-	AssigneeId    string `protobuf:"bytes,15,opt,name=assignee_id,json=assigneeId,proto3" json:"assignee_id,omitempty"`
+	AssigneeId string `protobuf:"bytes,15,opt,name=assignee_id,json=assigneeId,proto3" json:"assignee_id,omitempty"`
+	// ID of the testing strategy used for this run. Empty when not set.
+	StrategyId string `protobuf:"bytes,16,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	// GitHub pull request number associated with this run. 0 when not set.
+	PrNumber      int32      `protobuf:"varint,17,opt,name=pr_number,json=prNumber,proto3" json:"pr_number,omitempty"`
+	SyncStatus    SyncStatus `protobuf:"varint,18,opt,name=sync_status,json=syncStatus,proto3,enum=ameliso.v1.SyncStatus" json:"sync_status,omitempty"`
+	LastSyncError string     `protobuf:"bytes,19,opt,name=last_sync_error,json=lastSyncError,proto3" json:"last_sync_error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -900,6 +1002,34 @@ func (x *RunMeta) GetAssigneeId() string {
 	return ""
 }
 
+func (x *RunMeta) GetStrategyId() string {
+	if x != nil {
+		return x.StrategyId
+	}
+	return ""
+}
+
+func (x *RunMeta) GetPrNumber() int32 {
+	if x != nil {
+		return x.PrNumber
+	}
+	return 0
+}
+
+func (x *RunMeta) GetSyncStatus() SyncStatus {
+	if x != nil {
+		return x.SyncStatus
+	}
+	return SyncStatus_SYNC_STATUS_UNSPECIFIED
+}
+
+func (x *RunMeta) GetLastSyncError() string {
+	if x != nil {
+		return x.LastSyncError
+	}
+	return ""
+}
+
 type CaseResult struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	CasePath string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
@@ -912,7 +1042,9 @@ type CaseResult struct {
 	// Free-form failure category (e.g. "assertion", "timeout", "crash"). Empty when not set.
 	ErrorType string `protobuf:"bytes,6,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
 	// ID of the testing strategy used to execute this case. Empty when not recorded.
-	StrategyId    string `protobuf:"bytes,7,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	StrategyId string `protobuf:"bytes,7,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	// User name who recorded this result. Empty when not recorded.
+	RecordedBy    string `protobuf:"bytes,8,opt,name=recorded_by,json=recordedBy,proto3" json:"recorded_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -996,6 +1128,13 @@ func (x *CaseResult) GetStrategyId() string {
 	return ""
 }
 
+func (x *CaseResult) GetRecordedBy() string {
+	if x != nil {
+		return x.RecordedBy
+	}
+	return ""
+}
+
 type Run struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Meta          *RunMeta               `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
@@ -1058,6 +1197,13 @@ type CoverageEntry struct {
 	Body string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
 	// 0.0 = never flaky, 1.0 = status changes every run. Only set when ≥2 results exist.
 	FlakinessScore float32 `protobuf:"fixed32,6,opt,name=flakiness_score,json=flakinessScore,proto3" json:"flakiness_score,omitempty"`
+	// Average execution time in milliseconds across all recorded results. 0 means not recorded.
+	DurationMs int64 `protobuf:"varint,7,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	// Error category from the latest result (e.g. "assertion", "timeout", "crash"). Empty when not set.
+	ErrorType string `protobuf:"bytes,8,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
+	// The last 8 result statuses for this case, ordered most recent first.
+	// Used for sparkline display. Empty when fewer than 2 results exist.
+	RecentStatuses []ResultStatus `protobuf:"varint,9,rep,packed,name=recent_statuses,json=recentStatuses,proto3,enum=ameliso.v1.ResultStatus" json:"recent_statuses,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1132,6 +1278,27 @@ func (x *CoverageEntry) GetFlakinessScore() float32 {
 		return x.FlakinessScore
 	}
 	return 0
+}
+
+func (x *CoverageEntry) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *CoverageEntry) GetErrorType() string {
+	if x != nil {
+		return x.ErrorType
+	}
+	return ""
+}
+
+func (x *CoverageEntry) GetRecentStatuses() []ResultStatus {
+	if x != nil {
+		return x.RecentStatuses
+	}
+	return nil
 }
 
 type AffectedCase struct {
@@ -1616,6 +1783,66 @@ func (x *FlakyCaseSummary) GetLastFlipSha() string {
 	return ""
 }
 
+type TrendCaseSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CasePath      string                 `protobuf:"bytes,1,opt,name=case_path,json=casePath,proto3" json:"case_path,omitempty"`
+	Streak        int32                  `protobuf:"varint,2,opt,name=streak,proto3" json:"streak,omitempty"`                               // consecutive pass count (improved) or fail count (regressed)
+	LastRunDate   string                 `protobuf:"bytes,3,opt,name=last_run_date,json=lastRunDate,proto3" json:"last_run_date,omitempty"` // ISO date of most recent result
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TrendCaseSummary) Reset() {
+	*x = TrendCaseSummary{}
+	mi := &file_ameliso_v1_types_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrendCaseSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrendCaseSummary) ProtoMessage() {}
+
+func (x *TrendCaseSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_ameliso_v1_types_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrendCaseSummary.ProtoReflect.Descriptor instead.
+func (*TrendCaseSummary) Descriptor() ([]byte, []int) {
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *TrendCaseSummary) GetCasePath() string {
+	if x != nil {
+		return x.CasePath
+	}
+	return ""
+}
+
+func (x *TrendCaseSummary) GetStreak() int32 {
+	if x != nil {
+		return x.Streak
+	}
+	return 0
+}
+
+func (x *TrendCaseSummary) GetLastRunDate() string {
+	if x != nil {
+		return x.LastRunDate
+	}
+	return ""
+}
+
 type CaseGitCommit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sha           string                 `protobuf:"bytes,1,opt,name=sha,proto3" json:"sha,omitempty"`
@@ -1628,7 +1855,7 @@ type CaseGitCommit struct {
 
 func (x *CaseGitCommit) Reset() {
 	*x = CaseGitCommit{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[15]
+	mi := &file_ameliso_v1_types_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1640,7 +1867,7 @@ func (x *CaseGitCommit) String() string {
 func (*CaseGitCommit) ProtoMessage() {}
 
 func (x *CaseGitCommit) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[15]
+	mi := &file_ameliso_v1_types_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1653,7 +1880,7 @@ func (x *CaseGitCommit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CaseGitCommit.ProtoReflect.Descriptor instead.
 func (*CaseGitCommit) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{15}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CaseGitCommit) GetSha() string {
@@ -1699,7 +1926,7 @@ type RunTrendMetric struct {
 
 func (x *RunTrendMetric) Reset() {
 	*x = RunTrendMetric{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[16]
+	mi := &file_ameliso_v1_types_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1711,7 +1938,7 @@ func (x *RunTrendMetric) String() string {
 func (*RunTrendMetric) ProtoMessage() {}
 
 func (x *RunTrendMetric) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[16]
+	mi := &file_ameliso_v1_types_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1724,7 +1951,7 @@ func (x *RunTrendMetric) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunTrendMetric.ProtoReflect.Descriptor instead.
 func (*RunTrendMetric) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{16}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RunTrendMetric) GetDate() string {
@@ -1791,7 +2018,7 @@ type OutboundWebhook struct {
 
 func (x *OutboundWebhook) Reset() {
 	*x = OutboundWebhook{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[17]
+	mi := &file_ameliso_v1_types_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1803,7 +2030,7 @@ func (x *OutboundWebhook) String() string {
 func (*OutboundWebhook) ProtoMessage() {}
 
 func (x *OutboundWebhook) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[17]
+	mi := &file_ameliso_v1_types_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1816,7 +2043,7 @@ func (x *OutboundWebhook) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutboundWebhook.ProtoReflect.Descriptor instead.
 func (*OutboundWebhook) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{17}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *OutboundWebhook) GetId() string {
@@ -1877,13 +2104,14 @@ type OutboundWebhookDelivery struct {
 	StatusCode    int32                  `protobuf:"varint,5,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
 	Outcome       string                 `protobuf:"bytes,6,opt,name=outcome,proto3" json:"outcome,omitempty"`
 	DeliveredAt   string                 `protobuf:"bytes,7,opt,name=delivered_at,json=deliveredAt,proto3" json:"delivered_at,omitempty"`
+	Payload       string                 `protobuf:"bytes,8,opt,name=payload,proto3" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OutboundWebhookDelivery) Reset() {
 	*x = OutboundWebhookDelivery{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[18]
+	mi := &file_ameliso_v1_types_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1895,7 +2123,7 @@ func (x *OutboundWebhookDelivery) String() string {
 func (*OutboundWebhookDelivery) ProtoMessage() {}
 
 func (x *OutboundWebhookDelivery) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[18]
+	mi := &file_ameliso_v1_types_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1908,7 +2136,7 @@ func (x *OutboundWebhookDelivery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutboundWebhookDelivery.ProtoReflect.Descriptor instead.
 func (*OutboundWebhookDelivery) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{18}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *OutboundWebhookDelivery) GetId() string {
@@ -1960,6 +2188,13 @@ func (x *OutboundWebhookDelivery) GetDeliveredAt() string {
 	return ""
 }
 
+func (x *OutboundWebhookDelivery) GetPayload() string {
+	if x != nil {
+		return x.Payload
+	}
+	return ""
+}
+
 type RunTrendPoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Date          string                 `protobuf:"bytes,1,opt,name=date,proto3" json:"date,omitempty"`
@@ -1975,7 +2210,7 @@ type RunTrendPoint struct {
 
 func (x *RunTrendPoint) Reset() {
 	*x = RunTrendPoint{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[19]
+	mi := &file_ameliso_v1_types_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1987,7 +2222,7 @@ func (x *RunTrendPoint) String() string {
 func (*RunTrendPoint) ProtoMessage() {}
 
 func (x *RunTrendPoint) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[19]
+	mi := &file_ameliso_v1_types_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2000,7 +2235,7 @@ func (x *RunTrendPoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunTrendPoint.ProtoReflect.Descriptor instead.
 func (*RunTrendPoint) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{19}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RunTrendPoint) GetDate() string {
@@ -2066,7 +2301,7 @@ type RunCompletionFunnel struct {
 
 func (x *RunCompletionFunnel) Reset() {
 	*x = RunCompletionFunnel{}
-	mi := &file_ameliso_v1_types_proto_msgTypes[20]
+	mi := &file_ameliso_v1_types_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2313,7 @@ func (x *RunCompletionFunnel) String() string {
 func (*RunCompletionFunnel) ProtoMessage() {}
 
 func (x *RunCompletionFunnel) ProtoReflect() protoreflect.Message {
-	mi := &file_ameliso_v1_types_proto_msgTypes[20]
+	mi := &file_ameliso_v1_types_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2326,7 @@ func (x *RunCompletionFunnel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCompletionFunnel.ProtoReflect.Descriptor instead.
 func (*RunCompletionFunnel) Descriptor() ([]byte, []int) {
-	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{20}
+	return file_ameliso_v1_types_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *RunCompletionFunnel) GetTotalSlots() int32 {
@@ -2141,7 +2376,7 @@ var File_ameliso_v1_types_proto protoreflect.FileDescriptor
 const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"\x16ameliso/v1/types.proto\x12\n" +
-	"ameliso.v1\"\xba\x03\n" +
+	"ameliso.v1\"\x9b\x04\n" +
 	"\x04Case\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -2160,7 +2395,10 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\rprerequisites\x18\v \x03(\tR\rprerequisites\x120\n" +
 	"\x14formatted_created_at\x18\f \x01(\tR\x12formattedCreatedAt\x120\n" +
 	"\x14formatted_updated_at\x18\r \x01(\tR\x12formattedUpdatedAt\x12\x16\n" +
-	"\x06status\x18\x0e \x01(\tR\x06status\"\xf1\x01\n" +
+	"\x06status\x18\x0e \x01(\tR\x06status\x127\n" +
+	"\vsync_status\x18\x0f \x01(\x0e2\x16.ameliso.v1.SyncStatusR\n" +
+	"syncStatus\x12&\n" +
+	"\x0flast_sync_error\x18\x10 \x01(\tR\rlastSyncError\"\xf1\x01\n" +
 	"\x0fTestingStrategy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -2194,12 +2432,16 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x05 \x01(\tR\texpiresAt\"g\n" +
+	"expires_at\x18\x05 \x01(\tR\texpiresAt\"\xf8\x01\n" +
 	"\x05Suite\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05cases\x18\x04 \x03(\tR\x05cases\"\xb1\x03\n" +
+	"\x05cases\x18\x04 \x03(\tR\x05cases\x12.\n" +
+	"\x13default_strategy_id\x18\x05 \x01(\tR\x11defaultStrategyId\x127\n" +
+	"\vsync_status\x18\x06 \x01(\x0e2\x16.ameliso.v1.SyncStatusR\n" +
+	"syncStatus\x12&\n" +
+	"\x0flast_sync_error\x18\a \x01(\tR\rlastSyncError\"\xd0\x04\n" +
 	"\aRunMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x18\n" +
@@ -2218,7 +2460,13 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\vdescription\x18\r \x01(\tR\vdescription\x12%\n" +
 	"\x0eformatted_date\x18\x0e \x01(\tR\rformattedDate\x12\x1f\n" +
 	"\vassignee_id\x18\x0f \x01(\tR\n" +
-	"assigneeId\"\xf7\x01\n" +
+	"assigneeId\x12\x1f\n" +
+	"\vstrategy_id\x18\x10 \x01(\tR\n" +
+	"strategyId\x12\x1b\n" +
+	"\tpr_number\x18\x11 \x01(\x05R\bprNumber\x127\n" +
+	"\vsync_status\x18\x12 \x01(\x0e2\x16.ameliso.v1.SyncStatusR\n" +
+	"syncStatus\x12&\n" +
+	"\x0flast_sync_error\x18\x13 \x01(\tR\rlastSyncError\"\x98\x02\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
@@ -2230,17 +2478,24 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"error_type\x18\x06 \x01(\tR\terrorType\x12\x1f\n" +
 	"\vstrategy_id\x18\a \x01(\tR\n" +
-	"strategyId\"`\n" +
+	"strategyId\x12\x1f\n" +
+	"\vrecorded_by\x18\b \x01(\tR\n" +
+	"recordedBy\"`\n" +
 	"\x03Run\x12'\n" +
 	"\x04meta\x18\x01 \x01(\v2\x13.ameliso.v1.RunMetaR\x04meta\x120\n" +
-	"\aresults\x18\x02 \x03(\v2\x16.ameliso.v1.CaseResultR\aresults\"\xf5\x01\n" +
+	"\aresults\x18\x02 \x03(\v2\x16.ameliso.v1.CaseResultR\aresults\"\xf8\x02\n" +
 	"\rCoverageEntry\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12=\n" +
 	"\rlatest_status\x18\x02 \x01(\x0e2\x18.ameliso.v1.ResultStatusR\flatestStatus\x12\x1e\n" +
 	"\vlast_run_id\x18\x03 \x01(\tR\tlastRunId\x12\"\n" +
 	"\rlast_run_date\x18\x04 \x01(\tR\vlastRunDate\x12\x12\n" +
 	"\x04body\x18\x05 \x01(\tR\x04body\x12'\n" +
-	"\x0fflakiness_score\x18\x06 \x01(\x02R\x0eflakinessScore\"\x9f\x01\n" +
+	"\x0fflakiness_score\x18\x06 \x01(\x02R\x0eflakinessScore\x12\x1f\n" +
+	"\vduration_ms\x18\a \x01(\x03R\n" +
+	"durationMs\x12\x1d\n" +
+	"\n" +
+	"error_type\x18\b \x01(\tR\terrorType\x12A\n" +
+	"\x0frecent_statuses\x18\t \x03(\x0e2\x18.ameliso.v1.ResultStatusR\x0erecentStatuses\"\x9f\x01\n" +
 	"\fAffectedCase\x12$\n" +
 	"\x04case\x18\x01 \x01(\v2\x10.ameliso.v1.CaseR\x04case\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12=\n" +
@@ -2292,7 +2547,11 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x12\x1d\n" +
 	"\n" +
 	"flip_count\x18\x02 \x01(\x05R\tflipCount\x12\"\n" +
-	"\rlast_flip_sha\x18\x03 \x01(\tR\vlastFlipSha\"g\n" +
+	"\rlast_flip_sha\x18\x03 \x01(\tR\vlastFlipSha\"k\n" +
+	"\x10TrendCaseSummary\x12\x1b\n" +
+	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x12\x16\n" +
+	"\x06streak\x18\x02 \x01(\x05R\x06streak\x12\"\n" +
+	"\rlast_run_date\x18\x03 \x01(\tR\vlastRunDate\"g\n" +
 	"\rCaseGitCommit\x12\x10\n" +
 	"\x03sha\x18\x01 \x01(\tR\x03sha\x12\x16\n" +
 	"\x06author\x18\x02 \x01(\tR\x06author\x12\x12\n" +
@@ -2316,7 +2575,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\tR\tupdatedAt\"\xd5\x01\n" +
+	"updated_at\x18\a \x01(\tR\tupdatedAt\"\xef\x01\n" +
 	"\x17OutboundWebhookDelivery\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\arepo_id\x18\x02 \x01(\tR\x06repoId\x12\x1d\n" +
@@ -2326,7 +2585,8 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\vstatus_code\x18\x05 \x01(\x05R\n" +
 	"statusCode\x12\x18\n" +
 	"\aoutcome\x18\x06 \x01(\tR\aoutcome\x12!\n" +
-	"\fdelivered_at\x18\a \x01(\tR\vdeliveredAt\"\xc8\x01\n" +
+	"\fdelivered_at\x18\a \x01(\tR\vdeliveredAt\x12\x18\n" +
+	"\apayload\x18\b \x01(\tR\apayload\"\xc8\x01\n" +
 	"\rRunTrendPoint\x12\x12\n" +
 	"\x04date\x18\x01 \x01(\tR\x04date\x12\x1b\n" +
 	"\trun_count\x18\x02 \x01(\x05R\brunCount\x12\x16\n" +
@@ -2359,7 +2619,14 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPRIORITY_LOW\x10\x01\x12\x13\n" +
 	"\x0fPRIORITY_MEDIUM\x10\x02\x12\x11\n" +
-	"\rPRIORITY_HIGH\x10\x03B0Z.github.com/tupe12334/ameliso/generated;amelisob\x06proto3"
+	"\rPRIORITY_HIGH\x10\x03*\x8c\x01\n" +
+	"\n" +
+	"SyncStatus\x12\x1b\n" +
+	"\x17SYNC_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14SYNC_STATUS_UNSYNCED\x10\x01\x12\x17\n" +
+	"\x13SYNC_STATUS_SYNCING\x10\x02\x12\x16\n" +
+	"\x12SYNC_STATUS_SYNCED\x10\x03\x12\x16\n" +
+	"\x12SYNC_STATUS_FAILED\x10\x04B0Z.github.com/tupe12334/ameliso/generated;amelisob\x06proto3"
 
 var (
 	file_ameliso_v1_types_proto_rawDescOnce sync.Once
@@ -2373,48 +2640,54 @@ func file_ameliso_v1_types_proto_rawDescGZIP() []byte {
 	return file_ameliso_v1_types_proto_rawDescData
 }
 
-var file_ameliso_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_ameliso_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_ameliso_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_ameliso_v1_types_proto_goTypes = []any{
 	(RunStatus)(0),                  // 0: ameliso.v1.RunStatus
 	(ResultStatus)(0),               // 1: ameliso.v1.ResultStatus
 	(Priority)(0),                   // 2: ameliso.v1.Priority
-	(*Case)(nil),                    // 3: ameliso.v1.Case
-	(*TestingStrategy)(nil),         // 4: ameliso.v1.TestingStrategy
-	(*RunTemplate)(nil),             // 5: ameliso.v1.RunTemplate
-	(*RepoPermission)(nil),          // 6: ameliso.v1.RepoPermission
-	(*RepoToken)(nil),               // 7: ameliso.v1.RepoToken
-	(*Suite)(nil),                   // 8: ameliso.v1.Suite
-	(*RunMeta)(nil),                 // 9: ameliso.v1.RunMeta
-	(*CaseResult)(nil),              // 10: ameliso.v1.CaseResult
-	(*Run)(nil),                     // 11: ameliso.v1.Run
-	(*CoverageEntry)(nil),           // 12: ameliso.v1.CoverageEntry
-	(*AffectedCase)(nil),            // 13: ameliso.v1.AffectedCase
-	(*AuditEntry)(nil),              // 14: ameliso.v1.AuditEntry
-	(*Repository)(nil),              // 15: ameliso.v1.Repository
-	(*SuiteCoverageSummary)(nil),    // 16: ameliso.v1.SuiteCoverageSummary
-	(*FlakyCaseSummary)(nil),        // 17: ameliso.v1.FlakyCaseSummary
-	(*CaseGitCommit)(nil),           // 18: ameliso.v1.CaseGitCommit
-	(*RunTrendMetric)(nil),          // 19: ameliso.v1.RunTrendMetric
-	(*OutboundWebhook)(nil),         // 20: ameliso.v1.OutboundWebhook
-	(*OutboundWebhookDelivery)(nil), // 21: ameliso.v1.OutboundWebhookDelivery
-	(*RunTrendPoint)(nil),           // 22: ameliso.v1.RunTrendPoint
-	(*RunCompletionFunnel)(nil),     // 23: ameliso.v1.RunCompletionFunnel
+	(SyncStatus)(0),                 // 3: ameliso.v1.SyncStatus
+	(*Case)(nil),                    // 4: ameliso.v1.Case
+	(*TestingStrategy)(nil),         // 5: ameliso.v1.TestingStrategy
+	(*RunTemplate)(nil),             // 6: ameliso.v1.RunTemplate
+	(*RepoPermission)(nil),          // 7: ameliso.v1.RepoPermission
+	(*RepoToken)(nil),               // 8: ameliso.v1.RepoToken
+	(*Suite)(nil),                   // 9: ameliso.v1.Suite
+	(*RunMeta)(nil),                 // 10: ameliso.v1.RunMeta
+	(*CaseResult)(nil),              // 11: ameliso.v1.CaseResult
+	(*Run)(nil),                     // 12: ameliso.v1.Run
+	(*CoverageEntry)(nil),           // 13: ameliso.v1.CoverageEntry
+	(*AffectedCase)(nil),            // 14: ameliso.v1.AffectedCase
+	(*AuditEntry)(nil),              // 15: ameliso.v1.AuditEntry
+	(*Repository)(nil),              // 16: ameliso.v1.Repository
+	(*SuiteCoverageSummary)(nil),    // 17: ameliso.v1.SuiteCoverageSummary
+	(*FlakyCaseSummary)(nil),        // 18: ameliso.v1.FlakyCaseSummary
+	(*TrendCaseSummary)(nil),        // 19: ameliso.v1.TrendCaseSummary
+	(*CaseGitCommit)(nil),           // 20: ameliso.v1.CaseGitCommit
+	(*RunTrendMetric)(nil),          // 21: ameliso.v1.RunTrendMetric
+	(*OutboundWebhook)(nil),         // 22: ameliso.v1.OutboundWebhook
+	(*OutboundWebhookDelivery)(nil), // 23: ameliso.v1.OutboundWebhookDelivery
+	(*RunTrendPoint)(nil),           // 24: ameliso.v1.RunTrendPoint
+	(*RunCompletionFunnel)(nil),     // 25: ameliso.v1.RunCompletionFunnel
 }
 var file_ameliso_v1_types_proto_depIdxs = []int32{
-	0,  // 0: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
-	1,  // 1: ameliso.v1.CaseResult.status:type_name -> ameliso.v1.ResultStatus
-	9,  // 2: ameliso.v1.Run.meta:type_name -> ameliso.v1.RunMeta
-	10, // 3: ameliso.v1.Run.results:type_name -> ameliso.v1.CaseResult
-	3,  // 4: ameliso.v1.CoverageEntry.case:type_name -> ameliso.v1.Case
-	1,  // 5: ameliso.v1.CoverageEntry.latest_status:type_name -> ameliso.v1.ResultStatus
-	3,  // 6: ameliso.v1.AffectedCase.case:type_name -> ameliso.v1.Case
-	1,  // 7: ameliso.v1.AffectedCase.latest_status:type_name -> ameliso.v1.ResultStatus
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	3,  // 0: ameliso.v1.Case.sync_status:type_name -> ameliso.v1.SyncStatus
+	3,  // 1: ameliso.v1.Suite.sync_status:type_name -> ameliso.v1.SyncStatus
+	0,  // 2: ameliso.v1.RunMeta.status:type_name -> ameliso.v1.RunStatus
+	3,  // 3: ameliso.v1.RunMeta.sync_status:type_name -> ameliso.v1.SyncStatus
+	1,  // 4: ameliso.v1.CaseResult.status:type_name -> ameliso.v1.ResultStatus
+	10, // 5: ameliso.v1.Run.meta:type_name -> ameliso.v1.RunMeta
+	11, // 6: ameliso.v1.Run.results:type_name -> ameliso.v1.CaseResult
+	4,  // 7: ameliso.v1.CoverageEntry.case:type_name -> ameliso.v1.Case
+	1,  // 8: ameliso.v1.CoverageEntry.latest_status:type_name -> ameliso.v1.ResultStatus
+	1,  // 9: ameliso.v1.CoverageEntry.recent_statuses:type_name -> ameliso.v1.ResultStatus
+	4,  // 10: ameliso.v1.AffectedCase.case:type_name -> ameliso.v1.Case
+	1,  // 11: ameliso.v1.AffectedCase.latest_status:type_name -> ameliso.v1.ResultStatus
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_ameliso_v1_types_proto_init() }
@@ -2427,8 +2700,8 @@ func file_ameliso_v1_types_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ameliso_v1_types_proto_rawDesc), len(file_ameliso_v1_types_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   21,
+			NumEnums:      4,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

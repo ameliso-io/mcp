@@ -85,6 +85,7 @@ const (
 	AmelisoService_UpdateOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/UpdateOutboundWebhook"
 	AmelisoService_DeleteOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/DeleteOutboundWebhook"
 	AmelisoService_ListOutboundWebhookDeliveries_FullMethodName = "/ameliso.v1.AmelisoService/ListOutboundWebhookDeliveries"
+	AmelisoService_RetryWebhookDelivery_FullMethodName          = "/ameliso.v1.AmelisoService/RetryWebhookDelivery"
 	AmelisoService_ListPermissions_FullMethodName               = "/ameliso.v1.AmelisoService/ListPermissions"
 	AmelisoService_AddPermission_FullMethodName                 = "/ameliso.v1.AmelisoService/AddPermission"
 	AmelisoService_RemovePermission_FullMethodName              = "/ameliso.v1.AmelisoService/RemovePermission"
@@ -226,6 +227,7 @@ type AmelisoServiceClient interface {
 	UpdateOutboundWebhook(ctx context.Context, in *UpdateOutboundWebhookRequest, opts ...grpc.CallOption) (*UpdateOutboundWebhookResponse, error)
 	DeleteOutboundWebhook(ctx context.Context, in *DeleteOutboundWebhookRequest, opts ...grpc.CallOption) (*DeleteOutboundWebhookResponse, error)
 	ListOutboundWebhookDeliveries(ctx context.Context, in *ListOutboundWebhookDeliveriesRequest, opts ...grpc.CallOption) (*ListOutboundWebhookDeliveriesResponse, error)
+	RetryWebhookDelivery(ctx context.Context, in *RetryWebhookDeliveryRequest, opts ...grpc.CallOption) (*RetryWebhookDeliveryResponse, error)
 	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
 	AddPermission(ctx context.Context, in *AddPermissionRequest, opts ...grpc.CallOption) (*AddPermissionResponse, error)
 	RemovePermission(ctx context.Context, in *RemovePermissionRequest, opts ...grpc.CallOption) (*RemovePermissionResponse, error)
@@ -904,6 +906,16 @@ func (c *amelisoServiceClient) ListOutboundWebhookDeliveries(ctx context.Context
 	return out, nil
 }
 
+func (c *amelisoServiceClient) RetryWebhookDelivery(ctx context.Context, in *RetryWebhookDeliveryRequest, opts ...grpc.CallOption) (*RetryWebhookDeliveryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RetryWebhookDeliveryResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RetryWebhookDelivery_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPermissionsResponse)
@@ -1079,6 +1091,7 @@ type AmelisoServiceServer interface {
 	UpdateOutboundWebhook(context.Context, *UpdateOutboundWebhookRequest) (*UpdateOutboundWebhookResponse, error)
 	DeleteOutboundWebhook(context.Context, *DeleteOutboundWebhookRequest) (*DeleteOutboundWebhookResponse, error)
 	ListOutboundWebhookDeliveries(context.Context, *ListOutboundWebhookDeliveriesRequest) (*ListOutboundWebhookDeliveriesResponse, error)
+	RetryWebhookDelivery(context.Context, *RetryWebhookDeliveryRequest) (*RetryWebhookDeliveryResponse, error)
 	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
 	AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionResponse, error)
 	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionResponse, error)
@@ -1294,6 +1307,9 @@ func (UnimplementedAmelisoServiceServer) DeleteOutboundWebhook(context.Context, 
 }
 func (UnimplementedAmelisoServiceServer) ListOutboundWebhookDeliveries(context.Context, *ListOutboundWebhookDeliveriesRequest) (*ListOutboundWebhookDeliveriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListOutboundWebhookDeliveries not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RetryWebhookDelivery(context.Context, *RetryWebhookDeliveryRequest) (*RetryWebhookDeliveryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RetryWebhookDelivery not implemented")
 }
 func (UnimplementedAmelisoServiceServer) ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPermissions not implemented")
@@ -2516,6 +2532,24 @@ func _AmelisoService_ListOutboundWebhookDeliveries_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_RetryWebhookDelivery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryWebhookDeliveryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RetryWebhookDelivery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RetryWebhookDelivery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RetryWebhookDelivery(ctx, req.(*RetryWebhookDeliveryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_ListPermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPermissionsRequest)
 	if err := dec(in); err != nil {
@@ -2858,6 +2892,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListOutboundWebhookDeliveries",
 			Handler:    _AmelisoService_ListOutboundWebhookDeliveries_Handler,
+		},
+		{
+			MethodName: "RetryWebhookDelivery",
+			Handler:    _AmelisoService_RetryWebhookDelivery_Handler,
 		},
 		{
 			MethodName: "ListPermissions",
