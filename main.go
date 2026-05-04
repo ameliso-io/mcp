@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -162,9 +163,9 @@ func resolveAPIURL() string {
 }
 
 func main() {
-	addr := os.Getenv("AMELISO_GRPC_ADDR")
-	if addr == "" {
-		addr = "localhost:50052"
+	addr, err := localauth.GRPCAddr()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Non-interactive: read stored token from env/keychain/file.
