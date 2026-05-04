@@ -9,8 +9,8 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/redpanda-data/protoc-gen-go-mcp v0.0.0-20260430225748-67e0bd25a988
 	github.com/tupe12334/ameliso/local-auth v0.0.0
-	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/grpc v1.81.0
+	google.golang.org/protobuf v1.36.11
 )
 
 replace github.com/tupe12334/ameliso/local-auth => ../local-auth
@@ -27,10 +27,10 @@ require (
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/zalando/go-keyring v0.2.6 // indirect
-	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 )

@@ -17,10 +17,12 @@ import (
 	amelisomcp "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1/amelisomcp"
 )
 
-// apiURL is the base URL of the Ameliso HTTP API, set via -ldflags in release
-// builds (e.g. https://api.ameliso.io). Override at runtime via AMELISO_API_URL.
-// If empty, defaults to http://localhost:8080 (local dev).
-var apiURL = ""
+// apiURL and grpcAddr are set via -ldflags in release builds.
+// Override at runtime via AMELISO_API_URL / AMELISO_GRPC_ADDR.
+var (
+	apiURL  = ""
+	grpcAddr = ""
+)
 
 // userTokenPrefix is the expected prefix for Ameliso personal access tokens.
 // Kept here to surface drift from the server-side constant via TestUserTokenPrefixIsAmPat.
@@ -151,18 +153,13 @@ func registerAuthTools(raw *mcp.Server, addr string, apiBaseURL string, creds *d
 	})
 }
 
-func resolveAPIURL() string {
-	if v := os.Getenv("AMELISO_API_URL"); v != "" {
-		return v
-	}
-	if apiURL != "" {
-		return apiURL
-	}
-	return "http://localhost:8080"
-}
-
 func main() {
-	addr, err := localauth.GRPCAddr()
+	addr, err := localauth.GRPCAddr(grpcAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	apiBaseURL, err := localauth.APIURL(apiURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -185,7 +182,7 @@ func main() {
 
 	raw, s := gosdk.NewServer("ameliso", "1.0.0")
 	amelisomcp.ForwardToAmelisoServiceClient(s, pb.NewAmelisoServiceClient(conn))
-	registerAuthTools(raw, addr, resolveAPIURL(), creds)
+	registerAuthTools(raw, addr, apiBaseURL, creds)
 
 	if err := raw.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		fmt.Fprintf(os.Stderr, "ameliso-mcp: %v\n", err)
