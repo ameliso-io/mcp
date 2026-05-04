@@ -90,6 +90,7 @@ const (
 	AmelisoService_AddPermission_FullMethodName                 = "/ameliso.v1.AmelisoService/AddPermission"
 	AmelisoService_RemovePermission_FullMethodName              = "/ameliso.v1.AmelisoService/RemovePermission"
 	AmelisoService_WhoAmI_FullMethodName                        = "/ameliso.v1.AmelisoService/WhoAmI"
+	AmelisoService_UpdateResultNotes_FullMethodName             = "/ameliso.v1.AmelisoService/UpdateResultNotes"
 )
 
 // AmelisoServiceClient is the client API for AmelisoService service.
@@ -236,6 +237,8 @@ type AmelisoServiceClient interface {
 	// Lets the web UI render the signed-in user's info and pre-fill audit-log
 	// "my actions" filters without exposing the raw token.
 	WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error)
+	// Amend notes on a finalized (completed or aborted) run result inline.
+	UpdateResultNotes(ctx context.Context, in *UpdateResultNotesRequest, opts ...grpc.CallOption) (*UpdateResultNotesResponse, error)
 }
 
 type amelisoServiceClient struct {
@@ -956,6 +959,16 @@ func (c *amelisoServiceClient) WhoAmI(ctx context.Context, in *WhoAmIRequest, op
 	return out, nil
 }
 
+func (c *amelisoServiceClient) UpdateResultNotes(ctx context.Context, in *UpdateResultNotesRequest, opts ...grpc.CallOption) (*UpdateResultNotesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateResultNotesResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_UpdateResultNotes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AmelisoServiceServer is the server API for AmelisoService service.
 // All implementations must embed UnimplementedAmelisoServiceServer
 // for forward compatibility.
@@ -1100,6 +1113,8 @@ type AmelisoServiceServer interface {
 	// Lets the web UI render the signed-in user's info and pre-fill audit-log
 	// "my actions" filters without exposing the raw token.
 	WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error)
+	// Amend notes on a finalized (completed or aborted) run result inline.
+	UpdateResultNotes(context.Context, *UpdateResultNotesRequest) (*UpdateResultNotesResponse, error)
 	mustEmbedUnimplementedAmelisoServiceServer()
 }
 
@@ -1322,6 +1337,9 @@ func (UnimplementedAmelisoServiceServer) RemovePermission(context.Context, *Remo
 }
 func (UnimplementedAmelisoServiceServer) WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method WhoAmI not implemented")
+}
+func (UnimplementedAmelisoServiceServer) UpdateResultNotes(context.Context, *UpdateResultNotesRequest) (*UpdateResultNotesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateResultNotes not implemented")
 }
 func (UnimplementedAmelisoServiceServer) mustEmbedUnimplementedAmelisoServiceServer() {}
 func (UnimplementedAmelisoServiceServer) testEmbeddedByValue()                        {}
@@ -2622,6 +2640,24 @@ func _AmelisoService_WhoAmI_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_UpdateResultNotes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateResultNotesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).UpdateResultNotes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_UpdateResultNotes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).UpdateResultNotes(ctx, req.(*UpdateResultNotesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AmelisoService_ServiceDesc is the grpc.ServiceDesc for AmelisoService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2912,6 +2948,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WhoAmI",
 			Handler:    _AmelisoService_WhoAmI_Handler,
+		},
+		{
+			MethodName: "UpdateResultNotes",
+			Handler:    _AmelisoService_UpdateResultNotes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

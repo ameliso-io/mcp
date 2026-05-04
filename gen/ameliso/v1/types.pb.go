@@ -522,6 +522,7 @@ type RunTemplate struct {
 	Tags              []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
 	CreatedAt         string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt         string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	CasePaths         []string               `protobuf:"bytes,9,rep,name=case_paths,json=casePaths,proto3" json:"case_paths,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -610,6 +611,13 @@ func (x *RunTemplate) GetUpdatedAt() string {
 		return x.UpdatedAt
 	}
 	return ""
+}
+
+func (x *RunTemplate) GetCasePaths() []string {
+	if x != nil {
+		return x.CasePaths
+	}
+	return nil
 }
 
 type RepoPermission struct {
@@ -863,8 +871,10 @@ type RunMeta struct {
 	PrNumber      int32      `protobuf:"varint,17,opt,name=pr_number,json=prNumber,proto3" json:"pr_number,omitempty"`
 	SyncStatus    SyncStatus `protobuf:"varint,18,opt,name=sync_status,json=syncStatus,proto3,enum=ameliso.v1.SyncStatus" json:"sync_status,omitempty"`
 	LastSyncError string     `protobuf:"bytes,19,opt,name=last_sync_error,json=lastSyncError,proto3" json:"last_sync_error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Sum of all result duration_ms values for this run. 0 when not computed or no durations recorded.
+	TotalDurationMs int64 `protobuf:"varint,20,opt,name=total_duration_ms,json=totalDurationMs,proto3" json:"total_duration_ms,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *RunMeta) Reset() {
@@ -1028,6 +1038,13 @@ func (x *RunMeta) GetLastSyncError() string {
 		return x.LastSyncError
 	}
 	return ""
+}
+
+func (x *RunMeta) GetTotalDurationMs() int64 {
+	if x != nil {
+		return x.TotalDurationMs
+	}
+	return 0
 }
 
 type CaseResult struct {
@@ -2410,7 +2427,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"updated_at\x18\x06 \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
 	"deleted_at\x18\a \x01(\tR\tdeletedAt\x12'\n" +
-	"\x0fexecution_hints\x18\b \x01(\tR\x0eexecutionHints\"\xf4\x01\n" +
+	"\x0fexecution_hints\x18\b \x01(\tR\x0eexecutionHints\"\x93\x02\n" +
 	"\vRunTemplate\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -2421,7 +2438,9 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\tR\tupdatedAt\"8\n" +
+	"updated_at\x18\b \x01(\tR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"case_paths\x18\t \x03(\tR\tcasePaths\"8\n" +
 	"\x0eRepoPermission\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\"\x87\x01\n" +
@@ -2441,7 +2460,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\x13default_strategy_id\x18\x05 \x01(\tR\x11defaultStrategyId\x127\n" +
 	"\vsync_status\x18\x06 \x01(\x0e2\x16.ameliso.v1.SyncStatusR\n" +
 	"syncStatus\x12&\n" +
-	"\x0flast_sync_error\x18\a \x01(\tR\rlastSyncError\"\xd0\x04\n" +
+	"\x0flast_sync_error\x18\a \x01(\tR\rlastSyncError\"\xfc\x04\n" +
 	"\aRunMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x18\n" +
@@ -2466,7 +2485,8 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\tpr_number\x18\x11 \x01(\x05R\bprNumber\x127\n" +
 	"\vsync_status\x18\x12 \x01(\x0e2\x16.ameliso.v1.SyncStatusR\n" +
 	"syncStatus\x12&\n" +
-	"\x0flast_sync_error\x18\x13 \x01(\tR\rlastSyncError\"\x98\x02\n" +
+	"\x0flast_sync_error\x18\x13 \x01(\tR\rlastSyncError\x12*\n" +
+	"\x11total_duration_ms\x18\x14 \x01(\x03R\x0ftotalDurationMs\"\x98\x02\n" +
 	"\n" +
 	"CaseResult\x12\x1b\n" +
 	"\tcase_path\x18\x01 \x01(\tR\bcasePath\x120\n" +
