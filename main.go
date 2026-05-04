@@ -11,7 +11,6 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/redpanda-data/protoc-gen-go-mcp/pkg/runtime/gosdk"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	localauth "github.com/tupe12334/ameliso/local-auth/auth"
 	pb "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1"
@@ -54,7 +53,7 @@ func (m *grpcMinter) MintToken(ctx context.Context, auth0AccessToken string) (st
 	tmpCreds := newDynamicBearerCreds(auth0AccessToken)
 	conn, err := grpc.NewClient(
 		m.addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		localauth.TransportCreds(m.addr),
 		grpc.WithPerRPCCredentials(tmpCreds),
 	)
 	if err != nil {
@@ -175,7 +174,7 @@ func main() {
 
 	conn, err := grpc.NewClient(
 		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		localauth.TransportCreds(addr),
 		grpc.WithPerRPCCredentials(creds),
 	)
 	if err != nil {
