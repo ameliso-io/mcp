@@ -13,7 +13,7 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
-replace github.com/tupe12334/ameliso/local-auth => ../local-auth
+replace github.com/tupe12334/ameliso/local-auth => ./local-auth
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect

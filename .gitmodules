@@ -1,0 +1,4 @@
+[submodule "local-auth"]
+	path = local-auth
+	url = git@github.com:ameliso-io/local-auth.git
+	branch = main
