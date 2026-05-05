@@ -80,6 +80,7 @@ const (
 	AmelisoService_CreateRunTemplate_FullMethodName             = "/ameliso.v1.AmelisoService/CreateRunTemplate"
 	AmelisoService_UpdateRunTemplate_FullMethodName             = "/ameliso.v1.AmelisoService/UpdateRunTemplate"
 	AmelisoService_DeleteRunTemplate_FullMethodName             = "/ameliso.v1.AmelisoService/DeleteRunTemplate"
+	AmelisoService_RestoreRunTemplate_FullMethodName            = "/ameliso.v1.AmelisoService/RestoreRunTemplate"
 	AmelisoService_ListOutboundWebhooks_FullMethodName          = "/ameliso.v1.AmelisoService/ListOutboundWebhooks"
 	AmelisoService_CreateOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/CreateOutboundWebhook"
 	AmelisoService_UpdateOutboundWebhook_FullMethodName         = "/ameliso.v1.AmelisoService/UpdateOutboundWebhook"
@@ -222,6 +223,7 @@ type AmelisoServiceClient interface {
 	CreateRunTemplate(ctx context.Context, in *CreateRunTemplateRequest, opts ...grpc.CallOption) (*CreateRunTemplateResponse, error)
 	UpdateRunTemplate(ctx context.Context, in *UpdateRunTemplateRequest, opts ...grpc.CallOption) (*UpdateRunTemplateResponse, error)
 	DeleteRunTemplate(ctx context.Context, in *DeleteRunTemplateRequest, opts ...grpc.CallOption) (*DeleteRunTemplateResponse, error)
+	RestoreRunTemplate(ctx context.Context, in *RestoreRunTemplateRequest, opts ...grpc.CallOption) (*RestoreRunTemplateResponse, error)
 	// --- Outbound Webhooks ---
 	ListOutboundWebhooks(ctx context.Context, in *ListOutboundWebhooksRequest, opts ...grpc.CallOption) (*ListOutboundWebhooksResponse, error)
 	CreateOutboundWebhook(ctx context.Context, in *CreateOutboundWebhookRequest, opts ...grpc.CallOption) (*CreateOutboundWebhookResponse, error)
@@ -859,6 +861,16 @@ func (c *amelisoServiceClient) DeleteRunTemplate(ctx context.Context, in *Delete
 	return out, nil
 }
 
+func (c *amelisoServiceClient) RestoreRunTemplate(ctx context.Context, in *RestoreRunTemplateRequest, opts ...grpc.CallOption) (*RestoreRunTemplateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreRunTemplateResponse)
+	err := c.cc.Invoke(ctx, AmelisoService_RestoreRunTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *amelisoServiceClient) ListOutboundWebhooks(ctx context.Context, in *ListOutboundWebhooksRequest, opts ...grpc.CallOption) (*ListOutboundWebhooksResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListOutboundWebhooksResponse)
@@ -1098,6 +1110,7 @@ type AmelisoServiceServer interface {
 	CreateRunTemplate(context.Context, *CreateRunTemplateRequest) (*CreateRunTemplateResponse, error)
 	UpdateRunTemplate(context.Context, *UpdateRunTemplateRequest) (*UpdateRunTemplateResponse, error)
 	DeleteRunTemplate(context.Context, *DeleteRunTemplateRequest) (*DeleteRunTemplateResponse, error)
+	RestoreRunTemplate(context.Context, *RestoreRunTemplateRequest) (*RestoreRunTemplateResponse, error)
 	// --- Outbound Webhooks ---
 	ListOutboundWebhooks(context.Context, *ListOutboundWebhooksRequest) (*ListOutboundWebhooksResponse, error)
 	CreateOutboundWebhook(context.Context, *CreateOutboundWebhookRequest) (*CreateOutboundWebhookResponse, error)
@@ -1307,6 +1320,9 @@ func (UnimplementedAmelisoServiceServer) UpdateRunTemplate(context.Context, *Upd
 }
 func (UnimplementedAmelisoServiceServer) DeleteRunTemplate(context.Context, *DeleteRunTemplateRequest) (*DeleteRunTemplateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteRunTemplate not implemented")
+}
+func (UnimplementedAmelisoServiceServer) RestoreRunTemplate(context.Context, *RestoreRunTemplateRequest) (*RestoreRunTemplateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestoreRunTemplate not implemented")
 }
 func (UnimplementedAmelisoServiceServer) ListOutboundWebhooks(context.Context, *ListOutboundWebhooksRequest) (*ListOutboundWebhooksResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListOutboundWebhooks not implemented")
@@ -2460,6 +2476,24 @@ func _AmelisoService_DeleteRunTemplate_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AmelisoService_RestoreRunTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreRunTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AmelisoServiceServer).RestoreRunTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AmelisoService_RestoreRunTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AmelisoServiceServer).RestoreRunTemplate(ctx, req.(*RestoreRunTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AmelisoService_ListOutboundWebhooks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListOutboundWebhooksRequest)
 	if err := dec(in); err != nil {
@@ -2908,6 +2942,10 @@ var AmelisoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteRunTemplate",
 			Handler:    _AmelisoService_DeleteRunTemplate_Handler,
+		},
+		{
+			MethodName: "RestoreRunTemplate",
+			Handler:    _AmelisoService_RestoreRunTemplate_Handler,
 		},
 		{
 			MethodName: "ListOutboundWebhooks",

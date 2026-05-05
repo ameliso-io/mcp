@@ -523,6 +523,7 @@ type RunTemplate struct {
 	CreatedAt         string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt         string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	CasePaths         []string               `protobuf:"bytes,9,rep,name=case_paths,json=casePaths,proto3" json:"case_paths,omitempty"`
+	DeletedAt         string                 `protobuf:"bytes,10,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -618,6 +619,13 @@ func (x *RunTemplate) GetCasePaths() []string {
 		return x.CasePaths
 	}
 	return nil
+}
+
+func (x *RunTemplate) GetDeletedAt() string {
+	if x != nil {
+		return x.DeletedAt
+	}
+	return ""
 }
 
 type RepoPermission struct {
@@ -2427,7 +2435,7 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"updated_at\x18\x06 \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
 	"deleted_at\x18\a \x01(\tR\tdeletedAt\x12'\n" +
-	"\x0fexecution_hints\x18\b \x01(\tR\x0eexecutionHints\"\x93\x02\n" +
+	"\x0fexecution_hints\x18\b \x01(\tR\x0eexecutionHints\"\xb2\x02\n" +
 	"\vRunTemplate\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
@@ -2440,7 +2448,10 @@ const file_ameliso_v1_types_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\b \x01(\tR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"case_paths\x18\t \x03(\tR\tcasePaths\"8\n" +
+	"case_paths\x18\t \x03(\tR\tcasePaths\x12\x1d\n" +
+	"\n" +
+	"deleted_at\x18\n" +
+	" \x01(\tR\tdeletedAt\"8\n" +
 	"\x0eRepoPermission\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\"\x87\x01\n" +
