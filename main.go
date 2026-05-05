@@ -24,10 +24,6 @@ var (
 	grpcAddr = ""
 )
 
-// userTokenPrefix is the expected prefix for Ameliso personal access tokens.
-// Kept here to surface drift from the server-side constant via TestUserTokenPrefixIsAmPat.
-const userTokenPrefix = "am_pat_"
-
 // dynamicBearerCreds attaches `authorization: Bearer <token>` to every RPC
 // and allows the token to be swapped at runtime (e.g. after ameliso_login_poll succeeds).
 type dynamicBearerCreds struct {
