@@ -17,12 +17,6 @@ import (
 	amelisomcp "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1/amelisomcp"
 )
 
-// apiURL and grpcAddr are set via -ldflags in release builds.
-// Override at runtime via AMELISO_API_URL / AMELISO_GRPC_ADDR.
-var (
-	apiURL  = ""
-	grpcAddr = ""
-)
 
 // dynamicBearerCreds attaches `authorization: Bearer <token>` to every RPC
 // and allows the token to be swapped at runtime (e.g. after ameliso_login_poll succeeds).
