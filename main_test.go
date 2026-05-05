@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	localauth "github.com/tupe12334/ameliso/local-auth/auth"
 )
 
 func TestDynamicBearerCredsAttachesAuthorizationHeader(t *testing.T) {
@@ -38,10 +40,10 @@ func TestDynamicBearerCredsAllowsInsecureTransport(t *testing.T) {
 	}
 }
 
-// Surfaces drift if userTokenPrefix is renamed away from the server-side
+// Surfaces drift if UserTokenPrefix is renamed away from the server-side
 // constant. Keeping the values in sync matters for the AMELISO_TOKEN warning.
 func TestUserTokenPrefixIsAmPat(t *testing.T) {
-	if !strings.HasPrefix("am_pat_deadbeef", userTokenPrefix) {
-		t.Fatalf("userTokenPrefix = %q, want am_pat_", userTokenPrefix)
+	if !strings.HasPrefix("am_pat_deadbeef", localauth.UserTokenPrefix) {
+		t.Fatalf("UserTokenPrefix = %q, want am_pat_", localauth.UserTokenPrefix)
 	}
 }
