@@ -12,9 +12,9 @@ import (
 	"github.com/redpanda-data/protoc-gen-go-mcp/pkg/runtime/gosdk"
 	"google.golang.org/grpc"
 
-	localauth "github.com/tupe12334/ameliso/local-auth/auth"
-	pb "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1"
-	amelisomcp "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1/amelisomcp"
+	localauth "github.com/ameliso-io/local-auth/auth"
+	pb "github.com/ameliso-io/mcp/gen/ameliso/v1"
+	amelisomcp "github.com/ameliso-io/mcp/gen/ameliso/v1/amelisomcp"
 )
 
 

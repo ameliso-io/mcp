@@ -1,4 +1,4 @@
-module github.com/tupe12334/ameliso/mcp
+module github.com/ameliso-io/mcp
 
 go 1.26.1
 
@@ -6,14 +6,12 @@ tool github.com/redpanda-data/protoc-gen-go-mcp/cmd/protoc-gen-go-mcp
 
 require (
 	connectrpc.com/connect v1.18.1
+	github.com/ameliso-io/local-auth v0.1.0
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/redpanda-data/protoc-gen-go-mcp v0.0.0-20260430225748-67e0bd25a988
-	github.com/tupe12334/ameliso/local-auth v0.0.0
 	google.golang.org/grpc v1.81.0
 	google.golang.org/protobuf v1.36.11
 )
-
-replace github.com/tupe12334/ameliso/local-auth => ./local-auth
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect

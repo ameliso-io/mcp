@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	localauth "github.com/tupe12334/ameliso/local-auth/auth"
+	localauth "github.com/ameliso-io/local-auth/auth"
 )
 
 func TestDynamicBearerCredsAttachesAuthorizationHeader(t *testing.T) {

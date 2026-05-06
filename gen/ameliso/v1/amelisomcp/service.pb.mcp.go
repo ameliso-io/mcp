@@ -4,7 +4,7 @@
 package amelisomcp
 
 import (
-	v1 "github.com/tupe12334/ameliso/mcp/gen/ameliso/v1"
+	v1 "github.com/ameliso-io/mcp/gen/ameliso/v1"
 )
 
 import (
