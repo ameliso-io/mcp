@@ -6,7 +6,7 @@ tool github.com/redpanda-data/protoc-gen-go-mcp/cmd/protoc-gen-go-mcp
 
 require (
 	connectrpc.com/connect v1.18.1
-	github.com/ameliso-io/local-auth v0.1.0
+	github.com/ameliso-io/local-auth v0.1.1
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/redpanda-data/protoc-gen-go-mcp v0.0.0-20260430225748-67e0bd25a988
 	google.golang.org/grpc v1.81.0

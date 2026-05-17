@@ -77,7 +77,8 @@ func registerAuthTools(raw *mcp.Server, addr string, apiBaseURL string, creds *d
 		Name: "ameliso_login",
 		Description: "Start an Ameliso login flow. Opens the user's browser and returns a " +
 			"verification URL and code to display. After showing the user the URL, call " +
-			"ameliso_login_poll repeatedly (every 5 seconds) until it reports success.",
+			"ameliso_login_poll repeatedly (every 5 seconds) until it reports success. " +
+			"IMPORTANT: the URL must be opened in a regular browser with an active Auth0 session — not incognito and not Playwright isolated context.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, _ noParams) (*mcp.CallToolResult, any, error) {
 		// Fetch Auth0 config from server; non-fatal if server unreachable
 		// (env vars / ldflags defaults act as fallback).
@@ -92,7 +93,7 @@ func registerAuthTools(raw *mcp.Server, addr string, apiBaseURL string, creds *d
 		pendingMu.Unlock()
 
 		msg := fmt.Sprintf(
-			"Browser opened. Ask the user to visit:\n\n  %s\n\nOr go to %s and enter code: %s\n\nIMPORTANT: The link must be opened in a browser where the user is already signed in to Auth0 (not incognito, not a fresh Playwright session). Opening it in a new isolated context will show \"Invalid request\" and the flow will silently time out.\n\nThen call ameliso_login_poll every %s until it reports success.",
+			"Browser opened. Ask the user to visit:\n\n  %s\n\nOr go to %s and enter code: %s\n\nIMPORTANT: open the URL in a regular browser where you are already signed in to Auth0 — do NOT use incognito mode or an isolated browser context (e.g. Playwright). Auth0 requires an active session to confirm the device.\n\nThen call ameliso_login_poll every %s until it reports success.",
 			p.VerificationURIComplete, p.VerificationURI, p.UserCode, p.Interval(),
 		)
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}}, nil, nil

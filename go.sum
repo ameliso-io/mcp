@@ -6,8 +6,8 @@ buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3f349e63f44a.2/go.mod h1:wThyg02xJx4K/DA5fg0QlKts8XVPyTT86JC8hPfEzno=
 connectrpc.com/connect v1.18.1 h1:PAg7CjSAGvscaf6YZKUefjoih5Z/qYkyaTrBW8xvYPw=
 connectrpc.com/connect v1.18.1/go.mod h1:0292hj1rnx8oFrStN7cB4jjVBeqs+Yx5yDIC2prWDO8=
-github.com/ameliso-io/local-auth v0.1.0 h1:krxxFpZllNsB3PFpEThTVq55seMBtVor69uxHhhk/1c=
-github.com/ameliso-io/local-auth v0.1.0/go.mod h1:BmyJ3TfOJVWAgySdXZ52hfwd3l/yQt87lMWRprMEXXA=
+github.com/ameliso-io/local-auth v0.1.1 h1:XqC7bNb2EhGwJFYTrXsjNSBlFS+zRJkS2G5+HhS7x44=
+github.com/ameliso-io/local-auth v0.1.1/go.mod h1:BmyJ3TfOJVWAgySdXZ52hfwd3l/yQt87lMWRprMEXXA=
 github.com/bahlo/generic-list-go v0.2.0 h1:5sz/EEAK+ls5wF+NeqDpk5+iNdMDXrh3z3nPnH1Wvgk=
 github.com/bahlo/generic-list-go v0.2.0/go.mod h1:2KvAjgMlE5NNynlg/5iLrrCCZ2+5xWbdbCW3pNTGyYg=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
