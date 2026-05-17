@@ -92,7 +92,7 @@ func registerAuthTools(raw *mcp.Server, addr string, apiBaseURL string, creds *d
 		pendingMu.Unlock()
 
 		msg := fmt.Sprintf(
-			"Browser opened. Ask the user to visit:\n\n  %s\n\nOr go to %s and enter code: %s\n\nThen call ameliso_login_poll every %s until it reports success.",
+			"Browser opened. Ask the user to visit:\n\n  %s\n\nOr go to %s and enter code: %s\n\nIMPORTANT: The link must be opened in a browser where the user is already signed in to Auth0 (not incognito, not a fresh Playwright session). Opening it in a new isolated context will show \"Invalid request\" and the flow will silently time out.\n\nThen call ameliso_login_poll every %s until it reports success.",
 			p.VerificationURIComplete, p.VerificationURI, p.UserCode, p.Interval(),
 		)
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}}, nil, nil
